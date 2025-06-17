@@ -1,35 +1,232 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+// // src/App.js
+// import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+// import { AuthProvider, useAuth } from './context/AuthContext';
+// import LoginPage from './components/auth/Login';
 
-function App() {
-  const [count, setCount] = useState(0)
+// import UserDashboard from './components/pages/UserDashboard';
+// import SalesDashboard from './components/pages/SalesDashboard';
 
-  return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+// // Protected Route component with role-based access
+// // Protected Route component with role-based access
+// import type { ReactNode } from 'react';
+// import { roleMiddleware } from './middleware/roleMiddleware';
+// import HomePage from './components/pages/Homepage';
+
+// interface ProtectedRouteProps {
+//   children: ReactNode;
+//   allowedRoles?: string[];
+// }
+
+// const ProtectedRoute = ({ children, allowedRoles = [] }: ProtectedRouteProps) => {
+//   const { isAuthenticated, user, loading } = useAuth();
+  
+//   if (loading) {
+//     return (
+//       <div style={{
+//         minHeight: '100vh',
+//         display: 'flex',
+//         alignItems: 'center',
+//         justifyContent: 'center'
+//       }}>
+//         <div>Loading...</div>
+//       </div>
+//     );
+//   }
+  
+//   if (!isAuthenticated) {
+//     return <Navigate to="/login" replace />;
+//   }
+  
+//   // Check role-based access
+//   if (allowedRoles.length > 0 && !roleMiddleware(user?.role, allowedRoles)) {
+//     return <Navigate to="/unauthorized" replace />;
+//   }
+  
+//   return children;
+// };
+
+// // Dashboard Router - routes users to appropriate dashboard based on role
+// const DashboardRouter = () => {
+//   const { user } = useAuth();
+  
+//   switch(user?.role) {
+//     case 'user':
+//       return <Navigate to="/user-dashboard" replace />;
+//     case 'sales':
+//       return <Navigate to="/sales-dashboard" replace />;
+//     default:
+//       return <Navigate to="/login" replace />;
+//   }
+// };
+
+// // Unauthorized component
+// const Unauthorized = () => (
+//   <div style={{
+//     minHeight: '100vh',
+//     display: 'flex',
+//     alignItems: 'center',
+//     justifyContent: 'center',
+//     flexDirection: 'column'
+//   }}>
+//     <h2>Unauthorized Access</h2>
+//     <p>You don't have permission to access this page.</p>
+//     <button onClick={() => window.history.back()}>Go Back</button>
+//   </div>
+// );
+
+// function AppRoutes() {
+//   return (
+//     <Router>
+//       <Routes>
+//         {/* Public Routes */}
+//         <Route path="/" element={<HomePage />} />
+//         <Route path="/login" element={<LoginPage />} />
+//         <Route path="/unauthorized" element={<Unauthorized />} />
+        
+//         {/* Dashboard Router - redirects based on role */}
+//         <Route 
+//           path="/dashboard" 
+
+//           element={
+//             <ProtectedRoute>
+//               <DashboardRouter />
+//             </ProtectedRoute>
+//           } 
+//         />
+        
+//         {/* Role-specific Dashboard Routes */}
+//         <Route
+//           path="/user-dashboard"
+//           element={
+//             <ProtectedRoute allowedRoles={['user']}>
+//               <UserDashboard />
+//             </ProtectedRoute>
+//           }
+//         />
+//         <Route
+//           path="/sales-dashboard"
+//           element={
+//             <ProtectedRoute allowedRoles={['sales']}>
+//               <SalesDashboard />
+//             </ProtectedRoute>
+//           }
+//         />
+        
+//         {/* Catch all route */}
+//         <Route path="*" element={<Navigate to="/" replace />} />
+//       </Routes>
+//     </Router>
+//   );
+// }
+
+// function App() {
+//   return (
+//     <AuthProvider>
+//       <div className="App">
+//         <AppRoutes />
+//       </div>
+//     </AuthProvider>
+//   );
+// }
+
+// export default App;
+
+
+// App.tsx
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import LoginPage from './components/auth/Login';
+import HomePage from './components/pages/Homepage';
+import { Loader2 } from 'lucide-react';
+import type { ReactNode } from 'react';
+import SalesDashboard from './components/pages/Dashboard';
+
+interface ProtectedRouteProps {
+  children: ReactNode;
 }
 
-export default App
+const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
+  const { isAuthenticated, loading } = useAuth();
+  
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-50 to-blue-50">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
+          <p className="text-emerald-700 font-medium">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  return <>{children}</>;
+};
+
+const PublicRoute = ({ children }: ProtectedRouteProps) => {
+  const { isAuthenticated, loading } = useAuth();
+  
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-50 to-blue-50">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
+          <p className="text-emerald-700 font-medium">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  if (isAuthenticated) {
+    return <Navigate to="/dashboard" replace />;
+  }
+  
+  return <>{children}</>;
+};
+
+function AppRoutes() {
+  return (
+    <Router>
+      <Routes>
+        {/* Public Routes */}
+        <Route path="/" element={<HomePage />} />
+        <Route 
+          path="/login" 
+          element={
+            <PublicRoute>
+              <LoginPage />
+            </PublicRoute>
+          } 
+        />
+        
+        {/* Protected Dashboard Route */}
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <SalesDashboard />
+            </ProtectedRoute>
+          }
+        />
+        
+        {/* Catch all route */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </Router>
+  );
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <div className="App">
+        <AppRoutes />
+      </div>
+    </AuthProvider>
+  );
+}
+
+export default App;
