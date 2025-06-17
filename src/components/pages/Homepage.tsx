@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 
 import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 
 // TypeScript does not have BeforeInstallPromptEvent by default, so we declare it here
 type BeforeInstallPromptEvent = Event & {
@@ -343,10 +344,12 @@ const HomePage = () => {
                   ✅ Installed
                 </div>
               )}
-              
+
+              <Link to="/login" className="text-gray-700 hover:text-blue-600 transition-colors font-medium">
               <button className="px-6 py-2 bg-gradient-to-r from-emerald-500 to-blue-500 text-white rounded-full font-semibold hover:opacity-90 transition-opacity">
                 Login
               </button>
+              </Link>
             </div>
 
             {/* Mobile menu button */}
@@ -393,9 +396,11 @@ const HomePage = () => {
                 </div>
               )}
 
+              <Link to="/login" className="w-full">
               <button className="w-full px-6 py-2 bg-gradient-to-r from-emerald-500 to-blue-500 text-white rounded-full font-semibold hover:opacity-90 transition-opacity">
                 Login
               </button>
+              </Link>
             </div>
           </div>
         )}
