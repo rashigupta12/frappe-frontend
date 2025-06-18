@@ -97,7 +97,7 @@ export default function SalesDashboard() {
                 <Link to="/" className="flex items-center">
                   <div className="bg-gradient-to-r from-emerald-500 to-blue-500 rounded-lg p-2 flex items-center justify-center">
                     <img
-                      src="https://gojf7j54p4.ufs.sh/f/CcC11ljtXd0cVJkIxkqEgHb468cUmrZkfjiutLze1KlGD7xp"
+                      src="/logo.jpg"
                       alt="Logo"
                       className="w-12 h-12 object-contain"
                     />
