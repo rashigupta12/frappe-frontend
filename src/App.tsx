@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 // // src/App.js
 // import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 // import { AuthProvider, useAuth } from './context/AuthContext';
@@ -19,7 +20,7 @@
 
 // const ProtectedRoute = ({ children, allowedRoles = [] }: ProtectedRouteProps) => {
 //   const { isAuthenticated, user, loading } = useAuth();
-  
+
 //   if (loading) {
 //     return (
 //       <div style={{
@@ -32,23 +33,23 @@
 //       </div>
 //     );
 //   }
-  
+
 //   if (!isAuthenticated) {
 //     return <Navigate to="/login" replace />;
 //   }
-  
+
 //   // Check role-based access
 //   if (allowedRoles.length > 0 && !roleMiddleware(user?.role, allowedRoles)) {
 //     return <Navigate to="/unauthorized" replace />;
 //   }
-  
+
 //   return children;
 // };
 
 // // Dashboard Router - routes users to appropriate dashboard based on role
 // const DashboardRouter = () => {
 //   const { user } = useAuth();
-  
+
 //   switch(user?.role) {
 //     case 'user':
 //       return <Navigate to="/user-dashboard" replace />;
@@ -82,18 +83,18 @@
 //         <Route path="/" element={<HomePage />} />
 //         <Route path="/login" element={<LoginPage />} />
 //         <Route path="/unauthorized" element={<Unauthorized />} />
-        
+
 //         {/* Dashboard Router - redirects based on role */}
-//         <Route 
-//           path="/dashboard" 
+//         <Route
+//           path="/dashboard"
 
 //           element={
 //             <ProtectedRoute>
 //               <DashboardRouter />
 //             </ProtectedRoute>
-//           } 
+//           }
 //         />
-        
+
 //         {/* Role-specific Dashboard Routes */}
 //         <Route
 //           path="/user-dashboard"
@@ -111,7 +112,7 @@
 //             </ProtectedRoute>
 //           }
 //         />
-        
+
 //         {/* Catch all route */}
 //         <Route path="*" element={<Navigate to="/" replace />} />
 //       </Routes>
@@ -131,15 +132,20 @@
 
 // export default App;
 
-
 // App.tsx
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './context/AuthContext';
-import LoginPage from './components/auth/Login';
-import HomePage from './components/pages/Homepage';
-import { Loader2 } from 'lucide-react';
-import type { ReactNode } from 'react';
-import SalesDashboard from './components/pages/Dashboard';
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
+import { AuthProvider, useAuth } from "./context/AuthContext";
+import LoginPage from "./components/auth/Login";
+import HomePage from "./components/pages/Homepage";
+import { Loader2 } from "lucide-react";
+import type { ReactNode } from "react";
+import SalesDashboard from "./components/pages/Dashboard";
+import { LeadsProvider } from "./context/LeadContext";
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -147,7 +153,7 @@ interface ProtectedRouteProps {
 
 const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const { isAuthenticated, loading } = useAuth();
-  
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-50 to-blue-50">
@@ -158,17 +164,17 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
       </div>
     );
   }
-  
+
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
-  
+
   return <>{children}</>;
 };
 
 const PublicRoute = ({ children }: ProtectedRouteProps) => {
   const { isAuthenticated, loading } = useAuth();
-  
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-50 to-blue-50">
@@ -179,11 +185,11 @@ const PublicRoute = ({ children }: ProtectedRouteProps) => {
       </div>
     );
   }
-  
+
   if (isAuthenticated) {
     return <Navigate to="/dashboard" replace />;
   }
-  
+
   return <>{children}</>;
 };
 
@@ -193,15 +199,15 @@ function AppRoutes() {
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<HomePage />} />
-        <Route 
-          path="/login" 
+        <Route
+          path="/login"
           element={
             <PublicRoute>
               <LoginPage />
             </PublicRoute>
-          } 
+          }
         />
-        
+
         {/* Protected Dashboard Route */}
         <Route
           path="/dashboard"
@@ -211,7 +217,7 @@ function AppRoutes() {
             </ProtectedRoute>
           }
         />
-        
+
         {/* Catch all route */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
@@ -222,9 +228,11 @@ function AppRoutes() {
 function App() {
   return (
     <AuthProvider>
-      <div className="App">
-        <AppRoutes />
-      </div>
+      <LeadsProvider>
+        <div className="App">
+          <AppRoutes />
+        </div>
+      </LeadsProvider>
     </AuthProvider>
   );
 }

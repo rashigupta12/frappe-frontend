@@ -1,4 +1,4 @@
-/* eslint-disable no-unused-vars */
+
 // src/api/frappeClient.js
 import axios from 'axios';
 
@@ -147,6 +147,62 @@ export const frappeAPI = {
       };
     }
   },
+
+   getAllLeads: async () => {
+    try {
+      const response = await frappeClient.get('api/resource/Lead');
+      return response.data;
+    } catch (error) {
+      // If we get 403, user is not authenticated
+      if (axios.isAxiosError(error) && (error.response?.status === 403 || error.response?.status === 401)) {
+        localStorage.removeItem('frappe_user');
+      }
+      throw error;
+    }
+  },
+  getLeadById: async (leadId: string) => {
+    try {
+      const response = await frappeClient.get(`api/resource/Lead/${leadId}`);
+      return response.data;
+    } catch (error) {
+      // If we get 403, user is not authenticated
+      if (axios.isAxiosError(error) && (error.response?.status === 403 || error.response?.status === 401)) {
+        localStorage.removeItem('frappe_user');
+      }
+      throw error;
+    }
+  },
+
+  createLead: async (leadData: Record<string, unknown>) => {
+    try {
+      const response = await frappeClient.post('api/resource/Lead', leadData);
+      return response.data;
+    } catch (error) {
+      // If we get 403, user is not authenticated
+      if (axios.isAxiosError(error) && (error.response?.status === 403 || error.response?.status === 401)) {
+        localStorage.removeItem('frappe_user');
+      }
+      throw error;
+    }
+  },
+
+  updateLead: async (leadId: string, leadData: Record<string, unknown>) => {
+    try {
+      const response = await frappeClient.put(`api/resource/Lead/${leadId}`, leadData);
+      return response.data;
+    } catch (error) {
+      // If we get 403, user is not authenticated
+      if (axios.isAxiosError(error) && (error.response?.status === 403 || error.response?.status === 401)) {
+        localStorage.removeItem('frappe_user');
+      }
+      throw error;
+    }
+  }
+
+
+
+
+
 
   // // Generic document operations
   // getDoc: async (doctype: string, name: string) => {

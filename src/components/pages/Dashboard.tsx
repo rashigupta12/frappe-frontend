@@ -6,6 +6,8 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { Button } from "../ui/button";
+import InquiryPage from "../Inquiry/Inquiry";
+// import InquiryPage from "../Inquiry/Inquiry";
 
 export default function SalesDashboard() {
   const navigate = useNavigate();
@@ -37,26 +39,21 @@ export default function SalesDashboard() {
       case "inquiry-form":
         // return <InquiryManagement/>;
         return (
-          <div className="bg-white rounded-xl shadow-sm p-6 border border-emerald-100">
-            <h2 className="text-2xl font-bold text-emerald-800 mb-4">
-              Inquiry Form
-            </h2>
-            <p className="text-emerald-600">
-              Manage customer inquiries and leads.
-            </p>
-          </div>
+          // <InquiryPage/>
+          <InquiryPage/>
+          
         );
-      case "profile":
-        return (
-          <div className="bg-white rounded-xl shadow-sm p-6 border border-emerald-100">
-            <h2 className="text-2xl font-bold text-emerald-800 mb-4">
-              Profile
-            </h2>
-            <p className="text-emerald-600">
-              View and edit your profile information.
-            </p>
-          </div>
-        );
+      // case "profile":
+      //   return (
+      //     <div className="bg-white rounded-xl shadow-sm p-6 border border-emerald-100">
+      //       <h2 className="text-2xl font-bold text-emerald-800 mb-4">
+      //         Profile
+      //       </h2>
+      //       <p className="text-emerald-600">
+      //         View and edit your profile information.
+      //       </p>
+      //     </div>
+      //   );
       default:
         return (
           <div className="bg-white rounded-xl shadow-sm p-6 border border-emerald-100">
@@ -177,7 +174,7 @@ export default function SalesDashboard() {
               <span className="font-medium">Inquiry Form</span>
             </Button>
 
-            <Button
+            {/* <Button
               variant={activeTab === "profile" ? "default" : "ghost"}
               onClick={() => handleTabChange("profile")}
               className={`w-full justify-start gap-3 rounded-xl p-3 text-left transition-all duration-200 ${
@@ -188,7 +185,7 @@ export default function SalesDashboard() {
             >
               <Users className="h-5 w-5" />
               <span className="font-medium">Profile</span>
-            </Button>
+            </Button> */}
           </nav>
         </aside>
 
