@@ -33,21 +33,24 @@ const HomePage = () => {
   const [activeService, setActiveService] = useState(0);
   console.log("Active Service Index:", activeService);
   const [isScrolled, setIsScrolled] = useState(false);
-  
+
   // Simplified PWA installation state
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [deferredPrompt, setDeferredPrompt] =
+    useState<BeforeInstallPromptEvent | null>(null);
   const [showInstallPrompt, setShowInstallPrompt] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
 
   // Check if app is already installed
   useEffect(() => {
     // Check if running as PWA
-    const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+    const isStandalone = window.matchMedia(
+      "(display-mode: standalone)"
+    ).matches;
     const isInWebAppPwa = (window.navigator as any).standalone === true;
-    
+
     if (isStandalone || isInWebAppPwa) {
       setIsInstalled(true);
-      console.log('App is already installed');
+      console.log("App is already installed");
     }
   }, []);
 
@@ -55,14 +58,14 @@ const HomePage = () => {
   useEffect(() => {
     const handleBeforeInstallPrompt = (e: Event) => {
       const event = e as BeforeInstallPromptEvent;
-      console.log('beforeinstallprompt event fired');
-      
+      console.log("beforeinstallprompt event fired");
+
       // Prevent the default browser install prompt
       event.preventDefault();
-      
+
       // Store the event for later use
       setDeferredPrompt(event);
-      
+
       // Show our custom install button only if not already installed
       if (!isInstalled) {
         setShowInstallPrompt(true);
@@ -70,20 +73,26 @@ const HomePage = () => {
     };
 
     const handleAppInstalled = () => {
-      console.log('PWA was installed');
+      console.log("PWA was installed");
       setIsInstalled(true);
       setShowInstallPrompt(false);
       setDeferredPrompt(null);
     };
 
     // Add event listeners
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt as EventListener);
-    window.addEventListener('appinstalled', handleAppInstalled);
+    window.addEventListener(
+      "beforeinstallprompt",
+      handleBeforeInstallPrompt as EventListener
+    );
+    window.addEventListener("appinstalled", handleAppInstalled);
 
     // Cleanup
     return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt as EventListener);
-      window.removeEventListener('appinstalled', handleAppInstalled);
+      window.removeEventListener(
+        "beforeinstallprompt",
+        handleBeforeInstallPrompt as EventListener
+      );
+      window.removeEventListener("appinstalled", handleAppInstalled);
     };
   }, [isInstalled]);
 
@@ -91,43 +100,45 @@ const HomePage = () => {
   const handleInstall = async () => {
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
     const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-    
+
     if (isIOS || isSafari) {
       // Show iOS/Safari specific instructions
-      const instructions = isIOS 
+      const instructions = isIOS
         ? 'To install this app on iOS:\n\n1. Tap the Share button (□↗) at the bottom\n2. Scroll down and tap "Add to Home Screen"\n3. Tap "Add" in the top right corner'
         : 'To install this app:\n\n1. Click the Share button\n2. Select "Add to Home Screen"\n3. Click "Add"';
-      
+
       alert(instructions);
       return;
     }
 
     if (!deferredPrompt) {
-      console.log('No deferred prompt available');
+      console.log("No deferred prompt available");
       // Fallback for browsers that don't support the API
-      alert('To install this app:\n\nChrome/Edge: Look for the install icon in the address bar\nOr click the menu (⋮) > "Install app"');
+      alert(
+        'To install this app:\n\nChrome/Edge: Look for the install icon in the address bar\nOr click the menu (⋮) > "Install app"'
+      );
       return;
     }
 
     try {
       // Show the install prompt
       await deferredPrompt.prompt();
-      
+
       // Wait for the user's response
       const { outcome } = await deferredPrompt.userChoice;
-      console.log('User choice outcome:', outcome);
+      console.log("User choice outcome:", outcome);
 
-      if (outcome === 'accepted') {
-        console.log('User accepted the install prompt');
+      if (outcome === "accepted") {
+        console.log("User accepted the install prompt");
         setShowInstallPrompt(false);
       } else {
-        console.log('User dismissed the install prompt');
+        console.log("User dismissed the install prompt");
       }
-      
+
       // Clear the deferred prompt
       setDeferredPrompt(null);
     } catch (error) {
-      console.error('Error during installation:', error);
+      console.error("Error during installation:", error);
     }
   };
 
@@ -137,8 +148,8 @@ const HomePage = () => {
       setIsScrolled(window.scrollY > 50);
     };
 
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   const services = [
@@ -292,42 +303,61 @@ const HomePage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
       {/* Navigation */}
-      <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-          isScrolled ? "bg-white shadow-md py-2" : "bg-white/90 backdrop-blur-md py-4"
-        }`}>
+      <nav
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+          isScrolled
+            ? "bg-white shadow-md py-2"
+            : "bg-white/90 backdrop-blur-md py-4"
+        }`}
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             {/* Logo section */}
+
             <div className="flex items-center space-x-2">
-              <div className="bg-gradient-to-r from-emerald-500 to-blue-500 rounded-lg flex items-center justify-center">
-                <img
-                  src="/logo.jpg"
-                  alt="EITS Logo"
-                  width={48}
-                  height={48}
-                  className="rounded-lg"
-                />
-              </div>
-              <span className="text-xl md:text-2xl font-bold bg-gradient-to-r from-emerald-500 to-blue-500 bg-clip-text text-transparent">
-                EITS Services
-              </span>
+              <Link to="/" className="flex items-center space-x-2">
+                <div className="bg-gradient-to-r from-emerald-500 to-blue-500 rounded-lg flex items-center justify-center">
+                  <img
+                    src="/logo.jpg"
+                    alt="EITS Logo"
+                    width={48}
+                    height={48}
+                    className="rounded-lg"
+                  />
+                </div>
+                <span className="text-xl md:text-2xl font-bold bg-gradient-to-r from-emerald-500 to-blue-500 bg-clip-text text-transparent">
+                  EITS Services
+                </span>
+              </Link>
             </div>
 
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center space-x-8">
-              <a href="#services" className="text-gray-700 hover:text-blue-600 transition-colors font-medium">
+              <a
+                href="#services"
+                className="text-gray-700 hover:text-blue-600 transition-colors font-medium"
+              >
                 Services
               </a>
-              <a href="#testimonials" className="text-gray-700 hover:text-blue-600 transition-colors font-medium">
+              <a
+                href="#testimonials"
+                className="text-gray-700 hover:text-blue-600 transition-colors font-medium"
+              >
                 Testimonials
               </a>
-              <a href="#about" className="text-gray-700 hover:text-blue-600 transition-colors font-medium">
+              <a
+                href="#about"
+                className="text-gray-700 hover:text-blue-600 transition-colors font-medium"
+              >
                 About
               </a>
-              <a href="#contact" className="text-gray-700 hover:text-blue-600 transition-colors font-medium">
+              <a
+                href="#contact"
+                className="text-gray-700 hover:text-blue-600 transition-colors font-medium"
+              >
                 Contact
               </a>
-              
+
               {/* Install Button */}
               {showInstallPrompt && !isInstalled && (
                 <button
@@ -338,17 +368,17 @@ const HomePage = () => {
                   📱 Install App
                 </button>
               )}
-              
-              {isInstalled && (
-                <div className="px-3 py-1 bg-green-100 text-green-800 rounded-full font-medium text-xs">
-                  ✅ Installed
-                </div>
-              )}
 
-              <Link to="/login" className="text-gray-700 hover:text-blue-600 transition-colors font-medium">
-              <button className="px-6 py-2 bg-gradient-to-r from-emerald-500 to-blue-500 text-white rounded-full font-semibold hover:opacity-90 transition-opacity">
-                Login
-              </button>
+              <Link to="/dashboard">
+                <button className="px-6 py-2 border border-emerald-500 text-black rounded-full font-semibold hover:bg-gradient-to-r from-emerald-500 to-blue-500 hover:text-white transition-opacity duration-300">
+                  Dashboard
+                </button>
+              </Link>
+
+              <Link to="/login">
+                <button className="px-6 py-2 border border-emerald-500 text-black rounded-full font-semibold hover:bg-gradient-to-r from-emerald-500 to-blue-500 hover:text-white transition-opacity duration-300">
+                  Login
+                </button>
               </Link>
             </div>
 
@@ -358,7 +388,11 @@ const HomePage = () => {
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               aria-label="Toggle menu"
             >
-              {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              {isMenuOpen ? (
+                <X className="w-6 h-6" />
+              ) : (
+                <Menu className="w-6 h-6" />
+              )}
             </button>
           </div>
         </div>
@@ -366,41 +400,45 @@ const HomePage = () => {
         {/* Mobile Menu */}
         {isMenuOpen && (
           <div className="md:hidden bg-white border-t shadow-lg">
-            <div className="px-4 py-3 space-y-3">
-              <a href="#services" className="block py-3 px-4 rounded-lg hover:bg-gray-50 text-gray-700 font-medium">
+            <div className="px-4 py-4 space-y-3">
+              <a
+                href="#services"
+                className="block py-3 px-4 rounded-lg hover:bg-gray-50 text-gray-700 font-medium"
+              >
                 Services
               </a>
-              <a href="#testimonials" className="block py-3 px-4 rounded-lg hover:bg-gray-50 text-gray-700 font-medium">
+              <a
+                href="#testimonials"
+                className="block py-3 px-4 rounded-lg hover:bg-gray-50 text-gray-700 font-medium"
+              >
                 Testimonials
               </a>
-              <a href="#about" className="block py-3 px-4 rounded-lg hover:bg-gray-50 text-gray-700 font-medium">
+              <a
+                href="#about"
+                className="block py-3 px-4 rounded-lg hover:bg-gray-50 text-gray-700 font-medium"
+              >
                 About
               </a>
-              <a href="#contact" className="block py-3 px-4 rounded-lg hover:bg-gray-50 text-gray-700 font-medium">
+              <a
+                href="#contact"
+                className="block py-3 px-4 rounded-lg hover:bg-gray-50 text-gray-700 font-medium"
+              >
                 Contact
               </a>
 
-              {/* Mobile Install Button */}
-              {showInstallPrompt && !isInstalled && (
-                <button
-                  onClick={handleInstall}
-                  className="w-full px-6 py-3 bg-gradient-to-r from-emerald-500 to-blue-500 text-white rounded-full font-semibold hover:opacity-90 transition-opacity shadow-lg"
-                >
-                  📱 Install App
-                </button>
-              )}
+              <div className="pt-2 space-y-3">
+                <Link to="/dashboard" className="block w-full">
+                  <button className="w-full px-6 py-3 bg-gradient-to-r from-emerald-500 to-blue-500 text-white rounded-full font-semibold hover:opacity-90 transition-opacity duration-300">
+                    Dashboard
+                  </button>
+                </Link>
 
-              {isInstalled && (
-                <div className="w-full text-center px-4 py-2 bg-green-100 text-green-800 rounded-full font-medium text-sm">
-                  ✅ App Installed
-                </div>
-              )}
-
-              <Link to="/login" className="w-full">
-              <button className="w-full px-6 py-2 bg-gradient-to-r from-emerald-500 to-blue-500 text-white rounded-full font-semibold hover:opacity-90 transition-opacity">
-                Login
-              </button>
-              </Link>
+                <Link to="/login" className="block w-full">
+                  <button className="w-full px-6 py-3 bg-gradient-to-r from-emerald-500 to-blue-500 text-white rounded-full font-semibold hover:opacity-90 transition-opacity duration-300">
+                    Login
+                  </button>
+                </Link>
+              </div>
             </div>
           </div>
         )}
