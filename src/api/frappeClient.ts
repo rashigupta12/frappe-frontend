@@ -12,6 +12,7 @@ const FRAPPE_BASE_URL = isDevelopment
 const frappeClient = axios.create({
   baseURL: FRAPPE_BASE_URL,
   timeout: 10000,
+  
   withCredentials: true, // This is crucial for cookies
   headers: {
     'Content-Type': 'application/json',

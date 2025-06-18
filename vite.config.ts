@@ -130,7 +130,7 @@ export default defineConfig({
         changeOrigin: true,
         secure: true,
         cookieDomainRewrite: {
-          '*': 'localhost'
+          '*': 'https://frappe-frontend-three.vercel.app/'
         },
         headers: {
           'Accept': 'application/json',
