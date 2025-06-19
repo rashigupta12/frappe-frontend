@@ -6,7 +6,7 @@ import axios from 'axios';
 const isDevelopment = import.meta.env.DEV;
 const FRAPPE_BASE_URL = isDevelopment 
   ? '' // Use relative URLs in development to leverage Vite proxy
-  : 'https://eits.thebigocommunity.org'; // Direct URL for production
+  : ''; // Direct URL for production
 
 // Create axios instance with default config
 const frappeClient = axios.create({
