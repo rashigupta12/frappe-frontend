@@ -31,7 +31,7 @@ export default function SalesDashboard() {
 
   const handleLogout = async () => {
     await logout();
-    navigate("/login");
+    navigate("/" );
   };
 
   const renderContent = () => {
@@ -69,9 +69,9 @@ export default function SalesDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-blue-50 flex flex-col">
-      {/* Top Navigation Bar - Sticky */}
-      <nav className="bg-white shadow-lg border-b-2 border-emerald-200 px-4 sm:px-6 py-3 sticky top-0 z-50">
+    <div className="h-screen bg-gradient-to-br from-emerald-50 to-blue-50 flex flex-col overflow-hidden">
+      {/* Top Navigation Bar - Fixed */}
+      <nav className="bg-white shadow-lg border-b-2 border-emerald-200 px-4 sm:px-6 py-3 flex-shrink-0 z-50">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             {/* Mobile Menu Button */}
@@ -109,31 +109,43 @@ export default function SalesDashboard() {
           </h1>
 
           {/* User Menu */}
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="ghost"
-                className="flex items-center gap-2 hover:bg-emerald-50 rounded-lg p-2 transition-colors"
-              >
-                <span className="hidden sm:block text-emerald-700 font-medium">
-                  {user || "User"}
-                </span>
-              </Button>
-            </PopoverTrigger>
-           <PopoverContent className="w-56 border border-emerald-200 bg-white shadow-md" align="end">
-  <div className="space-y-1">
-    <Button
-      variant="ghost"
-      onClick={handleLogout}
-      className="w-full justify-start gap-2 text-red-600 hover:bg-red-100 hover:text-red-700 transition-colors"
-    >
-      <LogOut className="h-4 w-4" />
-      Logout
-    </Button>
-  </div>
-</PopoverContent>
+          <div className="flex items-center gap-2">
+            {/* Mobile Logout Button */}
+            <Button
+              variant="ghost"
+              onClick={handleLogout}
+              className="lg:hidden p-2 rounded-lg hover:bg-red-50 text-red-600 hover:text-red-700 transition-colors"
+            >
+              <LogOut className="h-5 w-5" />
+              Logout
+            </Button>
 
-          </Popover>
+            {/* Desktop User Menu */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="ghost"
+                  className="hidden lg:flex items-center gap-2 hover:bg-emerald-50 rounded-lg p-2 transition-colors"
+                >
+                  <span className="text-emerald-700 font-medium">
+                    {user || "User"}
+                  </span>
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-56 border border-emerald-200 bg-white shadow-md" align="end">
+                <div className="space-y-1">
+                  <Button
+                    variant="ghost"
+                    onClick={handleLogout}
+                    className="w-full justify-start gap-2 text-red-600 hover:bg-red-100 hover:text-red-700 transition-colors"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    Logout
+                  </Button>
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
         </div>
       </nav>
 
@@ -147,11 +159,11 @@ export default function SalesDashboard() {
           />
         )}
 
-        {/* Sidebar - Sticky */}
+        {/* Sidebar - Fixed on desktop, overlay on mobile */}
         <aside
           className={`
-            fixed lg:sticky top-[73px] lg:top-[73px] bottom-0 left-0 z-40 w-64 bg-white border-r-2 border-emerald-200 
-            h-[calc(100vh-73px)] p-4 shadow-lg lg:shadow-none overflow-y-auto
+            fixed lg:relative z-40 w-64 bg-white border-r-2 border-emerald-200 
+            h-full p-4 shadow-lg lg:shadow-none overflow-y-auto flex-shrink-0
             transform transition-transform duration-300 ease-in-out lg:transform-none
             ${
               sidebarOpen
@@ -173,43 +185,33 @@ export default function SalesDashboard() {
               <Users className="h-5 w-5" />
               <span className="font-medium">Inquiry Form</span>
             </Button>
-
-            {/* <Button
-              variant={activeTab === "profile" ? "default" : "ghost"}
-              onClick={() => handleTabChange("profile")}
-              className={`w-full justify-start gap-3 rounded-xl p-3 text-left transition-all duration-200 ${
-                activeTab === "profile"
-                  ? "bg-gradient-to-r from-emerald-500 to-blue-500 text-white shadow-lg transform scale-105 hover:from-emerald-600 hover:to-blue-600"
-                  : "text-emerald-700 hover:bg-emerald-50 hover:shadow-md"
-              }`}
-            >
-              <Users className="h-5 w-5" />
-              <span className="font-medium">Profile</span>
-            </Button> */}
           </nav>
         </aside>
 
-        {/* Main Content - Scrollable */}
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6">
-          <div className="max-w-7xl mx-auto">
-            {/* Mobile Dashboard Title */}
-            <div className="sm:hidden mb-6">
-              <h1 className="text-2xl font-bold text-emerald-800">
-                Sales Representative
-              </h1>
-            </div>
-
-            {/* Main Content Area */}
-            <div className="min-h-[calc(100vh-200px)]">{renderContent()}</div>
-
-            {/* Footer - Sticky at bottom of content */}
-            <footer className="sticky bottom-0 bg-white border-t border-emerald-200 mt-6 py-4">
-              <div className="text-center text-sm text-emerald-600">
-                © {new Date().getFullYear()} EcoElite. All rights reserved.
+        {/* Main Content Container */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {/* Main Content - Scrollable */}
+          <main className="flex-1 overflow-y-auto p-4 sm:p-6">
+            <div className="max-w-7xl mx-auto">
+              {/* Mobile Dashboard Title */}
+              <div className="sm:hidden mb-6">
+                <h1 className="text-2xl font-bold text-emerald-800">
+                  Sales Representative
+                </h1>
               </div>
-            </footer>
-          </div>
-        </main>
+
+              {/* Main Content Area */}
+              <div className="pb-6">{renderContent()}</div>
+            </div>
+          </main>
+
+          {/* Footer - Sticky at bottom */}
+          <footer className="bg-white border-t border-emerald-200 py-4 flex-shrink-0">
+            <div className="text-center text-sm text-emerald-600 px-4 sm:px-6">
+              © {new Date().getFullYear()} EcoElite. All rights reserved.
+            </div>
+          </footer>
+        </div>
       </div>
     </div>
   );

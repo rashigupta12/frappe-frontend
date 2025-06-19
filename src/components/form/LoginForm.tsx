@@ -104,7 +104,7 @@ function LoginForm() {
             name="email"
             render={({ field }) => (
               <FormItem>
-                <div className="text-sm font-medium text-white/90">Email</div>
+                <div className="text-sm font-medium text-white">Email</div>
                 <FormControl>
                   <Input
                     {...field}
@@ -137,7 +137,7 @@ function LoginForm() {
                   </FormControl>
                   <button
                     type="button"
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-white/70 hover:text-white transition-colors"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-white hover:text-white transition-colors"
                     onClick={togglePasswordVisibility}
                   >
                     {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
