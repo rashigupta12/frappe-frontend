@@ -1,4 +1,4 @@
-
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // src/api/frappeClient.js
 import axios from 'axios';
 
@@ -11,13 +11,18 @@ const FRAPPE_BASE_URL = isDevelopment
 // Create axios instance with default config
 const frappeClient = axios.create({
   baseURL: FRAPPE_BASE_URL,
-  timeout: 10000,
+  timeout: 15000, // Increased timeout for production
   
   withCredentials: true, // This is crucial for cookies
   headers: {
     'Content-Type': 'application/json',
-  },
-   method: 'OPTIONS'
+    'Accept': 'application/json',
+    // Add these headers for production CORS
+    ...(isDevelopment ? {} : {
+      'Origin': 'https://frappe-frontend-three.vercel.app',
+      'Referer': 'https://frappe-frontend-three.vercel.app'
+    })
+  }
 });
 
 // Add request interceptor
@@ -27,6 +32,15 @@ frappeClient.interceptors.request.use(
     if (isDevelopment && config.url && !config.url.startsWith('/api')) {
       console.log('Making request via Vite proxy:', config.url);
     }
+    
+    // For production, ensure proper headers
+    if (!isDevelopment) {
+      if (config.headers) {
+        config.headers['Origin'] = 'https://frappe-frontend-three.vercel.app';
+        config.headers['Referer'] = 'https://frappe-frontend-three.vercel.app';
+      }
+    }
+    
     return config;
   },
   (error) => Promise.reject(error)
@@ -34,17 +48,26 @@ frappeClient.interceptors.request.use(
 
 // Add response interceptor for error handling
 frappeClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // Log successful responses in development
+    if (isDevelopment) {
+      console.log('API Response:', response.status, response.config.url);
+    }
+    return response;
+  },
   (error) => {
     console.error('API Error:', {
       status: error.response?.status,
+      statusText: error.response?.statusText,
       message: error.response?.data?.message || error.message,
-      url: error.config?.url
+      url: error.config?.url,
+      headers: error.response?.headers
     });
 
     if (error.response?.status === 401 || error.response?.status === 403) {
       // Handle unauthorized access
       localStorage.removeItem('frappe_user');
+      localStorage.removeItem('frappe_session');
       // You might want to redirect to login or dispatch an action
     }
     return Promise.reject(error);
@@ -53,89 +76,7 @@ frappeClient.interceptors.response.use(
 
 // Frappe API methods
 export const frappeAPI = {
-  // Authentication
-  login: async (username: string, password: string) => {
-    try {
-      const response = await frappeClient.post('/api/method/login', {
-        usr: username,
-        pwd: password
-      });
-      
-      console.log('Login response:', response.data);
-      
-      // Store user info if login successful
-      if (response.data.message === 'Logged In') {
-        const userData = {
-          username: username,
-          full_name: response.data.full_name || 'User'
-        };
-        localStorage.setItem('frappe_user', JSON.stringify(userData));
-        return response.data;
-      }
-      
-      return response.data;
-    } catch (error) {
-      if (axios.isAxiosError(error)) {
-        console.error('Login error:', error.response?.data || error.message);
-      } else {
-        console.error('Login error:', (error as Error).message || error);
-      }
-      throw error;
-    }
-  },
-
-  logout: async () => {
-    try {
-      const response = await frappeClient.post('/api/method/logout');
-      localStorage.removeItem('frappe_user');
-      return response.data;
-    } catch (error) {
-      // Even if logout fails on server, clear local storage
-      localStorage.removeItem('frappe_user');
-      if (axios.isAxiosError(error)) {
-        console.error('Logout error:', error.response?.data || error.message);
-      } else {
-        console.error('Logout error:', (error as Error).message || error);
-      }
-      throw error;
-    }
-  },
-
-  // Get user info - with better error handling
-  getUserInfo: async () => {
-    try {
-      const response = await frappeClient.get('/api/method/frappe.auth.get_logged_user');
-      return response.data;
-    } catch (error) {
-      // If we get 403, user is not authenticated
-      if (axios.isAxiosError(error) && (error.response?.status === 403 || error.response?.status === 401)) {
-        localStorage.removeItem('frappe_user');
-      }
-      throw error;
-    }
-  },
-
-  // Check if session is valid
-  checkSession: async () => {
-    try {
-      const response = await frappeClient.get('/api/method/frappe.auth.get_logged_user');
-      return { 
-        authenticated: true, 
-        user: response.data.message 
-      };
-    } catch (error) {
-      // Clear stored user data if session is invalid
-      if (axios.isAxiosError(error) && (error.response?.status === 403 || error.response?.status === 401)) {
-        localStorage.removeItem('frappe_user');
-      }
-      return { 
-        authenticated: false, 
-        error: axios.isAxiosError(error) ? (error.response?.data?.message || error.message) : (error as Error).message 
-      };
-    }
-  },
-
-  // Test connection to backend
+  // Test connection first
   testConnection: async () => {
     try {
       const response = await frappeClient.get('/api/method/ping');
@@ -149,155 +90,187 @@ export const frappeAPI = {
     }
   },
 
-   getAllLeads: async () => {
+  // Authentication with better session handling
+  login: async (username: string, password: string) => {
     try {
-      const response = await frappeClient.get('api/resource/Lead');
+      // Clear any existing session data
+      localStorage.removeItem('frappe_user');
+      localStorage.removeItem('frappe_session');
+      
+      const response = await frappeClient.post('/api/method/login', {
+        usr: username,
+        pwd: password
+      });
+      
+      console.log('Login response:', response.data);
+      console.log('Response headers:', response.headers);
+      
+      // Check for successful login
+      if (response.data.message === 'Logged In' || response.status === 200) {
+        const userData: {
+          username: string;
+          full_name: any;
+          authenticated: boolean;
+          loginTime: number;
+          user_info?: any;
+        } = {
+          username: username,
+          full_name: response.data.full_name || response.data.user || 'User',
+          authenticated: true,
+          loginTime: Date.now()
+        };
+        
+        localStorage.setItem('frappe_user', JSON.stringify(userData));
+        
+        // Try to get user info immediately after login to verify session
+        try {
+          const userInfo = await frappeClient.get('/api/method/frappe.auth.get_logged_user');
+          console.log('User info after login:', userInfo.data);
+          userData.user_info = userInfo.data;
+          localStorage.setItem('frappe_user', JSON.stringify(userData));
+        } catch (userInfoError) {
+          console.warn('Could not fetch user info after login:', userInfoError);
+        }
+        
+        return { success: true, data: response.data, user: userData };
+      }
+      
+      return { success: false, data: response.data };
+    } catch (error) {
+      console.error('Login error details:', {
+        status: axios.isAxiosError(error) ? error.response?.status : undefined,
+        statusText: axios.isAxiosError(error) ? error.response?.statusText : undefined,
+        data: axios.isAxiosError(error) ? error.response?.data : undefined,
+        headers: axios.isAxiosError(error) ? error.response?.headers : undefined
+      });
+      
+      if (axios.isAxiosError(error)) {
+        throw new Error(error.response?.data?.message || `Login failed: ${error.response?.status} ${error.response?.statusText}`);
+      } else {
+        throw error;
+      }
+    }
+  },
+
+  logout: async () => {
+    try {
+      const response = await frappeClient.post('/api/method/logout');
+      localStorage.removeItem('frappe_user');
+      localStorage.removeItem('frappe_session');
+      return response.data;
+    } catch (error) {
+      // Even if logout fails on server, clear local storage
+      localStorage.removeItem('frappe_user');
+      localStorage.removeItem('frappe_session');
+      if (axios.isAxiosError(error)) {
+        console.error('Logout error:', error.response?.data || error.message);
+      } else {
+        console.error('Logout error:', (error as Error).message || error);
+      }
+      throw error;
+    }
+  },
+
+  // Check if session is valid with retry logic
+  checkSession: async () => {
+    try {
+      const response = await frappeClient.get('/api/method/frappe.auth.get_logged_user');
+      
+      if (response.data && response.data.message && response.data.message !== 'Guest') {
+        return { 
+          authenticated: true, 
+          user: response.data.message 
+        };
+      } else {
+        // User is guest, clear local storage
+        localStorage.removeItem('frappe_user');
+        localStorage.removeItem('frappe_session');
+        return { authenticated: false, error: 'Not authenticated' };
+      }
+    } catch (error) {
+      // Clear stored user data if session is invalid
+      if (axios.isAxiosError(error) && (error.response?.status === 403 || error.response?.status === 401)) {
+        localStorage.removeItem('frappe_user');
+        localStorage.removeItem('frappe_session');
+      }
+      return { 
+        authenticated: false, 
+        error: axios.isAxiosError(error) ? (error.response?.data?.message || error.message) : (error as Error).message 
+      };
+    }
+  },
+
+  // Get user info - with better error handling
+  getUserInfo: async () => {
+    try {
+      const response = await frappeClient.get('/api/method/frappe.auth.get_logged_user');
       return response.data;
     } catch (error) {
       // If we get 403, user is not authenticated
       if (axios.isAxiosError(error) && (error.response?.status === 403 || error.response?.status === 401)) {
         localStorage.removeItem('frappe_user');
+        localStorage.removeItem('frappe_session');
       }
       throw error;
     }
   },
+
+  // Lead operations with better error handling
+  getAllLeads: async () => {
+    try {
+      const response = await frappeClient.get('/api/resource/Lead');
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error) && (error.response?.status === 403 || error.response?.status === 401)) {
+        localStorage.removeItem('frappe_user');
+        localStorage.removeItem('frappe_session');
+        throw new Error('Session expired. Please login again.');
+      }
+      throw error;
+    }
+  },
+
   getLeadById: async (leadId: string) => {
     try {
-      const response = await frappeClient.get(`api/resource/Lead/${leadId}`);
+      const response = await frappeClient.get(`/api/resource/Lead/${leadId}`);
       return response.data;
     } catch (error) {
-      // If we get 403, user is not authenticated
       if (axios.isAxiosError(error) && (error.response?.status === 403 || error.response?.status === 401)) {
         localStorage.removeItem('frappe_user');
+        localStorage.removeItem('frappe_session');
+        throw new Error('Session expired. Please login again.');
       }
       throw error;
     }
   },
 
-  createLead: async (leadData: Record<string, unknown>) => {
+  createLead: async (leadData: any) => {
     try {
-      const response = await frappeClient.post('api/resource/Lead', leadData);
+      const response = await frappeClient.post('/api/resource/Lead', leadData);
       return response.data;
     } catch (error) {
-      // If we get 403, user is not authenticated
       if (axios.isAxiosError(error) && (error.response?.status === 403 || error.response?.status === 401)) {
         localStorage.removeItem('frappe_user');
+        localStorage.removeItem('frappe_session');
+        throw new Error('Session expired. Please login again.');
       }
       throw error;
     }
   },
 
-  updateLead: async (leadId: string, leadData: Record<string, unknown>) => {
+  updateLead: async (leadId: string, leadData: any) => {
     try {
-      const response = await frappeClient.put(`api/resource/Lead/${leadId}`, leadData);
+      const response = await frappeClient.put(`/api/resource/Lead/${leadId}`, leadData);
       return response.data;
     } catch (error) {
-      // If we get 403, user is not authenticated
       if (axios.isAxiosError(error) && (error.response?.status === 403 || error.response?.status === 401)) {
         localStorage.removeItem('frappe_user');
+        localStorage.removeItem('frappe_session');
+        throw new Error('Session expired. Please login again.');
       }
       throw error;
     }
   }
-
-
-
-
-
-
-  // // Generic document operations
-  // getDoc: async (doctype: string, name: string) => {
-  //   try {
-  //     const response = await frappeClient.get(`/api/resource/${doctype}/${name}`);
-  //     return response.data;
-  //   } catch (error) {
-  //     console.error(`Error fetching ${doctype}/${name}:`, error.response?.data || error.message);
-  //     throw error;
-  //   }
-  // },
-
-  //   createDoc: async (doctype: string, data: Record<string, any>) => {
-  //   try {
-  //     const response = await frappeClient.post(`/api/resource/${doctype}`, data);
-  //     return response.data;
-  //   } catch (error) {
-  //     if (axios.isAxiosError(error)) {
-  //       console.error(`Error creating ${doctype}:`, error.response?.data || error.message);
-  //     } else {
-  //       console.error(`Error creating ${doctype}:`, (error as Error).message || error);
-  //     }
-  //     throw error;
-  //   }
-  // },
-
-  // updateDoc: async (doctype, name, data) => {
-  //   try {
-  //     const response = await frappeClient.put(`/api/resource/${doctype}/${name}`, data);
-  //     return response.data;
-  //   } catch (error) {
-  //     console.error(`Error updating ${doctype}/${name}:`, error.response?.data || error.message);
-  //     throw error;
-  //   }
-  // },
-
-  // deleteDoc: async (doctype, name) => {
-  //   try {
-  //     const response = await frappeClient.delete(`/api/resource/${doctype}/${name}`);
-  //     return response.data;
-  //   } catch (error) {
-  //     console.error(`Error deleting ${doctype}/${name}:`, error.response?.data || error.message);
-  //     throw error;
-  //   }
-  // },
-
-  // // Get list of documents
-  // getDocList: async (doctype, filters = {}, fields = [], limit = 20, start = 0) => {
-  //   try {
-  //     const params = {
-  //       fields: JSON.stringify(fields),
-  //       filters: JSON.stringify(filters),
-  //       limit_start: start,
-  //       limit_page_length: limit,
-  //     };
-      
-  //     const response = await frappeClient.get(`/api/resource/${doctype}`, { params });
-  //     return response.data;
-  //   } catch (error) {
-  //     console.error(`Error fetching ${doctype} list:`, error.response?.data || error.message);
-  //     throw error;
-  //   }
-  // },
-
-  // // Call custom server methods
-  // callMethod: async (method, args = {}) => {
-  //   try {
-  //     const response = await frappeClient.post(`/api/method/${method}`, args);
-  //     return response.data;
-  //   } catch (error) {
-  //     console.error(`Error calling method ${method}:`, error.response?.data || error.message);
-  //     throw error;
-  //   }
-  // },
-
-  // // File upload
-  // uploadFile: async (file, doctype = null, docname = null) => {
-  //   try {
-  //     const formData = new FormData();
-  //     formData.append('file', file);
-  //     if (doctype) formData.append('doctype', doctype);
-  //     if (docname) formData.append('docname', docname);
-
-  //     const response = await frappeClient.post('/api/method/upload_file', formData, {
-  //       headers: {
-  //         'Content-Type': 'multipart/form-data',
-  //       },
-  //     });
-  //     return response.data;
-  //   } catch (error) {
-  //     console.error('File upload error:', error.response?.data || error.message);
-  //     throw error;
-  //   }
-  // },
 };
 
 export default frappeClient;

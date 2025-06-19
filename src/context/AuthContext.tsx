@@ -98,14 +98,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setError(null);
       
       const response = await frappeAPI.login(username, password);
+      console.log('Login response:', response);
       
-      if (response.message === 'Logged In') {
+      if (response.data.message === 'Logged In') {
         // After successful login, get complete user info
         try {
           const userInfo = await frappeAPI.getUserInfo();
           const userData = {
             username: userInfo.message || username,
-            full_name: response.full_name || userInfo.full_name || 'User'
+            full_name: response.data.full_name || userInfo.full_name || 'User'
           };
           setUser(userInfo.message || username);
           
@@ -118,14 +119,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           // Set basic user info from login response
           const basicUserData = {
             username: username,
-            full_name: response.full_name || 'User'
+            full_name: response.data.full_name || 'User'
           };
           setUser(username);
           localStorage.setItem('frappe_user', JSON.stringify(basicUserData));
           return { success: true, user: basicUserData };
         }
       } else {
-        throw new Error(response.message || 'Invalid login response');
+        throw new Error(response.data.message || 'Invalid login response');
       }
     } catch (error) {
       console.error('Login error:', error);
