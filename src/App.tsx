@@ -141,11 +141,13 @@ import {
 } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import LoginPage from "./components/auth/Login";
-import HomePage from "./components/pages/Homepage";
+// import HomePage from "./components/pages/Homepage";
 import { Loader2 } from "lucide-react";
 import type { ReactNode } from "react";
 import SalesDashboard from "./components/pages/Dashboard";
 import { LeadsProvider } from "./context/LeadContext";
+
+import { Toaster } from "react-hot-toast";
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -197,8 +199,10 @@ function AppRoutes() {
   return (
     <Router>
       <Routes>
+        {/* Redirect root to login */}
+        <Route path="/" element={<Navigate to="/login" replace />} />
+        
         {/* Public Routes */}
-        <Route path="/" element={<HomePage />} />
         <Route
           path="/login"
           element={
@@ -219,7 +223,7 @@ function AppRoutes() {
         />
 
         {/* Catch all route */}
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </Router>
   );
@@ -227,10 +231,30 @@ function AppRoutes() {
 
 function App() {
   return (
-    <AuthProvider>
+     <AuthProvider>
       <LeadsProvider>
         <div className="App">
           <AppRoutes />
+          {/* Add the Toaster component here */}
+          <Toaster 
+            position="top-right"
+            toastOptions={{
+              className: '',
+              style: {
+                border: '1px solid #713200',
+                padding: '16px',
+                color: '#713200',
+
+              },
+              // Customize Tailwind classes
+              success: {
+                className: 'border border-green-500 bg-green-100 text-green-700',
+              },
+              error: {
+                className: 'border border-red-500 bg-red-100 text-red-700',
+              },
+            }}
+          />
         </div>
       </LeadsProvider>
     </AuthProvider>

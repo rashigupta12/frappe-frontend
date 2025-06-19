@@ -102,7 +102,7 @@ const InquiryPage = () => {
   const sections: FormSection[] = [
     {
       id: "contact",
-      title: "Contact Information",
+      title: "Customer Details",
       icon: <Phone className="h-4 w-4" />,
       completed:
         !!formData.lead_name && !!formData.email_id && !!formData.mobile_no,
@@ -171,7 +171,6 @@ const InquiryPage = () => {
       custom_map_data: "",
       custom_building_number: "",
       custom_alternative_inspection_time: "",
-      
     });
   };
 
@@ -218,124 +217,133 @@ const InquiryPage = () => {
     resetForm();
   };
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
 
+    if (!formData.lead_name) {
+      alert("Name is required");
+      return;
+    }
+    if (!formData.email_id) {
+      alert("Email is required");
+      return;
+    }
+    if (!formData.mobile_no) {
+      alert("Mobile number is required");
+      return;
+    }
+    if (!formData.custom_job_type) {
+      alert("Job type is required");
+      return;
+    }
 
-const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
+    try {
+      // Create a copy of form data for submission
+      const submissionData = { ...formData };
 
-  if (!formData.lead_name) {
-    alert("Name is required");
-    return;
-  }
-  if (!formData.email_id) {
-    alert("Email is required");
-    return;
-  }
-  if (!formData.mobile_no) {
-    alert("Mobile number is required");
-    return;
-  }
-  if (!formData.custom_job_type) {
-    alert("Job type is required");
-    return;
-  }
+      // Helper function to safely extract date string from Date object or string
+      const getDateString = (
+        date: string | Date | null | undefined
+      ): string => {
+        if (!date) return "";
 
-  try {
-    // Create a copy of form data for submission
-    const submissionData = { ...formData };
-    
-    // Helper function to safely extract date string from Date object or string
-    const getDateString = (date: string | Date | null | undefined): string => {
-      if (!date) return "";
-      
-      if (typeof date === "string") {
-        // If it's already a string, check if it's just a date (YYYY-MM-DD) or full datetime
-        if (date.includes(' ')) {
-          // It's already a datetime string, extract just the date part
-          return date.split(' ')[0];
+        if (typeof date === "string") {
+          // If it's already a string, check if it's just a date (YYYY-MM-DD) or full datetime
+          if (date.includes(" ")) {
+            // It's already a datetime string, extract just the date part
+            return date.split(" ")[0];
+          }
+          // It's just a date string
+          return date;
         }
-        // It's just a date string
-        return date;
+
+        // It's a Date object
+        return date.toISOString().split("T")[0];
+      };
+
+      // Helper function to format datetime properly
+      const formatDateTime = (dateStr: string, timeStr: string): string => {
+        if (!dateStr || !timeStr) return "";
+
+        // Ensure time has seconds format (HH:MM:SS)
+        const time =
+          timeStr.includes(":") && timeStr.split(":").length === 2
+            ? `${timeStr}:00`
+            : timeStr;
+
+        // Format: YYYY-MM-DD HH:MM:SS
+        return `${dateStr} ${time}`;
+      };
+
+      // Helper function to format date properly for date-only fields
+      const formatDate = (date: string | Date | null | undefined): string => {
+        if (!date) return "";
+        return getDateString(date);
+      };
+
+      // Handle preferred inspection datetime
+      if (
+        formData.custom_preferred_inspection_time &&
+        formData.custom_preferred_inspection_date
+      ) {
+        const dateStr = getDateString(
+          formData.custom_preferred_inspection_date
+        );
+        submissionData.custom_preferred_inspection_time = formatDateTime(
+          dateStr,
+          formData.custom_preferred_inspection_time
+        );
+      } else {
+        // Clear the field if incomplete
+        submissionData.custom_preferred_inspection_time = "";
       }
-      
-      // It's a Date object
-      return date.toISOString().split("T")[0];
-    };
 
-    // Helper function to format datetime properly
-    const formatDateTime = (dateStr: string, timeStr: string): string => {
-      if (!dateStr || !timeStr) return "";
-      
-      // Ensure time has seconds format (HH:MM:SS)
-      const time = timeStr.includes(':') && timeStr.split(':').length === 2 
-        ? `${timeStr}:00` 
-        : timeStr;
-      
-      // Format: YYYY-MM-DD HH:MM:SS
-      return `${dateStr} ${time}`;
-    };
+      // Handle alternative inspection datetime
+      if (
+        formData.custom_alternative_inspection_time &&
+        formData.custom_alternative_inspection_date
+      ) {
+        const dateStr = getDateString(
+          formData.custom_alternative_inspection_date
+        );
+        submissionData.custom_alternative_inspection_time = formatDateTime(
+          dateStr,
+          formData.custom_alternative_inspection_time
+        );
+      } else {
+        // Clear the field if incomplete
+        submissionData.custom_alternative_inspection_time = "";
+      }
 
-    // Helper function to format date properly for date-only fields
-    const formatDate = (date: string | Date | null | undefined): string => {
-      if (!date) return "";
-      return getDateString(date);
-    };
-    
-    // Handle preferred inspection datetime
-    if (formData.custom_preferred_inspection_time && formData.custom_preferred_inspection_date) {
-      const dateStr = getDateString(formData.custom_preferred_inspection_date);
-      submissionData.custom_preferred_inspection_time = formatDateTime(
-        dateStr,
-        formData.custom_preferred_inspection_time
+      // Handle date-only fields
+      submissionData.custom_preferred_inspection_date = formatDate(
+        formData.custom_preferred_inspection_date
       );
-    } else {
-      // Clear the field if incomplete
-      submissionData.custom_preferred_inspection_time = "";
-    }
-    
-    // Handle alternative inspection datetime
-    if (formData.custom_alternative_inspection_time && formData.custom_alternative_inspection_date) {
-      const dateStr = getDateString(formData.custom_alternative_inspection_date);
-      submissionData.custom_alternative_inspection_time = formatDateTime(
-        dateStr,
-        formData.custom_alternative_inspection_time
+      submissionData.custom_alternative_inspection_date = formatDate(
+        formData.custom_alternative_inspection_date
       );
-    } else {
-      // Clear the field if incomplete
-      submissionData.custom_alternative_inspection_time = "";
+
+      // Debug: Log the formatted data before submission
+      console.log("Submission data:", {
+        preferred_date: submissionData.custom_preferred_inspection_date,
+        preferred_datetime: submissionData.custom_preferred_inspection_time,
+        alternative_date: submissionData.custom_alternative_inspection_date,
+        alternative_datetime: submissionData.custom_alternative_inspection_time,
+      });
+
+      if (currentInquiry?.name) {
+        // Update existing lead
+        await updateLead(currentInquiry.name, submissionData);
+      } else {
+        // Create new lead
+        await createLead(submissionData);
+      }
+
+      closeSidebar();
+    } catch (err) {
+      console.error("Form submission error:", err);
     }
-
-    // Handle date-only fields
-    submissionData.custom_preferred_inspection_date = formatDate(formData.custom_preferred_inspection_date);
-    submissionData.custom_alternative_inspection_date = formatDate(formData.custom_alternative_inspection_date);
-
-    // Debug: Log the formatted data before submission
-    console.log('Submission data:', {
-      preferred_date: submissionData.custom_preferred_inspection_date,
-      preferred_datetime: submissionData.custom_preferred_inspection_time,
-      alternative_date: submissionData.custom_alternative_inspection_date,
-      alternative_datetime: submissionData.custom_alternative_inspection_time,
-    });
-
-    if (currentInquiry?.name) {
-      // Update existing lead
-      await updateLead(currentInquiry.name, submissionData);
-    } else {
-      // Create new lead
-      await createLead(submissionData);
-    }
-
-    closeSidebar();
-  } catch (err) {
-    console.error("Form submission error:", err);
-    alert(
-      "Error submitting form: " +
-        (err && typeof err === "object" && "message" in err
-          ? (err as { message?: string }).message
-          : String(err))
-    );
-  }
-};
+  };
 
   const formatDate = (date?: Date | string): string => {
     if (!date) return "-";
@@ -754,6 +762,36 @@ const handleSubmit = async (e: React.FormEvent) => {
                               </SelectContent>
                             </Select>
                           </div>
+                          {/* Project Urgency */}
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Project Urgency
+                            </label>
+                            <Select
+                              value={formData.custom_project_urgency || ""}
+                              onValueChange={(value) =>
+                                handleSelectChange(
+                                  "custom_project_urgency",
+                                  value
+                                )
+                              }
+                            >
+                              <SelectTrigger className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                                <SelectValue placeholder="Select urgency" />
+                              </SelectTrigger>
+                              <SelectContent className="bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                                {urgencyOptions.map((option) => (
+                                  <SelectItem
+                                    key={option}
+                                    value={option}
+                                    className="px-4 py-2 text-sm text-gray-700 hover:bg-emerald-100 focus:bg-emerald-100 cursor-pointer"
+                                  >
+                                    {option}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
                         </div>
                       )}
 
@@ -815,37 +853,6 @@ const handleSubmit = async (e: React.FormEvent) => {
                                     className="px-4 py-2 text-sm text-gray-700 hover:bg-emerald-100 focus:bg-emerald-100 cursor-pointer"
                                   >
                                     {type}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-
-                          {/* Project Urgency */}
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Project Urgency
-                            </label>
-                            <Select
-                              value={formData.custom_project_urgency || ""}
-                              onValueChange={(value) =>
-                                handleSelectChange(
-                                  "custom_project_urgency",
-                                  value
-                                )
-                              }
-                            >
-                              <SelectTrigger className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                                <SelectValue placeholder="Select urgency" />
-                              </SelectTrigger>
-                              <SelectContent className="bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
-                                {urgencyOptions.map((option) => (
-                                  <SelectItem
-                                    key={option}
-                                    value={option}
-                                    className="px-4 py-2 text-sm text-gray-700 hover:bg-emerald-100 focus:bg-emerald-100 cursor-pointer"
-                                  >
-                                    {option}
                                   </SelectItem>
                                 ))}
                               </SelectContent>
@@ -925,15 +932,15 @@ const handleSubmit = async (e: React.FormEvent) => {
                       )}
 
                       {section.id === "inspection" && (
-                        <div className="grid grid-cols-2 md:grid-cols-2 gap-4">
-                          {/* Preferred Date */}
-                          <div>
+                        <div className="grid grid-cols-12 gap-4">
+                          {/* Preferred Date - 70% width */}
+                          <div className="col-span-8">
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Preferred Date
+                              Date
                             </label>
                             <Input
                               type="date"
-                              min={new Date().toISOString().split("T")[0]} // Disable past dates
+                              min={new Date().toISOString().split("T")[0]}
                               value={
                                 formData.custom_preferred_inspection_date
                                   ? new Date(
@@ -955,13 +962,13 @@ const handleSubmit = async (e: React.FormEvent) => {
                             />
                           </div>
 
-                          {/* Preferred Time */}
-                          <div>
+                          {/* Preferred Time - 30% width */}
+                          <div className="col-span-4">
                             <label
                               htmlFor="custom_preferred_inspection_time"
                               className="block text-sm font-medium text-gray-700 mb-1"
                             >
-                              Preferred Time
+                              Time
                             </label>
                             <Input
                               type="time"
@@ -971,57 +978,9 @@ const handleSubmit = async (e: React.FormEvent) => {
                                 formData.custom_preferred_inspection_time || ""
                               }
                               onChange={handleInputChange}
-                              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm  text-black shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-black shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
                             />
                           </div>
-
-                          {/* Alternative Date
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Alternative Date
-                            </label>
-                            <Input
-                              type="date"
-                              min={new Date().toISOString().split("T")[0]} // Disable past dates
-                              value={
-                                formData.custom_alternative_inspection_date
-                                  ? new Date(
-                                      formData.custom_alternative_inspection_date
-                                    )
-                                      .toISOString()
-                                      .split("T")[0]
-                                  : ""
-                              }
-                              onChange={(e) =>
-                                handleDateChange(
-                                  "custom_alternative_inspection_date",
-                                  e.target.value
-                                    ? new Date(e.target.value)
-                                    : undefined
-                                )
-                              }
-                            />
-                          </div> */}
-
-                          {/* Alternative Time */}
-                          {/* <div>
-                            <label
-                              htmlFor="custom_alternative_inspection_time"
-                              className="block text-sm font-medium text-gray-700 mb-1"
-                            >
-                              Alternative Time
-                            </label>
-                            <Input
-                              type="time"
-                              id="custom_alternative_inspection_time"
-                              name="custom_alternative_inspection_time"
-                              value={
-                                formData.custom_alternative_inspection_time ||
-                                ""
-                              }
-                              onChange={handleInputChange}
-                            />
-                          </div> */}
                         </div>
                       )}
 

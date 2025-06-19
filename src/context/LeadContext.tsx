@@ -2,6 +2,7 @@
 // src/contexts/LeadsContext.tsx
 import React, { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
 import { frappeAPI } from '../api/frappeClient';
+import {toast} from 'react-hot-toast';
 
 
 // Define the Lead interface based on your API response
@@ -157,6 +158,7 @@ export const LeadsProvider: React.FC<LeadsProviderProps> = ({ children }) => {
     try {
       const response = await frappeAPI.getLeadById(leadId);
       return response.data;
+      // toast.success(`Lead ${leadId} fetched successfully!`);
     } catch (err) {
       console.error(`Error fetching lead ${leadId}:`, err);
       const errorMessage = err instanceof Error ? err.message : `Failed to fetch lead ${leadId}`;
@@ -190,15 +192,18 @@ export const LeadsProvider: React.FC<LeadsProviderProps> = ({ children }) => {
         custom_alternative_inspection_date: processDate(leadData.custom_alternative_inspection_date),
       };
 
+
       console.log("Creating lead with data:", processedData);
       
       const response = await frappeAPI.createLead(processedData);
+      toast.success('Lead created successfully!');
       
       // Refresh leads list
       await fetchLeads();
       
       return response.data;
     } catch (err) {
+      toast.error('Failed to create lead. Please try again.');
       console.error("Error creating lead:", err);
       const errorMessage = err instanceof Error ? err.message : "Failed to create lead";
       setError(errorMessage);
@@ -223,12 +228,14 @@ export const LeadsProvider: React.FC<LeadsProviderProps> = ({ children }) => {
       console.log(`Updating lead ${leadId} with data:`, processedData);
       
       const response = await frappeAPI.updateLead(leadId, processedData);
+      toast.success(`Lead  updated successfully!`);
       
       // Refresh leads list
       await fetchLeads();
       
       return response.data;
     } catch (err) {
+      toast.error(`Failed to update lead ${leadId}. Please try again.`);
       console.error(`Error updating lead ${leadId}:`, err);
       const errorMessage = err instanceof Error ? err.message : `Failed to update lead ${leadId}`;
       setError(errorMessage);

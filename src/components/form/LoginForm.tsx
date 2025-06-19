@@ -12,6 +12,8 @@ import { FormError } from "./form-error";
 import { FormSuccess } from "./form-success";
 import { useAuth } from "../../context/AuthContext";
 import { Navigate, Link } from 'react-router-dom';
+import { toast } from 'react-hot-toast';
+
 
 // Define form schema
 const formSchema = z.object({
@@ -54,12 +56,16 @@ function LoginForm() {
       const result = await login(values.email, values.password);
       
       if (result.success) {
+        toast.success('Login successfully!');
+        
         setSuccess("Login successful!");
         // Navigation will happen automatically due to isAuthenticated check
       } else {
+        toast.error('Login failed. Please check your credentials.');
         setError(result.error || "Login failed");
       }
     } catch (err) {
+      toast.error('Login failed. Invalid credentials.');
       setError("Invalid credentials");
     } finally {
       setIsPending(false);
