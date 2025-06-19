@@ -1,7 +1,7 @@
-/* eslint-disable no-unused-vars */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // src/context/AuthContext.tsx
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { frappeAPI } from '../api/frappeClient'; // Adjust the import path as necessary
+import { frappeAPI } from '../api/frappeClient';
 
 interface AuthUser {
   username: string;
@@ -52,40 +52,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(true);
       setError(null);
       
-      // First check localStorage for existing user data
-      const storedUser = localStorage.getItem('frappe_user');
-      if (storedUser) {
-        try {
-          const userData = JSON.parse(storedUser);
-          setUser(userData.username);
-        } catch (parseError) {
-          console.error('Error parsing stored user data:', parseError);
-          localStorage.removeItem('frappe_user');
-        }
-      }
-      
-      // Always check with the server since Frappe uses session cookies
+      // Check session using the improved method
       const sessionCheck = await frappeAPI.checkSession();
       
       if (sessionCheck.authenticated) {
-        // Session is valid, set user data
         setUser(sessionCheck.user);
-        
-        // Store basic info in localStorage for UI purposes
-        const userData = {
-          username: sessionCheck.user,
-          full_name: sessionCheck.user // You can enhance this with more user data
-        };
-        localStorage.setItem('frappe_user', JSON.stringify(userData));
       } else {
-        // Session is invalid, clear everything
         setUser(null);
-        localStorage.removeItem('frappe_user');
+        // Don't set error for normal unauthenticated state
+        if (sessionCheck.error && !sessionCheck.error.includes('No stored user data')) {
+          console.warn('Session check warning:', sessionCheck.error);
+        }
       }
     } catch (error) {
       console.error('Auth check failed:', error);
       setUser(null);
-      localStorage.removeItem('frappe_user');
       setError('Authentication check failed');
     } finally {
       setLoading(false);
@@ -100,53 +81,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const response = await frappeAPI.login(username, password);
       console.log('Login response:', response);
       
-      if (response.data.message === 'Logged In') {
-        // After successful login, get complete user info
-        try {
-          const userInfo = await frappeAPI.getUserInfo();
-          const userData = {
-            username: userInfo.message || username,
-            full_name: response.data.full_name || userInfo.full_name || 'User'
-          };
-          setUser(userInfo.message || username);
-          
-          // Store user data in localStorage
-          localStorage.setItem('frappe_user', JSON.stringify(userData));
-          
-          return { success: true, user: userData };
-        } catch (userInfoError) {
-          console.error('Failed to get user info after login:', userInfoError);
-          // Set basic user info from login response
-          const basicUserData = {
-            username: username,
-            full_name: response.data.full_name || 'User'
-          };
-          setUser(username);
-          localStorage.setItem('frappe_user', JSON.stringify(basicUserData));
-          return { success: true, user: basicUserData };
-        }
+      if (response.success && response.user) {
+        setUser(response.user.username);
+        return { success: true, user: response.user };
       } else {
-        throw new Error(response.data.message || 'Invalid login response');
+        throw new Error(response.error || 'Login failed');
       }
     } catch (error) {
       console.error('Login error:', error);
       let errorMessage = 'Login failed. Please check your credentials.';
       
-      interface ErrorWithResponse {
-        response?: {
-          data?: {
-            message?: string;
-          };
-        };
-        message?: string;
-      }
-      
-      const err = error as ErrorWithResponse;
-      if (typeof error === 'object' && error !== null) {
-        if ('response' in err && typeof err.response?.data?.message === 'string') {
-          errorMessage = err.response!.data!.message!;
-        } else if ('message' in err && typeof err.message === 'string') {
-          errorMessage = err.message!;
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (typeof error === 'object' && error !== null) {
+        const err = error as any;
+        if (err.response?.data?.message) {
+          errorMessage = err.response.data.message;
+        } else if (err.message) {
+          errorMessage = err.message;
         }
       }
       
@@ -168,7 +120,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } finally {
       setUser(null);
       setError(null);
-      localStorage.removeItem('frappe_user');
       setLoading(false);
     }
   };

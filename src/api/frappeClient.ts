@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // src/api/frappeClient.ts
 import axios from 'axios';
 
@@ -15,7 +16,6 @@ const frappeClient = axios.create({
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
-    // Remove unsafe headers - browsers set these automatically
   }
 });
 
@@ -27,8 +27,7 @@ frappeClient.interceptors.request.use(
       console.log('Making request via Vite proxy:', config.url);
     }
     
-    // DO NOT manually set Origin or Referer headers - browsers handle this
-    // Remove any unsafe headers that might cause issues
+    // Don't manually set browser-controlled headers
     delete config.headers['Origin'];
     delete config.headers['Referer'];
     
@@ -43,6 +42,9 @@ frappeClient.interceptors.response.use(
     // Log successful responses in development
     if (isDevelopment) {
       console.log('API Response:', response.status, response.config.url);
+      if (response.headers['set-cookie']) {
+        console.log('Cookies received:', response.headers['set-cookie']);
+      }
     }
     return response;
   },
@@ -80,7 +82,7 @@ export const frappeAPI = {
     }
   },
 
-  // Authentication with better session handling
+  // Enhanced login with better session handling
   login: async (username: string, password: string) => {
     try {
       // Clear any existing session data
@@ -96,50 +98,35 @@ export const frappeAPI = {
       
       console.log('Login response:', response.data);
       console.log('Response status:', response.status);
-      console.log('Set-Cookie headers:', response.headers['set-cookie']);
+      console.log('Response headers:', response.headers);
       
       // Check for successful login
       if (response.data.message === 'Logged In' || response.status === 200) {
-        const userData: {
-          username: string;
-          full_name: string;
-          authenticated: boolean;
-          loginTime: number;
-          user_info?: unknown;
-        } = {
+        const userData = {
           username: username,
           full_name: response.data.full_name || response.data.user || 'User',
           authenticated: true,
           loginTime: Date.now()
         };
         
+        // Store user data
         localStorage.setItem('frappe_user', JSON.stringify(userData));
         
-        // Wait a moment for cookies to be set, then verify session
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        try {
-          const sessionCheck = await frappeClient.get('/api/method/frappe.auth.get_logged_user');
-          console.log('Session verification after login:', sessionCheck.data);
-          
-          if (sessionCheck.data.message && sessionCheck.data.message !== 'Guest') {
-            userData.user_info = sessionCheck.data.message;
-            localStorage.setItem('frappe_user', JSON.stringify(userData));
-            return { success: true, data: response.data, user: userData };
-          } else {
-            console.error('Session verification failed - user is Guest');
-            return { success: false, error: 'Session not established properly' };
+        // For production builds, we need to handle session differently
+        // since cookies might not work across domains
+        if (!isDevelopment) {
+          // Try to get an API key or session token if available
+          try {
+            const sessionResponse = await frappeClient.get('/api/method/frappe.sessions.get_csrf_token');
+            if (sessionResponse.data && sessionResponse.data.message) {
+              localStorage.setItem('frappe_csrf_token', sessionResponse.data.message);
+            }
+          } catch (csrfError) {
+            console.warn('Could not get CSRF token:', csrfError);
           }
-        } catch (sessionError) {
-          console.error('Session verification failed:', sessionError);
-          // Still return success if login succeeded, but warn about session
-          return { 
-            success: true, 
-            data: response.data, 
-            user: userData,
-            warning: 'Session verification failed but login succeeded'
-          };
         }
+        
+        return { success: true, data: response.data, user: userData };
       }
       
       return { success: false, data: response.data, error: 'Login failed' };
@@ -167,41 +154,66 @@ export const frappeAPI = {
       const response = await frappeClient.post('/api/method/logout');
       localStorage.removeItem('frappe_user');
       localStorage.removeItem('frappe_session');
+      localStorage.removeItem('frappe_csrf_token');
       return { success: true, data: response.data };
     } catch (error) {
       // Even if logout fails on server, clear local storage
       localStorage.removeItem('frappe_user');
       localStorage.removeItem('frappe_session');
+      localStorage.removeItem('frappe_csrf_token');
       console.error('Logout error:', error);
       return { success: false, error: 'Logout failed but local session cleared' };
     }
   },
 
-  // Check if session is valid
+  // Simplified session check that doesn't rely on cookies for production
   checkSession: async () => {
     try {
-      const response = await frappeClient.get('/api/method/frappe.auth.get_logged_user');
-      
-      console.log('Session check response:', response.data);
-      
-      if (response.data && response.data.message && response.data.message !== 'Guest') {
-        return { 
-          authenticated: true, 
-          user: response.data.message 
-        };
-      } else {
-        // User is guest, clear local storage
-        localStorage.removeItem('frappe_user');
-        localStorage.removeItem('frappe_session');
-        return { authenticated: false, error: 'User is Guest' };
+      // First check if we have stored user data
+      const storedUser = localStorage.getItem('frappe_user');
+      if (!storedUser) {
+        return { authenticated: false, error: 'No stored user data' };
       }
+
+      let userData;
+      try {
+        userData = JSON.parse(storedUser);
+      } catch {
+        localStorage.removeItem('frappe_user');
+        return { authenticated: false, error: 'Invalid stored user data' };
+      }
+
+      // In development, try to verify with server
+      if (isDevelopment) {
+        try {
+          const response = await frappeClient.get('/api/method/frappe.auth.get_logged_user');
+          if (response.data && response.data.message && response.data.message !== 'Guest') {
+            return { authenticated: true, user: response.data.message };
+          }
+        } catch (error) {
+          console.warn('Session verification failed in development:', error);
+          // Fall back to stored data
+        }
+      }
+
+      // For production or if server check fails, rely on stored data with time check
+      const loginTime = userData.loginTime || 0;
+      const now = Date.now();
+      const sessionAge = now - loginTime;
+      const maxSessionAge = 24 * 60 * 60 * 1000; // 24 hours
+
+      if (sessionAge > maxSessionAge) {
+        localStorage.removeItem('frappe_user');
+        localStorage.removeItem('frappe_csrf_token');
+        return { authenticated: false, error: 'Session expired' };
+      }
+
+      return { authenticated: true, user: userData.username };
     } catch (error) {
       console.error('Session check failed:', error);
-      // Clear stored user data if session is invalid
-      if (axios.isAxiosError(error) && (error.response?.status === 403 || error.response?.status === 401)) {
-        localStorage.removeItem('frappe_user');
-        localStorage.removeItem('frappe_session');
-      }
+      localStorage.removeItem('frappe_user');
+      localStorage.removeItem('frappe_session');
+      localStorage.removeItem('frappe_csrf_token');
       return { 
         authenticated: false, 
         error: axios.isAxiosError(error) ? (error.response?.data?.message || error.message) : (error as Error).message 
@@ -209,76 +221,77 @@ export const frappeAPI = {
     }
   },
 
-  // Get user info
+  // Get user info with fallback to stored data
   getUserInfo: async () => {
     try {
-      const response = await frappeClient.get('/api/method/frappe.auth.get_logged_user');
-      return response.data;
+      // Try server first if in development
+      if (isDevelopment) {
+        const response = await frappeClient.get('/api/method/frappe.auth.get_logged_user');
+        return response.data;
+      }
+      
+      // For production, return stored user info
+      const storedUser = localStorage.getItem('frappe_user');
+      if (storedUser) {
+        const userData = JSON.parse(storedUser);
+        return { message: userData.username, full_name: userData.full_name };
+      }
+      
+      throw new Error('No user information available');
     } catch (error) {
       if (axios.isAxiosError(error) && (error.response?.status === 403 || error.response?.status === 401)) {
         localStorage.removeItem('frappe_user');
         localStorage.removeItem('frappe_session');
+        localStorage.removeItem('frappe_csrf_token');
         throw new Error('Session expired. Please login again.');
       }
       throw error;
     }
   },
 
-  // Lead operations with better error handling
-  getAllLeads: async () => {
+  // Enhanced API methods with better error handling
+  makeAuthenticatedRequest: async (method: 'GET' | 'POST' | 'PUT' | 'DELETE', url: string, data?: any) => {
     try {
-      const response = await frappeClient.get('/api/resource/Lead');
+      const config: any = { method, url };
+      
+      // Add CSRF token if available
+      const csrfToken = localStorage.getItem('frappe_csrf_token');
+      if (csrfToken) {
+        config.headers = { 'X-Frappe-CSRF-Token': csrfToken };
+      }
+      
+      if (data) {
+        config.data = data;
+      }
+      
+      const response = await frappeClient(config);
       return response.data;
     } catch (error) {
       if (axios.isAxiosError(error) && (error.response?.status === 403 || error.response?.status === 401)) {
         localStorage.removeItem('frappe_user');
         localStorage.removeItem('frappe_session');
+        localStorage.removeItem('frappe_csrf_token');
         throw new Error('Session expired. Please login again.');
       }
       throw error;
     }
+  },
+
+  // Lead operations using the enhanced request method
+  getAllLeads: async () => {
+    return await frappeAPI.makeAuthenticatedRequest('GET', '/api/resource/Lead');
   },
 
   getLeadById: async (leadId: string) => {
-    try {
-      const response = await frappeClient.get(`/api/resource/Lead/${leadId}`);
-      return response.data;
-    } catch (error) {
-      if (axios.isAxiosError(error) && (error.response?.status === 403 || error.response?.status === 401)) {
-        localStorage.removeItem('frappe_user');
-        localStorage.removeItem('frappe_session');
-        throw new Error('Session expired. Please login again.');
-      }
-      throw error;
-    }
+    return await frappeAPI.makeAuthenticatedRequest('GET', `/api/resource/Lead/${leadId}`);
   },
 
   createLead: async (leadData: Record<string, unknown>) => {
-    try {
-      const response = await frappeClient.post('/api/resource/Lead', leadData);
-      return response.data;
-    } catch (error) {
-      if (axios.isAxiosError(error) && (error.response?.status === 403 || error.response?.status === 401)) {
-        localStorage.removeItem('frappe_user');
-        localStorage.removeItem('frappe_session');
-        throw new Error('Session expired. Please login again.');
-      }
-      throw error;
-    }
+    return await frappeAPI.makeAuthenticatedRequest('POST', '/api/resource/Lead', leadData);
   },
 
   updateLead: async (leadId: string, leadData: Record<string, unknown>) => {
-    try {
-      const response = await frappeClient.put(`/api/resource/Lead/${leadId}`, leadData);
-      return response.data;
-    } catch (error) {
-      if (axios.isAxiosError(error) && (error.response?.status === 403 || error.response?.status === 401)) {
-        localStorage.removeItem('frappe_user');
-        localStorage.removeItem('frappe_session');
-        throw new Error('Session expired. Please login again.');
-      }
-      throw error;
-    }
+    return await frappeAPI.makeAuthenticatedRequest('PUT', `/api/resource/Lead/${leadId}`, leadData);
   }
 };
 

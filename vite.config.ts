@@ -28,7 +28,6 @@ export default defineConfig({
           }
         ]
       },
-      // Fix: Remove duplicate and incorrect includeAssets
       includeAssets: ['logo.jpg', 'favicon.ico'],
       manifest: {
         "name": "EITS Services - Professional Home Solutions",
@@ -44,9 +43,9 @@ export default defineConfig({
         "categories": ["business", "utilities", "productivity"],
         "icons": [
           {
-            "src": "/logo.jpg", // Fix: Use relative paths, not external URLs
+            "src": "/logo.jpg",
             "sizes": "96x96",
-            "type": "image/jpeg", // Fix: Correct MIME type for JPEG
+            "type": "image/jpeg",
             "purpose": "any"
           },
           {
@@ -60,20 +59,6 @@ export default defineConfig({
             "sizes": "512x512",
             "type": "image/jpeg", 
             "purpose": "any maskable"
-          }
-        ],
-        "screenshots": [
-          {
-            "src": "/screenshot-mobile.png", // Use actual screenshots
-            "sizes": "640x1136",
-            "type": "image/png",
-            "form_factor": "narrow"
-          },
-          {
-            "src": "/screenshot-desktop.png", // Use actual screenshots
-            "sizes": "1024x768", 
-            "type": "image/png",
-            "form_factor": "wide"
           }
         ],
         "shortcuts": [
@@ -119,11 +104,6 @@ export default defineConfig({
   server: {
     port: 3000,
     host: true,
-    // Enable HTTPS for PWA testing on mobile devices
-    // https: true, // Set to true for proper PWA testing
-    // To enable HTTPS, provide key and cert files or use 'basic' for self-signed:
-    // https: { key: fs.readFileSync('path/to/key.pem'), cert: fs.readFileSync('path/to/cert.pem') },
-    // https: false, // Set to false or configure as needed
     proxy: {
       '/api': {
         target: 'https://eits.thebigocommunity.org',
@@ -157,9 +137,28 @@ export default defineConfig({
       }
     }
   },
+  preview: {
+    port: 4173,
+    host: true,
+    // Add CORS headers for preview mode
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cache-Control'
+    }
+  },
   build: {
     outDir: 'dist',
     sourcemap: true,
+    // Ensure proper chunking for better caching
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          axios: ['axios']
+        }
+      }
+    }
   },
   define: {
     __FRAPPE_BASE_URL__: JSON.stringify('https://eits.thebigocommunity.org')
