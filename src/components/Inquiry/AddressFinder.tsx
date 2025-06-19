@@ -45,6 +45,8 @@ const AddressFinder: React.FC<AddressFinderProps> = ({
   const [selectedLocation, setSelectedLocation] = useState<AddressSuggestion | null>(null);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [error, setError] = useState('');
+  console.log(error)
+  // console.log('AddressFinder initialValue:', initialValue);
   const [dropdownPosition, setDropdownPosition] = useState<'bottom' | 'top'>('bottom');
   const inputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
@@ -416,14 +418,6 @@ const AddressFinder: React.FC<AddressFinderProps> = ({
           ))}
         </div>
       )}
-
-      {/* Error message */}
-      {error && (
-        <div className="mt-1 p-2 text-xs text-red-700 bg-red-50 border border-red-200 rounded-md">
-          {error}
-        </div>
-      )}
-
       {/* Selected location info */}
       {selectedLocation && (
         <div className="mt-2 p-2 text-xs text-green-700 bg-green-50 border border-green-200 rounded-md">

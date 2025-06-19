@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import {
@@ -47,14 +45,8 @@ interface FormSection {
 }
 
 const InquiryPage = () => {
-  const {
-    leads,
-    loading,
-    error,
-    fetchLeads,
-    createLead,
-    updateLead,
-  } = useLeads();
+  const { leads, loading, error, fetchLeads, createLead, updateLead } =
+    useLeads();
   const [searchTerm, setSearchTerm] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [currentInquiry, setCurrentInquiry] = useState<Lead | null>(null);
@@ -79,6 +71,8 @@ const InquiryPage = () => {
     custom_preferred_inspection_time: "",
     custom_special_requirements: "",
     custom_map_data: "",
+    custom_building_number: "",
+    custom_alternative_inspection_time: "",
   });
 
   const jobTypes = [
@@ -175,6 +169,8 @@ const InquiryPage = () => {
       custom_preferred_inspection_time: "",
       custom_special_requirements: "",
       custom_map_data: "",
+      custom_building_number: "",
+      custom_alternative_inspection_time: "",
     });
   };
 
@@ -204,6 +200,9 @@ const InquiryPage = () => {
           inquiry.custom_preferred_inspection_time || "",
         custom_special_requirements: inquiry.custom_special_requirements || "",
         custom_map_data: inquiry.custom_map_data || "",
+        custom_building_number: inquiry.custom_building_number || "",
+        custom_alternative_inspection_time:
+          inquiry.custom_alternative_inspection_time || "",
       });
     } else {
       setCurrentInquiry(null);
@@ -277,6 +276,8 @@ const InquiryPage = () => {
         searchTerm.toLowerCase()
       )
   );
+
+  console.log("Filtered inquiries:", filteredInquiries);
 
   return (
     <div className="w-full">
@@ -442,11 +443,11 @@ const InquiryPage = () => {
                         {inquiry.custom_job_type}
                       </Badge>
                     </td>
-                    <td className="px-6 py-4 hidden md:table-cell">
+                    <td className="px-6 py-4">
                       <div className="flex items-center gap-1">
                         <MapPin className="h-4 w-4 text-gray-400" />
                         <span className="text-sm text-gray-600">
-                          
+                          {/* {JSON.parse(inquiry.custom_map_data).display_name} */}
                           {inquiry.custom_map_data || "Not specified"}
                         </span>
                       </div>
@@ -459,7 +460,7 @@ const InquiryPage = () => {
                         {inquiry.custom_budget_range || "Not specified"}
                       </Badge>
                     </td>
-                    <td className="px-6 py-4 hidden sm:table-cell">
+                    <td className="px-6 py-4 ">
                       <div className="flex items-center gap-1">
                         <Calendar className="h-4 w-4 text-gray-400" />
                         <span className="text-sm text-gray-600">
@@ -811,24 +812,18 @@ const InquiryPage = () => {
                           </div>
 
                           {/* Map Location */}
-                          {/* Map Location */}
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
                               Location
                             </label>
+
                             <AddressFinder
                               onSelect={(location) => {
                                 if (location) {
                                   setFormData((prev) => ({
                                     ...prev,
-                                    custom_map_data: JSON.stringify({
-                                      display_name: location.display_name,
-                                      clean_display_name:
-                                        location.clean_display_name,
-                                      lat: location.lat,
-                                      lon: location.lon,
-                                      address: location.address,
-                                    }),
+                                    // Store only the display_name as a simple string
+                                    custom_map_data: location.display_name,
                                   }));
                                 } else {
                                   setFormData((prev) => ({
@@ -837,19 +832,21 @@ const InquiryPage = () => {
                                   }));
                                 }
                               }}
-                              initialValue={
-                                formData.custom_map_data
-                                  ? JSON.parse(formData.custom_map_data)
-                                      .clean_display_name
-                                  : ""
-                              }
+                              initialValue={formData.custom_map_data || ""}
                             />
+
+                            {formData.custom_map_data && (
+                              <p className="mt-2 text-sm text-gray-600">
+                                <span className="font-medium">Selected:</span>{" "}
+                                {formData.custom_map_data}
+                              </p>
+                            )}
                           </div>
                         </div>
                       )}
 
                       {section.id === "inspection" && (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-2 md:grid-cols-2 gap-4">
                           {/* Preferred Date */}
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -878,6 +875,25 @@ const InquiryPage = () => {
                             />
                           </div>
 
+                          {/* Preferred Time */}
+                          <div>
+                            <label
+                              htmlFor="custom_preferred_inspection_time"
+                              className="block text-sm font-medium text-gray-700 mb-1"
+                            >
+                              Preferred Time
+                            </label>
+                            <Input
+                              type="time"
+                              id="custom_preferred_inspection_time"
+                              name="custom_preferred_inspection_time"
+                              value={
+                                formData.custom_preferred_inspection_time || ""
+                              }
+                              onChange={handleInputChange}
+                            />
+                          </div>
+
                           {/* Alternative Date */}
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -903,25 +919,6 @@ const InquiryPage = () => {
                                     : undefined
                                 )
                               }
-                            />
-                          </div>
-
-                          {/* Preferred Time */}
-                          <div>
-                            <label
-                              htmlFor="custom_preferred_inspection_time"
-                              className="block text-sm font-medium text-gray-700 mb-1"
-                            >
-                              Preferred Time
-                            </label>
-                            <Input
-                              type="time"
-                              id="custom_preferred_inspection_time"
-                              name="custom_preferred_inspection_time"
-                              value={
-                                formData.custom_preferred_inspection_time || ""
-                              }
-                              onChange={handleInputChange}
                             />
                           </div>
 

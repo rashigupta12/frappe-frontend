@@ -235,7 +235,7 @@ export const frappeAPI = {
   },
 
   getAllLeads: async () => {
-    return await frappeAPI.makeAuthenticatedRequest('GET', '/api/resource/Lead');
+    return await frappeAPI.makeAuthenticatedRequest('GET', '/api/resource/Lead?order_by=creation%20desc');
   },
 
   getLeadById: async (leadId: string) => {

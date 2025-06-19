@@ -47,6 +47,8 @@ export interface Lead {
   unsubscribed: number;
   blog_subscriber: number;
   doctype: string;
+  custom_building_number: string;
+  custom_alternative_inspection_time: string;
   notes: any[];
 }
 
@@ -73,6 +75,8 @@ export interface LeadFormData {
   company?: string;
   status?: string;
   qualification_status?: string;
+  custom_building_number?: string;
+  custom_alternative_inspection_time?: string;
   [key: string]: any;
 }
 
