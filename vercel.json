@@ -6,8 +6,8 @@
   "devCommand": "npm run dev",
   "rewrites": [
     {
-      "source": "/(.*)",
-      "destination": "https://eits.thebigocommunity.org"
+      "source": "/api/(.*)",
+      "destination": "https://eits.thebigocommunity.org/api/$1"
     }
   ]
 }

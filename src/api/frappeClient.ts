@@ -6,7 +6,7 @@ import axios from 'axios';
 const isDevelopment = import.meta.env.DEV;
 const FRAPPE_BASE_URL = isDevelopment 
   ? '' // Use relative URLs in development to leverage Vite proxy
-  : ''; // Direct URL for production
+  : ''; // Use relative URLs in production to leverage Vercel rewrite
 
 // Create axios instance with default config
 const frappeClient = axios.create({
@@ -22,10 +22,8 @@ const frappeClient = axios.create({
 // Add request interceptor
 frappeClient.interceptors.request.use(
   (config) => {
-    // In development, ensure we're using the proxy
-    if (isDevelopment && config.url && !config.url.startsWith('/api')) {
-      console.log('Making request via Vite proxy:', config.url);
-    }
+    // Log requests for debugging
+    console.log('Making request:', config.method?.toUpperCase(), config.url);
     
     // Don't manually set browser-controlled headers
     delete config.headers['Origin'];
@@ -39,12 +37,10 @@ frappeClient.interceptors.request.use(
 // Add response interceptor for error handling
 frappeClient.interceptors.response.use(
   (response) => {
-    // Log successful responses in development
-    if (isDevelopment) {
-      console.log('API Response:', response.status, response.config.url);
-      if (response.headers['set-cookie']) {
-        console.log('Cookies received:', response.headers['set-cookie']);
-      }
+    // Log successful responses
+    console.log('API Response:', response.status, response.config.url);
+    if (response.headers['set-cookie']) {
+      console.log('Cookies received:', response.headers['set-cookie']);
     }
     return response;
   },
@@ -66,7 +62,7 @@ frappeClient.interceptors.response.use(
   }
 );
 
-// Frappe API methods
+// Rest of your frappeAPI methods remain the same...
 export const frappeAPI = {
   // Test connection first
   testConnection: async () => {
@@ -98,7 +94,6 @@ export const frappeAPI = {
       
       console.log('Login response:', response.data);
       console.log('Response status:', response.status);
-      console.log('Response headers:', response.headers);
       
       // Check for successful login
       if (response.data.message === 'Logged In' || response.status === 200) {
@@ -112,31 +107,12 @@ export const frappeAPI = {
         // Store user data
         localStorage.setItem('frappe_user', JSON.stringify(userData));
         
-        // For production builds, we need to handle session differently
-        // since cookies might not work across domains
-        // if (!isDevelopment) {
-        //   // Try to get an API key or session token if available
-        //   try {
-        //     const sessionResponse = await frappeClient.get('/api/method/frappe.sessions.get_csrf_token');
-        //     if (sessionResponse.data && sessionResponse.data.message) {
-        //       localStorage.setItem('frappe_csrf_token', sessionResponse.data.message);
-        //     }
-        //   } catch (csrfError) {
-        //     console.warn('Could not get CSRF token:', csrfError);
-        //   }
-        // }
-        
         return { success: true, data: response.data, user: userData };
       }
       
       return { success: false, data: response.data, error: 'Login failed' };
     } catch (error) {
-      console.error('Login error details:', {
-        status: axios.isAxiosError(error) ? error.response?.status : undefined,
-        statusText: axios.isAxiosError(error) ? error.response?.statusText : undefined,
-        data: axios.isAxiosError(error) ? error.response?.data : undefined,
-        headers: axios.isAxiosError(error) ? error.response?.headers : undefined
-      });
+      console.error('Login error details:', error);
       
       if (axios.isAxiosError(error)) {
         const errorMessage = error.response?.data?.message || 
@@ -149,6 +125,7 @@ export const frappeAPI = {
     }
   },
 
+  // ... rest of your methods remain the same
   logout: async () => {
     try {
       const response = await frappeClient.post('/api/method/logout');
@@ -166,7 +143,6 @@ export const frappeAPI = {
     }
   },
 
-  // Simplified session check that doesn't rely on cookies for production
   checkSession: async () => {
     try {
       // First check if we have stored user data
@@ -183,16 +159,13 @@ export const frappeAPI = {
         return { authenticated: false, error: 'Invalid stored user data' };
       }
 
-
-        try {
-          const response = await frappeClient.get('/api/method/frappe.auth.get_logged_user');
-          if (response.data && response.data.message && response.data.message !== 'Guest') {
-            return { authenticated: true, user: response.data.message };
-          }
-        } catch (error) {
-          console.warn('Session verification failed in development:', error);
-          // Fall back to stored data
-        
+      try {
+        const response = await frappeClient.get('/api/method/frappe.auth.get_logged_user');
+        if (response.data && response.data.message && response.data.message !== 'Guest') {
+          return { authenticated: true, user: response.data.message };
+        }
+      } catch (error) {
+        console.warn('Session verification failed:', error);
       }
 
       // For production or if server check fails, rely on stored data with time check
@@ -220,23 +193,10 @@ export const frappeAPI = {
     }
   },
 
-  // Get user info with fallback to stored data
   getUserInfo: async () => {
     try {
-      // Try server first if in development
-      
-        const response = await frappeClient.get('/api/method/frappe.auth.get_logged_user');
-        return response.data;
-      
-      
-      // For production, return stored user info
-      // const storedUser = localStorage.getItem('frappe_user');
-      // if (storedUser) {
-      //   const userData = JSON.parse(storedUser);
-      //   return { message: userData.username, full_name: userData.full_name };
-      // }
-      
-      throw new Error('No user information available');
+      const response = await frappeClient.get('/api/method/frappe.auth.get_logged_user');
+      return response.data;
     } catch (error) {
       if (axios.isAxiosError(error) && (error.response?.status === 403 || error.response?.status === 401)) {
         localStorage.removeItem('frappe_user');
@@ -248,12 +208,10 @@ export const frappeAPI = {
     }
   },
 
-  // Enhanced API methods with better error handling
   makeAuthenticatedRequest: async (method: 'GET' | 'POST' | 'PUT' | 'DELETE', url: string, data?: any) => {
     try {
       const config: any = { method, url };
       
-      // Add CSRF token if available
       const csrfToken = localStorage.getItem('frappe_csrf_token');
       if (csrfToken) {
         config.headers = { 'X-Frappe-CSRF-Token': csrfToken };
@@ -276,7 +234,6 @@ export const frappeAPI = {
     }
   },
 
-  // Lead operations using the enhanced request method
   getAllLeads: async () => {
     return await frappeAPI.makeAuthenticatedRequest('GET', '/api/resource/Lead');
   },
