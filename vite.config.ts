@@ -140,7 +140,40 @@ export default defineConfig({
   preview: {
     port: 4173,
     host: true,
+    proxy: {
+      '/api': {
+        target: 'https://eits.thebigocommunity.org',
+        changeOrigin: true,
+        secure: true,
+        cookieDomainRewrite: {
+          '*': 'localhost'
+        },
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        configure: (proxy, _options) => {
+          proxy.on('error', (err, _req, _res) => {
+            console.log('🔴 Proxy error:', err.message);
+          });
+          proxy.on('proxyReq', (req, _res) => {
+            console.log('🔵 Sending Request:', req.method, req.path || '(no path)');
+            const cookieHeader = req.getHeader && req.getHeader('cookie');
+            if (cookieHeader) {
+              console.log('🍪 Cookies:', cookieHeader);
+            }
+          });
+          proxy.on('proxyRes', (proxyRes, req, _res) => {
+            console.log('🟢 Response:', proxyRes.statusCode, req.url);
+            if (proxyRes.headers['set-cookie']) {
+              console.log('🍪 Set-Cookie:', proxyRes.headers['set-cookie']);
+            }
+          });
+        },
+      }
+    },
     // Add CORS headers for preview mode
+    
     headers: {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
