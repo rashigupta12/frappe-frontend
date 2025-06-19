@@ -171,6 +171,7 @@ const InquiryPage = () => {
       custom_map_data: "",
       custom_building_number: "",
       custom_alternative_inspection_time: "",
+      
     });
   };
 
@@ -217,46 +218,124 @@ const InquiryPage = () => {
     resetForm();
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
 
-    if (!formData.lead_name) {
-      alert("Name is required");
-      return;
-    }
-    if (!formData.email_id) {
-      alert("Email is required");
-      return;
-    }
-    if (!formData.mobile_no) {
-      alert("Mobile number is required");
-      return;
-    }
-    if (!formData.custom_job_type) {
-      alert("Job type is required");
-      return;
-    }
 
-    try {
-      if (currentInquiry?.name) {
-        // Update existing lead
-        await updateLead(currentInquiry.name, formData);
-      } else {
-        // Create new lead
-        await createLead(formData);
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+
+  if (!formData.lead_name) {
+    alert("Name is required");
+    return;
+  }
+  if (!formData.email_id) {
+    alert("Email is required");
+    return;
+  }
+  if (!formData.mobile_no) {
+    alert("Mobile number is required");
+    return;
+  }
+  if (!formData.custom_job_type) {
+    alert("Job type is required");
+    return;
+  }
+
+  try {
+    // Create a copy of form data for submission
+    const submissionData = { ...formData };
+    
+    // Helper function to safely extract date string from Date object or string
+    const getDateString = (date: string | Date | null | undefined): string => {
+      if (!date) return "";
+      
+      if (typeof date === "string") {
+        // If it's already a string, check if it's just a date (YYYY-MM-DD) or full datetime
+        if (date.includes(' ')) {
+          // It's already a datetime string, extract just the date part
+          return date.split(' ')[0];
+        }
+        // It's just a date string
+        return date;
       }
+      
+      // It's a Date object
+      return date.toISOString().split("T")[0];
+    };
 
-      closeSidebar();
-    } catch (err) {
-      console.error("Form submission error:", err);
-      alert(
-        "Error submitting form: " +
-          (err && typeof err === "object" && "message" in err
-            ? (err as { message?: string }).message
-            : String(err))
+    // Helper function to format datetime properly
+    const formatDateTime = (dateStr: string, timeStr: string): string => {
+      if (!dateStr || !timeStr) return "";
+      
+      // Ensure time has seconds format (HH:MM:SS)
+      const time = timeStr.includes(':') && timeStr.split(':').length === 2 
+        ? `${timeStr}:00` 
+        : timeStr;
+      
+      // Format: YYYY-MM-DD HH:MM:SS
+      return `${dateStr} ${time}`;
+    };
+
+    // Helper function to format date properly for date-only fields
+    const formatDate = (date: string | Date | null | undefined): string => {
+      if (!date) return "";
+      return getDateString(date);
+    };
+    
+    // Handle preferred inspection datetime
+    if (formData.custom_preferred_inspection_time && formData.custom_preferred_inspection_date) {
+      const dateStr = getDateString(formData.custom_preferred_inspection_date);
+      submissionData.custom_preferred_inspection_time = formatDateTime(
+        dateStr,
+        formData.custom_preferred_inspection_time
       );
+    } else {
+      // Clear the field if incomplete
+      submissionData.custom_preferred_inspection_time = "";
     }
-  };
+    
+    // Handle alternative inspection datetime
+    if (formData.custom_alternative_inspection_time && formData.custom_alternative_inspection_date) {
+      const dateStr = getDateString(formData.custom_alternative_inspection_date);
+      submissionData.custom_alternative_inspection_time = formatDateTime(
+        dateStr,
+        formData.custom_alternative_inspection_time
+      );
+    } else {
+      // Clear the field if incomplete
+      submissionData.custom_alternative_inspection_time = "";
+    }
+
+    // Handle date-only fields
+    submissionData.custom_preferred_inspection_date = formatDate(formData.custom_preferred_inspection_date);
+    submissionData.custom_alternative_inspection_date = formatDate(formData.custom_alternative_inspection_date);
+
+    // Debug: Log the formatted data before submission
+    console.log('Submission data:', {
+      preferred_date: submissionData.custom_preferred_inspection_date,
+      preferred_datetime: submissionData.custom_preferred_inspection_time,
+      alternative_date: submissionData.custom_alternative_inspection_date,
+      alternative_datetime: submissionData.custom_alternative_inspection_time,
+    });
+
+    if (currentInquiry?.name) {
+      // Update existing lead
+      await updateLead(currentInquiry.name, submissionData);
+    } else {
+      // Create new lead
+      await createLead(submissionData);
+    }
+
+    closeSidebar();
+  } catch (err) {
+    console.error("Form submission error:", err);
+    alert(
+      "Error submitting form: " +
+        (err && typeof err === "object" && "message" in err
+          ? (err as { message?: string }).message
+          : String(err))
+    );
+  }
+};
 
   const formatDate = (date?: Date | string): string => {
     if (!date) return "-";
@@ -894,7 +973,7 @@ const InquiryPage = () => {
                             />
                           </div>
 
-                          {/* Alternative Date */}
+                          {/* Alternative Date
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
                               Alternative Date
@@ -920,10 +999,10 @@ const InquiryPage = () => {
                                 )
                               }
                             />
-                          </div>
+                          </div> */}
 
                           {/* Alternative Time */}
-                          <div>
+                          {/* <div>
                             <label
                               htmlFor="custom_alternative_inspection_time"
                               className="block text-sm font-medium text-gray-700 mb-1"
@@ -940,7 +1019,7 @@ const InquiryPage = () => {
                               }
                               onChange={handleInputChange}
                             />
-                          </div>
+                          </div> */}
                         </div>
                       )}
 
