@@ -100,9 +100,9 @@ const InquiryPage = () => {
   ];
   const urgencyOptions = [
     "Urgent (Within 1 week)",
-    "Normal",
-    "Flexible",
-    "Future Planning",
+    "Normal (Within 1 month)",
+    "Flexible (Within 3 months)",
+    "Future Planning (3+ months)",
   ];
 
   const sections: FormSection[] = [

@@ -114,17 +114,17 @@ export const frappeAPI = {
         
         // For production builds, we need to handle session differently
         // since cookies might not work across domains
-        if (!isDevelopment) {
-          // Try to get an API key or session token if available
-          try {
-            const sessionResponse = await frappeClient.get('/api/method/frappe.sessions.get_csrf_token');
-            if (sessionResponse.data && sessionResponse.data.message) {
-              localStorage.setItem('frappe_csrf_token', sessionResponse.data.message);
-            }
-          } catch (csrfError) {
-            console.warn('Could not get CSRF token:', csrfError);
-          }
-        }
+        // if (!isDevelopment) {
+        //   // Try to get an API key or session token if available
+        //   try {
+        //     const sessionResponse = await frappeClient.get('/api/method/frappe.sessions.get_csrf_token');
+        //     if (sessionResponse.data && sessionResponse.data.message) {
+        //       localStorage.setItem('frappe_csrf_token', sessionResponse.data.message);
+        //     }
+        //   } catch (csrfError) {
+        //     console.warn('Could not get CSRF token:', csrfError);
+        //   }
+        // }
         
         return { success: true, data: response.data, user: userData };
       }
@@ -183,8 +183,7 @@ export const frappeAPI = {
         return { authenticated: false, error: 'Invalid stored user data' };
       }
 
-      // In development, try to verify with server
-      if (isDevelopment) {
+
         try {
           const response = await frappeClient.get('/api/method/frappe.auth.get_logged_user');
           if (response.data && response.data.message && response.data.message !== 'Guest') {
@@ -193,7 +192,7 @@ export const frappeAPI = {
         } catch (error) {
           console.warn('Session verification failed in development:', error);
           // Fall back to stored data
-        }
+        
       }
 
       // For production or if server check fails, rely on stored data with time check
@@ -225,17 +224,17 @@ export const frappeAPI = {
   getUserInfo: async () => {
     try {
       // Try server first if in development
-      if (isDevelopment) {
+      
         const response = await frappeClient.get('/api/method/frappe.auth.get_logged_user');
         return response.data;
-      }
+      
       
       // For production, return stored user info
-      const storedUser = localStorage.getItem('frappe_user');
-      if (storedUser) {
-        const userData = JSON.parse(storedUser);
-        return { message: userData.username, full_name: userData.full_name };
-      }
+      // const storedUser = localStorage.getItem('frappe_user');
+      // if (storedUser) {
+      //   const userData = JSON.parse(storedUser);
+      //   return { message: userData.username, full_name: userData.full_name };
+      // }
       
       throw new Error('No user information available');
     } catch (error) {
