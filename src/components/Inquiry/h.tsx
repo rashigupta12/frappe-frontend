@@ -18,7 +18,8 @@ import {
   Save,
   Search,
   User,
-  X
+
+  X,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
@@ -39,6 +40,7 @@ import {
 } from "../ui/select";
 import { Textarea } from "../ui/textarea";
 import AddressFinder from "./AddressFinder";
+import { useNavigate } from "react-router-dom";
 
 interface FormSection {
   id: string;
@@ -57,6 +59,7 @@ const InquiryPage = () => {
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [viewInquiry, setViewInquiry] = useState<Lead | null>(null);
   const [selectedJobType, setSelectedJobType] = useState<string>("Electrical");
+  const navigate = useNavigate();
 
   const toggleSection = (sectionId: string) => {
     setActiveSection(activeSection === sectionId ? "" : sectionId);
@@ -446,8 +449,7 @@ const InquiryPage = () => {
         )
     );
 
-
-    console.log("Filtered Inquiries:", filteredInquiries);
+  console.log("Filtered Inquiries:", filteredInquiries);
 
   const getUrgencyShortLabel = (urgency: string) => {
     const labels: Record<string, string> = {
@@ -767,7 +769,7 @@ const InquiryPage = () => {
       </div>
 
       {/* Fixed Bottom Buttons */}
-      
+
       {/* Edit/Add Form Sidebar */}
       <div
         className={`fixed inset-y-0 right-0 w-full bg-white shadow-xl border-l border-gray-200 transform transition-transform duration-300 ease-in-out z-50 ${
@@ -1242,6 +1244,19 @@ const InquiryPage = () => {
             <div className="bg-gradient-to-r from-emerald-600 to-blue-600 p-4 text-white rounded-t-xl">
               <div className="flex justify-between items-center">
                 <h3 className="text-xl font-semibold">Inquiry Details</h3>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0 rounded-full text-white hover:bg-white/10"
+                  onClick={() => {
+                    // Navigate to assign tab with the inquiry data
+                    navigate("/dashboard?tab=assign", {
+                      state: { inquiry: viewInquiry },
+                    });
+                  }}
+                >
+                  <span className="text-xl md:text-2xl font-semibold text-white">Assign</span>
+                </Button>
                 <Button
                   variant="ghost"
                   size="sm"

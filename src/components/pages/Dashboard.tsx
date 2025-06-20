@@ -17,6 +17,7 @@ import { useAuth } from "../../context/AuthContext";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { Button } from "../ui/button";
 import InquiryPage from "../Inquiry/h";
+import Assign from "../Inquiry/Assign";
 // import InquiryPage from "../Inquiry/Inquiry";
 // import InquiryPage from "../Inquiry/Inquiry";
 
@@ -54,7 +55,7 @@ export default function SalesDashboard() {
           <InquiryPage />
         );
       case "assign":
-        return <p>Assign</p>;
+        return <Assign />;
       case "progress":
         return <p>Reports</p>;
       default:

@@ -250,7 +250,16 @@ export const frappeAPI = {
 
   updateLead: async (leadId: string, leadData: Record<string, unknown>) => {
     return await frappeAPI.makeAuthenticatedRequest('PUT', `/api/resource/Lead/${leadId}`, leadData);
+  },
+  ispectionUser: async () => {
+    return await frappeAPI.makeAuthenticatedRequest('GET', `/api/resource/User`);
+  },
+  toDo: async (todoData: Record<string, unknown>) => {
+    return await frappeAPI.makeAuthenticatedRequest('POST', '/api/resource/ToDo', todoData);
   }
+  
+
+
 };
 
 export default frappeClient;
