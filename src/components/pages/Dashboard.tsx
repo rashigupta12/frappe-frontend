@@ -6,7 +6,8 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { Button } from "../ui/button";
-import InquiryPage from "../Inquiry/Inquiry";
+import InquiryPage from "../Inquiry/h";
+// import InquiryPage from "../Inquiry/Inquiry";
 // import InquiryPage from "../Inquiry/Inquiry";
 
 export default function SalesDashboard() {
@@ -31,7 +32,7 @@ export default function SalesDashboard() {
 
   const handleLogout = async () => {
     await logout();
-    navigate("/" );
+    navigate("/");
   };
 
   const renderContent = () => {
@@ -40,8 +41,7 @@ export default function SalesDashboard() {
         // return <InquiryManagement/>;
         return (
           // <InquiryPage/>
-          <InquiryPage/>
-          
+          <InquiryPage />
         );
       // case "profile":
       //   return (
@@ -71,53 +71,51 @@ export default function SalesDashboard() {
   return (
     <div className="h-screen bg-gradient-to-br from-emerald-50 to-blue-50 flex flex-col overflow-hidden">
       {/* Top Navigation Bar - Fixed */}
-      <nav className="bg-white shadow-lg border-b-2 border-emerald-200 px-4 sm:px-6 py-3 flex-shrink-0 z-50">
+      <nav className="bg-white shadow-lg border-b-2 border-emerald-200 px-3 sm:px-4 py-2 flex-shrink-0 z-50">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-3">
             {/* Mobile Menu Button */}
             <Button
               variant="ghost"
-              size="sm"
+              size="icon"
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="lg:hidden p-2 rounded-lg hover:bg-emerald-50 text-emerald-700 transition-colors"
+              className="lg:hidden p-1.5 rounded-lg hover:bg-emerald-50 text-emerald-700 transition-colors"
             >
               {sidebarOpen ? (
-                <X className="h-6 w-6" />
+                <X className="h-5 w-5" />
               ) : (
-                <Menu className="h-6 w-6" />
+                <Menu className="h-5 w-5" />
               )}
             </Button>
 
             {/* Logo */}
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2">
-                <Link to="/" className="flex items-center">
-                  <div className="bg-gradient-to-r from-emerald-500 to-blue-500 rounded-lg p-2 flex items-center justify-center">
-                    <img
-                      src="/logo.jpg"
-                      alt="Logo"
-                      className="w-12 h-12 object-contain"
-                    />
-                  </div>
-                </Link>
+            <Link to="/" className="flex items-center gap-1.5">
+              <div className="rounded-lg p-1 flex items-center justify-center">
+                <img
+                  src="/logo.jpg"
+                  alt="Logo"
+                  className="w-8 h-8 sm:w-10 sm:h-10 object-contain"
+                />
               </div>
-            </div>
+            </Link>
           </div>
 
-          <h1 className="text-center text-xl sm:text-2xl font-bold text-emerald-800 hidden sm:block">
+          {/* Title - Visible on all screens */}
+          <h1 className="text-center text-lg sm:text-xl font-bold text-emerald-800">
             Sales Representative
           </h1>
 
           {/* User Menu */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2">
             {/* Mobile Logout Button */}
             <Button
               variant="ghost"
+              size="icon"
               onClick={handleLogout}
-              className="lg:hidden p-2 rounded-lg hover:bg-red-50 text-red-600 hover:text-red-700 transition-colors"
+              className="lg:hidden p-1.5 rounded-lg hover:bg-red-50 text-red-600 hover:text-red-700 transition-colors"
             >
-              <LogOut className="h-5 w-5" />
-              Logout
+              <LogOut className="h-4 w-4" />
+              <span className="sr-only">Logout</span>
             </Button>
 
             {/* Desktop User Menu */}
@@ -125,30 +123,32 @@ export default function SalesDashboard() {
               <PopoverTrigger asChild>
                 <Button
                   variant="ghost"
-                  className="hidden lg:flex items-center gap-2 hover:bg-emerald-50 rounded-lg p-2 transition-colors"
+                  size="sm"
+                  className="hidden lg:flex items-center gap-1 hover:bg-emerald-50 rounded-lg px-2 py-1.5 transition-colors"
                 >
-                  <span className="text-emerald-700 font-medium">
+                  <span className="text-sm text-emerald-700 font-medium">
                     {user || "User"}
                   </span>
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-56 border border-emerald-200 bg-white shadow-md" align="end">
-                <div className="space-y-1">
-                  <Button
-                    variant="ghost"
-                    onClick={handleLogout}
-                    className="w-full justify-start gap-2 text-red-600 hover:bg-red-100 hover:text-red-700 transition-colors"
-                  >
-                    <LogOut className="h-4 w-4" />
-                    Logout
-                  </Button>
-                </div>
+              <PopoverContent
+                className="w-48 border border-emerald-200 bg-white shadow-md"
+                align="end"
+              >
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleLogout}
+                  className="w-full justify-start gap-2 text-red-600 hover:bg-red-100 hover:text-red-700 transition-colors"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Logout
+                </Button>
               </PopoverContent>
             </Popover>
           </div>
         </div>
       </nav>
-
       {/* Main Content Area with Sidebar */}
       <div className="flex flex-1 overflow-hidden">
         {/* Mobile Sidebar Overlay */}
@@ -194,11 +194,11 @@ export default function SalesDashboard() {
           <main className="flex-1 overflow-y-auto p-4 sm:p-6">
             <div className="max-w-7xl mx-auto">
               {/* Mobile Dashboard Title */}
-              <div className="sm:hidden mb-6">
+              {/* <div className="sm:hidden mb-6">
                 <h1 className="text-2xl font-bold text-emerald-800">
                   Sales Representative
                 </h1>
-              </div>
+              </div> */}
 
               {/* Main Content Area */}
               <div className="pb-6">{renderContent()}</div>

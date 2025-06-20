@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
 import { frappeAPI } from '../api/frappeClient';
 import {toast} from 'react-hot-toast';
+import { useAuth } from './AuthContext';
 
 
 // Define the Lead interface based on your API response
@@ -105,6 +106,8 @@ interface LeadsProviderProps {
 
 // Provider component
 export const LeadsProvider: React.FC<LeadsProviderProps> = ({ children }) => {
+  const {user} = useAuth();
+  console.log("Current user in LeadsProvider:", user);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -117,10 +120,17 @@ export const LeadsProvider: React.FC<LeadsProviderProps> = ({ children }) => {
 
   // Fetch all leads
   const fetchLeads = useCallback(async () => {
+    console.log("Fetching leads for user12:", user);
+    if (!user) {
+      console.warn("No user authenticated, cannot fetch leads.");
+      setLeads([]);
+      return;
+    }
+
     setLoading(true);
     setError(null);
     try {
-      const response = await frappeAPI.getAllLeads();
+      const response = await frappeAPI.getAllLeads(user);
       
       // If we only get names, fetch full details for each lead
       if (response.data && Array.isArray(response.data)) {
@@ -151,7 +161,7 @@ export const LeadsProvider: React.FC<LeadsProviderProps> = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [user]);
 
   // Get lead by ID
   const getLeadById = useCallback(async (leadId: string): Promise<Lead> => {

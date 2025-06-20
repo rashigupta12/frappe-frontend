@@ -234,8 +234,10 @@ export const frappeAPI = {
     }
   },
 
-  getAllLeads: async () => {
-    return await frappeAPI.makeAuthenticatedRequest('GET', '/api/resource/Lead?order_by=creation%20desc');
+  getAllLeads: async (email:string) => {
+    console.log('Fetching leads for user:', email);
+    // return await frappeAPI.makeAuthenticatedRequest('GET', '/api/resource/Lead?order_by=creation%20desc');
+      return await frappeAPI.makeAuthenticatedRequest('GET', `/api/resource/Lead?filters=[["lead_owner", "=", "${email}"]]&order_by=creation%20desc`);
   },
 
   getLeadById: async (leadId: string) => {
