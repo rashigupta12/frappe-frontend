@@ -1,5 +1,15 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { LogOut, Menu, Users, X } from "lucide-react";
+import {
+  Clock,
+  Clock1,
+  Home,
+  HomeIcon,
+  LogOut,
+  Menu,
+  UserPlus,
+  Users,
+  X,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
@@ -43,17 +53,10 @@ export default function SalesDashboard() {
           // <InquiryPage/>
           <InquiryPage />
         );
-      // case "profile":
-      //   return (
-      //     <div className="bg-white rounded-xl shadow-sm p-6 border border-emerald-100">
-      //       <h2 className="text-2xl font-bold text-emerald-800 mb-4">
-      //         Profile
-      //       </h2>
-      //       <p className="text-emerald-600">
-      //         View and edit your profile information.
-      //       </p>
-      //     </div>
-      //   );
+      case "assign":
+        return <p>Assign</p>;
+      case "progress":
+        return <p>Reports</p>;
       default:
         return (
           <div className="bg-white rounded-xl shadow-sm p-6 border border-emerald-100">
@@ -182,8 +185,32 @@ export default function SalesDashboard() {
                   : "text-emerald-700 hover:bg-emerald-50 hover:shadow-md"
               }`}
             >
-              <Users className="h-5 w-5" />
+              <HomeIcon className="h-5 w-5" />
               <span className="font-medium">Inquiry Form</span>
+            </Button>
+            <Button
+              variant={activeTab === "assign" ? "default" : "ghost"}
+              onClick={() => handleTabChange("assign")}
+              className={`w-full justify-start gap-3 rounded-xl p-3 text-left transition-all duration-200 ${
+                activeTab === "inquiry-form"
+                  ? "bg-gradient-to-r from-emerald-500 to-blue-500 text-white shadow-lg transform scale-105 hover:from-emerald-600 hover:to-blue-600"
+                  : "text-emerald-700 hover:bg-emerald-50 hover:shadow-md"
+              }`}
+            >
+              <Users className="h-5 w-5" />
+              <span className="font-medium">Assign </span>
+            </Button>
+            <Button
+              variant={activeTab === "progress" ? "default" : "ghost"}
+              onClick={() => handleTabChange("progress")}
+              className={`w-full justify-start gap-3 rounded-xl p-3 text-left transition-all duration-200 ${
+                activeTab === "inquiry-form"
+                  ? "bg-gradient-to-r from-emerald-500 to-blue-500 text-white shadow-lg transform scale-105 hover:from-emerald-600 hover:to-blue-600"
+                  : "text-emerald-700 hover:bg-emerald-50 hover:shadow-md"
+              }`}
+            >
+              <Clock1 className="h-5 w-5" />
+              <span className="font-medium">Progress </span>
             </Button>
           </nav>
         </aside>
@@ -193,24 +220,61 @@ export default function SalesDashboard() {
           {/* Main Content - Scrollable */}
           <main className="flex-1 overflow-y-auto p-4 sm:p-6">
             <div className="max-w-7xl mx-auto">
-              {/* Mobile Dashboard Title */}
-              {/* <div className="sm:hidden mb-6">
-                <h1 className="text-2xl font-bold text-emerald-800">
-                  Sales Representative
-                </h1>
-              </div> */}
-
               {/* Main Content Area */}
               <div className="pb-6">{renderContent()}</div>
             </div>
           </main>
 
           {/* Footer - Sticky at bottom */}
-          <footer className="bg-white border-t border-emerald-200 py-4 flex-shrink-0">
-            <div className="text-center text-sm text-emerald-600 px-4 sm:px-6">
-              © {new Date().getFullYear()} EcoElite. All rights reserved.
+          <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-30 safe-area-pb">
+            <div className="flex items-center justify-around px-2 py-1">
+              {/* Home Button */}
+              <Link to="/dashboard?tab=inquiry-form" className="flex-1">
+                <button className="flex flex-col items-center justify-center py-1 px-3 min-w-0 flex-1 group">
+                  <div className="relative">
+                    <div className="w-10 h-6  flex items-center justify-center  group-active:scale-95 transition-transform">
+                      <Home className="h-5 w-5 text-emerald-700" />
+                    </div>
+                    {/* Active indicator dot */}
+                    {/* <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white"></div> */}
+                  </div>
+                  <span className="text-xs font-medium text-gray-700 mt-1">
+                    Home
+                  </span>
+                </button>
+              </Link>
+
+              {/* Assign Button */}
+              <Link
+                to="/dashboard?tab=assign"
+                className="flex flex-col items-center justify-center py-2 px-3 min-w-0 flex-1 group"
+              >
+                <button className="flex flex-col items-center justify-center py-2 px-3 min-w-0 flex-1 group">
+                  <div className="w-10 h-6  flex items-center justify-center group-active:scale-95 transition-transform group-hover:bg-purple-100">
+                    <UserPlus className="h-5 w-5 text-purple-600" />
+                  </div>
+                  <span className="text-xs font-medium text-purple-600 mt-1">
+                    Assign
+                  </span>
+                </button>
+              </Link>
+
+              {/* In Progress Button */}
+              <Link
+                to="/dashboard?tab=progress"
+                className="flex flex-col items-center justify-center py-2 px-3 min-w-0 flex-1 group"
+              >
+                <button className="flex flex-col items-center justify-center py-1 px-3 min-w-0 flex-1 group">
+                  <div className="w-10 h-6  flex items-center justify-center group-active:scale-95 transition-transform group-hover:bg-blue-100">
+                    <Clock className="h-5 w-5 text-blue-600" />
+                  </div>
+                  <span className="text-xs font-medium text-blue-600 mt-1">
+                    In Progress
+                  </span>
+                </button>
+              </Link>
             </div>
-          </footer>
+          </div>
         </div>
       </div>
     </div>

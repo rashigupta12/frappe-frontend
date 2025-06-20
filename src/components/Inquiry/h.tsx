@@ -7,7 +7,6 @@ import {
   CheckCircle2,
   ChevronDown,
   ChevronUp,
-  Clock,
   Edit,
   FileText,
   Filter,
@@ -19,11 +18,9 @@ import {
   Save,
   Search,
   User,
-  UserPlus,
   X
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
 import {
   useLeads,
   type Lead,
@@ -770,51 +767,7 @@ const InquiryPage = () => {
       </div>
 
       {/* Fixed Bottom Buttons */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-30 safe-area-pb">
-        <div className="flex items-center justify-around px-2 py-1">
-          {/* Home Button */}
-          <Link to="/" className="flex-1">
-          <button className="flex flex-col items-center justify-center py-1 px-3 min-w-0 flex-1 group">
-            <div className="relative">
-              <div className="w-10 h-6  flex items-center justify-center  group-active:scale-95 transition-transform">
-                <Home className="h-5 w-5 text-emerald-700" />
-              </div>
-              {/* Active indicator dot */}
-              {/* <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white"></div> */}
-            </div>
-            <span className="text-xs font-medium text-gray-700 mt-1">Home</span>
-          </button>
-          </Link>
-
-          {/* In Progress Button */}
-          <button
-            className="flex flex-col items-center justify-center py-1 px-3 min-w-0 flex-1 group"
-            onClick={() =>
-              alert("In Progress functionality will be implemented")
-            }
-          >
-            <div className="w-10 h-6  flex items-center justify-center group-active:scale-95 transition-transform group-hover:bg-blue-100">
-              <Clock className="h-5 w-5 text-blue-600" />
-            </div>
-            <span className="text-xs font-medium text-blue-600 mt-1">
-              In Progress
-            </span>
-          </button>
-
-          {/* Assign Button */}
-          <button
-            className="flex flex-col items-center justify-center py-2 px-3 min-w-0 flex-1 group"
-            onClick={() => alert("Assign functionality will be implemented")}
-          >
-            <div className="w-10 h-6  flex items-center justify-center group-active:scale-95 transition-transform group-hover:bg-purple-100">
-              <UserPlus className="h-5 w-5 text-purple-600" />
-            </div>
-            <span className="text-xs font-medium text-purple-600 mt-1">
-              Assign
-            </span>
-          </button>
-        </div>
-      </div>
+      
       {/* Edit/Add Form Sidebar */}
       <div
         className={`fixed inset-y-0 right-0 w-full bg-white shadow-xl border-l border-gray-200 transform transition-transform duration-300 ease-in-out z-50 ${
