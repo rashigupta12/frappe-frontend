@@ -148,7 +148,6 @@ import SalesDashboard from "./components/pages/Dashboard";
 import { LeadsProvider } from "./context/LeadContext";
 
 import { Toaster } from "react-hot-toast";
-import { AssignProvider } from "./context/TodoContext";
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -234,7 +233,7 @@ function App() {
   return (
      <AuthProvider>
       <LeadsProvider>
-        <AssignProvider>
+     
         <div className="App">
           <AppRoutes />
           {/* Add the Toaster component here */}
@@ -258,7 +257,6 @@ function App() {
             }}
           />
         </div>
-        </AssignProvider>
       </LeadsProvider>
     </AuthProvider>
   );
