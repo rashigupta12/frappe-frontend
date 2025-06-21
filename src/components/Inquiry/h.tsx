@@ -18,7 +18,6 @@ import {
   Save,
   Search,
   User,
-
   X,
 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -50,8 +49,18 @@ interface FormSection {
 }
 
 const InquiryPage = () => {
-  const { leads, loading, error, fetchLeads, createLead, updateLead } =
-    useLeads();
+  const {
+    leads,
+    loading,
+    error,
+    fetchLeads,
+    createLead,
+    updateLead,
+    jobTypes,
+    fetchJobTypes,
+    fetchProjectUrgency,
+    projectUrgency,
+  } = useLeads();
   const [searchTerm, setSearchTerm] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [currentInquiry, setCurrentInquiry] = useState<Lead | null>(null);
@@ -69,12 +78,15 @@ const InquiryPage = () => {
     lead_name: "",
     email_id: "",
     mobile_no: "",
-    custom_job_type: "Electrical",
+    custom_job_type: jobTypes.length > 0 ? jobTypes[0].name : "Electrical", // Dynamic default
     custom_property_type: "Residential",
     custom_type_of_building: "Villa",
     custom_building_name: "",
     custom_budget_range: "Under 10,000 AED",
-    custom_project_urgency: "Urgent (Within 1 week)",
+    custom_project_urgency:
+      projectUrgency.length > 0
+        ? projectUrgency[0].name
+        : "Urgent (Within 1 week)", // Dynamic default
     custom_preferred_inspection_date: null,
     custom_alternative_inspection_date: null,
     custom_preferred_inspection_time: "",
@@ -84,29 +96,20 @@ const InquiryPage = () => {
     custom_alternative_inspection_time: "",
   });
 
-  const jobTypes = [
-    "Electrical",
-    "Joineries and Wood Work",
-    "Painting & Decorating",
-    "Sanitary, Plumbing, Toilets & Washroom",
-    "Equipment Installation and Maintenance",
-    "Other",
-  ];
-
   const propertyTypes = ["Residential", "Commercial", "Industrial"];
   const buildingTypes = ["Villa", "Apartment", "Office", "Warehouse", "Other"];
-  const budgetRanges = [
-    "Under 10,000 AED",
-    "10,000 - 50,000 AED",
-    "50,000 - 100,000 AED",
-    "Above 100,000 AED",
-  ];
-  const urgencyOptions = [
-    "Urgent (Within 1 week)",
-    "Normal (Within 1 month)",
-    "Flexible (Within 3 months)",
-    "Future Planning (3+ months)",
-  ];
+  // const budgetRanges = [
+  //   "Under 10,000 AED",
+  //   "10,000 - 50,000 AED",
+  //   "50,000 - 100,000 AED",
+  //   "Above 100,000 AED",
+  // ];
+  // const urgencyOptions = [
+  //   "Urgent (Within 1 week)",
+  //   "Normal (Within 1 month)",
+  //   "Flexible (Within 3 months)",
+  //   "Future Planning (3+ months)",
+  // ];
 
   const getJobTypeColor = (jobType: string) => {
     const colors = {
@@ -234,7 +237,14 @@ const InquiryPage = () => {
 
   useEffect(() => {
     fetchLeads();
-  }, [fetchLeads]);
+    fetchJobTypes();
+    if (fetchProjectUrgency) {
+      fetchProjectUrgency();
+    }
+  }, [fetchLeads, fetchJobTypes, fetchProjectUrgency]);
+  console.log("Leads:", leads);
+  console.log("Job Types:", jobTypes);
+  console.log("Project Urgency:", projectUrgency);
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -256,12 +266,15 @@ const InquiryPage = () => {
       lead_name: "",
       email_id: "",
       mobile_no: "",
-      custom_job_type: "Electrical",
+      custom_job_type: jobTypes.length > 0 ? jobTypes[0].name : "Electrical",
       custom_property_type: "Residential",
       custom_type_of_building: "Villa",
       custom_building_name: "",
       custom_budget_range: "Under 10,000 AED",
-      custom_project_urgency: "Urgent (Within 1 week)",
+      custom_project_urgency:
+        projectUrgency.length > 0
+          ? projectUrgency[0].name
+          : "Urgent (Within 1 week)",
       custom_preferred_inspection_date: null,
       custom_alternative_inspection_date: null,
       custom_preferred_inspection_time: "",
@@ -536,10 +549,10 @@ const InquiryPage = () => {
                   <SelectTrigger className="w-full bg-white border border-gray-300">
                     <SelectValue placeholder="Select job type" />
                   </SelectTrigger>
-                  <SelectContent>
-                    {jobTypes.map((type) => (
-                      <SelectItem key={type} value={type}>
-                        {type}
+                  <SelectContent className="bg-white border border-gray-300 ">
+                    {jobTypes.map((jobType) => (
+                      <SelectItem key={jobType.name} value={jobType.name}>
+                        {jobType.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -571,13 +584,13 @@ const InquiryPage = () => {
                     <Filter className="h-4 w-4 text-gray-600" />
                   </SelectTrigger>
                   <SelectContent className="bg-white border border-gray-300 shadow-md w-[200px]">
-                    {jobTypes.map((type) => (
+                    {jobTypes.map((jobType) => (
                       <SelectItem
-                        key={type}
-                        value={type}
+                        key={jobType.name}
+                        value={jobType.name}
                         className="hover:bg-gray-100 focus:bg-gray-100"
                       >
-                        {type}
+                        {jobType.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -761,14 +774,39 @@ const InquiryPage = () => {
                       </span>
                     </div>
                   )}
+                  {inquiry.status === "Open" ? (
+                    <Badge
+                      variant="outline"
+                      className="text-xs md:text-sm px-2 py-0.5 rounded-md text-emerald-600 border border-emerald-200 bg-emerald-50"
+                    >
+                      Assigned
+                    </Badge>
+                  ) : (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 w-7 md:h-9 md:w-9 p-0 bg-white text-blue-600 border border-blue-200 
+               hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300 
+               transition-all duration-200 ease-in-out shadow-sm rounded-md"
+                      onClick={() => {
+                        navigate("/dashboard?tab=assign", {
+                          state: {
+                            inquiry: inquiry,
+                            from: "inquiry",
+                          },
+                        });
+                      }}
+                    >
+                      <Plus className="h-3 w-3 md:h-4 md:w-4" />
+                      <span className="sr-only">Assign</span>
+                    </Button>
+                  )}
                 </div>
               </div>
             ))}
           </div>
         )}
       </div>
-
-      {/* Fixed Bottom Buttons */}
 
       {/* Edit/Add Form Sidebar */}
       <div
@@ -911,13 +949,13 @@ const InquiryPage = () => {
                               </SelectTrigger>
 
                               <SelectContent className="bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
-                                {jobTypes.map((type) => (
+                                {jobTypes.map((jobType) => (
                                   <SelectItem
-                                    key={type}
-                                    value={type}
+                                    key={jobType.name}
+                                    value={jobType.name}
                                     className="px-4 py-2 text-sm text-gray-700 hover:bg-emerald-100 focus:bg-emerald-100 cursor-pointer"
                                   >
-                                    {type}
+                                    {jobType.name}
                                   </SelectItem>
                                 ))}
                               </SelectContent>
@@ -946,13 +984,13 @@ const InquiryPage = () => {
                               </SelectTrigger>
 
                               <SelectContent className="bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
-                                {budgetRanges.map((range) => (
+                                {projectUrgency.map((urgency) => (
                                   <SelectItem
-                                    key={range}
-                                    value={range}
+                                    key={urgency.name}
+                                    value={urgency.name}
                                     className="px-4 py-2 text-sm text-gray-700 hover:bg-emerald-100 focus:bg-emerald-100 cursor-pointer"
                                   >
-                                    {range}
+                                    {urgency.name}
                                   </SelectItem>
                                 ))}
                               </SelectContent>
@@ -976,13 +1014,13 @@ const InquiryPage = () => {
                                 <SelectValue placeholder="Select urgency" />
                               </SelectTrigger>
                               <SelectContent className="bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
-                                {urgencyOptions.map((option) => (
+                                {projectUrgency.map((urgency) => (
                                   <SelectItem
-                                    key={option}
-                                    value={option}
+                                    key={urgency.name}
+                                    value={urgency.name}
                                     className="px-4 py-2 text-sm text-gray-700 hover:bg-emerald-100 focus:bg-emerald-100 cursor-pointer"
                                   >
-                                    {option}
+                                    {urgency.name}
                                   </SelectItem>
                                 ))}
                               </SelectContent>
@@ -1244,19 +1282,28 @@ const InquiryPage = () => {
             <div className="bg-gradient-to-r from-emerald-600 to-blue-600 p-4 text-white rounded-t-xl">
               <div className="flex justify-between items-center">
                 <h3 className="text-xl font-semibold">Inquiry Details</h3>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 w-8 p-0 rounded-full text-white hover:bg-white/10"
-                  onClick={() => {
-                    // Navigate to assign tab with the inquiry data
-                    navigate("/dashboard?tab=assign", {
-                      state: { inquiry: viewInquiry },
-                    });
-                  }}
-                >
-                  <span className="text-xl md:text-2xl font-semibold text-white">Assign</span>
-                </Button>
+
+                {viewInquiry.status === "Open" ? (
+                  <span className="text-sm bg-emerald-100 text-emerald-800 px-2 py-1 rounded-full">
+                    Assigned
+                  </span>
+                ) : (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-8 p-0 rounded-full text-white hover:bg-white/10"
+                    onClick={() => {
+                      // Navigate to assign tab with the inquiry data
+                      navigate("/dashboard?tab=assign", {
+                        state: { inquiry: viewInquiry },
+                      });
+                    }}
+                  >
+                    <span className="text-xl md:text-2xl font-semibold text-white">
+                      Assign
+                    </span>
+                  </Button>
+                )}
                 <Button
                   variant="ghost"
                   size="sm"

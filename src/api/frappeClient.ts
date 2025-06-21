@@ -233,9 +233,15 @@ export const frappeAPI = {
       throw error;
     }
   },
+  getJobTypes: async () => {
+    return await frappeAPI.makeAuthenticatedRequest('GET', '/api/resource/JobType');
+  },
+  getProjectUrgency: async () => {
+    return await frappeAPI.makeAuthenticatedRequest('GET', '/api/resource/ProjectUrgency');
+  },
 
   getAllLeads: async (email:string) => {
-    console.log('Fetching leads for user:', email);
+    
     // return await frappeAPI.makeAuthenticatedRequest('GET', '/api/resource/Lead?order_by=creation%20desc');
       return await frappeAPI.makeAuthenticatedRequest('GET', `/api/resource/Lead?filters=[["lead_owner", "=", "${email}"]]&order_by=creation%20desc`);
   },
@@ -256,7 +262,18 @@ export const frappeAPI = {
   },
   toDo: async (todoData: Record<string, unknown>) => {
     return await frappeAPI.makeAuthenticatedRequest('POST', '/api/resource/ToDo', todoData);
+  },
+  getAllToDos: async (filters: Record<string, unknown> = {}) => {
+    const filterString = Object.entries(filters)
+      .map(([key, value]) => `["${key}", "=", "${value}"]`)
+      .join(',');
+    return await frappeAPI.makeAuthenticatedRequest('GET', `/api/resource/ToDo?filters=[${filterString}]`);
+  },
+  getTodoByNAme: async (todoName: string) => {
+    return await frappeAPI.makeAuthenticatedRequest('GET', `/api/resource/ToDo/${todoName}`);
   }
+
+
   
 
 

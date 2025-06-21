@@ -1,10 +1,15 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // src/contexts/LeadsContext.tsx
-import React, { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
-import { frappeAPI } from '../api/frappeClient';
-import {toast} from 'react-hot-toast';
-import { useAuth } from './AuthContext';
-
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  type ReactNode,
+} from "react";
+import { frappeAPI } from "../api/frappeClient";
+import { toast } from "react-hot-toast";
+import { useAuth } from "./AuthContext";
 
 // Define the Lead interface based on your API response
 export interface Lead {
@@ -82,6 +87,15 @@ export interface LeadFormData {
   [key: string]: any;
 }
 
+export interface JobType {
+  name: string;
+ 
+}
+
+export interface ProjectUrgency {
+  name: string;
+}
+
 // Context state interface
 interface LeadsContextState {
   leads: Lead[];
@@ -94,6 +108,11 @@ interface LeadsContextState {
   updateLead: (leadId: string, leadData: LeadFormData) => Promise<Lead>;
   setCurrentLead: (lead: Lead | null) => void;
   clearError: () => void;
+  jobTypes: JobType[];
+  fetchJobTypes: () => Promise<void>;
+  // Add any other methods you need
+  projectUrgency: ProjectUrgency[]; // Define this if needed
+  fetchProjectUrgency?: () => Promise<void>; // Define this if needed
 }
 
 // Create context
@@ -106,12 +125,14 @@ interface LeadsProviderProps {
 
 // Provider component
 export const LeadsProvider: React.FC<LeadsProviderProps> = ({ children }) => {
-  const {user} = useAuth();
+  const { user } = useAuth();
   console.log("Current user in LeadsProvider:", user);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [currentLead, setCurrentLead] = useState<Lead | null>(null);
+  const [projectUrgency, setProjectUrgency] = useState<ProjectUrgency[]>([]);
+  const [jobTypes, setJobTypes] = useState<JobType[]>([]);
 
   // Clear error
   const clearError = useCallback(() => {
@@ -131,10 +152,14 @@ export const LeadsProvider: React.FC<LeadsProviderProps> = ({ children }) => {
     setError(null);
     try {
       const response = await frappeAPI.getAllLeads(user);
-      
+
       // If we only get names, fetch full details for each lead
       if (response.data && Array.isArray(response.data)) {
-        if (response.data.length > 0 && response.data[0].name && !response.data[0].lead_name) {
+        if (
+          response.data.length > 0 &&
+          response.data[0].name &&
+          !response.data[0].lead_name
+        ) {
           // We only have names, fetch full details
           const fullLeads: Lead[] = [];
           for (const leadSummary of response.data) {
@@ -155,7 +180,8 @@ export const LeadsProvider: React.FC<LeadsProviderProps> = ({ children }) => {
       }
     } catch (err) {
       console.error("Error fetching leads:", err);
-      const errorMessage = err instanceof Error ? err.message : "Failed to fetch leads";
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to fetch leads";
       setError(errorMessage);
       setLeads([]);
     } finally {
@@ -171,7 +197,8 @@ export const LeadsProvider: React.FC<LeadsProviderProps> = ({ children }) => {
       // toast.success(`Lead ${leadId} fetched successfully!`);
     } catch (err) {
       console.error(`Error fetching lead ${leadId}:`, err);
-      const errorMessage = err instanceof Error ? err.message : `Failed to fetch lead ${leadId}`;
+      const errorMessage =
+        err instanceof Error ? err.message : `Failed to fetch lead ${leadId}`;
       setError(errorMessage);
       throw err;
     }
@@ -181,79 +208,132 @@ export const LeadsProvider: React.FC<LeadsProviderProps> = ({ children }) => {
   const processDate = (dateValue: any): string | null => {
     if (!dateValue) return null;
     if (dateValue instanceof Date && !isNaN(dateValue.getTime())) {
-      return dateValue.toISOString().split('T')[0]; // Format as YYYY-MM-DD
+      return dateValue.toISOString().split("T")[0]; // Format as YYYY-MM-DD
     }
     if (typeof dateValue === "string" && dateValue.trim() !== "") {
       const date = new Date(dateValue);
-      return isNaN(date.getTime()) ? null : date.toISOString().split('T')[0];
+      return isNaN(date.getTime()) ? null : date.toISOString().split("T")[0];
     }
     return null;
   };
 
   // Create new lead
-  const createLead = useCallback(async (leadData: LeadFormData): Promise<Lead> => {
-    setLoading(true);
-    setError(null);
-    try {
-      // Process dates
-      const processedData = {
-        ...leadData,
-        custom_preferred_inspection_date: processDate(leadData.custom_preferred_inspection_date),
-        custom_alternative_inspection_date: processDate(leadData.custom_alternative_inspection_date),
-      };
+  const createLead = useCallback(
+    async (leadData: LeadFormData): Promise<Lead> => {
+      setLoading(true);
+      setError(null);
+      try {
+        // Process dates
+        const processedData = {
+          ...leadData,
+          custom_preferred_inspection_date: processDate(
+            leadData.custom_preferred_inspection_date
+          ),
+          custom_alternative_inspection_date: processDate(
+            leadData.custom_alternative_inspection_date
+          ),
+        };
 
+        console.log("Creating lead with data:", processedData);
 
-      console.log("Creating lead with data:", processedData);
-      
-      const response = await frappeAPI.createLead(processedData);
-      toast.success('Lead created successfully!');
-      
-      // Refresh leads list
-      await fetchLeads();
-      
-      return response.data;
-    } catch (err) {
-      toast.error('Failed to create lead. Please try again.');
-      console.error("Error creating lead:", err);
-      const errorMessage = err instanceof Error ? err.message : "Failed to create lead";
-      setError(errorMessage);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, [fetchLeads]);
+        const response = await frappeAPI.createLead(processedData);
+        toast.success("Lead created successfully!");
+
+        // Refresh leads list
+        await fetchLeads();
+
+        return response.data;
+      } catch (err) {
+        toast.error("Failed to create lead. Please try again.");
+        console.error("Error creating lead:", err);
+        const errorMessage =
+          err instanceof Error ? err.message : "Failed to create lead";
+        setError(errorMessage);
+        throw err;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [fetchLeads]
+  );
 
   // Update existing lead
-  const updateLead = useCallback(async (leadId: string, leadData: LeadFormData): Promise<Lead> => {
-    setLoading(true);
-    setError(null);
-    try {
-      // Process dates
-      const processedData = {
-        ...leadData,
-        custom_preferred_inspection_date: processDate(leadData.custom_preferred_inspection_date),
-        custom_alternative_inspection_date: processDate(leadData.custom_alternative_inspection_date),
-      };
+  const updateLead = useCallback(
+    async (leadId: string, leadData: LeadFormData): Promise<Lead> => {
+      setLoading(true);
+      setError(null);
+      try {
+        // Process dates
+        const processedData = {
+          ...leadData,
+          custom_preferred_inspection_date: processDate(
+            leadData.custom_preferred_inspection_date
+          ),
+          custom_alternative_inspection_date: processDate(
+            leadData.custom_alternative_inspection_date
+          ),
+        };
 
-      console.log(`Updating lead ${leadId} with data:`, processedData);
-      
-      const response = await frappeAPI.updateLead(leadId, processedData);
-      toast.success(`Lead  updated successfully!`);
-      
-      // Refresh leads list
-      await fetchLeads();
-      
-      return response.data;
+        console.log(`Updating lead ${leadId} with data:`, processedData);
+
+        const response = await frappeAPI.updateLead(leadId, processedData);
+        toast.success(`Lead  updated successfully!`);
+
+        // Refresh leads list
+        await fetchLeads();
+
+        return response.data;
+      } catch (err) {
+        toast.error(`Failed to update lead ${leadId}. Please try again.`);
+        console.error(`Error updating lead ${leadId}:`, err);
+        const errorMessage =
+          err instanceof Error
+            ? err.message
+            : `Failed to update lead ${leadId}`;
+        setError(errorMessage);
+        throw err;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [fetchLeads]
+  );
+
+  // Fetch job types
+  const fetchJobTypes = useCallback(async () => {
+    try {
+      const response = await frappeAPI.getJobTypes();
+      if (response.data && Array.isArray(response.data)) {
+        console.log("Fetched job types:", response.data);
+        setJobTypes(response.data);
+      } else {
+        setJobTypes([]);
+      }
     } catch (err) {
-      toast.error(`Failed to update lead ${leadId}. Please try again.`);
-      console.error(`Error updating lead ${leadId}:`, err);
-      const errorMessage = err instanceof Error ? err.message : `Failed to update lead ${leadId}`;
-      setError(errorMessage);
-      throw err;
-    } finally {
-      setLoading(false);
+      console.error("Error fetching job types:", err);
+      setError(
+        err instanceof Error ? err.message : "Failed to fetch job types"
+      );
     }
-  }, [fetchLeads]);
+  }, []);
+
+  // Fetch project urgency
+  const fetchProjectUrgency = useCallback(async () => {
+    try {
+      const response = await frappeAPI.getProjectUrgency();
+      if (response.data && Array.isArray(response.data)) {
+        console.log("Fetched project urgency:", response.data);
+        setProjectUrgency(response.data);
+      } else {
+        setProjectUrgency([]);
+      }
+    } catch (err) {
+      console.error("Error fetching project urgency:", err);
+      setError(
+        err instanceof Error ? err.message : "Failed to fetch project urgency"
+      );
+    }
+  }, []);
 
   // Context value
   const contextValue: LeadsContextState = {
@@ -267,6 +347,10 @@ export const LeadsProvider: React.FC<LeadsProviderProps> = ({ children }) => {
     updateLead,
     setCurrentLead,
     clearError,
+    jobTypes,
+    fetchJobTypes,
+    projectUrgency,
+    fetchProjectUrgency,
   };
 
   return (
@@ -280,7 +364,7 @@ export const LeadsProvider: React.FC<LeadsProviderProps> = ({ children }) => {
 export const useLeads = (): LeadsContextState => {
   const context = useContext(LeadsContext);
   if (context === undefined) {
-    throw new Error('useLeads must be used within a LeadsProvider');
+    throw new Error("useLeads must be used within a LeadsProvider");
   }
   return context;
 };
