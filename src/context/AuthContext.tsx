@@ -33,7 +33,6 @@ const AuthContext = createContext<AuthContextType>({
   role: null,
 });
 
-// Enhanced role mapping function that uses username when full_name is empty
 const mapUserToRole = (username: string, fullName: string): string => {
   console.log('Mapping user to role - Username:', username, 'Full Name:', fullName);
   
@@ -49,6 +48,9 @@ const mapUserToRole = (username: string, fullName: string): string => {
       'Customer': 'user',
       'Client': 'user',
       'Inspector': 'inspector',
+      'Site Inspector': 'inspector',
+      'Quality Inspector': 'inspector',
+      'Field Inspector': 'inspector'
     };
     
     if (roleMap[fullName]) {
@@ -66,6 +68,7 @@ const mapUserToRole = (username: string, fullName: string): string => {
     // Try partial match
     if (normalizedName.includes('sales')) return 'sales';
     if (normalizedName.includes('admin')) return 'admin';
+    if (normalizedName.includes('inspector')) return 'inspector';
   }
   
   // Fallback to username-based mapping when full_name is empty
@@ -74,9 +77,14 @@ const mapUserToRole = (username: string, fullName: string): string => {
     'sales_rep@eits.com': 'sales',
     'admin@eits.com': 'admin',
     'user@eits.com': 'user',
+    'site_inspector@eits.com': 'inspector',
+    'quality_inspector@eits.com': 'inspector',
+    'field_inspector@eits.com': 'inspector',
+    'inspector@eits.com': 'inspector',
     
-    // Pattern-based matches (add your patterns here)
-    // These will be checked if exact match fails
+    // Pattern-based matches
+    'inspection_': 'inspector',
+    '_inspector': 'inspector'
   };
   
   // Try exact username match first
@@ -96,6 +104,11 @@ const mapUserToRole = (username: string, fullName: string): string => {
   if (lowerUsername.includes('admin')) {
     console.log('Username contains "admin", mapping to admin role');
     return 'admin';
+  }
+  
+  if (lowerUsername.includes('inspector') || lowerUsername.includes('inspection')) {
+    console.log('Username contains "inspector", mapping to inspector role');
+    return 'inspector';
   }
   
   // Default to user role
