@@ -97,6 +97,7 @@ export const frappeAPI = {
       
       // Check for successful login
       if (response.data.message === 'Logged In' || response.status === 200) {
+        console.log('Login successful for:', response.data);
         const userData = {
           username: username,
           full_name: response.data.full_name || response.data.user || 'User',

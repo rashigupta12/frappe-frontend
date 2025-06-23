@@ -789,7 +789,7 @@ const InquiryPage = () => {
                hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300 
                transition-all duration-200 ease-in-out shadow-sm rounded-md"
                       onClick={() => {
-                        navigate("/dashboard?tab=assign", {
+                        navigate("/sales?tab=assign", {
                           state: {
                             inquiry: inquiry,
                             from: "inquiry",
@@ -1294,7 +1294,7 @@ const InquiryPage = () => {
                     className="h-8 w-8 p-0 rounded-full text-white hover:bg-white/10"
                     onClick={() => {
                       // Navigate to assign tab with the inquiry data
-                      navigate("/dashboard?tab=assign", {
+                      navigate("/sales?tab=assign", {
                         state: { inquiry: viewInquiry },
                       });
                     }}

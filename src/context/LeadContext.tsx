@@ -126,6 +126,7 @@ interface LeadsProviderProps {
 // Provider component
 export const LeadsProvider: React.FC<LeadsProviderProps> = ({ children }) => {
   const { user } = useAuth();
+  console.log("User in LeadsProvider:", user);
   console.log("Current user in LeadsProvider:", user);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
@@ -141,7 +142,6 @@ export const LeadsProvider: React.FC<LeadsProviderProps> = ({ children }) => {
 
   // Fetch all leads
   const fetchLeads = useCallback(async () => {
-    console.log("Fetching leads for user12:", user);
     if (!user) {
       console.warn("No user authenticated, cannot fetch leads.");
       setLeads([]);
@@ -151,7 +151,7 @@ export const LeadsProvider: React.FC<LeadsProviderProps> = ({ children }) => {
     setLoading(true);
     setError(null);
     try {
-      const response = await frappeAPI.getAllLeads(user);
+      const response = await frappeAPI.getAllLeads(user.username);
 
       // If we only get names, fetch full details for each lead
       if (response.data && Array.isArray(response.data)) {

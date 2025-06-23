@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import {
   Home,
@@ -18,10 +19,13 @@ import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import TodoPage from "../Inquiry/Assign";
 
 export default function SalesDashboard() {
+  console.log("SalesDashboard rendered");
   const navigate = useNavigate();
   // const location = useLocation();
   const [searchParams] = useSearchParams();
   const { user, logout } = useAuth();
+  console.log("User in SalesDashboard:", user);
+
 
   const initialTab = searchParams.get("tab") || "inquiry-form";
   const [activeTab, setActiveTab] = useState(initialTab);
@@ -33,7 +37,7 @@ export default function SalesDashboard() {
 
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
-    navigate(`/dashboard?tab=${tab}`, { replace: true });
+    navigate(`/sales?tab=${tab}`, { replace: true });
     setSidebarOpen(false); // Close sidebar on mobile after selection
   };
 
@@ -123,7 +127,7 @@ export default function SalesDashboard() {
                   className="hidden lg:flex items-center gap-1 hover:bg-emerald-50 rounded-lg px-2 py-1.5 transition-colors"
                 >
                   <span className="text-sm text-emerald-700 font-medium">
-                    {user || "User"}
+                    {user?.full_name || user?.username || "User"}
                   </span>
                 </Button>
               </PopoverTrigger>
@@ -224,7 +228,7 @@ export default function SalesDashboard() {
             <div className="flex items-center justify-center px-4 py-2">
               {/* Home Button */}
               <Link
-                to="/dashboard?tab=inquiry-form"
+                to="/sales?tab=inquiry-form"
                 className="flex-1 max-w-xs flex justify-center"
               >
                 <button className="flex flex-col items-center justify-center w-full py-1 group">
@@ -251,7 +255,7 @@ export default function SalesDashboard() {
 
               {/* Assign Button */}
               <Link
-                to="/dashboard?tab=assign"
+                to="/sales?tab=assign"
                 className="flex-1 max-w-xs flex justify-center"
               >
                 <button className="flex flex-col items-center justify-center w-full py-1 group">

@@ -81,7 +81,7 @@ export default function TodoPage() {
 
   // Set current user
   useEffect(() => {
-    setCurrentUser(user ?? "sales_rep@eits.com");
+    setCurrentUser(user?.username ?? "sales_rep@eits.com");
   }, [setCurrentUser, user]);
 
   // Fetch initial data
