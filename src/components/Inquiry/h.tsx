@@ -67,7 +67,9 @@ const InquiryPage = () => {
   const [activeSection, setActiveSection] = useState<string>("contact");
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [viewInquiry, setViewInquiry] = useState<Lead | null>(null);
-  const [selectedJobType, setSelectedJobType] = useState<string>("Electrical");
+  const [selectedJobType, setSelectedJobType] = useState<string>(
+    "Electrical Repair & Maintenance"
+  );
   const navigate = useNavigate();
 
   const toggleSection = (sectionId: string) => {
@@ -78,15 +80,16 @@ const InquiryPage = () => {
     lead_name: "",
     email_id: "",
     mobile_no: "",
-    custom_job_type: jobTypes.length > 0 ? jobTypes[0].name : "Electrical", // Dynamic default
+    custom_job_type:
+      jobTypes.length > 0
+        ? jobTypes[0].name
+        : "Electrical Repair & Maintenance", // Dynamic default
     custom_property_type: "Residential",
     custom_type_of_building: "Villa",
     custom_building_name: "",
-    custom_budget_range: "Under 10,000 AED",
+    custom_budget_range: "AED 100 - AED 500",
     custom_project_urgency:
-      projectUrgency.length > 0
-        ? projectUrgency[0].name
-        : "Urgent (Within 1 week)", // Dynamic default
+      projectUrgency.length > 0 ? projectUrgency[0].name : "Normal 1 to 7 days", // Dynamic default
     custom_preferred_inspection_date: null,
     custom_alternative_inspection_date: null,
     custom_preferred_inspection_time: "",
@@ -98,69 +101,105 @@ const InquiryPage = () => {
 
   const propertyTypes = ["Residential", "Commercial", "Industrial"];
   const buildingTypes = ["Villa", "Apartment", "Office", "Warehouse", "Other"];
-  // const budgetRanges = [
-  //   "Under 10,000 AED",
-  //   "10,000 - 50,000 AED",
-  //   "50,000 - 100,000 AED",
-  //   "Above 100,000 AED",
-  // ];
-  // const urgencyOptions = [
-  //   "Urgent (Within 1 week)",
-  //   "Normal (Within 1 month)",
-  //   "Flexible (Within 3 months)",
-  //   "Future Planning (3+ months)",
-  // ];
+  const budgetRanges = [
+    "AED 100 - AED 500",
+    "AED 501 - AED 1000",
+    "AED 1001 - AED 2000",
+    "AED 2001 - AED 5000",
+    "AED 5001 - AED 10000",
+    "AED 10001 & more",
+  ];
 
   const getJobTypeColor = (jobType: string) => {
-    const colors = {
-      Electrical: { bg: "#FEF3C7", text: "#92400E", border: "#F59E0B" },
-      "Joineries and Wood Work": {
-        bg: "#D1FAE5",
-        text: "#065F46",
-        border: "#10B981",
-      },
-      "Painting & Decorating": {
-        bg: "#DBEAFE",
-        text: "#1E40AF",
-        border: "#3B82F6",
-      },
-      "Sanitary, Plumbing, Toilets & Washroom": {
-        bg: "#E9D5FF",
-        text: "#6B21A8",
-        border: "#9333EA",
-      },
-      "Equipment Installation and Maintenance": {
-        bg: "#FECACA",
-        text: "#991B1B",
-        border: "#EF4444",
-      },
-      Other: { bg: "#E5E7EB", text: "#4B5563", border: "#9CA3AF" },
-    };
+    const colors: Record<string, { bg: string; text: string; border: string }> =
+      {
+        "AC Repair & Maintenance": {
+          bg: "#DBEAFE", // Light blue
+          text: "#1E40AF",
+          border: "#3B82F6",
+        },
+        "Civil Repairing Work": {
+          bg: "#FDE68A", // Light yellow
+          text: "#92400E",
+          border: "#F59E0B",
+        },
+        "Electrical Repair & Maintenance": {
+          bg: "#FEF3C7", // Light amber
+          text: "#92400E",
+          border: "#F59E0B",
+        },
+        "Equipments Installation & Maintenance": {
+          bg: "#FECACA", // Light red
+          text: "#991B1B",
+          border: "#EF4444",
+        },
+        "Joineries & Wood Work": {
+          bg: "#D1FAE5", // Light green
+          text: "#065F46",
+          border: "#10B981",
+        },
+        "Painting & Interior Decoration": {
+          bg: "#DDD6FE", // Light purple
+          text: "#5B21B6",
+          border: "#8B5CF6",
+        },
+        "Plumbing, Sanitary, Bathroom & Toilets": {
+          bg: "#E9D5FF", // Light violet
+          text: "#6B21A8",
+          border: "#9333EA",
+        },
+        "Veneer Pressing": {
+          bg: "#FFE4E6", // Light pink
+          text: "#9D174D",
+          border: "#EC4899",
+        },
+        Other: {
+          bg: "#E5E7EB", // Neutral gray
+          text: "#4B5563",
+          border: "#9CA3AF",
+        },
+      };
+
     return colors[jobType as keyof typeof colors] || colors["Other"];
   };
 
   const getBudgetColor = (budget: string) => {
     const colors = {
-      "Under 10,000 AED": { bg: "#D1FAE5", text: "#065F46", border: "#10B981" },
-      "10,000 - 50,000 AED": {
-        bg: "#FEF3C7",
-        text: "#92400E",
-        border: "#F59E0B",
+      "AED 100 - AED 500": {
+        bg: "#D1FAE5", // Light green
+        text: "#065F46", // Dark green
+        border: "#10B981", // Green
       },
-      "50,000 - 100,000 AED": {
-        bg: "#DBEAFE",
-        text: "#1E40AF",
-        border: "#3B82F6",
+      " AED 501 - AED 1000": {
+        bg: "#FEF3C7", // Light amber
+        text: "#92400E", // Dark amber
+        border: "#F59E0B", // Amber
       },
-      "Above 100,000 AED": {
-        bg: "#E9D5FF",
-        text: "#6B21A8",
-        border: "#9333EA",
+      "AED 1001 - AED 2000": {
+        bg: "#DBEAFE", // Light blue
+        text: "#1E40AF", // Dark blue
+        border: "#3B82F6", // Blue
+      },
+      "AED 2001 - AED 5000": {
+        bg: "#E9D5FF", // Light purple
+        text: "#6B21A8", // Dark purple
+        border: "#9333EA", // Purple
+      },
+      "AED 5001 - AED 10000": {
+        bg: "#FDE68A", // Light yellow
+        text: "#92400E", // Brownish
+        border: "#FBBF24", // Yellow
+      },
+      "AED 10001 & more": {
+        bg: "#FECACA", // Light red
+        text: "#991B1B", // Dark red
+        border: "#EF4444", // Red
       },
     };
+
     return (
       colors[budget as keyof typeof colors] || {
-        bg: "#E5E7EB",
+        bg: "#E5E7EB", // Neutral gray
         text: "#4B5563",
         border: "#9CA3AF",
       }
@@ -170,30 +209,41 @@ const InquiryPage = () => {
   const getUrgencyColor = (urgency: string) => {
     const colors: Record<string, { bg: string; text: string; border: string }> =
       {
-        "Urgent (Within 1 week)": {
-          bg: "#FEE2E2",
-          text: "#991B1B",
-          border: "#EF4444",
+        "Emergency in  1 Hr": {
+          bg: "#FECACA", // Light red
+          text: "#991B1B", // Dark red
+          border: "#EF4444", // Red
         },
-        "Normal (Within 1 month)": {
-          bg: "#FEF3C7",
-          text: "#92400E",
-          border: "#F59E0B",
+        "Fast 1 day": {
+          bg: "#FDE68A", // Light yellow
+          text: "#92400E", // Amber brown
+          border: "#F59E0B", // Amber
         },
-        "Flexible (Within 3 months)": {
-          bg: "#D1FAE5",
-          text: "#065F46",
-          border: "#10B981",
+        "Normal 1 to 7 days": {
+          bg: "#BFDBFE", // Light blue
+          text: "#1E40AF", // Dark blue
+          border: "#3B82F6", // Blue
         },
-        "Future Planning (3+ months)": {
-          bg: "#DBEAFE",
-          text: "#1E40AF",
-          border: "#3B82F6",
+        "Planned 1 month & above": {
+          bg: "#DDD6FE", // Light violet
+          text: "#5B21B6", // Indigo
+          border: "#8B5CF6", // Violet
+        },
+        "Relaxed 1 to 2 weeks": {
+          bg: "#D1FAE5", // Light green
+          text: "#065F46", // Dark green
+          border: "#10B981", // Green
+        },
+        "Urgent 1 to 4 hrs": {
+          bg: "#FEF3C7", // Light amber
+          text: "#92400E", // Dark amber
+          border: "#F59E0B", // Amber
         },
       };
+
     return (
       colors[urgency as keyof typeof colors] || {
-        bg: "#E5E7EB",
+        bg: "#E5E7EB", // Neutral gray
         text: "#4B5563",
         border: "#9CA3AF",
       }
@@ -266,15 +316,18 @@ const InquiryPage = () => {
       lead_name: "",
       email_id: "",
       mobile_no: "",
-      custom_job_type: jobTypes.length > 0 ? jobTypes[0].name : "Electrical",
+      custom_job_type:
+        jobTypes.length > 0
+          ? jobTypes[0].name
+          : "Electrical Repair & Maintenance",
       custom_property_type: "Residential",
       custom_type_of_building: "Villa",
       custom_building_name: "",
-      custom_budget_range: "Under 10,000 AED",
+      custom_budget_range: "AED 100 - AED 500",
       custom_project_urgency:
         projectUrgency.length > 0
           ? projectUrgency[0].name
-          : "Urgent (Within 1 week)",
+          : "Normal 1 to 7 days",
       custom_preferred_inspection_date: null,
       custom_alternative_inspection_date: null,
       custom_preferred_inspection_time: "",
@@ -984,13 +1037,13 @@ const InquiryPage = () => {
                               </SelectTrigger>
 
                               <SelectContent className="bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
-                                {projectUrgency.map((urgency) => (
+                                {budgetRanges.map((range) => (
                                   <SelectItem
-                                    key={urgency.name}
-                                    value={urgency.name}
+                                    key={range}
+                                    value={range}
                                     className="px-4 py-2 text-sm text-gray-700 hover:bg-emerald-100 focus:bg-emerald-100 cursor-pointer"
                                   >
-                                    {urgency.name}
+                                    {range}
                                   </SelectItem>
                                 ))}
                               </SelectContent>

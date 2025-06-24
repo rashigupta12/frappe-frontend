@@ -190,60 +190,96 @@ export default function TodoPage() {
   } as const;
 
   const getJobTypeColor = (jobType: string) => {
-    const colors = {
-      Electrical: { bg: "#FEF3C7", text: "#92400E", border: "#F59E0B" },
-      "Joineries and Wood Work": {
-        bg: "#D1FAE5",
-        text: "#065F46",
-        border: "#10B981",
-      },
-      "Painting & Decorating": {
-        bg: "#DBEAFE",
-        text: "#1E40AF",
-        border: "#3B82F6",
-      },
-      "Sanitary, Plumbing, Toilets & Washroom": {
-        bg: "#E9D5FF",
-        text: "#6B21A8",
-        border: "#9333EA",
-      },
-      "Equipment Installation and Maintenance": {
-        bg: "#FECACA",
-        text: "#991B1B",
-        border: "#EF4444",
-      },
-      Other: { bg: "#E5E7EB", text: "#4B5563", border: "#9CA3AF" },
-    };
-    return colors[jobType as keyof typeof colors] || colors["Other"];
-  };
-
-  const getUrgencyColor = (urgency: string) => {
     const colors: Record<string, { bg: string; text: string; border: string }> =
       {
-        "Urgent (Within 1 week)": {
-          bg: "#FEE2E2",
-          text: "#991B1B",
-          border: "#EF4444",
-        },
-        "Normal (Within 1 month)": {
-          bg: "#FEF3C7",
-          text: "#92400E",
-          border: "#F59E0B",
-        },
-        "Flexible (Within 3 months)": {
-          bg: "#D1FAE5",
-          text: "#065F46",
-          border: "#10B981",
-        },
-        "Future Planning (3+ months)": {
-          bg: "#DBEAFE",
+        "AC Repair & Maintenance": {
+          bg: "#DBEAFE", // Light blue
           text: "#1E40AF",
           border: "#3B82F6",
         },
+        "Civil Repairing Work": {
+          bg: "#FDE68A", // Light yellow
+          text: "#92400E",
+          border: "#F59E0B",
+        },
+        "Electrical Repair & Maintenance": {
+          bg: "#FEF3C7", // Light amber
+          text: "#92400E",
+          border: "#F59E0B",
+        },
+        "Equipments Installation & Maintenance": {
+          bg: "#FECACA", // Light red
+          text: "#991B1B",
+          border: "#EF4444",
+        },
+        "Joineries & Wood Work": {
+          bg: "#D1FAE5", // Light green
+          text: "#065F46",
+          border: "#10B981",
+        },
+        "Painting & Interior Decoration": {
+          bg: "#DDD6FE", // Light purple
+          text: "#5B21B6",
+          border: "#8B5CF6",
+        },
+        "Plumbing, Sanitary, Bathroom & Toilets": {
+          bg: "#E9D5FF", // Light violet
+          text: "#6B21A8",
+          border: "#9333EA",
+        },
+        "Veneer Pressing": {
+          bg: "#FFE4E6", // Light pink
+          text: "#9D174D",
+          border: "#EC4899",
+        },
+        Other: {
+          bg: "#E5E7EB", // Neutral gray
+          text: "#4B5563",
+          border: "#9CA3AF",
+        },
       };
+
+    return colors[jobType as keyof typeof colors] || colors["Other"];
+  };
+
+ const getUrgencyColor = (urgency: string) => {
+    const colors: Record<string, { bg: string; text: string; border: string }> =
+      {
+        "Emergency in  1 Hr": {
+          bg: "#FECACA", // Light red
+          text: "#991B1B", // Dark red
+          border: "#EF4444", // Red
+        },
+        "Fast 1 day": {
+          bg: "#FDE68A", // Light yellow
+          text: "#92400E", // Amber brown
+          border: "#F59E0B", // Amber
+        },
+        "Normal 1 to 7 days": {
+          bg: "#BFDBFE", // Light blue
+          text: "#1E40AF", // Dark blue
+          border: "#3B82F6", // Blue
+        },
+        "Planned 1 month & above": {
+          bg: "#DDD6FE", // Light violet
+          text: "#5B21B6", // Indigo
+          border: "#8B5CF6", // Violet
+        },
+        "Relaxed 1 to 2 weeks": {
+          bg: "#D1FAE5", // Light green
+          text: "#065F46", // Dark green
+          border: "#10B981", // Green
+        },
+        "Urgent 1 to 4 hrs": {
+          bg: "#FEF3C7", // Light amber
+          text: "#92400E", // Dark amber
+          border: "#F59E0B", // Amber
+        },
+      };
+
     return (
       colors[urgency as keyof typeof colors] || {
-        bg: "#E5E7EB",
+        bg: "#E5E7EB", // Neutral gray
         text: "#4B5563",
         border: "#9CA3AF",
       }

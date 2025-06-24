@@ -213,10 +213,10 @@ export default function InspectorDashboard() {
         {/* Main Content Container */}
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Main Content - Scrollable */}
-          <main className="flex-1 overflow-y-auto p-4 sm:p-6">
-            <div className="max-w-7xl mx-auto">
+          <main className="flex-1 overflow-y-auto ">
+            <div className="w-full mx-auto">
               {/* Main Content Area */}
-              <div className="pb-12">{renderContent()}</div>
+              <div className="pb-20 p-2">{renderContent()}</div>
             </div>
           </main>
 

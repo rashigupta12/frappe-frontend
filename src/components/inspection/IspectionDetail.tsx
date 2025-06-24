@@ -1,28 +1,17 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { zodResolver } from "@hookform/resolvers/zod";
 import { format } from "date-fns";
 import { parseISO } from "date-fns/parseISO";
 import {
-  ArrowLeft,
-  Building,
   CalendarIcon,
-  Camera,
   Check,
   ClockIcon,
-  DollarSign,
-  Eye,
-  EyeOff,
-  FileText,
+  Edit,
   Info,
-  Mail,
-  Phone,
   Plus,
-  Ruler,
   Trash2,
   Upload,
-  User,
-  X
+  X,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
@@ -69,22 +58,13 @@ const formSchema = z.object({
 const uploadFile = async (file: File): Promise<string> => {
   try {
     const response = await frappeAPI.upload(file);
-
-    if (!response.success) {
-      throw new Error(response.error || "Upload failed");
-    }
+    if (!response.success) throw new Error(response.error || "Upload failed");
 
     const data = response.data;
-
-    if (data && data.message) {
-      const message = data.message;
-      return message.file_url || message.file_name || "";
-    }
-
-    if (typeof data === "object" && data !== null) {
+    if (data && data.message)
+      return data.message.file_url || data.message.file_name || "";
+    if (typeof data === "object" && data !== null)
       return data.file_url || data.file_name || "";
-    }
-
     if (typeof data === "string") {
       try {
         const parsed = JSON.parse(data);
@@ -93,7 +73,6 @@ const uploadFile = async (file: File): Promise<string> => {
         return data;
       }
     }
-
     throw new Error("No file URL found in response");
   } catch (error) {
     console.error("File upload error:", error);
@@ -113,7 +92,6 @@ const CreateInspection = () => {
   const [dataLoaded, setDataLoaded] = useState(false);
   const [leadData, setLeadData] = useState<any>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [showLeadDetails, setShowLeadDetails] = useState(false);
 
   const {
     createInspection,
@@ -122,7 +100,7 @@ const CreateInspection = () => {
     loading: storeLoading,
     fetchFirstInspectionByField,
     currentInspection,
-    // error: storeError,
+    error: storeError,
   } = useInspectionStore();
 
   const form = useForm({
@@ -163,7 +141,6 @@ const CreateInspection = () => {
     const initializeData = async () => {
       try {
         setDataLoaded(false);
-
         if (todo) {
           if (todo.inquiry_data?.custom_property_type) {
             form.setValue(
@@ -171,13 +148,11 @@ const CreateInspection = () => {
               todo.inquiry_data.custom_property_type
             );
           }
-
           if (todo.reference_name) {
             await fetchFirstInspectionByField("lead", todo.reference_name);
           }
         } else if (inspection) {
           setIsUpdateMode(true);
-
           if (inspection.lead) {
             const fetchedLeadData = await fetchLeadData(inspection.lead);
             if (fetchedLeadData?.custom_property_type) {
@@ -192,24 +167,20 @@ const CreateInspection = () => {
           navigate("/inspector?tab=todos");
           return;
         }
-
         setDataLoaded(true);
       } catch (error) {
         console.error("Error initializing data:", error);
         toast.error("Failed to initialize inspection data");
       }
     };
-
     initializeData();
   }, [todo, inspection]);
 
   useEffect(() => {
     if (dataLoaded) {
       const inspectionToUse = inspection || currentInspection;
-
       if (inspectionToUse) {
         setIsUpdateMode(true);
-
         if (inspectionToUse.inspection_date) {
           try {
             const parsedDate = parseISO(inspectionToUse.inspection_date);
@@ -218,30 +189,19 @@ const CreateInspection = () => {
             console.error("Error parsing inspection date:", error);
           }
         }
-
-        if (inspectionToUse.inspection_time) {
+        if (inspectionToUse.inspection_time)
           form.setValue("inspection_time", inspectionToUse.inspection_time);
-        }
-
-        if (inspectionToUse.property_type) {
+        if (inspectionToUse.property_type)
           form.setValue("property_type", inspectionToUse.property_type);
-        }
-
-        if (inspectionToUse.inspection_notes) {
+        if (inspectionToUse.inspection_notes)
           form.setValue("inspection_notes", inspectionToUse.inspection_notes);
-        }
-
-        if (inspectionToUse.site_photos) {
+        if (inspectionToUse.site_photos)
           form.setValue("site_photos", inspectionToUse.site_photos);
-        }
-
-        if (inspectionToUse.measurement_sketch) {
+        if (inspectionToUse.measurement_sketch)
           form.setValue(
             "measurement_sketch",
             inspectionToUse.measurement_sketch
           );
-        }
-
         if (
           inspectionToUse.site_dimensions &&
           Array.isArray(inspectionToUse.site_dimensions)
@@ -267,16 +227,13 @@ const CreateInspection = () => {
     index?: number
   ) => {
     if (!file) return;
-
     try {
       setUploading(true);
       setUploadProgress(0);
       const toastId = toast.loading("Uploading file...", { id: "upload" });
 
       const maxSize = 10 * 1024 * 1024;
-      if (file.size > maxSize) {
-        throw new Error("File size exceeds 10MB limit");
-      }
+      if (file.size > maxSize) throw new Error("File size exceeds 10MB limit");
 
       const allowedTypes = [
         "image/jpeg",
@@ -291,22 +248,16 @@ const CreateInspection = () => {
       }
 
       const interval = setInterval(() => {
-        setUploadProgress((prev) => {
-          if (prev >= 90) {
-            clearInterval(interval);
-            return prev;
-          }
-          return prev + 10;
-        });
+        setUploadProgress((prev) =>
+          prev >= 90 ? (clearInterval(interval), prev) : prev + 10
+        );
       }, 300);
 
       const fileUrl = await uploadFile(file);
       setUploadProgress(100);
       clearInterval(interval);
 
-      if (!fileUrl) {
-        throw new Error("File uploaded but no URL returned");
-      }
+      if (!fileUrl) throw new Error("File uploaded but no URL returned");
 
       if (index !== undefined) {
         form.setValue(`site_dimensions.${index}.media`, fileUrl);
@@ -332,7 +283,6 @@ const CreateInspection = () => {
   const handleSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
       setLoading(true);
-
       const inspectionToUpdate = inspection || currentInspection;
       const leadReference = todo?.reference_name || inspection?.lead;
       const customerName =
@@ -361,7 +311,6 @@ const CreateInspection = () => {
         await createInspection(inspectionData, todo?.name);
         toast.success("Inspection created successfully!");
       }
-
       navigate("/inspector?tab=inspections");
     } catch (error) {
       const message = isUpdateMode
@@ -417,7 +366,7 @@ const CreateInspection = () => {
 
   if (!displayData) {
     return (
-      <div className="p-4 max-w-md mx-auto">
+      <div className=" max-w-md mx-auto">
         <Card className="border-none shadow-none">
           <CardHeader>
             <CardTitle>Inspection Dashboard</CardTitle>
@@ -441,391 +390,410 @@ const CreateInspection = () => {
   const inspectionToDisplay = inspection || currentInspection;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Mobile Header */}
-      <div className="sticky top-0 z-10 bg-white border-b shadow-sm">
-        <div className="flex items-center justify-between p-4">
-          <div className="flex items-center gap-3">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate("/inspector?tab=todos")}
-              className="p-1"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <div>
-              <h1 className="text-lg font-semibold truncate">
-                {isUpdateMode ? "Update" : "Create"} Inspection
-              </h1>
-              <p className="text-sm text-gray-600 truncate">
-                {displayData.customerName}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            {inspectionToDisplay?.name && (
-              <Badge variant="outline" className="text-xs px-2 py-1">
-                {inspectionToDisplay.name.split("-").pop()}
-              </Badge>
-            )}
-            <Badge
-              variant={isUpdateMode ? "default" : "secondary"}
-              className="text-xs px-2 py-1"
-            >
-              {isUpdateMode ? "Update" : "Create"}
+ <div className="w-full bg-gradient-to-b from-gray-50 to-white min-h-screen m-0 p-0">
+  <Card className="border-none shadow-sm max-w-7xl mx-auto p-0 m-0">
+    {/* Compact Header */}
+    <CardHeader className="bg-gradient-to-r from-emerald-500 to-blue-500 text-white rounded-t-lg p-4">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        <CardTitle className="flex items-center gap-2 text-lg m-0 p-0">
+          {isUpdateMode ? (
+            <>
+              <Edit className="h-4 w-4" />
+              <span>Update Inspection for {displayData.customerName}</span>
+            </>
+          ) : (
+            <span>Create Inspection for {displayData.customerName}</span>
+          )}
+        </CardTitle>
+
+        <div className="flex items-center gap-2">
+          {inspectionToDisplay?.name && (
+            <Badge variant="secondary" className="text-xs bg-white/20">
+              ID: {inspectionToDisplay.name}
             </Badge>
-          </div>
+          )}
+          <Badge
+            variant={isUpdateMode ? "default" : "secondary"}
+            className="bg-white/20 text-xs"
+          >
+            {isUpdateMode ? "Update Mode" : "Create Mode"}
+          </Badge>
         </div>
       </div>
 
-      <div className="p-4 space-y-4">
-        {/* Lead Information Card - Compact */}
-        <Card className="overflow-hidden">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base flex items-center gap-2">
-                <User className="h-4 w-4" />
-                Lead Information
-              </CardTitle>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowLeadDetails(!showLeadDetails)}
-                className="p-1"
-              >
-                {showLeadDetails ? (
-                  <EyeOff className="h-4 w-4" />
-                ) : (
-                  <Eye className="h-4 w-4" />
-                )}
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="pt-0">
-            {/* Always visible summary */}
-            <div className="grid grid-cols-2 gap-3 text-sm">
-              <div className="flex items-center gap-2">
-                <User className="h-3 w-3 text-gray-500" />
-                <span className="truncate font-medium">
-                  {displayData.leadDetails?.lead_name ||
-                    displayData.customerName}
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Building className="h-3 w-3 text-gray-500" />
-                <span className="truncate">
-                  {displayData.leadDetails?.custom_property_type ||
-                    inspection?.property_type ||
-                    "N/A"}
-                </span>
-              </div>
+      {storeError && (
+        <div className="text-yellow-200 text-sm flex items-center gap-1 mt-2">
+          <Info className="h-4 w-4" />
+          Error: {storeError}
+        </div>
+      )}
+    </CardHeader>
+
+    <CardContent className="p-0 m-0">
+      <div className="flex flex-col xl:flex-row">
+        {/* Compact Lead Information Sidebar */}
+        <div className="xl:w-80 bg-gray-50 border-r border-gray-200">
+          <div className="px-4">
+            <h3 className="text-base font-semibold text-gray-800 mb-3 flex items-center gap-2">
+              <span className="w-2 h-2 bg-emerald-500 rounded-full"></span>
+              Lead Details
+            </h3>
+            
+            {/* Customer Name */}
+            <div className="mb-3">
+              <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Customer</p>
+              <p className="font-medium text-gray-900 text-sm mt-1">
+                {displayData.leadDetails?.lead_name || displayData.customerName}
+              </p>
             </div>
 
-            {/* Expandable details */}
-            {showLeadDetails && (
-              <div className="mt-4 pt-4 border-t grid grid-cols-2 gap-3 text-sm">
-                <div className="flex items-center gap-2">
-                  <Mail className="h-3 w-3 text-gray-500" />
-                  <span className="truncate text-xs">
+            {/* Contact Info - Horizontal Layout */}
+            <div className="mb-3">
+              <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Contact</p>
+              <div className="space-y-2">
+                <div className="bg-white p-2 rounded border border-gray-200">
+                  <p className="text-xs text-gray-500">Email</p>
+                  <p className="text-xs text-gray-900 truncate">
                     {displayData.leadDetails?.email_id || "N/A"}
-                  </span>
+                  </p>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Phone className="h-3 w-3 text-gray-500" />
-                  <span className="truncate text-xs">
+                <div className="bg-white p-2 rounded border border-gray-200">
+                  <p className="text-xs text-gray-500">Phone</p>
+                  <p className="text-xs text-gray-900">
                     {displayData.leadDetails?.mobile_no || "N/A"}
-                  </span>
+                  </p>
                 </div>
-                <div className="flex items-center gap-2">
-                  <DollarSign className="h-3 w-3 text-gray-500" />
-                  <span className="truncate text-xs">
-                    {displayData.leadDetails?.custom_budget_range || "N/A"}
-                  </span>
-                </div>
-                {inspectionToDisplay && (
-                  <div className="flex items-center gap-2">
-                    <Info className="h-3 w-3 text-blue-500" />
-                    <span className="truncate text-xs text-blue-600">
-                      {inspectionToDisplay.inspection_status}
-                    </span>
-                  </div>
-                )}
               </div>
-            )}
-          </CardContent>
-        </Card>
+            </div>
 
-        {/* Inspection Form */}
-        <Card>
-          <CardContent className="p-4">
+            {/* Property Info - Horizontal Layout */}
+            <div>
+              <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Property</p>
+              <div className="space-y-2">
+                <div className="bg-white p-2 rounded border border-gray-200">
+                  <p className="text-xs text-gray-500">Type</p>
+                  <p className="text-xs text-gray-900">
+                    {displayData.leadDetails?.custom_property_type ||
+                      inspection?.property_type ||
+                      "N/A"}
+                  </p>
+                </div>
+                <div className="bg-white p-2 rounded border border-gray-200">
+                  <p className="text-xs text-gray-500">Budget</p>
+                  <p className="text-xs text-gray-900">
+                    {displayData.leadDetails?.custom_budget_range || "N/A"}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Main Form Content */}
+        <div className="flex-1">
+          <div className="p-4">
+            <h3 className="text-base font-semibold text-gray-800 mb-4 flex items-center gap-2">
+              <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+              {isUpdateMode ? "Update Details" : "Inspection Details"}
+            </h3>
+
             <Form {...form}>
               <form
                 onSubmit={form.handleSubmit(handleSubmit)}
-                className="space-y-4"
+                className="space-y-6"
               >
-                {/* Date & Time - Single Row */}
-                <div className="grid grid-cols-2 gap-3">
-                  <FormField
-                    control={form.control}
-                    name="inspection_date"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-sm flex items-center gap-1">
-                          <CalendarIcon className="h-3 w-3" />
-                          Date
-                        </FormLabel>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <FormControl>
-                              <Button
-                                variant="outline"
-                                className="w-full justify-start text-left font-normal text-sm h-9"
-                              >
-                                {field.value ? (
-                                  format(field.value, "MMM dd")
-                                ) : (
-                                  <span>Pick date</span>
-                                )}
-                              </Button>
-                            </FormControl>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar
-                              mode="single"
-                              selected={field.value}
-                              onSelect={field.onChange}
-                              disabled={(date) => date < new Date("1900-01-01")}
-                              initialFocus
-                            />
-                          </PopoverContent>
-                        </Popover>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                {/* Basic Info Section - Compact */}
+                <div className="bg-white border border-gray-200 rounded-lg p-4">
+                  <h4 className="font-medium text-gray-800 text-sm mb-3 flex items-center gap-2">
+                    <CalendarIcon className="h-4 w-4 text-emerald-600" />
+                    Basic Information
+                  </h4>
 
-                  <FormField
-                    control={form.control}
-                    name="inspection_time"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-sm flex items-center gap-1">
-                          <ClockIcon className="h-3 w-3" />
-                          Time
-                        </FormLabel>
-                        <FormControl>
-                          <Input
-                            type="time"
-                            className="text-sm h-9"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                {/* File Uploads - Compact */}
-                <div className="space-y-3">
-                  <FormField
-                    control={form.control}
-                    name="site_photos"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-sm flex items-center gap-1">
-                          <Camera className="h-3 w-3" />
-                          Site Photos
-                        </FormLabel>
-                        <FormControl>
-                          <div className="space-y-2">
-                            <label
-                              htmlFor="site_photos"
-                              className={`flex items-center justify-center gap-2 p-3 border-2 border-dashed rounded-lg cursor-pointer hover:bg-gray-50 transition-colors ${
-                                uploading ? "opacity-50 cursor-not-allowed" : ""
-                              }`}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <FormField
+                      control={form.control}
+                      name="inspection_date"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-col">
+                          <FormLabel className="text-gray-700 text-sm">
+                            Inspection Date
+                          </FormLabel>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <FormControl>
+                                <Button
+                                  variant="outline"
+                                  className="pl-3 text-left font-normal bg-white border-gray-300 hover:bg-gray-50 h-9"
+                                >
+                                  {field.value ? (
+                                    format(field.value, "PPP")
+                                  ) : (
+                                    <span>Pick a date</span>
+                                  )}
+                                  <CalendarIcon className="ml-auto h-4 w-4 text-gray-500" />
+                                </Button>
+                              </FormControl>
+                            </PopoverTrigger>
+                            <PopoverContent
+                              className="w-auto p-0 bg-white"
+                              align="start"
                             >
-                              <Upload className="h-4 w-4 text-gray-400" />
-                              <span className="text-sm font-medium">
-                                {uploading ? "Uploading..." : "Upload Photos"}
-                              </span>
-                            </label>
-                            <Input
-                              type="file"
-                              multiple
-                              accept="image/*"
-                              onChange={async (e) => {
-                                const files = e.target.files;
-                                if (files && files.length > 0) {
-                                  try {
-                                    await handleFileUpload(
-                                      files[0],
-                                      "site_photos"
-                                    );
-                                  } catch (error) {
-                                    console.error("Upload failed:", error);
-                                  }
+                              <Calendar
+                                mode="single"
+                                selected={field.value}
+                                onSelect={field.onChange}
+                                disabled={(date) =>
+                                  date < new Date("1900-01-01")
                                 }
-                              }}
-                              className="hidden"
-                              id="site_photos"
-                              disabled={uploading}
-                            />
-                            {uploadProgress > 0 && (
-                              <Progress
-                                value={uploadProgress}
-                                className="h-1"
+                                initialFocus
                               />
-                            )}
-                            {field.value && (
-                              <div className="flex items-center gap-2 p-2 bg-green-50 rounded-md">
-                                <Check className="h-3 w-3 text-green-500" />
-                                <span className="text-xs font-medium truncate">
-                                  {getFileDisplayName(field.value)}
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                            </PopoverContent>
+                          </Popover>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                  <FormField
-                    control={form.control}
-                    name="measurement_sketch"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-sm flex items-center gap-1">
-                          <FileText className="h-3 w-3" />
-                          Measurement Sketch
-                        </FormLabel>
-                        <FormControl>
-                          <div className="space-y-2">
-                            <label
-                              htmlFor="measurement_sketch"
-                              className={`flex items-center justify-center gap-2 p-3 border-2 border-dashed rounded-lg cursor-pointer hover:bg-gray-50 transition-colors ${
-                                uploading ? "opacity-50 cursor-not-allowed" : ""
-                              }`}
-                            >
-                              <Upload className="h-4 w-4 text-gray-400" />
-                              <span className="text-sm font-medium">
-                                {uploading ? "Uploading..." : "Upload Sketch"}
-                              </span>
-                            </label>
-                            <Input
-                              type="file"
-                              accept="image/*,.pdf"
-                              onChange={(e) => {
-                                const files = e.target.files;
-                                if (files && files.length > 0) {
-                                  handleFileUpload(
-                                    files[0],
-                                    "measurement_sketch"
-                                  );
-                                }
-                              }}
-                              className="hidden"
-                              id="measurement_sketch"
-                              disabled={uploading}
-                            />
-                            {uploadProgress > 0 && (
-                              <Progress
-                                value={uploadProgress}
-                                className="h-1"
+                    <FormField
+                      control={form.control}
+                      name="inspection_time"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-gray-700 text-sm">
+                            Inspection Time
+                          </FormLabel>
+                          <FormControl>
+                            <div className="relative">
+                              <ClockIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+                              <Input
+                                type="time"
+                                className="pl-10 bg-white border-gray-300 h-9"
+                                {...field}
                               />
-                            )}
-                            {field.value && (
-                              <div className="flex items-center gap-2 p-2 bg-green-50 rounded-md">
-                                <Check className="h-3 w-3 text-green-500" />
-                                <span className="text-xs font-medium truncate">
-                                  {getFileDisplayName(field.value)}
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                {/* Notes */}
-                <FormField
-                  control={form.control}
-                  name="inspection_notes"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-sm">Notes</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          rows={3}
-                          className="resize-none text-sm"
-                          placeholder="Add inspection notes..."
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {/* Site Dimensions - Compact Cards */}
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <FormLabel className="text-sm flex items-center gap-1">
-                      <Ruler className="h-3 w-3" />
-                      Site Dimensions ({fields.length})
-                    </FormLabel>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() =>
-                        append({
-                          area_name: "",
-                          dimensionsunits: "",
-                          media: "",
-                        })
-                      }
-                      className="h-8 px-3"
-                    >
-                      <Plus className="h-3 w-3 mr-1" />
-                      Add
-                    </Button>
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                   </div>
+                </div>
 
-                  {fields.map((field: any, index: number) => (
-                    <Card key={field.id} className="p-3 border">
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium">
-                            Area {index + 1}
-                          </span>
+                {/* Site Details Section - Compact */}
+                <div className="bg-white border border-gray-200 rounded-lg p-4">
+                  <h4 className="font-medium text-gray-800 text-sm mb-3 flex items-center gap-2">
+                    <Info className="h-4 w-4 text-emerald-600" />
+                    Site Details
+                  </h4>
+
+                  <div className="space-y-4">
+                    <FormField
+                      control={form.control}
+                      name="site_photos"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-gray-700 text-sm">
+                            Site Photos
+                          </FormLabel>
+                          <FormControl>
+                            <div className="space-y-2">
+                              <label
+                                htmlFor="site_photos"
+                                className={`flex flex-col items-center justify-center gap-2 p-3 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors ${
+                                  uploading
+                                    ? "opacity-50 cursor-not-allowed"
+                                    : ""
+                                }`}
+                              >
+                                <Upload className="h-5 w-5 text-gray-400" />
+                                <span className="text-sm font-medium text-gray-600">
+                                  {uploading
+                                    ? "Uploading..."
+                                    : "Click to upload photos"}
+                                </span>
+                                <span className="text-xs text-gray-400">
+                                  JPEG, PNG (max 10MB)
+                                </span>
+                              </label>
+                              <Input
+                                type="file"
+                                multiple
+                                accept="image/*"
+                                onChange={async (e) => {
+                                  const files = e.target.files;
+                                  if (files && files.length > 0) {
+                                    try {
+                                      const file = files[0];
+                                      await handleFileUpload(
+                                        file,
+                                        "site_photos"
+                                      );
+                                    } catch (error) {
+                                      console.error(
+                                        "Upload failed:",
+                                        error
+                                      );
+                                    }
+                                  }
+                                }}
+                                className="hidden"
+                                id="site_photos"
+                                disabled={uploading}
+                              />
+                              {uploadProgress > 0 && (
+                                <Progress
+                                  value={uploadProgress}
+                                  className="h-2 bg-gray-100"
+                                />
+                              )}
+                              {field.value && (
+                                <div className="p-2 bg-emerald-50 rounded border border-emerald-200">
+                                  <div className="flex items-center gap-2 text-sm text-emerald-800">
+                                    <Check className="h-4 w-4 text-emerald-600" />
+                                    <span className="font-medium">
+                                      {getFileDisplayName(field.value)}
+                                    </span>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="measurement_sketch"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-gray-700 text-sm">
+                            Measurement Sketch
+                          </FormLabel>
+                          <FormControl>
+                            <div className="space-y-2">
+                              <label
+                                htmlFor="measurement_sketch"
+                                className={`flex flex-col items-center justify-center gap-2 p-3 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors ${
+                                  uploading
+                                    ? "opacity-50 cursor-not-allowed"
+                                    : ""
+                                }`}
+                              >
+                                <Upload className="h-5 w-5 text-gray-400" />
+                                <span className="text-sm font-medium text-gray-600">
+                                  {uploading
+                                    ? "Uploading..."
+                                    : "Click to upload sketch"}
+                                </span>
+                                <span className="text-xs text-gray-400">
+                                  PDF, JPEG, PNG (max 10MB)
+                                </span>
+                              </label>
+                              <Input
+                                type="file"
+                                accept="image/*,.pdf"
+                                onChange={(e) => {
+                                  const files = e.target.files;
+                                  if (files && files.length > 0) {
+                                    handleFileUpload(
+                                      files[0],
+                                      "measurement_sketch"
+                                    );
+                                  }
+                                }}
+                                className="hidden"
+                                id="measurement_sketch"
+                                disabled={uploading}
+                              />
+                              {uploadProgress > 0 && (
+                                <Progress
+                                  value={uploadProgress}
+                                  className="h-2 bg-gray-100"
+                                />
+                              )}
+                              {field.value && (
+                                <div className="p-2 bg-emerald-50 rounded border border-emerald-200">
+                                  <div className="flex items-center gap-2 text-sm text-emerald-800">
+                                    <Check className="h-4 w-4 text-emerald-600" />
+                                    <span className="font-medium">
+                                      {getFileDisplayName(field.value)}
+                                    </span>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="inspection_notes"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-gray-700 text-sm">
+                            Inspection Notes
+                          </FormLabel>
+                          <FormControl>
+                            <Textarea
+                              rows={3}
+                              className="resize-none bg-white border-gray-300"
+                              placeholder="Add any important notes about the site..."
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
+
+                {/* Dimensions Section - Compact */}
+                <div className="bg-white border border-gray-200 rounded-lg p-4">
+                  <h4 className="font-medium text-gray-800 text-sm mb-3 flex items-center gap-2">
+                    <Plus className="h-4 w-4 text-emerald-600" />
+                    Site Dimensions
+                  </h4>
+
+                  <div className="space-y-3">
+                    {fields.map((field, index) => (
+                      <div
+                        key={field.id}
+                        className="border border-gray-200 rounded-lg p-3 bg-gray-50"
+                      >
+                        <div className="flex justify-between items-center mb-3">
+                          <h5 className="font-medium text-gray-700 text-sm">
+                            Area #{index + 1}
+                          </h5>
                           <Button
                             type="button"
                             variant="ghost"
                             size="sm"
+                            className="text-red-500 hover:text-red-600 hover:bg-red-50 h-7 w-7 p-0"
                             onClick={() => remove(index)}
-                            className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
                           >
-                            <Trash2 className="h-3 w-3" />
+                            <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
                           <FormField
                             control={form.control}
                             name={`site_dimensions.${index}.area_name`}
                             render={({ field }) => (
                               <FormItem>
+                                <FormLabel className="text-gray-700 text-sm">
+                                  Area Name
+                                </FormLabel>
                                 <FormControl>
                                   <Input
-                                    placeholder="Area name"
-                                    className="text-sm h-8"
+                                    placeholder="e.g., Living Room"
+                                    className="bg-white border-gray-300 h-9"
                                     {...field}
                                   />
                                 </FormControl>
@@ -839,10 +807,13 @@ const CreateInspection = () => {
                             name={`site_dimensions.${index}.dimensionsunits`}
                             render={({ field }) => (
                               <FormItem>
+                                <FormLabel className="text-gray-700 text-sm">
+                                  Dimensions
+                                </FormLabel>
                                 <FormControl>
                                   <Input
-                                    placeholder="Dimensions"
-                                    className="text-sm h-8"
+                                    placeholder="e.g., 10x15 meters"
+                                    className="bg-white border-gray-300 h-9"
                                     {...field}
                                   />
                                 </FormControl>
@@ -857,21 +828,24 @@ const CreateInspection = () => {
                           name={`site_dimensions.${index}.media`}
                           render={({ field }) => (
                             <FormItem>
+                              <FormLabel className="text-gray-700 text-sm">
+                                Media
+                              </FormLabel>
                               <FormControl>
                                 <div className="space-y-2">
                                   <label
                                     htmlFor={`media-${index}`}
-                                    className={`flex items-center justify-center gap-2 p-2 border border-dashed rounded cursor-pointer hover:bg-gray-50 transition-colors ${
+                                    className={`flex flex-col items-center justify-center gap-2 p-3 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors ${
                                       uploading
                                         ? "opacity-50 cursor-not-allowed"
                                         : ""
                                     }`}
                                   >
-                                    <Upload className="h-3 w-3 text-gray-400" />
-                                    <span className="text-xs">
+                                    <Upload className="h-4 w-4 text-gray-400" />
+                                    <span className="text-xs font-medium text-gray-600">
                                       {uploading
                                         ? "Uploading..."
-                                        : "Upload Media"}
+                                        : "Click to upload media"}
                                     </span>
                                   </label>
                                   <Input
@@ -880,7 +854,11 @@ const CreateInspection = () => {
                                     onChange={(e) => {
                                       const files = e.target.files;
                                       if (files && files.length > 0) {
-                                        handleFileUpload(files[0], "", index);
+                                        handleFileUpload(
+                                          files[0],
+                                          "",
+                                          index
+                                        );
                                       }
                                     }}
                                     className="hidden"
@@ -890,15 +868,17 @@ const CreateInspection = () => {
                                   {uploadProgress > 0 && (
                                     <Progress
                                       value={uploadProgress}
-                                      className="h-1"
+                                      className="h-2 bg-gray-100"
                                     />
                                   )}
                                   {field.value && (
-                                    <div className="flex items-center gap-2 p-2 bg-green-50 rounded">
-                                      <Check className="h-3 w-3 text-green-500" />
-                                      <span className="text-xs font-medium truncate">
-                                        {getFileDisplayName(field.value)}
-                                      </span>
+                                    <div className="p-2 bg-emerald-50 rounded border border-emerald-200">
+                                      <div className="flex items-center gap-2 text-sm text-emerald-800">
+                                        <Check className="h-4 w-4 text-emerald-600" />
+                                        <span className="font-medium text-xs">
+                                          {getFileDisplayName(field.value)}
+                                        </span>
+                                      </div>
                                     </div>
                                   )}
                                 </div>
@@ -908,58 +888,74 @@ const CreateInspection = () => {
                           )}
                         />
                       </div>
-                    </Card>
-                  ))}
+                    ))}
+
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full border-gray-300 text-gray-600 hover:bg-gray-50 hover:text-gray-700 h-9"
+                      onClick={() =>
+                        append({
+                          area_name: "",
+                          dimensionsunits: "",
+                          media: "",
+                        })
+                      }
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Area Dimension
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Action Buttons - Sticky Footer */}
+                <div className="sticky bottom-0 bg-white border-t border-gray-200 p-4 -mx-4 -mb-4">
+                  <div className="flex flex-col-reverse sm:flex-row justify-end gap-3">
+                    {displayData.showTodoActions && (
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        onClick={handleCancelTodo}
+                        disabled={cancelling || storeLoading || uploading}
+                        className="w-full sm:w-auto h-9"
+                      >
+                        {cancelling ? (
+                          <span className="animate-pulse">Processing...</span>
+                        ) : (
+                          <>
+                            <X className="h-4 w-4 mr-2" />
+                            Cancel Inspection
+                          </>
+                        )}
+                      </Button>
+                    )}
+
+                    <Button
+                      type="submit"
+                      disabled={loading || storeLoading || uploading}
+                      className="w-full sm:w-auto bg-gradient-to-r from-emerald-500 to-blue-500 hover:from-emerald-600 hover:to-blue-600 text-white h-9"
+                    >
+                      {loading ? (
+                        <span className="animate-pulse">Processing...</span>
+                      ) : (
+                        <>
+                          <Check className="h-4 w-4 mr-2" />
+                          {isUpdateMode
+                            ? "Update Inspection"
+                            : "Submit Inspection"}
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 </div>
               </form>
             </Form>
-          </CardContent>
-        </Card>
-
-        {/* Sticky Action Buttons */}
-        <div className="sticky bottom-0 bg-white border-t p-4 space-y-3">
-          {displayData.showTodoActions && (
-            <Button
-              type="button"
-              variant="destructive"
-              onClick={handleCancelTodo}
-              disabled={cancelling || storeLoading || uploading}
-              className="w-full"
-            >
-              {cancelling ? (
-                <span className="flex items-center gap-2">
-                  <span className="animate-spin">↻</span>
-                  Cancelling...
-                </span>
-              ) : (
-                <span className="flex items-center gap-2">
-                  <X className="h-4 w-4" />
-                  Cancel Todo
-                </span>
-              )}
-            </Button>
-          )}
-          <Button
-            type="submit"
-            onClick={form.handleSubmit(handleSubmit)}
-            disabled={loading || storeLoading || uploading}
-            className="w-full"
-          >
-            {loading ? (
-              <span className="flex items-center gap-2">
-                <span className="animate-spin">↻</span>
-                {isUpdateMode ? "Updating..." : "Creating..."}
-              </span>
-            ) : (
-              <span className="flex items-center gap-2">
-                <Check className="h-4 w-4" />
-                {isUpdateMode ? "Update Inspection" : "Create Inspection"}
-              </span>
-            )}
-          </Button>
+          </div>
         </div>
       </div>
-    </div>
+    </CardContent>
+  </Card>
+</div>
   );
 };
 
