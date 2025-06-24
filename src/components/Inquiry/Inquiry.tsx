@@ -323,13 +323,13 @@ const InquiryPage = () => {
         formData.custom_alternative_inspection_date
       );
 
-      // Debug: Log the formatted data before submission
-      console.log("Submission data:", {
-        preferred_date: submissionData.custom_preferred_inspection_date,
-        preferred_datetime: submissionData.custom_preferred_inspection_time,
-        alternative_date: submissionData.custom_alternative_inspection_date,
-        alternative_datetime: submissionData.custom_alternative_inspection_time,
-      });
+      // // Debug: Log the formatted data before submission
+      // console.log("Submission data:", {
+      //   preferred_date: submissionData.custom_preferred_inspection_date,
+      //   preferred_datetime: submissionData.custom_preferred_inspection_time,
+      //   alternative_date: submissionData.custom_alternative_inspection_date,
+      //   alternative_datetime: submissionData.custom_alternative_inspection_time,
+      // });
 
       if (currentInquiry?.name) {
         // Update existing lead
@@ -364,7 +364,7 @@ const InquiryPage = () => {
       )
   );
 
-  console.log("Filtered inquiries:", filteredInquiries);
+  // console.log("Filtered inquiries:", filteredInquiries);
 
   return (
     <div className="w-full">

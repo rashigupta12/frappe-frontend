@@ -23,7 +23,7 @@ const frappeClient = axios.create({
 frappeClient.interceptors.request.use(
   (config) => {
     // Log requests for debugging
-    console.log('Making request:', config.method?.toUpperCase(), config.url);
+    // console.log('Making request:', config.method?.toUpperCase(), config.url);
     
     // Don't manually set browser-controlled headers
     delete config.headers['Origin'];
@@ -272,10 +272,81 @@ export const frappeAPI = {
   },
   getTodoByNAme: async (todoName: string) => {
     return await frappeAPI.makeAuthenticatedRequest('GET', `/api/resource/ToDo/${todoName}`);
-  }
+  },
 
+  getTodoByFilters: async (filters: Record<string, unknown> = {}) => {
+    const filterString = Object.entries(filters)
+      .map(([key, value]) => `["${key}", "=", "${value}"]`)
+      .join(',');
+    return await frappeAPI.makeAuthenticatedRequest('GET', `/api/resource/ToDo?filters=[${filterString}]`);
+  },
+  updateTodoStatus: async (todoId: string, status: string) => {
+    return await frappeAPI.makeAuthenticatedRequest('PUT', `/api/resource/ToDo/${todoId}`, { status });
+  },
 
+  createInspection: async (inspectionData: Record<string, unknown>) => {
+    return await frappeAPI.makeAuthenticatedRequest('POST', '/api/resource/SiteInspection', inspectionData);
+  },
   
+  getInspectionDetails: async (inspectionName: string) => {
+    return await frappeAPI.makeAuthenticatedRequest('GET', `/api/resource/SiteInspection/${inspectionName}`);
+  },
+ getAllInspections: async (filters: Record<string, unknown> = {}) => {
+    // Convert filters to Frappe/ERPNext format
+    const filterArray = Object.entries(filters).map(([key, value]) => [key, "=", value]);
+    const filterString = encodeURIComponent(JSON.stringify(filterArray));
+    
+    return await frappeAPI.makeAuthenticatedRequest(
+        'GET', 
+        `/api/resource/SiteInspection?filters=${filterString}`
+    );
+},
+  UpdateInspection: async (inspectionName: string, inspectionData: Record<string, unknown>) => {
+    return await frappeAPI.makeAuthenticatedRequest('PUT', `/api/resource/SiteInspection/${inspectionName}`, inspectionData);
+  },
+ // In your frappeClient.ts
+upload: async (file: File) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  
+  // These fields match what's working in Bruno
+  formData.append('doctype', 'File');
+  formData.append('is_private', '0');
+  
+  try {
+    const response = await frappeClient.post('/api/method/upload_file', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    
+    // Return the full response structure for proper handling
+    return {
+      success: true,
+      data: response.data  // This should contain the 'message' object
+    };
+  } catch (error) {
+    console.error('File upload error:', error);
+    
+    if (axios.isAxiosError(error)) {
+      const errorMessage = error.response?.data?.message || 
+                          error.response?.data?.exc || 
+                          error.message;
+      return { 
+        success: false, 
+        error: errorMessage,
+        details: error.response?.data 
+      };
+    }
+    
+    return { 
+      success: false, 
+      error: (error as Error).message 
+    };
+  }
+}
+  
+
 
 
 };

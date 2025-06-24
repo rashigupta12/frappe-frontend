@@ -9,6 +9,7 @@ import { roleMiddleware } from './middleware/roleMiddleware';
 import { useEffect } from 'react';
 import SalesDashboard from './components/pages/Dashboard';
 import { LeadsProvider } from './context/LeadContext';
+import InspectorDashboard from './components/pages/InspectorDashboard';
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -129,20 +130,7 @@ const AdminDashboard = () => (
     </div>
   </div>
 );
-const InspectorDashboard = () => (
-  <div style={{ padding: '20px' }}>
-    <h1>Inspector Dashboard</h1>
-    <p>Welcome to your inspector dashboard!</p>
-    <div>
-      <h3>Available Actions:</h3>
-      <ul>
-        <li>View Inspections</li>
-        <li>Manage Inspection Reports</li>
-        <li>Coordinate with Sales Team</li>
-      </ul>
-    </div>
-  </div>
-)
+
 
 // Unauthorized component
 const Unauthorized = () => {
@@ -219,7 +207,7 @@ function AppRoutes() {
           path="/inspector"
           element={
             <ProtectedRoute allowedRoles={['inspector']}>
-              <InspectorDashboard />
+              <InspectorDashboard/>
             </ProtectedRoute>
           }
         />

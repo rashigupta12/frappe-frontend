@@ -223,7 +223,7 @@ const AddressFinder: React.FC<AddressFinderProps> = ({
         setError('No locations found. Try a different search term.');
       }
     } catch (error) {
-      console.error('Error fetching addresses:', error);
+      // console.error('Error fetching addresses:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch locations. Please check your internet connection.';
       setError(errorMessage);
       setSuggestions([]);

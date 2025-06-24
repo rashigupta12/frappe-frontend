@@ -73,7 +73,7 @@ const HomePage = () => {
     };
 
     const handleAppInstalled = () => {
-      console.log("PWA was installed");
+      // console.log("PWA was installed");
       setIsInstalled(true);
       setShowInstallPrompt(false);
       setDeferredPrompt(null);
@@ -126,10 +126,10 @@ const HomePage = () => {
 
       // Wait for the user's response
       const { outcome } = await deferredPrompt.userChoice;
-      console.log("User choice outcome:", outcome);
+      // console.log("User choice outcome:", outcome);
 
       if (outcome === "accepted") {
-        console.log("User accepted the install prompt");
+        // console.log("User accepted the install prompt");
         setShowInstallPrompt(false);
       } else {
         console.log("User dismissed the install prompt");

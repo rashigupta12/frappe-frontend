@@ -242,9 +242,9 @@ const InquiryPage = () => {
       fetchProjectUrgency();
     }
   }, [fetchLeads, fetchJobTypes, fetchProjectUrgency]);
-  console.log("Leads:", leads);
-  console.log("Job Types:", jobTypes);
-  console.log("Project Urgency:", projectUrgency);
+  // console.log("Leads:", leads);
+  // console.log("Job Types:", jobTypes);
+  // console.log("Project Urgency:", projectUrgency);
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -462,7 +462,7 @@ const InquiryPage = () => {
         )
     );
 
-  console.log("Filtered Inquiries:", filteredInquiries);
+  // console.log("Filtered Inquiries:", filteredInquiries);
 
   const getUrgencyShortLabel = (urgency: string) => {
     const labels: Record<string, string> = {
