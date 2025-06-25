@@ -5,12 +5,14 @@ import { parseISO } from "date-fns/parseISO";
 import {
   CalendarIcon,
   Check,
-  ClockIcon,
   Edit,
+  Home,
   Info,
+  Phone,
   Plus,
   Trash2,
   Upload,
+  User,
   X,
 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -20,7 +22,13 @@ import { useLocation, useNavigate } from "react-router-dom";
 import * as z from "zod";
 import { frappeAPI } from "../../api/frappeClient";
 import { useInspectionStore } from "../../store/inspectionStore";
-import { Badge } from "../ui/badge";
+// import { Badge } from "../ui/badge";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "../ui/accordion";
 import { Button } from "../ui/button";
 import { Calendar } from "../ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
@@ -36,9 +44,12 @@ import { Input } from "../ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { Progress } from "../ui/progress";
 import { Textarea } from "../ui/textarea";
+import DeleteConfirmation from "../../common/DeleteComfirmation";
 
 const formSchema = z.object({
   inspection_date: z.date(),
+  status: z.string().optional(),
+  customer_name: z.string().optional(),
   inspection_time: z.string(),
   property_type: z.string(),
   site_photos: z.any().optional(),
@@ -92,6 +103,10 @@ const CreateInspection = () => {
   const [dataLoaded, setDataLoaded] = useState(false);
   const [leadData, setLeadData] = useState<any>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [dimensionToDelete, setDimensionToDelete] = useState<number | null>(null)
+
+  console.log("Current Inspection Data", inspection, "Todo Data", todo, "Mode", mode);
 
   const {
     createInspection,
@@ -103,12 +118,38 @@ const CreateInspection = () => {
     error: storeError,
   } = useInspectionStore();
 
+  // Helper function to get customer name properly
+  const getCustomerName = () => {
+    if (todo?.inquiry_data) {
+      // First try lead_name (full name)
+      if (todo.inquiry_data.lead_name) {
+        return todo.inquiry_data.lead_name;
+      }
+      // Fallback to constructing from first_name and last_name
+      const firstName = todo.inquiry_data.first_name || "";
+      const lastName = todo.inquiry_data.last_name || "";
+      return `${firstName} ${lastName}`.trim() || "Unknown Lead";
+    }
+    
+    if (leadData?.lead_name) {
+      return leadData.lead_name;
+    }
+    
+    if (inspection?.customer_name) {
+      return inspection.customer_name;
+    }
+    
+    return "Unknown Lead";
+  };
+
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
       inspection_date: new Date(),
       inspection_time: "",
+      customer_name: getCustomerName(),
       property_type: "Residential",
+      status: "Scheduled",
       site_photos: undefined,
       measurement_sketch: undefined,
       inspection_notes: "",
@@ -142,6 +183,10 @@ const CreateInspection = () => {
       try {
         setDataLoaded(false);
         if (todo) {
+          // Set customer name properly
+          const customerName = getCustomerName();
+          form.setValue("customer_name", customerName);
+          
           if (todo.inquiry_data?.custom_property_type) {
             form.setValue(
               "property_type",
@@ -161,10 +206,12 @@ const CreateInspection = () => {
                 fetchedLeadData.custom_property_type
               );
             }
+            // Set customer name from fetched lead data
+            const customerName = fetchedLeadData?.lead_name || inspection.customer_name || "Unknown Lead";
+            form.setValue("customer_name", customerName);
           }
         } else {
-          toast.error("No data provided for inspection");
-          navigate("/inspector?tab=todos");
+          navigate("/inspector?tab=inspections");
           return;
         }
         setDataLoaded(true);
@@ -202,6 +249,8 @@ const CreateInspection = () => {
             "measurement_sketch",
             inspectionToUse.measurement_sketch
           );
+        if (inspectionToUse.customer_name)
+          form.setValue("customer_name", inspectionToUse.customer_name);
         if (
           inspectionToUse.site_dimensions &&
           Array.isArray(inspectionToUse.site_dimensions)
@@ -217,6 +266,9 @@ const CreateInspection = () => {
         }
       } else {
         setIsUpdateMode(false);
+        // Set customer name for new inspection
+        const customerName = getCustomerName();
+        form.setValue("customer_name", customerName);
       }
     }
   }, [currentInspection, inspection, dataLoaded, form, replace]);
@@ -285,15 +337,22 @@ const CreateInspection = () => {
       setLoading(true);
       const inspectionToUpdate = inspection || currentInspection;
       const leadReference = todo?.reference_name || inspection?.lead;
-      const customerName =
-        todo?.inquiry_data?.lead_name ||
-        leadData?.lead_name ||
-        inspection?.customer_name;
+      
+      // Get customer name properly
+      const customerName = getCustomerName();
+
+      console.log("Submitting inspection with values:", values);
+      console.log("Customer name being used:", customerName);
 
       const inspectionData = {
         ...values,
+        // Set status based on mode - for new inspections, set to "In Progress"
+        // For updates, keep existing status or set to "In Progress" if needed
+        status: isUpdateMode 
+          ? inspectionToUpdate?.status || "In Progress" 
+          : "In Progress",
         lead: leadReference,
-        customer_name: customerName,
+        customer_name: customerName, // Use the properly constructed customer name
         inspection_date: format(values.inspection_date, "yyyy-MM-dd"),
         inspection_time: values.inspection_time,
         doctype: "SiteInspection",
@@ -304,14 +363,30 @@ const CreateInspection = () => {
         })),
       };
 
+      console.log("Final inspection data being submitted:", inspectionData);
+
       if (isUpdateMode && inspectionToUpdate?.name) {
         await updateInspectionbyId(inspectionToUpdate.name, inspectionData);
         toast.success("Inspection updated successfully!");
+        
+        // If updating from a todo, also update the todo status
+        if (todo?.name) {
+          try {
+            await updateTodoStatus(todo.name, "Completed");
+          } catch (todoError) {
+            console.error("Failed to update todo status:", todoError);
+            // Don't fail the whole operation if todo update fails
+          }
+        }
+        
+        navigate("/inspector?tab=inspections");
       } else {
-        await createInspection(inspectionData, todo?.name);
+        const result = await createInspection(inspectionData, todo?.name);
+        console.log("Create inspection result:", result);
+        
         toast.success("Inspection created successfully!");
+        navigate("/inspector?tab=inspections");
       }
-      navigate("/inspector?tab=inspections");
     } catch (error) {
       const message = isUpdateMode
         ? "Failed to update inspection"
@@ -329,7 +404,7 @@ const CreateInspection = () => {
       if (todo?.name) {
         await updateTodoStatus(todo.name, "Cancelled");
         toast.success("Todo cancelled successfully!");
-        navigate("/inspector?tab=todos");
+        navigate("/inspector?tab=inspections");
       }
     } catch (error) {
       toast.error("Failed to cancel todo. Please try again.");
@@ -346,15 +421,17 @@ const CreateInspection = () => {
   };
 
   const getDisplayData = () => {
+    const customerName = getCustomerName();
+    
     if (todo) {
       return {
-        customerName: todo.inquiry_data?.lead_name || "Lead",
+        customerName,
         leadDetails: todo.inquiry_data,
         showTodoActions: true,
       };
     } else if (inspection) {
       return {
-        customerName: leadData?.lead_name || inspection.customer_name || "Lead",
+        customerName: leadData?.lead_name || inspection.customer_name || customerName,
         leadDetails: leadData,
         showTodoActions: false,
       };
@@ -363,6 +440,28 @@ const CreateInspection = () => {
   };
 
   const displayData = getDisplayData();
+
+  const handleDeleteAreaDimension = (
+    e: React.MouseEvent<HTMLButtonElement>,
+    index: number
+  ) => {
+    e.stopPropagation();
+    setDimensionToDelete(index);
+    setDeleteModalOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (dimensionToDelete !== null) {
+      remove(dimensionToDelete);
+    }
+    setDeleteModalOpen(false);
+    setDimensionToDelete(null);
+  };
+
+  const handleCancelDelete = () => {
+    setDeleteModalOpen(false);
+    setDimensionToDelete(null);
+  };
 
   if (!displayData) {
     return (
@@ -376,7 +475,7 @@ const CreateInspection = () => {
               No inspection data available
             </h3>
             <Button
-              onClick={() => navigate("/inspector?tab=todos")}
+              onClick={() => navigate("/inspector?tab=inspections")}
               className="w-full md:w-auto"
             >
               Back to Dashboard
@@ -387,575 +486,599 @@ const CreateInspection = () => {
     );
   }
 
-  const inspectionToDisplay = inspection || currentInspection;
-
   return (
- <div className="w-full bg-gradient-to-b from-gray-50 to-white min-h-screen m-0 p-0">
-  <Card className="border-none shadow-sm max-w-7xl mx-auto p-0 m-0">
-    {/* Compact Header */}
-    <CardHeader className="bg-gradient-to-r from-emerald-500 to-blue-500 text-white rounded-t-lg p-4">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-        <CardTitle className="flex items-center gap-2 text-lg m-0 p-0">
-          {isUpdateMode ? (
-            <>
-              <Edit className="h-4 w-4" />
-              <span>Update Inspection for {displayData.customerName}</span>
-            </>
-          ) : (
-            <span>Create Inspection for {displayData.customerName}</span>
-          )}
-        </CardTitle>
+    <div className="w-full bg-gradient-to-b from-gray-50 to-white min-h-screen m-0 p-0">
+      <Card className="border-none shadow-sm max-w-7xl mx-auto p-0 m-0 gap-0">
+        {/* Combined Header with Lead Details */}
+        <CardHeader className="bg-gradient-to-r from-emerald-500 to-blue-500 text-white  px-4 py-1">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+            <div className="flex flex-col">
+              <CardTitle className="flex items-center gap-2 text-lg m-0 p-0">
+                {isUpdateMode ? (
+                  <>
+                    <Edit className="h-4 w-4" />
+                    <span>Update Inspection</span>
+                  </>
+                ) : (
+                  <span>Create Inspection</span>
+                )}
+              </CardTitle>
 
-        <div className="flex items-center gap-2">
-          {inspectionToDisplay?.name && (
-            <Badge variant="secondary" className="text-xs bg-white/20">
-              ID: {inspectionToDisplay.name}
-            </Badge>
-          )}
-          <Badge
-            variant={isUpdateMode ? "default" : "secondary"}
-            className="bg-white/20 text-xs"
-          >
-            {isUpdateMode ? "Update Mode" : "Create Mode"}
-          </Badge>
-        </div>
-      </div>
-
-      {storeError && (
-        <div className="text-yellow-200 text-sm flex items-center gap-1 mt-2">
-          <Info className="h-4 w-4" />
-          Error: {storeError}
-        </div>
-      )}
-    </CardHeader>
-
-    <CardContent className="p-0 m-0">
-      <div className="flex flex-col xl:flex-row">
-        {/* Compact Lead Information Sidebar */}
-        <div className="xl:w-80 bg-gray-50 border-r border-gray-200">
-          <div className="px-4">
-            <h3 className="text-base font-semibold text-gray-800 mb-3 flex items-center gap-2">
-              <span className="w-2 h-2 bg-emerald-500 rounded-full"></span>
-              Lead Details
-            </h3>
-            
-            {/* Customer Name */}
-            <div className="mb-3">
-              <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Customer</p>
-              <p className="font-medium text-gray-900 text-sm mt-1">
-                {displayData.leadDetails?.lead_name || displayData.customerName}
-              </p>
-            </div>
-
-            {/* Contact Info - Horizontal Layout */}
-            <div className="mb-3">
-              <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Contact</p>
-              <div className="space-y-2">
-                <div className="bg-white p-2 rounded border border-gray-200">
-                  <p className="text-xs text-gray-500">Email</p>
-                  <p className="text-xs text-gray-900 truncate">
-                    {displayData.leadDetails?.email_id || "N/A"}
-                  </p>
+              {/* Compact Lead Info */}
+              <div className="flex flex-wrap items-center gap-x-4  mt-1 text-sm">
+                <div className="flex items-center gap-1">
+                  <User className="h-4 w-4 opacity-80" />
+                  <span>{displayData.customerName}</span>
                 </div>
-                <div className="bg-white p-2 rounded border border-gray-200">
-                  <p className="text-xs text-gray-500">Phone</p>
-                  <p className="text-xs text-gray-900">
-                    {displayData.leadDetails?.mobile_no || "N/A"}
-                  </p>
+                <div className="flex items-center gap-1">
+                  <Phone className="h-4 w-4 opacity-80" />
+                  <span>{displayData.leadDetails?.mobile_no || "N/A"}</span>
                 </div>
-              </div>
-            </div>
-
-            {/* Property Info - Horizontal Layout */}
-            <div>
-              <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Property</p>
-              <div className="space-y-2">
-                <div className="bg-white p-2 rounded border border-gray-200">
-                  <p className="text-xs text-gray-500">Type</p>
-                  <p className="text-xs text-gray-900">
-                    {displayData.leadDetails?.custom_property_type ||
-                      inspection?.property_type ||
-                      "N/A"}
-                  </p>
-                </div>
-                <div className="bg-white p-2 rounded border border-gray-200">
-                  <p className="text-xs text-gray-500">Budget</p>
-                  <p className="text-xs text-gray-900">
-                    {displayData.leadDetails?.custom_budget_range || "N/A"}
-                  </p>
+                <div className="flex items-center gap-1">
+                  <Home className="h-4 w-4 opacity-80" />
+                  <span>
+                    {displayData.leadDetails?.custom_property_type || "N/A"}
+                  </span>
                 </div>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Main Form Content */}
-        <div className="flex-1">
-          <div className="p-4">
-            <h3 className="text-base font-semibold text-gray-800 mb-4 flex items-center gap-2">
-              <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-              {isUpdateMode ? "Update Details" : "Inspection Details"}
-            </h3>
+          {storeError && (
+            <div className="text-yellow-200 text-sm flex items-center  mt-1">
+              <Info className="h-4 w-4" />
+              Error: {storeError}
+            </div>
+          )}
+        </CardHeader>
 
-            <Form {...form}>
-              <form
-                onSubmit={form.handleSubmit(handleSubmit)}
-                className="space-y-6"
-              >
-                {/* Basic Info Section - Compact */}
-                <div className="bg-white border border-gray-200 rounded-lg p-4">
-                  <h4 className="font-medium text-gray-800 text-sm mb-3 flex items-center gap-2">
-                    <CalendarIcon className="h-4 w-4 text-emerald-600" />
-                    Basic Information
-                  </h4>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <FormField
-                      control={form.control}
-                      name="inspection_date"
-                      render={({ field }) => (
-                        <FormItem className="flex flex-col">
-                          <FormLabel className="text-gray-700 text-sm">
-                            Inspection Date
-                          </FormLabel>
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <FormControl>
-                                <Button
-                                  variant="outline"
-                                  className="pl-3 text-left font-normal bg-white border-gray-300 hover:bg-gray-50 h-9"
-                                >
-                                  {field.value ? (
-                                    format(field.value, "PPP")
-                                  ) : (
-                                    <span>Pick a date</span>
-                                  )}
-                                  <CalendarIcon className="ml-auto h-4 w-4 text-gray-500" />
-                                </Button>
-                              </FormControl>
-                            </PopoverTrigger>
-                            <PopoverContent
-                              className="w-auto p-0 bg-white"
-                              align="start"
-                            >
-                              <Calendar
-                                mode="single"
-                                selected={field.value}
-                                onSelect={field.onChange}
-                                disabled={(date) =>
-                                  date < new Date("1900-01-01")
-                                }
-                                initialFocus
-                              />
-                            </PopoverContent>
-                          </Popover>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="inspection_time"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-gray-700 text-sm">
-                            Inspection Time
-                          </FormLabel>
-                          <FormControl>
-                            <div className="relative">
-                              <ClockIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
-                              <Input
-                                type="time"
-                                className="pl-10 bg-white border-gray-300 h-9"
-                                {...field}
-                              />
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                </div>
-
-                {/* Site Details Section - Compact */}
-                <div className="bg-white border border-gray-200 rounded-lg p-4">
-                  <h4 className="font-medium text-gray-800 text-sm mb-3 flex items-center gap-2">
-                    <Info className="h-4 w-4 text-emerald-600" />
-                    Site Details
-                  </h4>
-
-                  <div className="space-y-4">
-                    <FormField
-                      control={form.control}
-                      name="site_photos"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-gray-700 text-sm">
-                            Site Photos
-                          </FormLabel>
-                          <FormControl>
-                            <div className="space-y-2">
-                              <label
-                                htmlFor="site_photos"
-                                className={`flex flex-col items-center justify-center gap-2 p-3 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors ${
-                                  uploading
-                                    ? "opacity-50 cursor-not-allowed"
-                                    : ""
-                                }`}
-                              >
-                                <Upload className="h-5 w-5 text-gray-400" />
-                                <span className="text-sm font-medium text-gray-600">
-                                  {uploading
-                                    ? "Uploading..."
-                                    : "Click to upload photos"}
-                                </span>
-                                <span className="text-xs text-gray-400">
-                                  JPEG, PNG (max 10MB)
-                                </span>
-                              </label>
-                              <Input
-                                type="file"
-                                multiple
-                                accept="image/*"
-                                onChange={async (e) => {
-                                  const files = e.target.files;
-                                  if (files && files.length > 0) {
-                                    try {
-                                      const file = files[0];
-                                      await handleFileUpload(
-                                        file,
-                                        "site_photos"
-                                      );
-                                    } catch (error) {
-                                      console.error(
-                                        "Upload failed:",
-                                        error
-                                      );
-                                    }
-                                  }
-                                }}
-                                className="hidden"
-                                id="site_photos"
-                                disabled={uploading}
-                              />
-                              {uploadProgress > 0 && (
-                                <Progress
-                                  value={uploadProgress}
-                                  className="h-2 bg-gray-100"
-                                />
-                              )}
-                              {field.value && (
-                                <div className="p-2 bg-emerald-50 rounded border border-emerald-200">
-                                  <div className="flex items-center gap-2 text-sm text-emerald-800">
-                                    <Check className="h-4 w-4 text-emerald-600" />
-                                    <span className="font-medium">
-                                      {getFileDisplayName(field.value)}
-                                    </span>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="measurement_sketch"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-gray-700 text-sm">
-                            Measurement Sketch
-                          </FormLabel>
-                          <FormControl>
-                            <div className="space-y-2">
-                              <label
-                                htmlFor="measurement_sketch"
-                                className={`flex flex-col items-center justify-center gap-2 p-3 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors ${
-                                  uploading
-                                    ? "opacity-50 cursor-not-allowed"
-                                    : ""
-                                }`}
-                              >
-                                <Upload className="h-5 w-5 text-gray-400" />
-                                <span className="text-sm font-medium text-gray-600">
-                                  {uploading
-                                    ? "Uploading..."
-                                    : "Click to upload sketch"}
-                                </span>
-                                <span className="text-xs text-gray-400">
-                                  PDF, JPEG, PNG (max 10MB)
-                                </span>
-                              </label>
-                              <Input
-                                type="file"
-                                accept="image/*,.pdf"
-                                onChange={(e) => {
-                                  const files = e.target.files;
-                                  if (files && files.length > 0) {
-                                    handleFileUpload(
-                                      files[0],
-                                      "measurement_sketch"
-                                    );
-                                  }
-                                }}
-                                className="hidden"
-                                id="measurement_sketch"
-                                disabled={uploading}
-                              />
-                              {uploadProgress > 0 && (
-                                <Progress
-                                  value={uploadProgress}
-                                  className="h-2 bg-gray-100"
-                                />
-                              )}
-                              {field.value && (
-                                <div className="p-2 bg-emerald-50 rounded border border-emerald-200">
-                                  <div className="flex items-center gap-2 text-sm text-emerald-800">
-                                    <Check className="h-4 w-4 text-emerald-600" />
-                                    <span className="font-medium">
-                                      {getFileDisplayName(field.value)}
-                                    </span>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="inspection_notes"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-gray-700 text-sm">
-                            Inspection Notes
-                          </FormLabel>
-                          <FormControl>
-                            <Textarea
-                              rows={3}
-                              className="resize-none bg-white border-gray-300"
-                              placeholder="Add any important notes about the site..."
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                </div>
-
-                {/* Dimensions Section - Compact */}
-                <div className="bg-white border border-gray-200 rounded-lg p-4">
-                  <h4 className="font-medium text-gray-800 text-sm mb-3 flex items-center gap-2">
-                    <Plus className="h-4 w-4 text-emerald-600" />
-                    Site Dimensions
-                  </h4>
-
-                  <div className="space-y-3">
-                    {fields.map((field, index) => (
-                      <div
-                        key={field.id}
-                        className="border border-gray-200 rounded-lg p-3 bg-gray-50"
+        <CardContent className="p-0 m-0">
+          <div className="flex flex-col">
+            {/* Main Form Content */}
+            <div className="flex-1">
+              <div className="p-4">
+                <Form {...form}>
+                  <form
+                    onSubmit={form.handleSubmit(handleSubmit)}
+                    className="space-y-4"
+                  >
+                    {/* Accordion for Sections */}
+                    <Accordion
+                      type="multiple"
+                      defaultValue={["dimensions"]}
+                      className="space-y-3"
+                    >
+                      {/* Basic Info Accordion */}
+                      <AccordionItem
+                        value="basic"
+                        className="border border-gray-200 rounded-lg overflow-hidden"
                       >
-                        <div className="flex justify-between items-center mb-3">
-                          <h5 className="font-medium text-gray-700 text-sm">
-                            Area #{index + 1}
-                          </h5>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="text-red-500 hover:text-red-600 hover:bg-red-50 h-7 w-7 p-0"
-                            onClick={() => remove(index)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
+                        <AccordionTrigger className="px-5 py-2 hover:no-underline bg-gray-50 flex items-center justify-between w-full">
+                          <div className="flex items-center gap-2">
+                            <CalendarIcon className="h-4 w-4 text-emerald-600" />
+                            <span className="font-medium text-gray-800">
+                              Basic Information
+                            </span>
+                          </div>
+                        </AccordionTrigger>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-                          <FormField
-                            control={form.control}
-                            name={`site_dimensions.${index}.area_name`}
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel className="text-gray-700 text-sm">
-                                  Area Name
-                                </FormLabel>
-                                <FormControl>
-                                  <Input
-                                    placeholder="e.g., Living Room"
-                                    className="bg-white border-gray-300 h-9"
-                                    {...field}
-                                  />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
+                        <AccordionContent className="bg-white">
+                          <div className="grid grid-cols-2 md:grid-cols-2 gap-4 px-5 py-2">
+                            {/* Inspection Date - First Column */}
+                            <div className="space-y-2">
+                              <FormField
+                                control={form.control}
+                                name="inspection_date"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel className="text-gray-700 text-sm font-medium">
+                                      Inspection Date
+                                    </FormLabel>
+                                    <Popover>
+                                      <PopoverTrigger asChild>
+                                        <FormControl>
+                                          <Button
+                                            variant="outline"
+                                            className="w-full justify-between text-left font-normal bg-white border-gray-300 hover:bg-gray-50 h-10"
+                                          >
+                                            {field.value ? (
+                                              <span className="text-gray-900">
+                                                {format(field.value, "PPP")}
+                                              </span>
+                                            ) : (
+                                              <span className="text-gray-500">
+                                                Select date
+                                              </span>
+                                            )}
+                                            <CalendarIcon className="h-4 w-4 text-gray-500" />
+                                          </Button>
+                                        </FormControl>
+                                      </PopoverTrigger>
+                                      <PopoverContent
+                                        className="w-auto p-0"
+                                        align="start"
+                                      >
+                                        <Calendar
+                                          mode="single"
+                                          selected={field.value}
+                                          onSelect={field.onChange}
+                                          disabled={(date) =>
+                                            date < new Date("1900-01-01")
+                                          }
+                                          initialFocus
+                                          className="rounded-md border"
+                                        />
+                                      </PopoverContent>
+                                    </Popover>
+                                    <FormMessage className="text-xs" />
+                                  </FormItem>
+                                )}
+                              />
+                            </div>
 
-                          <FormField
-                            control={form.control}
-                            name={`site_dimensions.${index}.dimensionsunits`}
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel className="text-gray-700 text-sm">
-                                  Dimensions
-                                </FormLabel>
-                                <FormControl>
-                                  <Input
-                                    placeholder="e.g., 10x15 meters"
-                                    className="bg-white border-gray-300 h-9"
-                                    {...field}
-                                  />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </div>
+                            {/* Inspection Time - Second Column */}
+                            <div className="space-y-2">
+                              <FormField
+                                control={form.control}
+                                name="inspection_time"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel className="text-gray-700 text-sm font-medium">
+                                      Inspection Time
+                                    </FormLabel>
+                                    <FormControl>
+                                      <div className="relative">
+                                        <Input
+                                          type="time"
+                                          className="pl-3 bg-white border-gray-300 h-10 text-gray-900"
+                                          {...field}
+                                        />
+                                      </div>
+                                    </FormControl>
+                                    <FormMessage className="text-xs" />
+                                  </FormItem>
+                                )}
+                              />
+                            </div>
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
 
-                        <FormField
-                          control={form.control}
-                          name={`site_dimensions.${index}.media`}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="text-gray-700 text-sm">
-                                Media
-                              </FormLabel>
-                              <FormControl>
-                                <div className="space-y-2">
-                                  <label
-                                    htmlFor={`media-${index}`}
-                                    className={`flex flex-col items-center justify-center gap-2 p-3 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors ${
-                                      uploading
-                                        ? "opacity-50 cursor-not-allowed"
-                                        : ""
-                                    }`}
-                                  >
-                                    <Upload className="h-4 w-4 text-gray-400" />
-                                    <span className="text-xs font-medium text-gray-600">
-                                      {uploading
-                                        ? "Uploading..."
-                                        : "Click to upload media"}
-                                    </span>
-                                  </label>
-                                  <Input
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={(e) => {
-                                      const files = e.target.files;
-                                      if (files && files.length > 0) {
-                                        handleFileUpload(
-                                          files[0],
-                                          "",
-                                          index
-                                        );
-                                      }
-                                    }}
-                                    className="hidden"
-                                    id={`media-${index}`}
-                                    disabled={uploading}
-                                  />
-                                  {uploadProgress > 0 && (
-                                    <Progress
-                                      value={uploadProgress}
-                                      className="h-2 bg-gray-100"
-                                    />
-                                  )}
-                                  {field.value && (
-                                    <div className="p-2 bg-emerald-50 rounded border border-emerald-200">
-                                      <div className="flex items-center gap-2 text-sm text-emerald-800">
-                                        <Check className="h-4 w-4 text-emerald-600" />
-                                        <span className="font-medium text-xs">
-                                          {getFileDisplayName(field.value)}
+                      {/* Rest of your accordion items remain the same */}
+                      {/* Dimensions Section - Expanded by default */}
+                      <AccordionItem
+                        value="dimensions"
+                        className="border border-gray-200 rounded-lg"
+                      >
+                        <AccordionTrigger className="px-4 py-3 hover:no-underline bg-gray-50 rounded-t-lg">
+                          <div className="flex items-center gap-2">
+                            <Plus className="h-4 w-4 text-emerald-600" />
+                            <span className="font-medium">Site Dimensions</span>
+                          </div>
+                        </AccordionTrigger>
+                        <AccordionContent className="px-4 py-3 bg-white rounded-b-lg">
+                          <div className="space-y-3">
+                            <Accordion
+                              type="multiple"
+                              defaultValue={fields.map(
+                                (_, index) => `area-${index}`
+                              )}
+                              className="w-full space-y-3"
+                            >
+                              {fields.map((field, index) => (
+                                <AccordionItem
+                                  key={field.id}
+                                  value={`area-${index}`}
+                                  className="border border-gray-200 rounded-lg bg-gray-50"
+                                >
+                                  <AccordionTrigger className="px-3 py-3 hover:no-underline">
+                                    <div className="flex items-center justify-between w-full">
+                                      <div className="flex items-center gap-2">
+                                        <span className="font-medium text-gray-700 text-sm">
+                                          {field.area_name || `Area ${index + 1}`}
                                         </span>
                                       </div>
+                                      <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        className="text-red-500 hover:text-red-600 hover:bg-red-50 h-7 w-7 p-0 mr-2"
+                                        onClick={(e) => {
+                                          handleDeleteAreaDimension(e, index);
+                                        }}
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
                                     </div>
-                                  )}
-                                </div>
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-                    ))}
+                                  </AccordionTrigger>
+                                  <AccordionContent className="px-3 pb-3">
+                                    <div className="space-y-3">
+                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                        <FormField
+                                          control={form.control}
+                                          name={`site_dimensions.${index}.area_name`}
+                                          render={({ field }) => (
+                                            <FormItem>
+                                              <FormLabel className="text-gray-700 text-sm">
+                                                Area Name
+                                              </FormLabel>
+                                              <FormControl>
+                                                <Input
+                                                  placeholder="e.g., Living Room"
+                                                  className="bg-white border-gray-300 h-9"
+                                                  {...field}
+                                                />
+                                              </FormControl>
+                                              <FormMessage />
+                                            </FormItem>
+                                          )}
+                                        />
 
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="w-full border-gray-300 text-gray-600 hover:bg-gray-50 hover:text-gray-700 h-9"
-                      onClick={() =>
-                        append({
-                          area_name: "",
-                          dimensionsunits: "",
-                          media: "",
-                        })
-                      }
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Area Dimension
-                    </Button>
-                  </div>
-                </div>
+                                        <FormField
+                                          control={form.control}
+                                          name={`site_dimensions.${index}.dimensionsunits`}
+                                          render={({ field }) => (
+                                            <FormItem>
+                                              <FormLabel className="text-gray-700 text-sm">
+                                                Dimensions
+                                              </FormLabel>
+                                              <FormControl>
+                                                <Input
+                                                  placeholder="e.g., 10x15 meters"
+                                                  className="bg-white border-gray-300 h-9"
+                                                  {...field}
+                                                />
+                                              </FormControl>
+                                              <FormMessage />
+                                            </FormItem>
+                                          )}
+                                        />
+                                      </div>
 
-                {/* Action Buttons - Sticky Footer */}
-                <div className="sticky bottom-0 bg-white border-t border-gray-200 p-4 -mx-4 -mb-4">
-                  <div className="flex flex-col-reverse sm:flex-row justify-end gap-3">
-                    {displayData.showTodoActions && (
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        onClick={handleCancelTodo}
-                        disabled={cancelling || storeLoading || uploading}
-                        className="w-full sm:w-auto h-9"
+                                      <FormField
+                                        control={form.control}
+                                        name={`site_dimensions.${index}.media`}
+                                        render={({ field }) => (
+                                          <FormItem>
+                                            <FormLabel className="text-gray-700 text-sm">
+                                              Media
+                                            </FormLabel>
+                                            <FormControl>
+                                              <div className="space-y-2">
+                                                <label
+                                                  htmlFor={`media-${index}`}
+                                                  className={`flex flex-col items-center justify-center gap-2 p-3 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors ${
+                                                    uploading
+                                                      ? "opacity-50 cursor-not-allowed"
+                                                      : ""
+                                                  }`}
+                                                >
+                                                  <Upload className="h-4 w-4 text-gray-400" />
+                                                  <span className="text-xs font-medium text-gray-600">
+                                                    {uploading
+                                                      ? "Uploading..."
+                                                      : "Click to upload media"}
+                                                  </span>
+                                                </label>
+                                                <Input
+                                                  type="file"
+                                                  accept="image/*"
+                                                  onChange={(e) => {
+                                                    const files =
+                                                      e.target.files;
+                                                    if (
+                                                      files &&
+                                                      files.length > 0
+                                                    ) {
+                                                      handleFileUpload(
+                                                        files[0],
+                                                        "",
+                                                        index
+                                                      );
+                                                    }
+                                                  }}
+                                                  className="hidden"
+                                                  id={`media-${index}`}
+                                                  disabled={uploading}
+                                                />
+                                                {uploadProgress > 0 && (
+                                                  <Progress
+                                                    value={uploadProgress}
+                                                    className="h-2 bg-gray-100"
+                                                  />
+                                                )}
+                                                {field.value && (
+                                                  <div className="p-2 bg-emerald-50 rounded border border-emerald-200">
+                                                    <div className="flex items-center gap-2 text-sm text-emerald-800">
+                                                      <Check className="h-4 w-4 text-emerald-600" />
+                                                      <span className="font-medium text-xs">
+                                                        {getFileDisplayName(
+                                                          field.value
+                                                        )}
+                                                      </span>
+                                                    </div>
+                                                  </div>
+                                                )}
+                                              </div>
+                                            </FormControl>
+                                            <FormMessage />
+                                          </FormItem>
+                                        )}
+                                      />
+                                    </div>
+                                  </AccordionContent>
+                                </AccordionItem>
+                              ))}
+                            </Accordion>
+
+
+                            <Button
+                              type="button"
+                              variant="outline"
+                              className="w-full border-gray-300 text-gray-700 hover:bg-gray-50 h-9"
+                              onClick={() =>
+                                append({
+                                  area_name: "",
+                                  dimensionsunits: "",
+                                  media: undefined,
+                                })
+                              }
+                            >
+                              <Plus className="h-4 w-4 mr-2" />
+                              Add New Area
+                            </Button>
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+
+                      {/* Media Section */}
+                      <AccordionItem
+                        value="media"
+                        className="border border-gray-200 rounded-lg"
                       >
-                        {cancelling ? (
-                          <span className="animate-pulse">Processing...</span>
-                        ) : (
-                          <>
-                            <X className="h-4 w-4 mr-2" />
-                            Cancel Inspection
-                          </>
-                        )}
-                      </Button>
-                    )}
+                        <AccordionTrigger className="px-4 py-3 hover:no-underline bg-gray-50 rounded-t-lg">
+                          <div className="flex items-center gap-2">
+                            <Upload className="h-4 w-4 text-emerald-600" />
+                            <span className="font-medium">Media Files</span>
+                          </div>
+                        </AccordionTrigger>
+                        <AccordionContent className="px-4 py-3 bg-white rounded-b-lg">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {/* Site Photos */}
+                            <FormField
+                              control={form.control}
+                              name="site_photos"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel className="text-gray-700 text-sm font-medium">
+                                    Site Photos
+                                  </FormLabel>
+                                  <FormControl>
+                                    <div className="space-y-2">
+                                      <label
+                                        htmlFor="site-photos"
+                                        className={`flex flex-col items-center justify-center gap-2 p-4 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors ${
+                                          uploading
+                                            ? "opacity-50 cursor-not-allowed"
+                                            : ""
+                                        }`}
+                                      >
+                                        <Upload className="h-5 w-5 text-gray-400" />
+                                        <span className="text-sm font-medium text-gray-600">
+                                          {uploading
+                                            ? "Uploading..."
+                                            : "Upload Site Photos"}
+                                        </span>
+                                      </label>
+                                      <Input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={(e) => {
+                                          const files = e.target.files;
+                                          if (files && files.length > 0) {
+                                            handleFileUpload(files[0], "site_photos");
+                                          }
+                                        }}
+                                        className="hidden"
+                                        id="site-photos"
+                                        disabled={uploading}
+                                      />
+                                      {uploadProgress > 0 && (
+                                        <Progress
+                                          value={uploadProgress}
+                                          className="h-2 bg-gray-100"
+                                        />
+                                      )}
+                                      {field.value && (
+                                        <div className="p-3 bg-emerald-50 rounded border border-emerald-200">
+                                          <div className="flex items-center gap-2 text-sm text-emerald-800">
+                                            <Check className="h-4 w-4 text-emerald-600" />
+                                            <span className="font-medium">
+                                              {getFileDisplayName(field.value)}
+                                            </span>
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
 
-                    <Button
-                      type="submit"
-                      disabled={loading || storeLoading || uploading}
-                      className="w-full sm:w-auto bg-gradient-to-r from-emerald-500 to-blue-500 hover:from-emerald-600 hover:to-blue-600 text-white h-9"
-                    >
-                      {loading ? (
-                        <span className="animate-pulse">Processing...</span>
-                      ) : (
-                        <>
-                          <Check className="h-4 w-4 mr-2" />
-                          {isUpdateMode
-                            ? "Update Inspection"
-                            : "Submit Inspection"}
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </div>
-              </form>
-            </Form>
+                            {/* Measurement Sketch */}
+                            <FormField
+                              control={form.control}
+                              name="measurement_sketch"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel className="text-gray-700 text-sm font-medium">
+                                    Measurement Sketch
+                                  </FormLabel>
+                                  <FormControl>
+                                    <div className="space-y-2">
+                                      <label
+                                        htmlFor="measurement-sketch"
+                                        className={`flex flex-col items-center justify-center gap-2 p-4 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors ${
+                                          uploading
+                                            ? "opacity-50 cursor-not-allowed"
+                                            : ""
+                                        }`}
+                                      >
+                                        <Upload className="h-5 w-5 text-gray-400" />
+                                        <span className="text-sm font-medium text-gray-600">
+                                          {uploading
+                                            ? "Uploading..."
+                                            : "Upload Sketch"}
+                                        </span>
+                                      </label>
+                                      <Input
+                                        type="file"
+                                        accept="image/*,application/pdf"
+                                        onChange={(e) => {
+                                          const files = e.target.files;
+                                          if (files && files.length > 0) {
+                                            handleFileUpload(files[0], "measurement_sketch");
+                                          }
+                                        }}
+                                        className="hidden"
+                                        id="measurement-sketch"
+                                        disabled={uploading}
+                                      />
+                                      {uploadProgress > 0 && (
+                                        <Progress
+                                          value={uploadProgress}
+                                          className="h-2 bg-gray-100"
+                                        />
+                                      )}
+                                      {field.value && (
+                                        <div className="p-3 bg-emerald-50 rounded border border-emerald-200">
+                                          <div className="flex items-center gap-2 text-sm text-emerald-800">
+                                            <Check className="h-4 w-4 text-emerald-600" />
+                                            <span className="font-medium">
+                                              {getFileDisplayName(field.value)}
+                                            </span>
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+
+                      {/* Notes Section */}
+                      <AccordionItem
+                        value="notes"
+                        className="border border-gray-200 rounded-lg"
+                      >
+                        <AccordionTrigger className="px-4 py-3 hover:no-underline bg-gray-50 rounded-t-lg">
+                          <div className="flex items-center gap-2">
+                            <Info className="h-4 w-4 text-emerald-600" />
+                            <span className="font-medium">Inspection Notes</span>
+                          </div>
+                        </AccordionTrigger>
+                        <AccordionContent className="px-4 py-3 bg-white rounded-b-lg">
+                          <FormField
+                            control={form.control}
+                            name="inspection_notes"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-gray-700 text-sm font-medium">
+                                  Notes
+                                </FormLabel>
+                                <FormControl>
+                                  <Textarea
+                                    placeholder="Add any additional notes or observations..."
+                                    className="bg-white border-gray-300 min-h-[100px] resize-none"
+                                    {...field}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </AccordionContent>
+                      </AccordionItem>
+                    </Accordion>
+
+                    {/* Action Buttons */}
+                    <div className="sticky bottom-0 bg-white border-t border-gray-200 p-4 mt-6">
+                      <div className="flex flex-col sm:flex-row gap-3">
+                        {displayData.showTodoActions && (
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            onClick={handleCancelTodo}
+                            disabled={cancelling || loading}
+                            className="flex-1 sm:flex-none sm:w-auto"
+                          >
+                            {cancelling ? (
+                              <>
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                                Cancelling...
+                              </>
+                            ) : (
+                              <>
+                                <X className="h-4 w-4 mr-2" />
+                                Cancel Todo
+                              </>
+                            )}
+                          </Button>
+                        )}
+
+                        <div className="flex gap-2 flex-1">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => navigate("/inspector?tab=inspections")}
+                            className="flex-1 border-gray-300 text-gray-700 hover:bg-gray-50"
+                            disabled={loading || cancelling}
+                          >
+                            Back
+                          </Button>
+
+                          <Button
+                            type="submit"
+                            disabled={loading || storeLoading || uploading}
+                            className="flex-1 bg-gradient-to-r from-emerald-500 to-blue-500 hover:from-emerald-600 hover:to-blue-600 text-white"
+                          >
+                            {loading || storeLoading ? (
+                              <>
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                                {isUpdateMode ? "Updating..." : "Creating..."}
+                              </>
+                            ) : (
+                              <>
+                                <Check className="h-4 w-4 mr-2" />
+                                {isUpdateMode ? "Update Inspection" : "Create Inspection"}
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </form>
+                </Form>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
-    </CardContent>
-  </Card>
-</div>
+        </CardContent>
+      </Card>
+
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmation
+        text="Are you sure you want to delete this area dimension? This action cannot be undone."
+        onConfirm={handleConfirmDelete}
+        onCancel={handleCancelDelete}
+        isOpen={deleteModalOpen}
+        setIsOpen={setDeleteModalOpen}
+      />
+    </div>
   );
 };
 

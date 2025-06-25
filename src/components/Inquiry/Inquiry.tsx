@@ -364,7 +364,7 @@ const InquiryPage = () => {
       )
   );
 
-  // console.log("Filtered inquiries:", filteredInquiries);
+
 
   return (
     <div className="w-full">

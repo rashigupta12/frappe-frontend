@@ -216,7 +216,7 @@ export default function InspectorDashboard() {
           <main className="flex-1 overflow-y-auto ">
             <div className="w-full mx-auto">
               {/* Main Content Area */}
-              <div className="pb-20 p-2">{renderContent()}</div>
+              <div className="pb-20 ">{renderContent()}</div>
             </div>
           </main>
 

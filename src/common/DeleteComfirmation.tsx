@@ -33,7 +33,7 @@ const DeleteConfirmation: React.FC<DeleteConfirmationProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+    <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/30">
       <div className="w-full max-w-md p-6 mx-4 bg-white rounded-lg shadow-xl">
         <div className="text-center">
           <h3 className="mb-5 text-lg font-bold text-gray-800">Confirm Deletion</h3>

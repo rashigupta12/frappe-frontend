@@ -1,55 +1,137 @@
-
-import { useEffect, useState } from "react";
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import { useEffect, useState, useRef } from "react";
 import { useInspectionStore } from "../../store/inspectionStore";
 import { Button } from "../ui/button";
 import { useNavigate } from "react-router-dom";
 
-
 const statusFilters = [
   { id: "all", label: "All" },
-  { id: "Pending", label: "Pending" },
+  { id: "Scheduled", label: "Pending" },
   { id: "In Progress", label: "In Progress" },
   { id: "Completed", label: "Completed" },
-  { id: "On Hold", label: "On Hold" },
 ];
+
+const statusOptions = [
+  { value: "Scheduled", label: "Scheduled", color: "bg-orange-500 text-white" },
+  { value: "In Progress", label: "In Progress", color: "bg-blue-500 text-white" },
+  { value: "Completed", label: "Completed", color: "bg-green-500 text-white" },
+  { value: "On Hold", label: "On Hold", color: "bg-yellow-500 text-white" },
+  { value: "Cancelled", label: "Cancelled", color: "bg-red-500 text-white" },
+];
+
+interface StatusDropdownProps {
+  currentStatus: string;
+  inspectionName: string;
+  onStatusChange: (inspectionName: string, newStatus: string, currentStatus: string) => void;
+  isUpdating: boolean;
+}
+
+const StatusDropdown = ({ currentStatus, inspectionName, onStatusChange, isUpdating }: StatusDropdownProps) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const getStatusColor = (status: string) => {
+    const option = statusOptions.find(opt => opt.value === status);
+    return option?.color || "bg-gray-400 text-white";
+  };
+
+  const handleOptionClick = (newStatus: string) => {
+    if (newStatus !== currentStatus && !isUpdating) {
+      onStatusChange(inspectionName, newStatus, currentStatus);
+    }
+    setIsOpen(false);
+  };
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      <button
+        onClick={() => !isUpdating && setIsOpen(!isOpen)}
+        disabled={isUpdating}
+        className={`px-2 py-0.5 text-xs font-medium rounded-full cursor-pointer flex items-center space-x-1 ${getStatusColor(currentStatus)} ${
+          isUpdating ? 'opacity-50 cursor-not-allowed' : 'hover:opacity-90'
+        }`}
+      >
+        <span>{currentStatus}</span>
+        {isUpdating ? (
+          <div className="animate-spin rounded-full h-3 w-3 border border-white border-t-transparent ml-1"></div>
+        ) : (
+          <svg className="w-3 h-3 ml-1" fill="currentColor" viewBox="0 0 16 16">
+            <path d="M8 11L3 6h10l-5 5z"/>
+          </svg>
+        )}
+      </button>
+
+      {isOpen && !isUpdating && (
+        <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-20 min-w-[120px]">
+          {statusOptions.map((option) => (
+            <button
+              key={option.value}
+              onClick={() => handleOptionClick(option.value)}
+              className={`w-full text-left px-3 py-2 text-xs font-medium rounded-md m-1 transition-opacity ${
+                option.color
+              } ${option.value === currentStatus ? 'opacity-60' : 'hover:opacity-90'}`}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 interface InspectionListProps {
   userEmail: string;
 }
 
-const MobileSiteInspectionList = ( { userEmail }: InspectionListProps) => {
- 
+const MobileSiteInspectionList = ({ userEmail }: InspectionListProps) => {
   console.log("User Email:", userEmail);
   const {
-  fetchAllInspectionsByField,
-  siteInspections, // Use directly from store
-  loading,
-  error
-} = useInspectionStore();
- 
+    fetchAllInspectionsByField,
+    siteInspections,
+    loading,
+    error,
+    updateInspectionbyId
+  } = useInspectionStore();
+
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
+  const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
   const navigate = useNavigate();
 
-useEffect(() => {
-  if (userEmail) {
-    fetchAllInspectionsByField("owner", userEmail);
-  }
-}, [userEmail, fetchAllInspectionsByField]);
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Pending":
-        return "bg-orange-500 text-white";
-      case "In Progress":
-        return "bg-blue-500 text-white";
-      case "Completed":
-        return "bg-green-500 text-white";
-      case "On Hold":
-        return "bg-red-500 text-white";
-      default:
-        return "bg-gray-400 text-white";
+  useEffect(() => {
+    if (userEmail) {
+      fetchAllInspectionsByField("owner", userEmail);
     }
-  };
+  }, [userEmail, fetchAllInspectionsByField]);
+
+  // const getStatusColor = (status: string) => {
+  //   switch (status) {
+  //     case "Pending":
+  //       return "bg-orange-500 text-white";
+  //     case "In Progress":
+  //       return "bg-blue-500 text-white";
+  //     case "Completed":
+  //       return "bg-green-500 text-white";
+  //     case "On Hold":
+  //       return "bg-yellow-500 text-white";
+  //     case "Cancelled":
+  //       return "bg-red-500 text-white";
+  //     default:
+  //       return "bg-gray-400 text-white";
+  //   }
+  // };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -61,8 +143,27 @@ useEffect(() => {
         return "✅";
       case "On Hold":
         return "⏸️";
+      case "Cancelled":
+        return "❌";
       default:
         return "📋";
+    }
+  };
+
+  const handleStatusChange = async (inspectionName: string, newStatus: string, currentStatus: string) => {
+    if (newStatus === currentStatus) return;
+
+    try {
+      setUpdatingStatus(inspectionName);
+      await updateInspectionbyId(inspectionName, { inspection_status: newStatus });
+      
+      // Refresh the list to show updated status
+      await fetchAllInspectionsByField("owner", userEmail);
+    } catch (error) {
+      console.error("Failed to update inspection status:", error);
+      // You might want to show a toast notification here
+    } finally {
+      setUpdatingStatus(null);
     }
   };
 
@@ -264,9 +365,14 @@ useEffect(() => {
                       </span>
                     )}
                   </div>
-                  <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${getStatusColor(inspection.inspection_status)}`}>
-                    {inspection.inspection_status}
-                  </span>
+                  
+                  {/* Status Dropdown */}
+                  <StatusDropdown
+                    currentStatus={inspection.inspection_status}
+                    inspectionName={inspection.name}
+                    onStatusChange={handleStatusChange}
+                    isUpdating={updatingStatus === inspection.name}
+                  />
                 </div>
               </div>
             ))}

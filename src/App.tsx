@@ -10,6 +10,7 @@ import { useEffect } from 'react';
 import SalesDashboard from './components/pages/Dashboard';
 import { LeadsProvider } from './context/LeadContext';
 import InspectorDashboard from './components/pages/InspectorDashboard';
+import { Toaster } from "react-hot-toast";
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -234,6 +235,25 @@ function App() {
       {/* Uncomment if you have LeadsProvider context */}
       <div className="App">
         <AppRoutes />
+        <Toaster 
+            position="top-right"
+            toastOptions={{
+              className: '',
+              style: {
+                border: '1px solid #713200',
+                padding: '16px',
+                color: '#713200',
+
+              },
+              // Customize Tailwind classes
+              success: {
+                className: 'border border-green-500 bg-green-100 text-green-700',
+              },
+              error: {
+                className: 'border border-red-500 bg-red-100 text-red-700',
+              },
+            }}
+          />
       </div>
       </LeadsProvider>
       
@@ -348,25 +368,7 @@ export default App;
 //         <div className="App">
 //           <AppRoutes />
 //           {/* Add the Toaster component here */}
-//           <Toaster 
-//             position="top-right"
-//             toastOptions={{
-//               className: '',
-//               style: {
-//                 border: '1px solid #713200',
-//                 padding: '16px',
-//                 color: '#713200',
-
-//               },
-//               // Customize Tailwind classes
-//               success: {
-//                 className: 'border border-green-500 bg-green-100 text-green-700',
-//               },
-//               error: {
-//                 className: 'border border-red-500 bg-red-100 text-red-700',
-//               },
-//             }}
-//           />
+          
 //         </div>
 //       </LeadsProvider>
 //     </AuthProvider>
