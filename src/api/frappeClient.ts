@@ -4,7 +4,7 @@ import axios from 'axios';
 
 // Use different base URLs for development and production
 const isDevelopment = import.meta.env.DEV;
-const FRAPPE_BASE_URL = isDevelopment 
+const FRAPPE_BASE_URL = isDevelopment
   ? '' // Use relative URLs in development to leverage Vite proxy
   : ''; // Use relative URLs in production to leverage Vercel rewrite
 
@@ -24,11 +24,11 @@ frappeClient.interceptors.request.use(
   (config) => {
     // Log requests for debugging
     // console.log('Making request:', config.method?.toUpperCase(), config.url);
-    
+
     // Don't manually set browser-controlled headers
     delete config.headers['Origin'];
     delete config.headers['Referer'];
-    
+
     return config;
   },
   (error) => Promise.reject(error)
@@ -70,8 +70,8 @@ export const frappeAPI = {
       const response = await frappeClient.get('/api/method/ping');
       return { success: true, data: response.data };
     } catch (error) {
-      return { 
-        success: false, 
+      return {
+        success: false,
         error: axios.isAxiosError(error) ? (error.response?.data?.message || error.message) : (error as Error).message,
         status: axios.isAxiosError(error) ? error.response?.status : undefined
       };
@@ -84,17 +84,17 @@ export const frappeAPI = {
       // Clear any existing session data
       localStorage.removeItem('frappe_user');
       localStorage.removeItem('frappe_session');
-      
+
       console.log('Attempting login for:', username);
-      
+
       const response = await frappeClient.post('/api/method/login', {
         usr: username,
         pwd: password
       });
-      
+
       console.log('Login response:', response.data);
       console.log('Response status:', response.status);
-      
+
       // Check for successful login
       if (response.data.message === 'Logged In' || response.status === 200) {
         console.log('Login successful for:', response.data);
@@ -104,21 +104,21 @@ export const frappeAPI = {
           authenticated: true,
           loginTime: Date.now()
         };
-        
+
         // Store user data
         localStorage.setItem('frappe_user', JSON.stringify(userData));
-        
+
         return { success: true, data: response.data, user: userData };
       }
-      
+
       return { success: false, data: response.data, error: 'Login failed' };
     } catch (error) {
       console.error('Login error details:', error);
-      
+
       if (axios.isAxiosError(error)) {
-        const errorMessage = error.response?.data?.message || 
-                           error.response?.data?.exc || 
-                           `Login failed: ${error.response?.status} ${error.response?.statusText}`;
+        const errorMessage = error.response?.data?.message ||
+          error.response?.data?.exc ||
+          `Login failed: ${error.response?.status} ${error.response?.statusText}`;
         throw new Error(errorMessage);
       } else {
         throw error;
@@ -187,9 +187,9 @@ export const frappeAPI = {
       localStorage.removeItem('frappe_user');
       localStorage.removeItem('frappe_session');
       localStorage.removeItem('frappe_csrf_token');
-      return { 
-        authenticated: false, 
-        error: axios.isAxiosError(error) ? (error.response?.data?.message || error.message) : (error as Error).message 
+      return {
+        authenticated: false,
+        error: axios.isAxiosError(error) ? (error.response?.data?.message || error.message) : (error as Error).message
       };
     }
   },
@@ -212,16 +212,16 @@ export const frappeAPI = {
   makeAuthenticatedRequest: async (method: 'GET' | 'POST' | 'PUT' | 'DELETE', url: string, data?: any) => {
     try {
       const config: any = { method, url };
-      
+
       const csrfToken = localStorage.getItem('frappe_csrf_token');
       if (csrfToken) {
         config.headers = { 'X-Frappe-CSRF-Token': csrfToken };
       }
-      
+
       if (data) {
         config.data = data;
       }
-      
+
       const response = await frappeClient(config);
       return response.data;
     } catch (error) {
@@ -241,10 +241,10 @@ export const frappeAPI = {
     return await frappeAPI.makeAuthenticatedRequest('GET', '/api/resource/ProjectUrgency');
   },
 
-  getAllLeads: async (email:string) => {
-    
+  getAllLeads: async (email: string) => {
+
     // return await frappeAPI.makeAuthenticatedRequest('GET', '/api/resource/Lead?order_by=creation%20desc');
-      return await frappeAPI.makeAuthenticatedRequest('GET', `/api/resource/Lead?filters=[["lead_owner", "=", "${email}"]]&order_by=creation%20desc`);
+    return await frappeAPI.makeAuthenticatedRequest('GET', `/api/resource/Lead?filters=[["lead_owner", "=", "${email}"]]&order_by=creation%20desc`);
   },
 
   getLeadById: async (leadId: string) => {
@@ -287,66 +287,131 @@ export const frappeAPI = {
   createInspection: async (inspectionData: Record<string, unknown>) => {
     return await frappeAPI.makeAuthenticatedRequest('POST', '/api/resource/SiteInspection', inspectionData);
   },
-  
+
   getInspectionDetails: async (inspectionName: string) => {
     return await frappeAPI.makeAuthenticatedRequest('GET', `/api/resource/SiteInspection/${inspectionName}`);
   },
- getAllInspections: async (filters: Record<string, unknown> = {}) => {
+  getAllInspections: async (filters: Record<string, unknown> = {}) => {
     // Convert filters to Frappe/ERPNext format
     const filterArray = Object.entries(filters).map(([key, value]) => [key, "=", value]);
     const filterString = encodeURIComponent(JSON.stringify(filterArray));
-    
+
     return await frappeAPI.makeAuthenticatedRequest(
-        'GET', 
-        `/api/resource/SiteInspection?filters=${filterString}`
+      'GET',
+      `/api/resource/SiteInspection?filters=${filterString}`
     );
-},
+  },
   UpdateInspection: async (inspectionName: string, inspectionData: Record<string, unknown>) => {
     return await frappeAPI.makeAuthenticatedRequest('PUT', `/api/resource/SiteInspection/${inspectionName}`, inspectionData);
   },
- // In your frappeClient.ts
-upload: async (file: File) => {
-  const formData = new FormData();
-  formData.append('file', file);
-  
-  // These fields match what's working in Bruno
-  formData.append('doctype', 'File');
-  formData.append('is_private', '0');
-  
-  try {
-    const response = await frappeClient.post('/api/method/upload_file', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
+  upload: async (file: File) => {
+    // Validate file first
+    if (!file || !(file instanceof File)) {
+      throw new Error('Invalid file object');
+    }
+
+    console.log('🔄 Starting file upload process...');
+    console.log('File validation:', {
+      name: file.name,
+      size: file.size,
+      type: file.type,
+      lastModified: file.lastModified
     });
+
+    const formData = new FormData();
     
-    // Return the full response structure for proper handling
-    return {
-      success: true,
-      data: response.data  // This should contain the 'message' object
-    };
-  } catch (error) {
-    console.error('File upload error:', error);
+    console.log(new File([file], file.name, {
+      type: file.type}));
     
-    if (axios.isAxiosError(error)) {
-      const errorMessage = error.response?.data?.message || 
-                          error.response?.data?.exc || 
-                          error.message;
-      return { 
-        success: false, 
+    // Add all required fields
+    formData.append("file", file);
+// formData.append("doctype", "YourDoctype");
+// formData.append("docname", "YourDocname");
+    // formData.append('file', file);
+    formData.append('file_name', file.name);
+    //     formData.append('file_url', file.name);
+
+    // formData.append('is_private', '0');
+    // formData.append('folder', 'Home/Attachments');
+    
+    // Debug: Check FormData contents
+    console.log('📦 FormData contents:');
+    for (const [key, value] of formData.entries()) {
+      if (value instanceof File) {
+        console.log(`  ${key}:`, 'File:', value.name, value.size, 'bytes');
+      } else {
+        console.log(`  ${key}:`, value);
+      }
+    }
+
+    console.log('🚀 Making upload request to /api/method/upload_file...');
+
+    try {
+      const response = await frappeClient.post('/api/method/upload_file', formData, {
+        timeout: 30000,
+        // Add progress tracking if available
+        onUploadProgress: (progressEvent) => {
+          if (progressEvent.total) {
+            const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+            console.log(`📈 Upload progress: ${percentCompleted}%`);
+          }
+        }
+      });
+
+      console.log('✅ Upload successful!');
+      console.log('📨 Full response:', response);
+      console.log('📊 Response status:', response.status);
+      console.log('📄 Response data:', JSON.stringify(response.data, null, 2));
+      
+      return {
+        success: true,
+        data: response.data
+      };
+
+    } catch (error) {
+      console.error('❌ Upload failed!');
+      console.error('🔍 Error details:', error);
+      
+      let errorMessage = 'Unknown error';
+      let errorDetails = undefined;
+      
+      if (axios.isAxiosError(error)) {
+        console.log('📡 Network error detected');
+        console.log('Status:', error.response?.status);
+        console.log('Status text:', error.response?.statusText);
+        console.log('Response headers:', error.response?.headers);
+        console.log('Response data:', error.response?.data);
+        
+        if (error.response?.data?.exc) {
+          console.log('🐛 Frappe exception found:', error.response.data.exc);
+          try {
+            // Extract the actual error from Frappe's exception format
+            const excArray = JSON.parse(error.response.data.exc);
+            errorMessage = excArray[0] || error.response.data.message || error.message;
+            console.log('📝 Extracted error message:', errorMessage);
+          } catch (parseError) {
+            console.log('❌ Failed to parse exception:', parseError);
+            errorMessage = error.response.data.message || error.message;
+          }
+        } else if (error.response?.data?.message) {
+          errorMessage = error.response.data.message;
+        } else {
+          errorMessage = error.message;
+        }
+        
+        errorDetails = error.response?.data;
+      } else if (error instanceof Error) {
+        console.log('🔧 General error:', error.message);
+        errorMessage = error.message;
+      }
+      
+      return {
+        success: false,
         error: errorMessage,
-        details: error.response?.data 
+        details: errorDetails
       };
     }
-    
-    return { 
-      success: false, 
-      error: (error as Error).message 
-    };
   }
-}
-  
-
 
 
 };

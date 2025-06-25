@@ -67,26 +67,70 @@ const formSchema = z.object({
 });
 
 const uploadFile = async (file: File): Promise<string> => {
+  console.log("🎯 uploadFile called with:", file.name);
+
+  // Validate file before upload
+  if (!file || file.size === 0) {
+    throw new Error("Invalid file selected");
+  }
+
   try {
+    console.log("📞 Calling frappeAPI.upload...");
     const response = await frappeAPI.upload(file);
-    if (!response.success) throw new Error(response.error || "Upload failed");
+
+    if (!response.success) {
+      console.error("💥 Upload failed in frappeAPI:", response);
+      throw new Error(response.error || "Upload failed");
+    }
 
     const data = response.data;
-    if (data && data.message)
-      return data.message.file_url || data.message.file_name || "";
-    if (typeof data === "object" && data !== null)
-      return data.file_url || data.file_name || "";
-    if (typeof data === "string") {
+    console.log("🎉 Upload response received:", data);
+
+    // More robust data extraction
+    let fileUrl = "";
+
+    // Try different possible response structures
+    if (data?.message?.file_url) {
+      fileUrl = data.message.file_url;
+      console.log("✅ Found file_url in message:", fileUrl);
+    } else if (data?.message?.file_name) {
+      fileUrl = data.message.file_name;
+      console.log("✅ Found file_name in message:", fileUrl);
+    } else if (data?.file_url) {
+      fileUrl = data.file_url;
+      console.log("✅ Found file_url in root:", fileUrl);
+    } else if (data?.file_name) {
+      fileUrl = data.file_name;
+      console.log("✅ Found file_name in root:", fileUrl);
+    } else if (data?.message && typeof data.message === "string") {
+      console.log("🔍 Attempting to parse string message:", data.message);
       try {
-        const parsed = JSON.parse(data);
-        return parsed.file_url || parsed.file_name || "";
+        const parsed = JSON.parse(data.message);
+        fileUrl = parsed.file_url || parsed.file_name || "";
+        console.log("✅ Parsed file URL:", fileUrl);
       } catch {
-        return data;
+        fileUrl = data.message;
+        console.log("⚠️ Using raw message as URL:", fileUrl);
       }
     }
-    throw new Error("No file URL found in response");
+
+    if (!fileUrl) {
+      console.error("❌ No file URL found in response!");
+      console.error("📋 Full response structure:", JSON.stringify(data, null, 2));
+      throw new Error("No file URL found in response. Check server logs.");
+    }
+
+    // Ensure the URL is properly formatted
+    if (!fileUrl.startsWith("/") && !fileUrl.startsWith("http")) {
+      fileUrl = "/files/" + fileUrl;
+      console.log("🔧 Formatted URL:", fileUrl);
+    }
+
+    console.log("🎯 Final file URL:", fileUrl);
+    return fileUrl;
+    
   } catch (error) {
-    console.error("File upload error:", error);
+    console.error("💥 File upload error:", error);
     throw error;
   }
 };
@@ -104,9 +148,18 @@ const CreateInspection = () => {
   const [leadData, setLeadData] = useState<any>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [dimensionToDelete, setDimensionToDelete] = useState<number | null>(null)
+  const [dimensionToDelete, setDimensionToDelete] = useState<number | null>(
+    null
+  );
 
-  console.log("Current Inspection Data", inspection, "Todo Data", todo, "Mode", mode);
+  console.log(
+    "Current Inspection Data",
+    inspection,
+    "Todo Data",
+    todo,
+    "Mode",
+    mode
+  );
 
   const {
     createInspection,
@@ -130,15 +183,15 @@ const CreateInspection = () => {
       const lastName = todo.inquiry_data.last_name || "";
       return `${firstName} ${lastName}`.trim() || "Unknown Lead";
     }
-    
+
     if (leadData?.lead_name) {
       return leadData.lead_name;
     }
-    
+
     if (inspection?.customer_name) {
       return inspection.customer_name;
     }
-    
+
     return "Unknown Lead";
   };
 
@@ -186,7 +239,7 @@ const CreateInspection = () => {
           // Set customer name properly
           const customerName = getCustomerName();
           form.setValue("customer_name", customerName);
-          
+
           if (todo.inquiry_data?.custom_property_type) {
             form.setValue(
               "property_type",
@@ -207,7 +260,10 @@ const CreateInspection = () => {
               );
             }
             // Set customer name from fetched lead data
-            const customerName = fetchedLeadData?.lead_name || inspection.customer_name || "Unknown Lead";
+            const customerName =
+              fetchedLeadData?.lead_name ||
+              inspection.customer_name ||
+              "Unknown Lead";
             form.setValue("customer_name", customerName);
           }
         } else {
@@ -273,44 +329,74 @@ const CreateInspection = () => {
     }
   }, [currentInspection, inspection, dataLoaded, form, replace]);
 
+  // Updated file upload handling with proper Frappe requirements
   const handleFileUpload = async (
     file: File,
     fieldName: string,
     index?: number
   ) => {
-    if (!file) return;
+    // Enhanced validation
+    if (!file) {
+      toast.error("No file selected");
+      return;
+    }
+    if (!(file instanceof File)) {
+      toast.error("Invalid file object");
+      return;
+    }
+
+    console.log("File details:", {
+      name: file.name,
+      size: file.size,
+      type: file.type,
+      lastModified: new Date(file.lastModified).toISOString(),
+    });
+
     try {
       setUploading(true);
       setUploadProgress(0);
       const toastId = toast.loading("Uploading file...", { id: "upload" });
 
-      const maxSize = 10 * 1024 * 1024;
-      if (file.size > maxSize) throw new Error("File size exceeds 10MB limit");
+      // Validate file size
+      const maxSize = 10 * 1024 * 1024; // 10MB
+      if (file.size > maxSize) {
+        throw new Error("File size exceeds 10MB limit");
+      }
 
+      // Validate file type
       const allowedTypes = [
         "image/jpeg",
+        "image/jpg",
         "image/png",
         "image/gif",
         "application/pdf",
       ];
       if (!allowedTypes.includes(file.type)) {
         throw new Error(
-          "File type not supported. Please use JPEG, PNG, GIF, or PDF."
+          `File type "${file.type}" not supported. Please use JPEG, PNG, GIF, or PDF.`
         );
       }
 
+      // Progress simulation
       const interval = setInterval(() => {
-        setUploadProgress((prev) =>
-          prev >= 90 ? (clearInterval(interval), prev) : prev + 10
-        );
+        setUploadProgress((prev) => {
+          if (prev >= 90) {
+            clearInterval(interval);
+            return prev;
+          }
+          return prev + 10;
+        });
       }, 300);
 
       const fileUrl = await uploadFile(file);
       setUploadProgress(100);
       clearInterval(interval);
 
-      if (!fileUrl) throw new Error("File uploaded but no URL returned");
+      if (!fileUrl) {
+        throw new Error("File uploaded but no URL returned");
+      }
 
+      // Update form with the file URL
       if (index !== undefined) {
         form.setValue(`site_dimensions.${index}.media`, fileUrl);
       } else {
@@ -318,14 +404,21 @@ const CreateInspection = () => {
       }
 
       toast.dismiss(toastId);
-      toast.success("File uploaded successfully!");
+      toast.success(`File "${file.name}" uploaded successfully!`);
       form.trigger(fieldName as any);
     } catch (error) {
       toast.dismiss("upload");
       const errorMessage =
         error instanceof Error ? error.message : "Failed to upload file";
-      toast.error(errorMessage);
-      console.error("File upload error:", error);
+      toast.error(`Upload failed: ${errorMessage}`);
+      console.error("File upload error:", {
+        error,
+        file: {
+          name: file.name,
+          size: file.size,
+          type: file.type,
+        },
+      });
     } finally {
       setUploading(false);
       setTimeout(() => setUploadProgress(0), 1000);
@@ -337,7 +430,7 @@ const CreateInspection = () => {
       setLoading(true);
       const inspectionToUpdate = inspection || currentInspection;
       const leadReference = todo?.reference_name || inspection?.lead;
-      
+
       // Get customer name properly
       const customerName = getCustomerName();
 
@@ -348,8 +441,8 @@ const CreateInspection = () => {
         ...values,
         // Set status based on mode - for new inspections, set to "In Progress"
         // For updates, keep existing status or set to "In Progress" if needed
-        status: isUpdateMode 
-          ? inspectionToUpdate?.status || "In Progress" 
+        status: isUpdateMode
+          ? inspectionToUpdate?.status || "In Progress"
           : "In Progress",
         lead: leadReference,
         customer_name: customerName, // Use the properly constructed customer name
@@ -368,7 +461,7 @@ const CreateInspection = () => {
       if (isUpdateMode && inspectionToUpdate?.name) {
         await updateInspectionbyId(inspectionToUpdate.name, inspectionData);
         toast.success("Inspection updated successfully!");
-        
+
         // If updating from a todo, also update the todo status
         if (todo?.name) {
           try {
@@ -378,12 +471,12 @@ const CreateInspection = () => {
             // Don't fail the whole operation if todo update fails
           }
         }
-        
+
         navigate("/inspector?tab=inspections");
       } else {
         const result = await createInspection(inspectionData, todo?.name);
         console.log("Create inspection result:", result);
-        
+
         toast.success("Inspection created successfully!");
         navigate("/inspector?tab=inspections");
       }
@@ -422,7 +515,7 @@ const CreateInspection = () => {
 
   const getDisplayData = () => {
     const customerName = getCustomerName();
-    
+
     if (todo) {
       return {
         customerName,
@@ -431,7 +524,8 @@ const CreateInspection = () => {
       };
     } else if (inspection) {
       return {
-        customerName: leadData?.lead_name || inspection.customer_name || customerName,
+        customerName:
+          leadData?.lead_name || inspection.customer_name || customerName,
         leadDetails: leadData,
         showTodoActions: false,
       };
@@ -675,7 +769,8 @@ const CreateInspection = () => {
                                     <div className="flex items-center justify-between w-full">
                                       <div className="flex items-center gap-2">
                                         <span className="font-medium text-gray-700 text-sm">
-                                          {field.area_name || `Area ${index + 1}`}
+                                          {field.area_name ||
+                                            `Area ${index + 1}`}
                                         </span>
                                       </div>
                                       <Button
@@ -811,7 +906,6 @@ const CreateInspection = () => {
                               ))}
                             </Accordion>
 
-
                             <Button
                               type="button"
                               variant="outline"
@@ -876,13 +970,31 @@ const CreateInspection = () => {
                                         onChange={(e) => {
                                           const files = e.target.files;
                                           if (files && files.length > 0) {
-                                            handleFileUpload(files[0], "site_photos");
+                                            const file = files[0];
+                                            console.log("Selected file:", file);
+
+                                            // Verify it's a proper File object
+                                            if (file instanceof File) {
+                                              handleFileUpload(
+                                                file,
+                                                "site_photos"
+                                              );
+                                            } else {
+                                              console.error(
+                                                "Not a proper File object:",
+                                                file
+                                              );
+                                              toast.error(
+                                                "Invalid file selected"
+                                              );
+                                            }
                                           }
                                         }}
                                         className="hidden"
                                         id="site-photos"
                                         disabled={uploading}
                                       />
+
                                       {uploadProgress > 0 && (
                                         <Progress
                                           value={uploadProgress}
@@ -938,7 +1050,10 @@ const CreateInspection = () => {
                                         onChange={(e) => {
                                           const files = e.target.files;
                                           if (files && files.length > 0) {
-                                            handleFileUpload(files[0], "measurement_sketch");
+                                            handleFileUpload(
+                                              files[0],
+                                              "measurement_sketch"
+                                            );
                                           }
                                         }}
                                         className="hidden"
@@ -979,7 +1094,9 @@ const CreateInspection = () => {
                         <AccordionTrigger className="px-4 py-3 hover:no-underline bg-gray-50 rounded-t-lg">
                           <div className="flex items-center gap-2">
                             <Info className="h-4 w-4 text-emerald-600" />
-                            <span className="font-medium">Inspection Notes</span>
+                            <span className="font-medium">
+                              Inspection Notes
+                            </span>
                           </div>
                         </AccordionTrigger>
                         <AccordionContent className="px-4 py-3 bg-white rounded-b-lg">
@@ -1035,7 +1152,9 @@ const CreateInspection = () => {
                           <Button
                             type="button"
                             variant="outline"
-                            onClick={() => navigate("/inspector?tab=inspections")}
+                            onClick={() =>
+                              navigate("/inspector?tab=inspections")
+                            }
                             className="flex-1 border-gray-300 text-gray-700 hover:bg-gray-50"
                             disabled={loading || cancelling}
                           >
@@ -1055,7 +1174,9 @@ const CreateInspection = () => {
                             ) : (
                               <>
                                 <Check className="h-4 w-4 mr-2" />
-                                {isUpdateMode ? "Update Inspection" : "Create Inspection"}
+                                {isUpdateMode
+                                  ? "Update Inspection"
+                                  : "Create Inspection"}
                               </>
                             )}
                           </Button>

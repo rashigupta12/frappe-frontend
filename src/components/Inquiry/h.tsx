@@ -292,9 +292,7 @@ const InquiryPage = () => {
       fetchProjectUrgency();
     }
   }, [fetchLeads, fetchJobTypes, fetchProjectUrgency]);
-  // console.log("Leads:", leads);
-  // console.log("Job Types:", jobTypes);
-  // console.log("Project Urgency:", projectUrgency);
+  
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
