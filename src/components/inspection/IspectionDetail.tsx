@@ -6,6 +6,7 @@ import {
   CalendarIcon,
   Check,
   Edit,
+  FileText,
   Home,
   Info,
   Phone,
@@ -116,7 +117,10 @@ const uploadFile = async (file: File): Promise<string> => {
 
     if (!fileUrl) {
       console.error("❌ No file URL found in response!");
-      console.error("📋 Full response structure:", JSON.stringify(data, null, 2));
+      console.error(
+        "📋 Full response structure:",
+        JSON.stringify(data, null, 2)
+      );
       throw new Error("No file URL found in response. Check server logs.");
     }
 
@@ -128,7 +132,6 @@ const uploadFile = async (file: File): Promise<string> => {
 
     console.log("🎯 Final file URL:", fileUrl);
     return fileUrl;
-    
   } catch (error) {
     console.error("💥 File upload error:", error);
     throw error;
@@ -136,6 +139,8 @@ const uploadFile = async (file: File): Promise<string> => {
 };
 
 const CreateInspection = () => {
+  const ImageUrl =
+    import.meta.env.VITE_IMAGEURL || "https://eits.thebigocommunity.org";
   const location = useLocation();
   const navigate = useNavigate();
   const { todo, inspection, mode = "create" } = location.state || {};
@@ -507,11 +512,11 @@ const CreateInspection = () => {
     }
   };
 
-  const getFileDisplayName = (fileUrl: string) => {
-    if (!fileUrl) return "";
-    const parts = fileUrl.split("/");
-    return parts[parts.length - 1] || "Uploaded file";
-  };
+  // const getFileDisplayName = (fileUrl: string) => {
+  //   if (!fileUrl) return "";
+  //   const parts = fileUrl.split("/");
+  //   return parts[parts.length - 1] || "Uploaded file";
+  // };
 
   const getDisplayData = () => {
     const customerName = getCustomerName();
@@ -833,72 +838,161 @@ const CreateInspection = () => {
                                       <FormField
                                         control={form.control}
                                         name={`site_dimensions.${index}.media`}
-                                        render={({ field }) => (
-                                          <FormItem>
-                                            <FormLabel className="text-gray-700 text-sm">
-                                              Media
-                                            </FormLabel>
-                                            <FormControl>
-                                              <div className="space-y-2">
-                                                <label
-                                                  htmlFor={`media-${index}`}
-                                                  className={`flex flex-col items-center justify-center gap-2 p-3 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors ${
-                                                    uploading
-                                                      ? "opacity-50 cursor-not-allowed"
-                                                      : ""
-                                                  }`}
-                                                >
-                                                  <Upload className="h-4 w-4 text-gray-400" />
-                                                  <span className="text-xs font-medium text-gray-600">
-                                                    {uploading
-                                                      ? "Uploading..."
-                                                      : "Click to upload media"}
-                                                  </span>
-                                                </label>
-                                                <Input
-                                                  type="file"
-                                                  accept="image/*"
-                                                  onChange={(e) => {
-                                                    const files =
-                                                      e.target.files;
-                                                    if (
-                                                      files &&
-                                                      files.length > 0
-                                                    ) {
-                                                      handleFileUpload(
-                                                        files[0],
-                                                        "",
-                                                        index
-                                                      );
-                                                    }
-                                                  }}
-                                                  className="hidden"
-                                                  id={`media-${index}`}
-                                                  disabled={uploading}
-                                                />
-                                                {uploadProgress > 0 && (
-                                                  <Progress
-                                                    value={uploadProgress}
-                                                    className="h-2 bg-gray-100"
-                                                  />
-                                                )}
-                                                {field.value && (
-                                                  <div className="p-2 bg-emerald-50 rounded border border-emerald-200">
-                                                    <div className="flex items-center gap-2 text-sm text-emerald-800">
-                                                      <Check className="h-4 w-4 text-emerald-600" />
-                                                      <span className="font-medium text-xs">
-                                                        {getFileDisplayName(
-                                                          field.value
-                                                        )}
-                                                      </span>
+                                        render={({ field }) => {
+                                          // Ensure field.value is always treated as an array
+                                          const mediaArray = field.value
+                                            ? Array.isArray(field.value)
+                                              ? field.value
+                                              : [field.value]
+                                            : [];
+
+                                          return (
+                                            <FormItem>
+                                              <FormLabel className="text-gray-700 text-sm">
+                                                Media
+                                              </FormLabel>
+                                              <FormControl>
+                                                <div className="space-y-2">
+                                                  {/* Upload Button */}
+                                                  <label
+                                                    htmlFor={`media-${index}`}
+                                                    className={`flex flex-col items-center justify-center gap-1 p-2 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors ${
+                                                      uploading
+                                                        ? "opacity-50 cursor-not-allowed"
+                                                        : ""
+                                                    }`}
+                                                  >
+                                                    <Plus className="h-5 w-5 text-gray-400" />
+                                                    <span className="text-xs font-medium text-gray-600">
+                                                      {uploading
+                                                        ? "Uploading..."
+                                                        : "Add Media"}
+                                                    </span>
+                                                    <Input
+                                                      type="file"
+                                                      accept="image/*"
+                                                      multiple
+                                                      onChange={async (e) => {
+                                                        const files =
+                                                          e.target.files;
+                                                        if (
+                                                          files &&
+                                                          files.length > 0
+                                                        ) {
+                                                          const uploadedUrls: string[] =
+                                                            [];
+
+                                                          for (const file of Array.from(
+                                                            files
+                                                          )) {
+                                                            try {
+                                                              await handleFileUpload(
+                                                                file,
+                                                                "",
+                                                                index
+                                                              );
+                                                            } catch (error) {
+                                                              console.error(
+                                                                "Upload failed:",
+                                                                error
+                                                              );
+                                                              toast.error(
+                                                                `Failed to upload ${file.name}`
+                                                              );
+                                                            }
+                                                          }
+
+                                                          if (
+                                                            uploadedUrls.length >
+                                                            0
+                                                          ) {
+                                                            field.onChange([
+                                                              ...mediaArray,
+                                                              ...uploadedUrls,
+                                                            ]);
+                                                          }
+                                                        }
+                                                      }}
+                                                      className="hidden"
+                                                      id={`media-${index}`}
+                                                      disabled={uploading}
+                                                    />
+                                                  </label>
+
+                                                  {uploadProgress > 0 && (
+                                                    <Progress
+                                                      value={uploadProgress}
+                                                      className="h-2 bg-gray-100"
+                                                    />
+                                                  )}
+
+                                                  {/* Image Preview Gallery */}
+                                                  {mediaArray.length > 0 && (
+                                                    <div className="flex flex-wrap gap-2 mt-2">
+                                                      {mediaArray.map(
+                                                        (media, mediaIndex) => (
+                                                          <div
+                                                            key={mediaIndex}
+                                                            className="relative group"
+                                                          >
+                                                            <div
+                                                              className="w-20 h-20 rounded-md overflow-hidden border border-gray-200 cursor-pointer"
+                                                              onClick={() => {
+                                                                // Implement your image viewer here
+                                                                console.log(
+                                                                  "View image:",
+                                                                  media
+                                                                );
+                                                              }}
+                                                            >
+                                                              <img
+                                                                src={`${ImageUrl}/${media}`}
+                                                                alt={`Media ${
+                                                                  mediaIndex + 1
+                                                                }`}
+                                                                className="w-full h-full object-cover"
+                                                                onError={(
+                                                                  e
+                                                                ) => {
+                                                                  e.currentTarget.src =
+                                                                    "/placeholder-image.jpg";
+                                                                }}
+                                                              />
+                                                            </div>
+                                                            <button
+                                                              type="button"
+                                                              className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                              onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                const updatedMedia =
+                                                                  [
+                                                                    ...mediaArray,
+                                                                  ];
+                                                                updatedMedia.splice(
+                                                                  mediaIndex,
+                                                                  1
+                                                                );
+                                                                field.onChange(
+                                                                  updatedMedia.length >
+                                                                    0
+                                                                    ? updatedMedia
+                                                                    : null
+                                                                );
+                                                              }}
+                                                            >
+                                                              <X className="h-3 w-3" />
+                                                            </button>
+                                                          </div>
+                                                        )
+                                                      )}
                                                     </div>
-                                                  </div>
-                                                )}
-                                              </div>
-                                            </FormControl>
-                                            <FormMessage />
-                                          </FormItem>
-                                        )}
+                                                  )}
+                                                </div>
+                                              </FormControl>
+                                              <FormMessage />
+                                            </FormItem>
+                                          );
+                                        }}
                                       />
                                     </div>
                                   </AccordionContent>
@@ -930,13 +1024,13 @@ const CreateInspection = () => {
                         value="media"
                         className="border border-gray-200 rounded-lg"
                       >
-                        <AccordionTrigger className="px-4 py-3 hover:no-underline bg-gray-50 rounded-t-lg">
+                        <AccordionTrigger className="px-4 py-2 hover:no-underline bg-gray-50 rounded-t-lg">
                           <div className="flex items-center gap-2">
                             <Upload className="h-4 w-4 text-emerald-600" />
                             <span className="font-medium">Media Files</span>
                           </div>
                         </AccordionTrigger>
-                        <AccordionContent className="px-4 py-3 bg-white rounded-b-lg">
+                        <AccordionContent className="px-4 py-2 bg-white rounded-b-lg">
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {/* Site Photos */}
                             <FormField
@@ -949,67 +1043,118 @@ const CreateInspection = () => {
                                   </FormLabel>
                                   <FormControl>
                                     <div className="space-y-2">
-                                      <label
-                                        htmlFor="site-photos"
-                                        className={`flex flex-col items-center justify-center gap-2 p-4 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors ${
-                                          uploading
-                                            ? "opacity-50 cursor-not-allowed"
-                                            : ""
-                                        }`}
-                                      >
-                                        <Upload className="h-5 w-5 text-gray-400" />
-                                        <span className="text-sm font-medium text-gray-600">
-                                          {uploading
-                                            ? "Uploading..."
-                                            : "Upload Site Photos"}
-                                        </span>
-                                      </label>
-                                      <Input
-                                        type="file"
-                                        accept="image/*"
-                                        onChange={(e) => {
-                                          const files = e.target.files;
-                                          if (files && files.length > 0) {
-                                            const file = files[0];
-                                            console.log("Selected file:", file);
+                                      <div className="flex flex-wrap gap-2">
+                                        {/* Display existing images */}
+                                        {field.value &&
+                                          (typeof field.value === "string" ? (
+                                            <div className="relative group">
+                                              <img
+                                                src={`${ImageUrl}/${field.value}`}
+                                                alt="Uploaded Site Photo"
+                                                className="w-20 h-20 object-cover rounded-lg border border-gray-200"
+                                              />
+                                              <button
+                                                type="button"
+                                                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                onClick={() =>
+                                                  field.onChange("")
+                                                }
+                                              >
+                                                <X className="h-3 w-3" />
+                                              </button>
+                                            </div>
+                                          ) : (
+                                            (field.value as string[]).map(
+                                              (
+                                                photo: string,
+                                                index: number
+                                              ) => (
+                                                <div
+                                                  key={index}
+                                                  className="relative group"
+                                                >
+                                                  <img
+                                                    src={`${ImageUrl}/${photo}`}
+                                                    alt={`Uploaded Site Photo ${
+                                                      index + 1
+                                                    }`}
+                                                    className="w-20 h-20 object-cover rounded-lg border border-gray-200"
+                                                  />
+                                                  <button
+                                                    type="button"
+                                                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                    onClick={() => {
+                                                      const newPhotos = [
+                                                        ...field.value,
+                                                      ];
+                                                      newPhotos.splice(
+                                                        index,
+                                                        1
+                                                      );
+                                                      field.onChange(newPhotos);
+                                                    }}
+                                                  >
+                                                    <X className="h-3 w-3" />
+                                                  </button>
+                                                </div>
+                                              )
+                                            )
+                                          ))}
 
-                                            // Verify it's a proper File object
-                                            if (file instanceof File) {
-                                              handleFileUpload(
-                                                file,
-                                                "site_photos"
-                                              );
-                                            } else {
-                                              console.error(
-                                                "Not a proper File object:",
-                                                file
-                                              );
-                                              toast.error(
-                                                "Invalid file selected"
-                                              );
-                                            }
-                                          }
-                                        }}
-                                        className="hidden"
-                                        id="site-photos"
-                                        disabled={uploading}
-                                      />
+                                        {/* Upload button */}
+                                        <label
+                                          htmlFor="site-photos"
+                                          className={`w-20 h-20 flex items-center justify-center border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors ${
+                                            uploading
+                                              ? "opacity-50 cursor-not-allowed"
+                                              : ""
+                                          }`}
+                                        >
+                                          <Plus className="h-8 w-8 text-gray-400" />
+                                          <Input
+                                            type="file"
+                                            accept="image/*"
+                                            multiple
+                                            onChange={(e) => {
+                                              const files = e.target.files;
+                                              if (files && files.length > 0) {
+                                                // Handle multiple file uploads
+                                                const uploadPromises =
+                                                  Array.from(files).map(
+                                                    (file) =>
+                                                      handleFileUpload(
+                                                        file,
+                                                        "site_photos"
+                                                      )
+                                                  );
+                                                Promise.all(
+                                                  uploadPromises
+                                                ).then((uploadedFiles) => {
+                                                  const currentValue =
+                                                    field.value || [];
+                                                  const newValue =
+                                                    Array.isArray(currentValue)
+                                                      ? [
+                                                          ...currentValue,
+                                                          ...uploadedFiles,
+                                                        ]
+                                                      : [...uploadedFiles];
+                                                  field.onChange(newValue);
+                                                });
+                                              }
+                                            }}
+                                            className="hidden"
+                                            id="site-photos"
+                                            disabled={uploading}
+                                          />
+                                        </label>
+                                      </div>
 
                                       {uploadProgress > 0 && (
                                         <Progress
                                           value={uploadProgress}
                                           className="h-2 bg-gray-100"
                                         />
-                                      )}
-                                      {field.value && (
-                                        <div className="p-3 bg-emerald-50 rounded border border-emerald-200">
-                                          <div className="flex items-center gap-2 text-sm text-emerald-800">
-                                            <Check className="h-4 w-4 text-emerald-600" />
-                                            <span className="font-medium">
-                                              {getFileDisplayName(field.value)}
-                                            </span>
-                                          </div>
-                                        </div>
                                       )}
                                     </div>
                                   </FormControl>
@@ -1029,52 +1174,70 @@ const CreateInspection = () => {
                                   </FormLabel>
                                   <FormControl>
                                     <div className="space-y-2">
-                                      <label
-                                        htmlFor="measurement-sketch"
-                                        className={`flex flex-col items-center justify-center gap-2 p-4 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors ${
-                                          uploading
-                                            ? "opacity-50 cursor-not-allowed"
-                                            : ""
-                                        }`}
-                                      >
-                                        <Upload className="h-5 w-5 text-gray-400" />
-                                        <span className="text-sm font-medium text-gray-600">
-                                          {uploading
-                                            ? "Uploading..."
-                                            : "Upload Sketch"}
-                                        </span>
-                                      </label>
-                                      <Input
-                                        type="file"
-                                        accept="image/*,application/pdf"
-                                        onChange={(e) => {
-                                          const files = e.target.files;
-                                          if (files && files.length > 0) {
-                                            handleFileUpload(
-                                              files[0],
-                                              "measurement_sketch"
-                                            );
-                                          }
-                                        }}
-                                        className="hidden"
-                                        id="measurement-sketch"
-                                        disabled={uploading}
-                                      />
+                                      <div className="flex flex-wrap gap-2">
+                                        {/* Display existing sketch */}
+                                        {field.value && (
+                                          <div className="relative group">
+                                            {field.value.endsWith(".pdf") ? (
+                                              <div className="w-20 h-20 flex flex-col items-center justify-center border border-gray-200 rounded-lg p-2">
+                                                <FileText className="h-8 w-8 text-gray-400" />
+                                                <span className="text-xs mt-1 text-gray-600 truncate w-full text-center">
+                                                  Sketch PDF
+                                                </span>
+                                              </div>
+                                            ) : (
+                                              <img
+                                                src={`${ImageUrl}/${field.value}`}
+                                                alt="Uploaded Measurement Sketch"
+                                                className="w-20 h-20 object-cover rounded-lg border border-gray-200"
+                                              />
+                                            )}
+                                            <button
+                                              type="button"
+                                              className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                              onClick={() => field.onChange("")}
+                                            >
+                                              <X className="h-3 w-3" />
+                                            </button>
+                                          </div>
+                                        )}
+
+                                        {/* Upload button */}
+                                        <label
+                                          htmlFor="measurement-sketch"
+                                          className={`w-20 h-20 flex items-center justify-center border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors ${
+                                            uploading
+                                              ? "opacity-50 cursor-not-allowed"
+                                              : ""
+                                          }`}
+                                        >
+                                          <Plus className="h-8 w-8 text-gray-400" />
+                                          <Input
+                                            type="file"
+                                            accept="image/*,application/pdf"
+                                            onChange={(e) => {
+                                              const files = e.target.files;
+                                              if (files && files.length > 0) {
+                                                handleFileUpload(
+                                                  files[0],
+                                                  "measurement_sketch"
+                                                ).then((url) => {
+                                                  field.onChange(url);
+                                                });
+                                              }
+                                            }}
+                                            className="hidden"
+                                            id="measurement-sketch"
+                                            disabled={uploading}
+                                          />
+                                        </label>
+                                      </div>
+
                                       {uploadProgress > 0 && (
                                         <Progress
                                           value={uploadProgress}
                                           className="h-2 bg-gray-100"
                                         />
-                                      )}
-                                      {field.value && (
-                                        <div className="p-3 bg-emerald-50 rounded border border-emerald-200">
-                                          <div className="flex items-center gap-2 text-sm text-emerald-800">
-                                            <Check className="h-4 w-4 text-emerald-600" />
-                                            <span className="font-medium">
-                                              {getFileDisplayName(field.value)}
-                                            </span>
-                                          </div>
-                                        </div>
                                       )}
                                     </div>
                                   </FormControl>

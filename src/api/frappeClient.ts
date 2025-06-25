@@ -36,16 +36,16 @@ frappeFileClient.interceptors.request.use(
   (config) => {
     // Log file upload requests
     console.log('Making file upload request:', config.method?.toUpperCase(), config.url);
-    
+
     // Don't manually set browser-controlled headers
     delete config.headers['Origin'];
     delete config.headers['Referer'];
-    
+
     // Ensure Content-Type is not set for FormData (let browser handle it)
     if (config.data instanceof FormData) {
       delete config.headers['Content-Type'];
     }
-    
+
     return config;
   },
   (error) => Promise.reject(error)
@@ -362,97 +362,97 @@ export const frappeAPI = {
     return await frappeAPI.makeAuthenticatedRequest('PUT', `/api/resource/SiteInspection/${inspectionName}`, inspectionData);
   },
   upload: async (file: File, options: {
-  is_private?: boolean;
-  folder?: string;
-  doctype?: string;
-  docname?: string;
-  method?: string;
-} = {}) => {
-  // Validate file first
-  if (!file || !(file instanceof File)) {
-    throw new Error('Invalid file object');
-  }
+    is_private?: boolean;
+    folder?: string;
+    doctype?: string;
+    docname?: string;
+    method?: string;
+  } = {}) => {
+    // Validate file first
+    if (!file || !(file instanceof File)) {
+      throw new Error('Invalid file object');
+    }
 
-  const formData = new FormData();
-  
-  // Add the file with proper naming (matching Frappe's expectation)
-  formData.append("file", file, file.name);
-  
-  // Add required Frappe parameters (matching the official implementation)
-  formData.append('is_private', options.is_private ? '1' : '0');
-  formData.append('folder', options.folder || 'Home');
-  
-  // Optional parameters
-  if (options.doctype) {
-    formData.append('doctype', options.doctype);
-  }
-  if (options.docname) {
-    formData.append('docname', options.docname);
-  }
-  if (options.method) {
-    formData.append('method', options.method);
-  }
+    const formData = new FormData();
 
-  console.log('📦 Uploading file:', file.name, 'Size:', file.size, 'Type:', file.type);
-  console.log('📦 Upload options:', options);
-  
-  try {
-    const response = await frappeFileClient.post('/api/method/upload_file', formData, {
-      timeout: 30000,
-      // Important: Don't set Content-Type header - let axios handle it
-      headers: {
-        // Remove any Content-Type header to let browser set multipart boundary
-      },
-      onUploadProgress: (progressEvent) => {
-        if (progressEvent.total) {
-          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-          console.log(`📈 Upload progress: ${percentCompleted}%`);
+    // Add the file with proper naming (matching Frappe's expectation)
+    formData.append("file", file, file.name);
+
+    // Add required Frappe parameters (matching the official implementation)
+    formData.append('is_private', options.is_private ? '1' : '0');
+    formData.append('folder', options.folder || 'Home');
+
+    // Optional parameters
+    if (options.doctype) {
+      formData.append('doctype', options.doctype);
+    }
+    if (options.docname) {
+      formData.append('docname', options.docname);
+    }
+    if (options.method) {
+      formData.append('method', options.method);
+    }
+
+    console.log('📦 Uploading file:', file.name, 'Size:', file.size, 'Type:', file.type);
+    console.log('📦 Upload options:', options);
+
+    try {
+      const response = await frappeFileClient.post('/api/method/upload_file', formData, {
+        timeout: 30000,
+        // Important: Don't set Content-Type header - let axios handle it
+        headers: {
+          // Remove any Content-Type header to let browser set multipart boundary
+        },
+        onUploadProgress: (progressEvent) => {
+          if (progressEvent.total) {
+            const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+            console.log(`📈 Upload progress: ${percentCompleted}%`);
+          }
         }
-      }
-    });
+      });
 
-    console.log('✅ Upload successful!');
-    console.log('📊 Response status:', response.status);
-    console.log('📄 Response data:', response.data);
-    
-    return {
-      success: true,
-      data: response.data,
-      file_url: response.data.message?.file_url || response.data.file_url,
-      file_name: response.data.message?.file_name || response.data.file_name
-    };
+      console.log('✅ Upload successful!');
+      console.log('📊 Response status:', response.status);
+      console.log('📄 Response data:', response.data);
 
-  } catch (error) {
-    console.error('❌ Upload failed!');
-    console.error('🔍 Error details:', error);
-    
-    if (axios.isAxiosError(error)) {
-      const errorMessage = error.response?.data?.message || 
-                          error.response?.data?.exc || 
-                          error.message;
-      const errorDetails = {
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data
+      return {
+        success: true,
+        data: response.data,
+        file_url: response.data.message?.file_url || response.data.file_url,
+        file_name: response.data.message?.file_name || response.data.file_name
       };
-      
-      console.error('📊 Error status:', error.response?.status);
-      console.error('📄 Error response:', error.response?.data);
-      
+
+    } catch (error) {
+      console.error('❌ Upload failed!');
+      console.error('🔍 Error details:', error);
+
+      if (axios.isAxiosError(error)) {
+        const errorMessage = error.response?.data?.message ||
+          error.response?.data?.exc ||
+          error.message;
+        const errorDetails = {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data
+        };
+
+        console.error('📊 Error status:', error.response?.status);
+        console.error('📄 Error response:', error.response?.data);
+
+        return {
+          success: false,
+          error: errorMessage,
+          details: errorDetails
+        };
+      }
+
       return {
         success: false,
-        error: errorMessage,
-        details: errorDetails
+        error: (error as Error).message,
+        details: error
       };
     }
-    
-    return {
-      success: false,
-      error: (error as Error).message,
-      details: error
-    };
   }
-}
 
 
 };
