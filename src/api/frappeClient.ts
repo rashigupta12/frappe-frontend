@@ -361,6 +361,10 @@ export const frappeAPI = {
   UpdateInspection: async (inspectionName: string, inspectionData: Record<string, unknown>) => {
     return await frappeAPI.makeAuthenticatedRequest('PUT', `/api/resource/SiteInspection/${inspectionName}`, inspectionData);
   },
+
+  GetUtmSoucre: async () => {
+    return await frappeAPI.makeAuthenticatedRequest('GET', '/api/resource/UTM Source');
+  },
   upload: async (file: File, options: {
     is_private?: boolean;
     folder?: string;

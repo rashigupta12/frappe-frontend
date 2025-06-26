@@ -57,6 +57,7 @@ export interface Lead {
   custom_building_number: string;
   custom_alternative_inspection_time: string;
   notes: any[];
+  utm_source: string; // Assuming this is a string, adjust if it's an object
 }
 
 // Define form data interface for creating/updating leads
@@ -85,6 +86,8 @@ export interface LeadFormData {
   custom_building_number?: string;
   custom_alternative_inspection_time?: string;
   [key: string]: any;
+  utm_source?: string; // Assuming this is a string, adjust if it's an object
+ 
 }
 
 export interface JobType {
@@ -93,6 +96,9 @@ export interface JobType {
 }
 
 export interface ProjectUrgency {
+  name: string;
+}
+export interface UTMSource {
   name: string;
 }
 
@@ -113,6 +119,8 @@ interface LeadsContextState {
   // Add any other methods you need
   projectUrgency: ProjectUrgency[]; // Define this if needed
   fetchProjectUrgency?: () => Promise<void>; // Define this if needed
+  utmSource: UTMSource[]; // Define this if needed
+  fetchUtmSource: () => Promise<void> // Define this if needed
 }
 
 // Create context
@@ -134,6 +142,7 @@ export const LeadsProvider: React.FC<LeadsProviderProps> = ({ children }) => {
   const [currentLead, setCurrentLead] = useState<Lead | null>(null);
   const [projectUrgency, setProjectUrgency] = useState<ProjectUrgency[]>([]);
   const [jobTypes, setJobTypes] = useState<JobType[]>([]);
+  const [utmSource, setUtmSource] = useState<UTMSource[]>([]);
 
   // Clear error
   const clearError = useCallback(() => {
@@ -335,6 +344,25 @@ export const LeadsProvider: React.FC<LeadsProviderProps> = ({ children }) => {
     }
   }, []);
 
+  // Fetch UTM source
+  const fetchUtmSource = useCallback(async () => {
+    try {
+      const response = await frappeAPI.GetUtmSoucre();
+      if (response.data && Array.isArray(response.data)) {
+        console.log("Fetched UTM sources:", response.data);
+        setUtmSource(response.data);
+        
+      } else {
+        setUtmSource([]);
+      }
+    } catch (err) {
+      console.error("Error fetching UTM sources:", err);
+      setError(err instanceof Error ? err.message : "Failed to fetch UTM sources");
+    }
+  }, []);
+
+
+
   // Context value
   const contextValue: LeadsContextState = {
     leads,
@@ -351,6 +379,8 @@ export const LeadsProvider: React.FC<LeadsProviderProps> = ({ children }) => {
     fetchJobTypes,
     projectUrgency,
     fetchProjectUrgency,
+    utmSource,
+    fetchUtmSource,
   };
 
   return (

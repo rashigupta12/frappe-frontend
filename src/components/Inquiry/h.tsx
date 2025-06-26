@@ -60,6 +60,8 @@ const InquiryPage = () => {
     fetchJobTypes,
     fetchProjectUrgency,
     projectUrgency,
+    utmSource,
+    fetchUtmSource,
   } = useLeads();
   const [searchTerm, setSearchTerm] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -68,9 +70,11 @@ const InquiryPage = () => {
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [viewInquiry, setViewInquiry] = useState<Lead | null>(null);
   const [selectedJobType, setSelectedJobType] = useState<string>(
-    "Electrical Repair & Maintenance"
+    "2. Electrical Repair & Maintenance"
   );
+  const [phoneNumber, setPhoneNumber] = useState("+971 ");
   const navigate = useNavigate();
+  const [phoneError, setError] = useState("");
 
   const toggleSection = (sectionId: string) => {
     setActiveSection(activeSection === sectionId ? "" : sectionId);
@@ -83,13 +87,15 @@ const InquiryPage = () => {
     custom_job_type:
       jobTypes.length > 0
         ? jobTypes[0].name
-        : "Electrical Repair & Maintenance", // Dynamic default
+        : "2. Electrical Repair & Maintenance", // Dynamic default
     custom_property_type: "Residential",
     custom_type_of_building: "Villa",
     custom_building_name: "",
     custom_budget_range: "AED 100 - AED 500",
     custom_project_urgency:
-      projectUrgency.length > 0 ? projectUrgency[0].name : "Normal 1 to 7 days", // Dynamic default
+      projectUrgency.length > 0
+        ? projectUrgency[0].name
+        : "1. Emergency in  1 Hr", // Dynamic default
     custom_preferred_inspection_date: null,
     custom_alternative_inspection_date: null,
     custom_preferred_inspection_time: "",
@@ -97,6 +103,7 @@ const InquiryPage = () => {
     custom_map_data: "",
     custom_building_number: "",
     custom_alternative_inspection_time: "",
+    utm_source: utmSource.length > 0 ? utmSource[0].name : "",
   });
 
   const propertyTypes = ["Residential", "Commercial", "Industrial"];
@@ -113,42 +120,42 @@ const InquiryPage = () => {
   const getJobTypeColor = (jobType: string) => {
     const colors: Record<string, { bg: string; text: string; border: string }> =
       {
-        "AC Repair & Maintenance": {
+        "1. AC Repair & Maintenance": {
           bg: "#DBEAFE", // Light blue
           text: "#1E40AF",
           border: "#3B82F6",
         },
-        "Civil Repairing Work": {
+        "6. Civil Repairing Work": {
           bg: "#FDE68A", // Light yellow
           text: "#92400E",
           border: "#F59E0B",
         },
-        "Electrical Repair & Maintenance": {
+        "2. Electrical Repair & Maintenance": {
           bg: "#FEF3C7", // Light amber
           text: "#92400E",
           border: "#F59E0B",
         },
-        "Equipments Installation & Maintenance": {
+        "4. Equipments Installation & Maintenance": {
           bg: "#FECACA", // Light red
           text: "#991B1B",
           border: "#EF4444",
         },
-        "Joineries & Wood Work": {
+        "7. Joineries & Wood Work": {
           bg: "#D1FAE5", // Light green
           text: "#065F46",
           border: "#10B981",
         },
-        "Painting & Interior Decoration": {
+        "5. Painting & Interior Decoration": {
           bg: "#DDD6FE", // Light purple
           text: "#5B21B6",
           border: "#8B5CF6",
         },
-        "Plumbing, Sanitary, Bathroom & Toilets": {
+        "3. Plumbing, Sanitary, Bathroom & Toilets": {
           bg: "#E9D5FF", // Light violet
           text: "#6B21A8",
           border: "#9333EA",
         },
-        "Veneer Pressing": {
+        "8. Veneer Pressing": {
           bg: "#FFE4E6", // Light pink
           text: "#9D174D",
           border: "#EC4899",
@@ -209,32 +216,32 @@ const InquiryPage = () => {
   const getUrgencyColor = (urgency: string) => {
     const colors: Record<string, { bg: string; text: string; border: string }> =
       {
-        "Emergency in  1 Hr": {
+        "1. Emergency in  1 Hr": {
           bg: "#FECACA", // Light red
           text: "#991B1B", // Dark red
           border: "#EF4444", // Red
         },
-        "Fast 1 day": {
+        "3. Fast 1 day": {
           bg: "#FDE68A", // Light yellow
           text: "#92400E", // Amber brown
           border: "#F59E0B", // Amber
         },
-        "Normal 1 to 7 days": {
+        "4. Normal 1 to 7 days": {
           bg: "#BFDBFE", // Light blue
           text: "#1E40AF", // Dark blue
           border: "#3B82F6", // Blue
         },
-        "Planned 1 month & above": {
+        "6. Planned 1 month & above": {
           bg: "#DDD6FE", // Light violet
           text: "#5B21B6", // Indigo
           border: "#8B5CF6", // Violet
         },
-        "Relaxed 1 to 2 weeks": {
+        "5. Relaxed 1 to 2 weeks": {
           bg: "#D1FAE5", // Light green
           text: "#065F46", // Dark green
           border: "#10B981", // Green
         },
-        "Urgent 1 to 4 hrs": {
+        "2. Urgent 1 to 4 Hrs": {
           bg: "#FEF3C7", // Light amber
           text: "#92400E", // Dark amber
           border: "#F59E0B", // Amber
@@ -273,7 +280,7 @@ const InquiryPage = () => {
     },
     {
       id: "inspection",
-      title: "Inspection Schedule",
+      title: " Preferred Date and Time",
       icon: <Calendar className="h-4 w-4" />,
       completed: !!formData.custom_preferred_inspection_date,
     },
@@ -291,8 +298,10 @@ const InquiryPage = () => {
     if (fetchProjectUrgency) {
       fetchProjectUrgency();
     }
-  }, [fetchLeads, fetchJobTypes, fetchProjectUrgency]);
-  
+    if (fetchUtmSource) {
+      fetchUtmSource();
+    }
+  }, [fetchLeads, fetchJobTypes, fetchProjectUrgency, fetchUtmSource]);
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -317,7 +326,7 @@ const InquiryPage = () => {
       custom_job_type:
         jobTypes.length > 0
           ? jobTypes[0].name
-          : "Electrical Repair & Maintenance",
+          : "2. Electrical Repair & Maintenance",
       custom_property_type: "Residential",
       custom_type_of_building: "Villa",
       custom_building_name: "",
@@ -325,7 +334,7 @@ const InquiryPage = () => {
       custom_project_urgency:
         projectUrgency.length > 0
           ? projectUrgency[0].name
-          : "Normal 1 to 7 days",
+          : "1. Emergency in  1 Hr",
       custom_preferred_inspection_date: null,
       custom_alternative_inspection_date: null,
       custom_preferred_inspection_time: "",
@@ -333,6 +342,7 @@ const InquiryPage = () => {
       custom_map_data: "",
       custom_building_number: "",
       custom_alternative_inspection_time: "",
+      utm_source: utmSource.length > 0 ? utmSource[0].name : "",
     });
   };
 
@@ -343,13 +353,14 @@ const InquiryPage = () => {
         lead_name: inquiry.lead_name || "",
         email_id: inquiry.email_id || "",
         mobile_no: inquiry.mobile_no || "",
-        custom_job_type: inquiry.custom_job_type || "Electrical",
+        custom_job_type:
+          inquiry.custom_job_type || "1. Electrical Repair & Maintenance",
         custom_property_type: inquiry.custom_property_type || "Residential",
         custom_type_of_building: inquiry.custom_type_of_building || "Villa",
         custom_building_name: inquiry.custom_building_name || "",
         custom_budget_range: inquiry.custom_budget_range || "Under 10,000 AED",
         custom_project_urgency:
-          inquiry.custom_project_urgency || "Urgent (Within 1 week)",
+          inquiry.custom_project_urgency || "1. Emergency in  1 Hr",
         custom_preferred_inspection_date:
           inquiry.custom_preferred_inspection_date
             ? new Date(inquiry.custom_preferred_inspection_date)
@@ -365,6 +376,8 @@ const InquiryPage = () => {
         custom_building_number: inquiry.custom_building_number || "",
         custom_alternative_inspection_time:
           inquiry.custom_alternative_inspection_time || "",
+        utm_source:
+          inquiry.utm_source || (utmSource.length > 0 ? utmSource[0].name : ""),
       });
     } else {
       setCurrentInquiry(null);
@@ -517,11 +530,12 @@ const InquiryPage = () => {
 
   const getUrgencyShortLabel = (urgency: string) => {
     const labels: Record<string, string> = {
-      Urgent: "Urgent",
-      "High Priority": "High",
-      "Medium Priority": "Medium",
-      "Low Priority": "Low",
-      "Not Urgent": "Normal",
+      "1. Emergency in  1 Hr": "Emergency",
+      "2. Urgent 1 to 4 Hrs": "Urgent",
+      "3. Fast 1 day": "Fast",
+      "4. Normal 1 to 7 days": "Normal",
+      "5. Relaxed 1 to 2 weeks": "Relaxed",
+      "6. Planned 1 month & above": "Planned",
     };
     return labels[urgency] || urgency;
   };
@@ -546,6 +560,112 @@ const InquiryPage = () => {
       day: "numeric",
     });
   };
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const input = e.target.value;
+
+    // Don't allow modification of country code
+    if (!input.startsWith("+971 ")) {
+      setPhoneNumber("+971 ");
+      return;
+    }
+
+    // Remove all non-digit characters from the input (after country code)
+    const digits = input.replace(/\D/g, "").substring(3); // Remove '971' from digits
+
+    // Limit to 9 digits total for both mobile and landline
+    const limitedDigits = digits.substring(0, 9);
+
+    let formattedNumber = "+971 ";
+
+    if (limitedDigits.length > 0) {
+      // Check if it's a mobile number (starts with 5)
+      const isMobile = limitedDigits.startsWith("0");
+
+      if (isMobile) {
+        // Mobile format: +971 5XX XXX XXXX (3-digit mobile code)
+        formattedNumber += limitedDigits.substring(0, 3); // First 3 digits (5XX)
+
+        if (limitedDigits.length > 3) {
+          formattedNumber += " " + limitedDigits.substring(3, 6); // Next 3 digits
+
+          if (limitedDigits.length > 6) {
+            formattedNumber += " " + limitedDigits.substring(6, 9); // Last 3 digits (changed from 6 to 9)
+          }
+        }
+      } else {
+        // Landline format: +971 XX XXX XXXX (2-digit area code)
+        formattedNumber += limitedDigits.substring(0, 2); // First 2 digits
+
+        if (limitedDigits.length > 2) {
+          formattedNumber += " " + limitedDigits.substring(2, 5); // Next 3 digits
+
+          if (limitedDigits.length > 5) {
+            formattedNumber += " " + limitedDigits.substring(5, 9); // Last 4 digits (changed from 5 to 9)
+          }
+        }
+      }
+    }
+
+    setPhoneNumber(formattedNumber);
+    validatePhoneNumber(formattedNumber);
+  };
+
+  const validatePhoneNumber = (number: string) => {
+    // Mobile codes: 050, 052, 054, 055, 056, 058 (3-digit codes)
+    const mobileRegex =
+      /^\+971\s(050|052|054|055|056|058)\s[0-9]{3}\s[0-9]{4}$/;
+
+    // Landline codes: 02 (Abu Dhabi), 03 (Al Ain), 04 (Dubai), 06 (Sharjah), 07 (Other Emirates), 09 (Other)
+    const landlineRegex = /^\+971\s(02|03|04|06|07|09)\s[0-9]{3}\s[0-9]{4}$/;
+
+    const isValidMobile = mobileRegex.test(number);
+    const isValidLandline = landlineRegex.test(number);
+
+    // Check length based on type
+    const expectedLength = number.includes(" 5") ? 17 : 17; // Mobile is 17 chars, landline is 16
+
+    if (number.length === expectedLength) {
+      // Full number length
+      if (!isValidMobile && !isValidLandline) {
+        setError(
+          "Please enter a valid UAE number (Mobile: +971 5XX XXX XXXX, Landline: +971 0X XXX XXXX)"
+        );
+      } else {
+        setError("");
+      }
+    } else {
+      setError(""); // Don't show error while typing
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // Allow backspace, delete, tab, arrow keys, etc.
+    if (
+      [8, 9, 13, 16, 17, 18, 20, 27, 35, 36, 37, 38, 39, 40, 45, 46].includes(
+        e.keyCode
+      )
+    ) {
+      return;
+    }
+
+    // Prevent modifying country code
+    const input = e.currentTarget;
+    if (input.selectionStart && input.selectionStart < 5) {
+      e.preventDefault();
+    }
+  };
+
+  // Helper function to get number type
+  // const getNumberType = (number: string) => {
+  //   const mobileRegex = /^\+971\s(05[0-68])\s[0-9]{3}\s[0-9]{4}$/;
+  //   const landlineRegex = /^\+971\s(0[2-479])\s[0-9]{3}\s[0-9]{4}$/;
+
+  //   if (mobileRegex.test(number)) return "mobile";
+  //   if (landlineRegex.test(number)) return "landline";
+  //   return "invalid";
+  // };
+  
 
   return (
     <div className="w-full pb-20">
@@ -941,6 +1061,35 @@ const InquiryPage = () => {
                           </div>
                           <div>
                             <label
+                              htmlFor="phone"
+                              className="block text-sm font-medium text-gray-700 mb-1"
+                            >
+                              Phone Number
+                              <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                              type="tel"
+                              id="phone"
+                              name="phone"
+                              value={formData.mobile_no || phoneNumber}
+                              onChange={handlePhoneChange}
+                              onKeyDown={handleKeyDown}
+                              placeholder="+971 XX XXX XXXX"
+                              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                              maxLength={17} // Changed from 16 to 17 to accommodate mobile numbers
+                            />
+                            <p className="mt-1 text-xs text-gray-500">
+                              Mobile: +971 5XX XXX XXXX | Landline: +971 0X XXX
+                              XXXX
+                            </p>
+                            {phoneError && (
+                              <p className="text-xs text-red-500 mt-1">
+                                {phoneError}
+                              </p>
+                            )}
+                          </div>
+                          <div>
+                            <label
                               htmlFor="email_id"
                               className="block text-sm font-medium text-gray-700 mb-1"
                             >
@@ -958,20 +1107,38 @@ const InquiryPage = () => {
                           </div>
                           <div>
                             <label
-                              htmlFor="mobile_no"
+                              htmlFor="utm_source"
                               className="block text-sm font-medium text-gray-700 mb-1"
                             >
-                              Mobile No
+                              Source Of Inquiry{" "}
+                              <span className="text-red-500">*</span>
                             </label>
-                            <Input
-                              type="tel"
-                              id="mobile_no"
-                              name="mobile_no"
-                              value={formData.mobile_no || ""}
-                              onChange={handleInputChange}
-                              required
-                              placeholder="Enter your mobile number"
-                            />
+
+                            <Select
+                              value={formData.utm_source || ""}
+                              onValueChange={(value) =>
+                                handleSelectChange("utm_source", value)
+                              }
+                            >
+                              <SelectTrigger
+                                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                id="utm_source"
+                              >
+                                <SelectValue placeholder="Select source" />
+                              </SelectTrigger>
+
+                              <SelectContent className="bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                                {utmSource.map((utms) => (
+                                  <SelectItem
+                                    key={utms.name}
+                                    value={utms.name}
+                                    className="px-4 py-2 text-sm text-gray-700 hover:bg-emerald-100 focus:bg-emerald-100 cursor-pointer"
+                                  >
+                                    {utms.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                           </div>
                         </div>
                       )}
@@ -1081,137 +1248,140 @@ const InquiryPage = () => {
                       )}
 
                       {section.id === "property" && (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                          {/* Property Type */}
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Property Type
-                            </label>
-                            <Select
-                              value={formData.custom_property_type || ""}
-                              onValueChange={(value) =>
-                                handleSelectChange(
-                                  "custom_property_type",
-                                  value
-                                )
-                              }
-                            >
-                              <SelectTrigger className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                                <SelectValue placeholder="Select property type" />
-                              </SelectTrigger>
-                              <SelectContent className="bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
-                                {propertyTypes.map((type) => (
-                                  <SelectItem
-                                    key={type}
-                                    value={type}
-                                    className="px-4 py-2 text-sm text-gray-700 hover:bg-emerald-100 focus:bg-emerald-100 cursor-pointer"
-                                  >
-                                    {type}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-
-                          {/* Building Type */}
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Building Type
-                            </label>
-                            <Select
-                              value={formData.custom_type_of_building || ""}
-                              onValueChange={(value) =>
-                                handleSelectChange(
-                                  "custom_type_of_building",
-                                  value
-                                )
-                              }
-                            >
-                              <SelectTrigger className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                                <SelectValue placeholder="Select building type" />
-                              </SelectTrigger>
-                              <SelectContent className="bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
-                                {buildingTypes.map((type) => (
-                                  <SelectItem
-                                    key={type}
-                                    value={type}
-                                    className="px-4 py-2 text-sm text-gray-700 hover:bg-emerald-100 focus:bg-emerald-100 cursor-pointer"
-                                  >
-                                    {type}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-
-                          {/* Building Name */}
-                          <div>
-                            <label
-                              htmlFor="custom_building_name"
-                              className="block text-sm font-medium text-gray-700 mb-1"
-                            >
-                              Building Name
-                            </label>
-                            <Input
-                              type="text"
-                              id="custom_building_name"
-                              name="custom_building_name"
-                              value={formData.custom_building_name || ""}
-                              onChange={handleInputChange}
-                              placeholder="Enter building name"
-                              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                            />
-                          </div>
-
-                          {/* Building Number */}
-                          <div>
-                            <label
-                              htmlFor="custom_building_number"
-                              className="block text-sm font-medium text-gray-700 mb-1"
-                            >
-                              Building Number
-                            </label>
-                            <Input
-                              type="text"
-                              id="custom_building_number"
-                              name="custom_building_number"
-                              value={formData.custom_building_number || ""}
-                              onChange={handleInputChange}
-                              placeholder="Enter building number"
-                              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                            />
-                          </div>
-
-                          {/* Map Location */}
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Location
-                            </label>
-
-                            <AddressFinder
-                              onSelect={(location) => {
-                                if (location) {
-                                  setFormData((prev) => ({
-                                    ...prev,
-                                    // Store only the display_name as a simple string
-                                    custom_map_data: location.display_name,
-                                  }));
-                                } else {
-                                  setFormData((prev) => ({
-                                    ...prev,
-                                    custom_map_data: "",
-                                  }));
+                        <div>
+                          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {/* Property Type */}
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Category
+                              </label>
+                              <Select
+                                value={formData.custom_property_type || ""}
+                                onValueChange={(value) =>
+                                  handleSelectChange(
+                                    "custom_property_type",
+                                    value
+                                  )
                                 }
-                              }}
-                              initialValue={formData.custom_map_data || ""}
-                            />
+                              >
+                                <SelectTrigger className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                                  <SelectValue placeholder="Select property type" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                                  {propertyTypes.map((type) => (
+                                    <SelectItem
+                                      key={type}
+                                      value={type}
+                                      className="px-4 py-2 text-sm text-gray-700 hover:bg-emerald-100 focus:bg-emerald-100 cursor-pointer"
+                                    >
+                                      {type}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
 
-                            {formData.custom_map_data && (
-                              <p className="mt-2 text-sm text-gray-600">
-                                <span className="font-medium">Selected:</span>{" "}
-                                {formData.custom_map_data}
-                              </p>
-                            )}
+                            {/* Building Type */}
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Type
+                              </label>
+                              <Select
+                                value={formData.custom_type_of_building || ""}
+                                onValueChange={(value) =>
+                                  handleSelectChange(
+                                    "custom_type_of_building",
+                                    value
+                                  )
+                                }
+                              >
+                                <SelectTrigger className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                                  <SelectValue placeholder="Select building type" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                                  {buildingTypes.map((type) => (
+                                    <SelectItem
+                                      key={type}
+                                      value={type}
+                                      className="px-4 py-2 text-sm text-gray-700 hover:bg-emerald-100 focus:bg-emerald-100 cursor-pointer"
+                                    >
+                                      {type}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-2">
+                            {/* Building Name */}
+                            <div>
+                              <label
+                                htmlFor="custom_building_name"
+                                className="block text-sm font-medium text-gray-700 mb-1"
+                              >
+                                Name
+                              </label>
+                              <Input
+                                type="text"
+                                id="custom_building_name"
+                                name="custom_building_name"
+                                value={formData.custom_building_name || ""}
+                                onChange={handleInputChange}
+                                placeholder="Enter Property name"
+                                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                              />
+                            </div>
+
+                            {/* Building Number */}
+                            <div>
+                              <label
+                                htmlFor="custom_building_number"
+                                className="block text-sm font-medium text-gray-700 mb-1"
+                              >
+                                Number
+                              </label>
+                              <Input
+                                type="text"
+                                id="custom_building_number"
+                                name="custom_building_number"
+                                value={formData.custom_building_number || ""}
+                                onChange={handleInputChange}
+                                placeholder="Enter Property number"
+                                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                              />
+                            </div>
+
+                            {/* Map Location */}
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Location
+                              </label>
+
+                              <AddressFinder
+                                onSelect={(location) => {
+                                  if (location) {
+                                    setFormData((prev) => ({
+                                      ...prev,
+                                      // Store only the display_name as a simple string
+                                      custom_map_data: location.display_name,
+                                    }));
+                                  } else {
+                                    setFormData((prev) => ({
+                                      ...prev,
+                                      custom_map_data: "",
+                                    }));
+                                  }
+                                }}
+                                initialValue={formData.custom_map_data || ""}
+                              />
+
+                              {formData.custom_map_data && (
+                                <p className="mt-2 text-sm text-gray-600">
+                                  <span className="font-medium">Selected:</span>{" "}
+                                  {formData.custom_map_data}
+                                </p>
+                              )}
+                            </div>
                           </div>
                         </div>
                       )}
