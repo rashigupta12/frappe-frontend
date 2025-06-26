@@ -51,6 +51,7 @@ interface CreateTodoData {
   preferred_date: string;
   description: string;
   priority: 'Low' | 'Medium' | 'High';
+  assigned_by?: string; // Optional, can be set to current user email
 }
 
 interface AssignStore {
@@ -288,24 +289,14 @@ export const useAssignStore = create<AssignStore>((set, get) => ({
   },
 
   createTodo: async (todoData: CreateTodoData) => {
-    const { currentUserEmail, availableInquiries, selectedInquiry } = get();
-    if (!currentUserEmail) {
-      set({ error: 'Current user email not set' });
-      return;
-    }
+
+    console.log('Creating todo with data:', todoData);
+
+
 
     try {
       set({ createTodoLoading: true, error: null, success: false });
 
-      // Find the inquiry data - prioritize selectedInquiry if available
-      let inquiry = selectedInquiry;
-      if (!inquiry) {
-        inquiry = availableInquiries.find(inq => inq.name === todoData.inquiry_id) ?? null;
-      }
-
-      if (!inquiry) {
-        throw new Error('Selected inquiry not found');
-      }
 
       // Prepare the todo payload
       const todoPayload = {
@@ -313,10 +304,10 @@ export const useAssignStore = create<AssignStore>((set, get) => ({
         priority: todoData.priority,
         date: todoData.preferred_date,
         allocated_to: todoData.inspector_email,
-        description: `<div class="ql-editor read-mode"><p>${inquiry.lead_name}</p><p>${todoData.description}</p></div>`,
+        description: `${todoData.description}`,
         reference_type: 'Lead',
-        reference_name: inquiry.name,
-        assigned_by: currentUserEmail,
+        reference_name: todoData.inquiry_id,
+        assigned_by: todoData.assigned_by || get().currentUserEmail, // Use current user email if not provided
         doctype: 'ToDo'
       };
 
@@ -327,7 +318,7 @@ export const useAssignStore = create<AssignStore>((set, get) => ({
       console.log('Todo created:', createResponse);
 
       // Update the lead status to "Open" (assigned)
-      const updateResponse = await frappeAPI.updateLead(inquiry.name, {
+      const updateResponse = await frappeAPI.updateLead(todoData.inquiry_id, {
         status: 'Open'
       });
       console.log('Lead updated:', updateResponse);

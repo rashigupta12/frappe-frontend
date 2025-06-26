@@ -5,9 +5,10 @@ import {
   HomeIcon,
   LogOut,
   Menu,
+  Plus,
   UserPlus,
   Users,
-  X
+  X,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
@@ -17,15 +18,28 @@ import InquiryPage from "../Inquiry/h";
 import { Button } from "../ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import TodoPage from "../Inquiry/Assign";
+import InquiryForm from "../Inquiry/InquiryForm";
 
 export default function SalesDashboard() {
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [selectedInquiry, setSelectedInquiry] = useState(null);
+
+  // Add these functions
+  const openInquiryForm = () => {
+    setSelectedInquiry(null); // Set to null for new inquiry
+    setIsFormOpen(true);
+    setSidebarOpen(false); // Close sidebar if open
+  };
+
+  const closeInquiryForm = () => {
+    setIsFormOpen(false);
+  };
   console.log("SalesDashboard rendered");
   const navigate = useNavigate();
   // const location = useLocation();
   const [searchParams] = useSearchParams();
   const { user, logout } = useAuth();
   console.log("User in SalesDashboard:", user);
-
 
   const initialTab = searchParams.get("tab") || "inquiry-form";
   const [activeTab, setActiveTab] = useState(initialTab);
@@ -47,13 +61,21 @@ export default function SalesDashboard() {
   };
 
   const renderContent = () => {
+    if (isFormOpen) {
+      return (
+        <InquiryForm
+          isOpen={isFormOpen}
+          onClose={closeInquiryForm}
+          inquiry={selectedInquiry}
+        />
+      );
+    }
+
     switch (activeTab) {
-      case "inquiry-form":;
-        return (
-          <InquiryPage />
-        );
+      case "inquiry-form":
+        return <InquiryPage />;
       case "assign":
-        return <TodoPage/>
+        return <TodoPage />;
       default:
         return (
           <div className="bg-white rounded-xl shadow-sm p-6 border border-emerald-100">
@@ -69,7 +91,7 @@ export default function SalesDashboard() {
   };
 
   return (
-    <div className="h-screen bg-gradient-to-br from-emerald-50 to-blue-50 flex flex-col overflow-hidden">
+    <div className="h-screen  flex flex-col overflow-hidden">
       {/* Top Navigation Bar - Fixed */}
       <nav className="bg-white shadow-lg border-b-2 border-emerald-200 px-3 sm:px-2 py-2 flex-shrink-0 z-50">
         <div className="flex items-center justify-between">
@@ -197,18 +219,6 @@ export default function SalesDashboard() {
               <Users className="h-5 w-5" />
               <span className="font-medium">Assign </span>
             </Button>
-            {/* <Button
-              variant={activeTab === "progress" ? "default" : "ghost"}
-              onClick={() => handleTabChange("progress")}
-              className={`w-full justify-start gap-3 rounded-xl p-3 text-left transition-all duration-200 ${
-                activeTab === "inquiry-form"
-                  ? "bg-gradient-to-r from-emerald-500 to-blue-500 text-white shadow-lg transform scale-105 hover:from-emerald-600 hover:to-blue-600"
-                  : "text-emerald-700 hover:bg-emerald-50 hover:shadow-md"
-              }`}
-            >
-              <Clock1 className="h-5 w-5" />
-              <span className="font-medium">Progress </span>
-            </Button> */}
           </nav>
         </aside>
 
@@ -251,6 +261,27 @@ export default function SalesDashboard() {
                   </span>
                 </button>
               </Link>
+              <div className="flex-1 max-w-xs flex justify-center">
+                <button
+                  onClick={openInquiryForm}
+                  className="flex flex-col items-center justify-center w-full py-1 group"
+                >
+                  <div className="w-10 h-6 flex items-center justify-center group-active:scale-95 transition-transform">
+                    <Plus
+                      className={`h-5 w-5 ${
+                        isFormOpen ? "text-emerald-600" : "text-gray-500"
+                      }`}
+                    />
+                  </div>
+                  <span
+                    className={`text-xs font-medium mt-1 ${
+                      isFormOpen ? "text-emerald-600" : "text-gray-600"
+                    }`}
+                  >
+                    Add
+                  </span>
+                </button>
+              </div>
 
               {/* Assign Button */}
               <Link
@@ -274,7 +305,7 @@ export default function SalesDashboard() {
                         : "text-gray-600"
                     }`}
                   >
-                    Assign
+                    Assigned
                   </span>
                 </button>
               </Link>

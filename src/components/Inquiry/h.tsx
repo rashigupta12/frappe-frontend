@@ -1,31 +1,30 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
 import {
   Building,
   Calendar,
-  CheckCircle2,
-  ChevronDown,
-  ChevronUp,
   Edit,
   FileText,
   Filter,
   Home,
-  Mail,
   MapPin,
   Phone,
   Plus,
-  Save,
   Search,
   User,
   X,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useLeads, type Lead } from "../../context/LeadContext";
 import {
-  useLeads,
-  type Lead,
-  type LeadFormData,
-} from "../../context/LeadContext";
+  formatDate,
+  formatDateCompact,
+  getBudgetColor,
+  getJobTypeColor,
+  getUrgencyColor,
+  getUrgencyShortLabel,
+} from "../../helpers/helper";
 import { Alert, AlertDescription } from "../ui/alert";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
@@ -37,260 +36,31 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
-import { Textarea } from "../ui/textarea";
-import AddressFinder from "./AddressFinder";
-import { useNavigate } from "react-router-dom";
-
-interface FormSection {
-  id: string;
-  title: string;
-  icon: React.ReactNode;
-  completed: boolean;
-}
+import InquiryForm from "./InquiryForm"; // Import your InquiryForm component
 
 const InquiryPage = () => {
   const {
     leads,
-    loading,
+    // loading,
     error,
     fetchLeads,
-    createLead,
-    updateLead,
     jobTypes,
     fetchJobTypes,
     fetchProjectUrgency,
-    projectUrgency,
-    utmSource,
+    // projectUrgency,
+    // utmSource,
     fetchUtmSource,
   } = useLeads();
+
   const [searchTerm, setSearchTerm] = useState("");
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [currentInquiry, setCurrentInquiry] = useState<Lead | null>(null);
-  const [activeSection, setActiveSection] = useState<string>("contact");
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [viewInquiry, setViewInquiry] = useState<Lead | null>(null);
-  const [selectedJobType, setSelectedJobType] = useState<string>(
-    "2. Electrical Repair & Maintenance"
-  );
-  const [phoneNumber, setPhoneNumber] = useState("+971 ");
+  const [selectedJobType, setSelectedJobType] = useState<string>("All");
   const navigate = useNavigate();
-  const [phoneError, setError] = useState("");
 
-  const toggleSection = (sectionId: string) => {
-    setActiveSection(activeSection === sectionId ? "" : sectionId);
-  };
-
-  const [formData, setFormData] = useState<LeadFormData>({
-    lead_name: "",
-    email_id: "",
-    mobile_no: "",
-    custom_job_type:
-      jobTypes.length > 0
-        ? jobTypes[0].name
-        : "2. Electrical Repair & Maintenance", // Dynamic default
-    custom_property_type: "Residential",
-    custom_type_of_building: "Villa",
-    custom_building_name: "",
-    custom_budget_range: "AED 100 - AED 500",
-    custom_project_urgency:
-      projectUrgency.length > 0
-        ? projectUrgency[0].name
-        : "1. Emergency in  1 Hr", // Dynamic default
-    custom_preferred_inspection_date: null,
-    custom_alternative_inspection_date: null,
-    custom_preferred_inspection_time: "",
-    custom_special_requirements: "",
-    custom_map_data: "",
-    custom_building_number: "",
-    custom_alternative_inspection_time: "",
-    utm_source: utmSource.length > 0 ? utmSource[0].name : "",
-  });
-
-  const propertyTypes = ["Residential", "Commercial", "Industrial"];
-  const buildingTypes = ["Villa", "Apartment", "Office", "Warehouse", "Other"];
-  const budgetRanges = [
-    "AED 100 - AED 500",
-    "AED 501 - AED 1000",
-    "AED 1001 - AED 2000",
-    "AED 2001 - AED 5000",
-    "AED 5001 - AED 10000",
-    "AED 10001 & more",
-  ];
-
-  const getJobTypeColor = (jobType: string) => {
-    const colors: Record<string, { bg: string; text: string; border: string }> =
-      {
-        "1. AC Repair & Maintenance": {
-          bg: "#DBEAFE", // Light blue
-          text: "#1E40AF",
-          border: "#3B82F6",
-        },
-        "6. Civil Repairing Work": {
-          bg: "#FDE68A", // Light yellow
-          text: "#92400E",
-          border: "#F59E0B",
-        },
-        "2. Electrical Repair & Maintenance": {
-          bg: "#FEF3C7", // Light amber
-          text: "#92400E",
-          border: "#F59E0B",
-        },
-        "4. Equipments Installation & Maintenance": {
-          bg: "#FECACA", // Light red
-          text: "#991B1B",
-          border: "#EF4444",
-        },
-        "7. Joineries & Wood Work": {
-          bg: "#D1FAE5", // Light green
-          text: "#065F46",
-          border: "#10B981",
-        },
-        "5. Painting & Interior Decoration": {
-          bg: "#DDD6FE", // Light purple
-          text: "#5B21B6",
-          border: "#8B5CF6",
-        },
-        "3. Plumbing, Sanitary, Bathroom & Toilets": {
-          bg: "#E9D5FF", // Light violet
-          text: "#6B21A8",
-          border: "#9333EA",
-        },
-        "8. Veneer Pressing": {
-          bg: "#FFE4E6", // Light pink
-          text: "#9D174D",
-          border: "#EC4899",
-        },
-        Other: {
-          bg: "#E5E7EB", // Neutral gray
-          text: "#4B5563",
-          border: "#9CA3AF",
-        },
-      };
-
-    return colors[jobType as keyof typeof colors] || colors["Other"];
-  };
-
-  const getBudgetColor = (budget: string) => {
-    const colors = {
-      "AED 100 - AED 500": {
-        bg: "#D1FAE5", // Light green
-        text: "#065F46", // Dark green
-        border: "#10B981", // Green
-      },
-      " AED 501 - AED 1000": {
-        bg: "#FEF3C7", // Light amber
-        text: "#92400E", // Dark amber
-        border: "#F59E0B", // Amber
-      },
-      "AED 1001 - AED 2000": {
-        bg: "#DBEAFE", // Light blue
-        text: "#1E40AF", // Dark blue
-        border: "#3B82F6", // Blue
-      },
-      "AED 2001 - AED 5000": {
-        bg: "#E9D5FF", // Light purple
-        text: "#6B21A8", // Dark purple
-        border: "#9333EA", // Purple
-      },
-      "AED 5001 - AED 10000": {
-        bg: "#FDE68A", // Light yellow
-        text: "#92400E", // Brownish
-        border: "#FBBF24", // Yellow
-      },
-      "AED 10001 & more": {
-        bg: "#FECACA", // Light red
-        text: "#991B1B", // Dark red
-        border: "#EF4444", // Red
-      },
-    };
-
-    return (
-      colors[budget as keyof typeof colors] || {
-        bg: "#E5E7EB", // Neutral gray
-        text: "#4B5563",
-        border: "#9CA3AF",
-      }
-    );
-  };
-
-  const getUrgencyColor = (urgency: string) => {
-    const colors: Record<string, { bg: string; text: string; border: string }> =
-      {
-        "1. Emergency in  1 Hr": {
-          bg: "#FECACA", // Light red
-          text: "#991B1B", // Dark red
-          border: "#EF4444", // Red
-        },
-        "3. Fast 1 day": {
-          bg: "#FDE68A", // Light yellow
-          text: "#92400E", // Amber brown
-          border: "#F59E0B", // Amber
-        },
-        "4. Normal 1 to 7 days": {
-          bg: "#BFDBFE", // Light blue
-          text: "#1E40AF", // Dark blue
-          border: "#3B82F6", // Blue
-        },
-        "6. Planned 1 month & above": {
-          bg: "#DDD6FE", // Light violet
-          text: "#5B21B6", // Indigo
-          border: "#8B5CF6", // Violet
-        },
-        "5. Relaxed 1 to 2 weeks": {
-          bg: "#D1FAE5", // Light green
-          text: "#065F46", // Dark green
-          border: "#10B981", // Green
-        },
-        "2. Urgent 1 to 4 Hrs": {
-          bg: "#FEF3C7", // Light amber
-          text: "#92400E", // Dark amber
-          border: "#F59E0B", // Amber
-        },
-      };
-
-    return (
-      colors[urgency as keyof typeof colors] || {
-        bg: "#E5E7EB", // Neutral gray
-        text: "#4B5563",
-        border: "#9CA3AF",
-      }
-    );
-  };
-
-  const sections: FormSection[] = [
-    {
-      id: "contact",
-      title: "Customer Details",
-      icon: <Phone className="h-4 w-4" />,
-      completed:
-        !!formData.lead_name && !!formData.email_id && !!formData.mobile_no,
-    },
-    {
-      id: "job",
-      title: "Job Details",
-      icon: <Home className="h-4 w-4" />,
-      completed: !!formData.custom_job_type,
-    },
-    {
-      id: "property",
-      title: "Property Information",
-      icon: <Building className="h-4 w-4" />,
-      completed:
-        !!formData.custom_property_type && !!formData.custom_type_of_building,
-    },
-    {
-      id: "inspection",
-      title: " Preferred Date and Time",
-      icon: <Calendar className="h-4 w-4" />,
-      completed: !!formData.custom_preferred_inspection_date,
-    },
-    {
-      id: "additional",
-      title: "Additional Information",
-      icon: <FileText className="h-4 w-4" />,
-      completed: true,
-    },
-  ];
+  // States for InquiryForm component
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [selectedInquiry, setSelectedInquiry] = useState<Lead | null>(null);
 
   useEffect(() => {
     fetchLeads();
@@ -303,93 +73,22 @@ const InquiryPage = () => {
     }
   }, [fetchLeads, fetchJobTypes, fetchProjectUrgency, fetchUtmSource]);
 
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value } = e.target;
-    setFormData((prev: LeadFormData) => ({ ...prev, [name]: value }));
+  // Function to open form for new inquiry
+  const openNewInquiryForm = () => {
+    setSelectedInquiry(null);
+    setIsFormOpen(true);
   };
 
-  const handleSelectChange = (name: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [name]: value }));
+  // Function to open form for editing existing inquiry
+  const openEditInquiryForm = (inquiry: Lead) => {
+    setSelectedInquiry(inquiry);
+    setIsFormOpen(true);
   };
 
-  const handleDateChange = (name: string, date: Date | undefined) => {
-    setFormData((prev) => ({ ...prev, [name]: date || null }));
-  };
-
-  const resetForm = () => {
-    setFormData({
-      lead_name: "",
-      email_id: "",
-      mobile_no: "",
-      custom_job_type:
-        jobTypes.length > 0
-          ? jobTypes[0].name
-          : "2. Electrical Repair & Maintenance",
-      custom_property_type: "Residential",
-      custom_type_of_building: "Villa",
-      custom_building_name: "",
-      custom_budget_range: "AED 100 - AED 500",
-      custom_project_urgency:
-        projectUrgency.length > 0
-          ? projectUrgency[0].name
-          : "1. Emergency in  1 Hr",
-      custom_preferred_inspection_date: null,
-      custom_alternative_inspection_date: null,
-      custom_preferred_inspection_time: "",
-      custom_special_requirements: "",
-      custom_map_data: "",
-      custom_building_number: "",
-      custom_alternative_inspection_time: "",
-      utm_source: utmSource.length > 0 ? utmSource[0].name : "",
-    });
-  };
-
-  const openSidebar = (inquiry: Lead | null = null) => {
-    if (inquiry) {
-      setCurrentInquiry(inquiry);
-      setFormData({
-        lead_name: inquiry.lead_name || "",
-        email_id: inquiry.email_id || "",
-        mobile_no: inquiry.mobile_no || "",
-        custom_job_type:
-          inquiry.custom_job_type || "1. Electrical Repair & Maintenance",
-        custom_property_type: inquiry.custom_property_type || "Residential",
-        custom_type_of_building: inquiry.custom_type_of_building || "Villa",
-        custom_building_name: inquiry.custom_building_name || "",
-        custom_budget_range: inquiry.custom_budget_range || "Under 10,000 AED",
-        custom_project_urgency:
-          inquiry.custom_project_urgency || "1. Emergency in  1 Hr",
-        custom_preferred_inspection_date:
-          inquiry.custom_preferred_inspection_date
-            ? new Date(inquiry.custom_preferred_inspection_date)
-            : null,
-        custom_alternative_inspection_date:
-          inquiry.custom_alternative_inspection_date
-            ? new Date(inquiry.custom_alternative_inspection_date)
-            : null,
-        custom_preferred_inspection_time:
-          inquiry.custom_preferred_inspection_time || "",
-        custom_special_requirements: inquiry.custom_special_requirements || "",
-        custom_map_data: inquiry.custom_map_data || "",
-        custom_building_number: inquiry.custom_building_number || "",
-        custom_alternative_inspection_time:
-          inquiry.custom_alternative_inspection_time || "",
-        utm_source:
-          inquiry.utm_source || (utmSource.length > 0 ? utmSource[0].name : ""),
-      });
-    } else {
-      setCurrentInquiry(null);
-      resetForm();
-    }
-    setSidebarOpen(true);
-  };
-
-  const closeSidebar = () => {
-    setSidebarOpen(false);
-    setCurrentInquiry(null);
-    resetForm();
+  // Function to close form
+  const closeInquiryForm = () => {
+    setIsFormOpen(false);
+    setSelectedInquiry(null);
   };
 
   const openViewModal = (inquiry: Lead) => {
@@ -402,117 +101,13 @@ const InquiryPage = () => {
     setViewInquiry(null);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!formData.lead_name) {
-      alert("Name is required");
-      return;
-    }
-    if (!formData.email_id) {
-      alert("Email is required");
-      return;
-    }
-    if (!formData.mobile_no) {
-      alert("Mobile number is required");
-      return;
-    }
-    if (!formData.custom_job_type) {
-      alert("Job type is required");
-      return;
-    }
-
-    try {
-      const submissionData = { ...formData };
-
-      const getDateString = (
-        date: string | Date | null | undefined
-      ): string => {
-        if (!date) return "";
-
-        if (typeof date === "string") {
-          if (date.includes(" ")) {
-            return date.split(" ")[0];
-          }
-          return date;
-        }
-
-        return date.toISOString().split("T")[0];
-      };
-
-      const formatDateTime = (dateStr: string, timeStr: string): string => {
-        if (!dateStr || !timeStr) return "";
-
-        const time =
-          timeStr.includes(":") && timeStr.split(":").length === 2
-            ? `${timeStr}:00`
-            : timeStr;
-
-        return `${dateStr} ${time}`;
-      };
-
-      const formatDate = (date: string | Date | null | undefined): string => {
-        if (!date) return "";
-        return getDateString(date);
-      };
-
-      if (
-        formData.custom_preferred_inspection_time &&
-        formData.custom_preferred_inspection_date
-      ) {
-        const dateStr = getDateString(
-          formData.custom_preferred_inspection_date
-        );
-        submissionData.custom_preferred_inspection_time = formatDateTime(
-          dateStr,
-          formData.custom_preferred_inspection_time
-        );
-      } else {
-        submissionData.custom_preferred_inspection_time = "";
-      }
-
-      if (
-        formData.custom_alternative_inspection_time &&
-        formData.custom_alternative_inspection_date
-      ) {
-        const dateStr = getDateString(
-          formData.custom_alternative_inspection_date
-        );
-        submissionData.custom_alternative_inspection_time = formatDateTime(
-          dateStr,
-          formData.custom_alternative_inspection_time
-        );
-      } else {
-        submissionData.custom_alternative_inspection_time = "";
-      }
-
-      submissionData.custom_preferred_inspection_date = formatDate(
-        formData.custom_preferred_inspection_date
-      );
-      submissionData.custom_alternative_inspection_date = formatDate(
-        formData.custom_alternative_inspection_date
-      );
-
-      if (currentInquiry?.name) {
-        await updateLead(currentInquiry.name, submissionData);
-      } else {
-        await createLead(submissionData);
-      }
-
-      closeSidebar();
-    } catch (err) {
-      console.error("Form submission error:", err);
-    }
-  };
-
-  const formatDate = (date?: Date | string): string => {
-    if (!date) return "-";
-    const d = new Date(date);
-    return d.toLocaleDateString();
-  };
-
+  // Updated filtering logic
   const filteredInquiries = leads
-    .filter((inquiry: Lead) => inquiry.custom_job_type === selectedJobType)
+    .filter((inquiry: Lead) => inquiry.status === "Lead")
+    .filter(
+      (inquiry: Lead) =>
+        selectedJobType === "All" || inquiry.custom_job_type === selectedJobType
+    )
     .filter(
       (inquiry: Lead) =>
         (inquiry.lead_name?.toLowerCase() || "").includes(
@@ -526,147 +121,6 @@ const InquiryPage = () => {
         )
     );
 
-  // console.log("Filtered Inquiries:", filteredInquiries);
-
-  const getUrgencyShortLabel = (urgency: string) => {
-    const labels: Record<string, string> = {
-      "1. Emergency in  1 Hr": "Emergency",
-      "2. Urgent 1 to 4 Hrs": "Urgent",
-      "3. Fast 1 day": "Fast",
-      "4. Normal 1 to 7 days": "Normal",
-      "5. Relaxed 1 to 2 weeks": "Relaxed",
-      "6. Planned 1 month & above": "Planned",
-    };
-    return labels[urgency] || urgency;
-  };
-
-  const formatDateCompact = (date: string | Date) => {
-    // Format as "Dec 15" or "Today" etc for mobile
-    const today = new Date();
-    const inputDate = new Date(date);
-
-    if (inputDate.toDateString() === today.toDateString()) {
-      return "Today";
-    }
-
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    if (inputDate.toDateString() === tomorrow.toDateString()) {
-      return "Tomorrow";
-    }
-
-    return inputDate.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-    });
-  };
-
-  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const input = e.target.value;
-
-    // Don't allow modification of country code
-    if (!input.startsWith("+971 ")) {
-      setPhoneNumber("+971 ");
-      return;
-    }
-
-    // Remove all non-digit characters from the input (after country code)
-    const digits = input.replace(/\D/g, "").substring(3); // Remove '971' from digits
-
-    // Limit to 9 digits total for both mobile and landline
-    const limitedDigits = digits.substring(0, 9);
-
-    let formattedNumber = "+971 ";
-
-    if (limitedDigits.length > 0) {
-      // Check if it's a mobile number (starts with 5)
-      const isMobile = limitedDigits.startsWith("0");
-
-      if (isMobile) {
-        // Mobile format: +971 5XX XXX XXXX (3-digit mobile code)
-        formattedNumber += limitedDigits.substring(0, 3); // First 3 digits (5XX)
-
-        if (limitedDigits.length > 3) {
-          formattedNumber += " " + limitedDigits.substring(3, 6); // Next 3 digits
-
-          if (limitedDigits.length > 6) {
-            formattedNumber += " " + limitedDigits.substring(6, 9); // Last 3 digits (changed from 6 to 9)
-          }
-        }
-      } else {
-        // Landline format: +971 XX XXX XXXX (2-digit area code)
-        formattedNumber += limitedDigits.substring(0, 2); // First 2 digits
-
-        if (limitedDigits.length > 2) {
-          formattedNumber += " " + limitedDigits.substring(2, 5); // Next 3 digits
-
-          if (limitedDigits.length > 5) {
-            formattedNumber += " " + limitedDigits.substring(5, 9); // Last 4 digits (changed from 5 to 9)
-          }
-        }
-      }
-    }
-
-    setPhoneNumber(formattedNumber);
-    validatePhoneNumber(formattedNumber);
-  };
-
-  const validatePhoneNumber = (number: string) => {
-    // Mobile codes: 050, 052, 054, 055, 056, 058 (3-digit codes)
-    const mobileRegex =
-      /^\+971\s(050|052|054|055|056|058)\s[0-9]{3}\s[0-9]{4}$/;
-
-    // Landline codes: 02 (Abu Dhabi), 03 (Al Ain), 04 (Dubai), 06 (Sharjah), 07 (Other Emirates), 09 (Other)
-    const landlineRegex = /^\+971\s(02|03|04|06|07|09)\s[0-9]{3}\s[0-9]{4}$/;
-
-    const isValidMobile = mobileRegex.test(number);
-    const isValidLandline = landlineRegex.test(number);
-
-    // Check length based on type
-    const expectedLength = number.includes(" 5") ? 17 : 17; // Mobile is 17 chars, landline is 16
-
-    if (number.length === expectedLength) {
-      // Full number length
-      if (!isValidMobile && !isValidLandline) {
-        setError(
-          "Please enter a valid UAE number (Mobile: +971 5XX XXX XXXX, Landline: +971 0X XXX XXXX)"
-        );
-      } else {
-        setError("");
-      }
-    } else {
-      setError(""); // Don't show error while typing
-    }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    // Allow backspace, delete, tab, arrow keys, etc.
-    if (
-      [8, 9, 13, 16, 17, 18, 20, 27, 35, 36, 37, 38, 39, 40, 45, 46].includes(
-        e.keyCode
-      )
-    ) {
-      return;
-    }
-
-    // Prevent modifying country code
-    const input = e.currentTarget;
-    if (input.selectionStart && input.selectionStart < 5) {
-      e.preventDefault();
-    }
-  };
-
-  // Helper function to get number type
-  // const getNumberType = (number: string) => {
-  //   const mobileRegex = /^\+971\s(05[0-68])\s[0-9]{3}\s[0-9]{4}$/;
-  //   const landlineRegex = /^\+971\s(0[2-479])\s[0-9]{3}\s[0-9]{4}$/;
-
-  //   if (mobileRegex.test(number)) return "mobile";
-  //   if (landlineRegex.test(number)) return "landline";
-  //   return "invalid";
-  // };
-  
-
   return (
     <div className="w-full pb-20">
       {error && (
@@ -676,28 +130,14 @@ const InquiryPage = () => {
       )}
 
       {/* Header */}
-      <div className="bg-white rounded-xl shadow-sm p-4 mb-4 border border-emerald-100">
-        <div className="flex flex-col gap-3">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl md:text-2xl font-bold text-emerald-800">
-              Inquiry Management
-            </h2>
-            <button
-              className="text-emerald-600 hover:text-emerald-800 text-2xl font-bold"
-              onClick={() => openSidebar()}
-            >
-              +
-            </button>
-          </div>
+      <div className="bg-white shadow-sm p-3 mb-2 border border-emerald-100">
+        <div className="flex flex-col gap-2">
 
           {/* Filters and Search */}
           <div className="bg-white rounded-md">
             {/* Desktop View */}
             <div className="hidden md:flex items-center gap-4 w-full">
-              {/* Search - Takes 70% width */}
               <div className="relative flex-[7]">
-                {" "}
-                {/* 70% */}
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
                   type="text"
@@ -708,10 +148,7 @@ const InquiryPage = () => {
                 />
               </div>
 
-              {/* Filter - Takes 30% width */}
               <div className="flex items-center gap-2 flex-[3]">
-                {" "}
-                {/* 30% */}
                 <Filter className="h-5 w-5 text-gray-500" />
                 <Select
                   value={selectedJobType}
@@ -721,6 +158,7 @@ const InquiryPage = () => {
                     <SelectValue placeholder="Select job type" />
                   </SelectTrigger>
                   <SelectContent className="bg-white border border-gray-300 ">
+                    <SelectItem value="All">All Job Types</SelectItem>
                     {jobTypes.map((jobType) => (
                       <SelectItem key={jobType.name} value={jobType.name}>
                         {jobType.name}
@@ -733,7 +171,6 @@ const InquiryPage = () => {
 
             {/* Mobile View */}
             <div className="md:hidden flex items-center gap-2 w-full">
-              {/* Search - 70% width */}
               <div className="relative w-[80%]">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
@@ -745,16 +182,21 @@ const InquiryPage = () => {
                 />
               </div>
 
-              {/* Filter - 30% width, icon only */}
               <div className="w-[20%] flex justify-end">
                 <Select
                   value={selectedJobType}
                   onValueChange={setSelectedJobType}
                 >
-                  <SelectTrigger className="w-full  px-2 bg-white border border-gray-300 justify-center">
+                  <SelectTrigger className="w-full px-2 bg-white border border-gray-300 justify-center">
                     <Filter className="h-4 w-4 text-gray-600" />
                   </SelectTrigger>
                   <SelectContent className="bg-white border border-gray-300 shadow-md w-[200px]">
+                    <SelectItem
+                      value="All"
+                      className="hover:bg-gray-100 focus:bg-gray-100"
+                    >
+                      All Job Types
+                    </SelectItem>
                     {jobTypes.map((jobType) => (
                       <SelectItem
                         key={jobType.name}
@@ -775,53 +217,50 @@ const InquiryPage = () => {
       {/* Inquiry List */}
       <div className="">
         {filteredInquiries.length === 0 ? (
-          <div className="text-center py-8 md:py-12 px-4 text-gray-500">
-            <div className="inline-flex items-center justify-center bg-emerald-50/50 rounded-full p-3 md:p-4 mb-2 md:mb-3">
-              <FileText className="h-6 w-6 md:h-8 md:w-8 text-emerald-500" />
+          <div className="text-center py-8 px-4 text-gray-500">
+            <div className="inline-flex items-center justify-center bg-emerald-50/50 rounded-full p-3 mb-3">
+              <FileText className="h-6 w-6 text-emerald-500" />
             </div>
-            <h3 className="text-base md:text-lg font-medium text-gray-700 mb-1">
+            <h3 className="text-base font-medium text-gray-700 mb-1">
               No inquiries found for {selectedJobType}
             </h3>
-            <p className="text-xs md:text-sm text-gray-500 mb-3 md:mb-4">
+            <p className="text-xs text-gray-500 mb-4">
               Start by creating your first inquiry
             </p>
             <Button
-              onClick={() => openSidebar()}
-              className="mt-1 md:mt-2 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5 text-sm md:text-base"
+              onClick={openNewInquiryForm}
+              className="mt-1 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white shadow-md hover:shadow-lg transition-all duration-300 text-sm"
               size="sm"
             >
-              <Plus className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
+              <Plus className="h-3 w-3 mr-1" />
               Create New Inquiry
             </Button>
           </div>
         ) : (
-          <div className="space-y-3 md:space-y-4 p-2 md:p-4">
+          <div className="space-y-3 p-2">
             {filteredInquiries.map((inquiry) => (
               <div
                 key={inquiry.name}
-                className="bg-gradient-to-br from-white to-gray-50 rounded-lg md:rounded-xl p-3 md:p-4 border border-gray-100 shadow-xs hover:shadow-sm hover:border-emerald-100 transition-all duration-300 cursor-pointer group"
+                className="bg-gradient-to-br from-white to-gray-50 rounded-lg p-3 border border-gray-300 shadow-2xs hover:shadow-sm hover:border-emerald-100 transition-all duration-300 cursor-pointer group"
                 onClick={(e) => {
                   e.stopPropagation();
                   openViewModal(inquiry);
                 }}
               >
-                <div className="flex justify-between items-start gap-2 md:gap-3">
-                  <div className="flex items-start gap-2 md:gap-3 min-w-0 flex-1">
-                    <div className="bg-emerald-100/50 text-emerald-800 rounded-md md:rounded-lg p-1.5 md:p-2 mt-0.5">
-                      <User className="h-4 w-4 md:h-5 md:w-5" />
+                <div className="flex justify-between items-start gap-2">
+                  <div className="flex items-start gap-2 min-w-0 flex-1">
+                    <div className="bg-emerald-100/50 text-emerald-800 rounded-md p-1.5 mt-0.5 flex-shrink-0">
+                      <User className="h-4 w-4" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <h4 className="font-semibold text-sm md:text-base text-gray-800 truncate group-hover:text-emerald-700 transition-colors">
-                        {inquiry.lead_name}
-                      </h4>
-                      {/* <p className="text-xs text-gray-500 truncate">
-                        {inquiry.email_id}
-                      </p> */}
-                      {inquiry.custom_job_type && (
-                        <div className=" md:mt-1.5">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+                        <h4 className="font-semibold text-sm text-gray-800 truncate group-hover:text-emerald-700 transition-colors">
+                          {inquiry.lead_name}
+                        </h4>
+                        {inquiry.custom_job_type && (
                           <Badge
                             variant="outline"
-                            className="text-xs px-1.5 py-0.5 md:px-2 md:py-1 rounded-full border shadow-none"
+                            className="text-xs px-1.5 py-0.5 rounded-full border shadow-none self-start sm:self-auto"
                             style={{
                               backgroundColor:
                                 getJobTypeColor(inquiry.custom_job_type).bg +
@@ -835,54 +274,44 @@ const InquiryPage = () => {
                           >
                             {inquiry.custom_job_type}
                           </Badge>
-                        </div>
-                      )}
+                        )}
+                      </div>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-1 flex-shrink-0">
                     <a
                       href={`tel:${inquiry.mobile_no}`}
-                      className="flex items-center justify-center h-7 w-7 md:h-9 md:w-9 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"
+                      className="flex items-center justify-center h-7 w-7 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"
                       onClick={(e) => e.stopPropagation()}
                       title={`Call ${inquiry.mobile_no}`}
                     >
-                      <Phone className="h-3 w-3 md:h-4 md:w-4" />
-                    </a>
-
-                    <a
-                      href={`mailto:${inquiry.email_id}`}
-                      className="flex items-center justify-center h-7 w-7 md:h-9 md:w-9 rounded-full bg-purple-50 text-purple-600 hover:bg-purple-100 transition-colors"
-                      onClick={(e) => e.stopPropagation()}
-                      title={`Email ${inquiry.email_id}`}
-                    >
-                      <Mail className="h-3 w-3 md:h-4 md:w-4" />
+                      <Phone className="h-3 w-3" />
                     </a>
 
                     <Button
                       variant="outline"
                       size="sm"
-                      className="h-7 w-7 md:h-9 md:w-9 p-0 bg-white text-emerald-600 border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 transition-colors shadow-sm"
+                      className="h-7 w-7 p-0 bg-white text-emerald-600 border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 transition-colors shadow-sm"
                       onClick={(e) => {
                         e.stopPropagation();
-                        openSidebar(inquiry);
+                        openEditInquiryForm(inquiry);
                       }}
                     >
-                      <Edit className="h-3 w-3 md:h-4 md:w-4" />
+                      <Edit className="h-3 w-3" />
                     </Button>
                   </div>
                 </div>
 
-                {/* Rest of the details */}
+                {/* Rest of the inquiry card content remains the same */}
                 <div className="mt-2 space-y-2">
-                  {/* Urgency and Budget - Compact row with dots for urgency */}
                   {(inquiry.custom_project_urgency ||
                     inquiry.custom_budget_range) && (
                     <div className="flex items-center justify-between gap-2">
                       {inquiry.custom_project_urgency && (
                         <div className="flex items-center gap-1.5">
                           <div
-                            className="w-2 h-2 rounded-full"
+                            className="w-2 h-2 rounded-full flex-shrink-0"
                             style={{
                               backgroundColor: getUrgencyColor(
                                 inquiry.custom_project_urgency
@@ -890,7 +319,7 @@ const InquiryPage = () => {
                             }}
                           />
                           <span
-                            className="text-xs font-medium"
+                            className="text-xs font-medium truncate"
                             style={{
                               color: getUrgencyColor(
                                 inquiry.custom_project_urgency
@@ -924,54 +353,57 @@ const InquiryPage = () => {
                     </div>
                   )}
 
-                  {/* Location - Full width utilization */}
                   {inquiry.custom_map_data && (
                     <div className="flex items-start gap-2">
                       <MapPin className="h-3.5 w-3.5 mt-0.5 text-gray-400 flex-shrink-0" />
-                      <span className="text-xs text-gray-600 leading-tight flex-1">
+                      <span className="text-xs text-gray-600 leading-tight flex-1 line-clamp-2">
                         {inquiry.custom_map_data}
                       </span>
                     </div>
                   )}
 
-                  {/* Date - Compact inline format */}
-                  {inquiry.custom_preferred_inspection_date && (
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-3.5 w-3.5 text-gray-400" />
-                      <span className="text-xs text-gray-600">
-                        {formatDateCompact(
-                          inquiry.custom_preferred_inspection_date
-                        )}
-                      </span>
+                  <div className="flex items-center justify-between gap-2">
+                    {inquiry.custom_preferred_inspection_date && (
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-3.5 w-3.5 text-gray-400" />
+                        <span className="text-xs text-gray-600">
+                          {formatDateCompact(
+                            inquiry.custom_preferred_inspection_date
+                          )}
+                        </span>
+                      </div>
+                    )}
+
+                    <div className="ml-auto">
+                      {inquiry.status === "Open" ? (
+                        <Badge
+                          variant="outline"
+                          className="text-xs px-2 py-0.5 rounded-md text-emerald-600 border border-emerald-200 bg-emerald-50"
+                        >
+                          Assigned
+                        </Badge>
+                      ) : (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 w-auto px-2 py-0 bg-white text-blue-600 border border-blue-200 
+                          hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300 
+                          transition-all duration-200 ease-in-out shadow-sm rounded-md"
+                          onClick={() => {
+                            navigate("/sales?tab=assign", {
+                              state: {
+                                inquiry: inquiry,
+                                from: "inquiry",
+                              },
+                            });
+                          }}
+                        >
+                          <Plus className="h-3 w-3" />
+                          <span className="ml-1 text-xs">Assign</span>
+                        </Button>
+                      )}
                     </div>
-                  )}
-                  {inquiry.status === "Open" ? (
-                    <Badge
-                      variant="outline"
-                      className="text-xs md:text-sm px-2 py-0.5 rounded-md text-emerald-600 border border-emerald-200 bg-emerald-50"
-                    >
-                      Assigned
-                    </Badge>
-                  ) : (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 w-7 md:h-9 md:w-9 p-0 bg-white text-blue-600 border border-blue-200 
-               hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300 
-               transition-all duration-200 ease-in-out shadow-sm rounded-md"
-                      onClick={() => {
-                        navigate("/sales?tab=assign", {
-                          state: {
-                            inquiry: inquiry,
-                            from: "inquiry",
-                          },
-                        });
-                      }}
-                    >
-                      <Plus className="h-3 w-3 md:h-4 md:w-4" />
-                      <span className="sr-only">Assign</span>
-                    </Button>
-                  )}
+                  </div>
                 </div>
               </div>
             ))}
@@ -979,524 +411,14 @@ const InquiryPage = () => {
         )}
       </div>
 
-      {/* Edit/Add Form Sidebar */}
-      <div
-        className={`fixed inset-y-0 right-0 w-full bg-white shadow-xl border-l border-gray-200 transform transition-transform duration-300 ease-in-out z-50 ${
-          sidebarOpen ? "translate-x-0" : "translate-x-full"
-        }`}
-      >
-        <div className="flex flex-col h-full">
-          <div className="bg-gradient-to-r from-emerald-600 to-blue-600 p-4 text-white">
-            <div className="flex justify-between items-center">
-              <h3 className="text-xl font-semibold">
-                {currentInquiry ? "Edit Inquiry" : "New Inquiry"}
-              </h3>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 w-8 p-0 rounded-full text-white hover:bg-white/10"
-                onClick={closeSidebar}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
 
-          <div className="p-4 flex-1 overflow-y-auto">
-            <form className="space-y-4" onSubmit={handleSubmit}>
-              {sections.map((section) => (
-                <div
-                  key={section.id}
-                  className="border border-gray-200 rounded-lg overflow-hidden"
-                >
-                  <button
-                    type="button"
-                    className={`w-full flex justify-between items-center p-4 text-left hover:bg-gray-50 transition-colors ${
-                      activeSection === section.id ? "bg-gray-50" : ""
-                    }`}
-                    onClick={() => toggleSection(section.id)}
-                  >
-                    <div className="flex items-center gap-3">
-                      {section.icon}
-                      <h4 className="text-sm font-medium text-gray-700 uppercase tracking-wider">
-                        {section.title}
-                      </h4>
-                      {section.completed && (
-                        <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                      )}
-                    </div>
-                    {activeSection === section.id ? (
-                      <ChevronUp className="h-4 w-4 text-gray-500" />
-                    ) : (
-                      <ChevronDown className="h-4 w-4 text-gray-500" />
-                    )}
-                  </button>
+      <InquiryForm
+        isOpen={isFormOpen}
+        onClose={closeInquiryForm}
+        inquiry={selectedInquiry} // Pass null for new inquiry, or the inquiry object for editing
+      />
 
-                  <div
-                    className={`transition-all duration-300 overflow-hidden ${
-                      activeSection === section.id
-                        ? "max-h-[1000px] opacity-100"
-                        : "max-h-0 opacity-0"
-                    }`}
-                  >
-                    <div className="p-4 pt-2 space-y-4">
-                      {section.id === "contact" && (
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                          <div>
-                            <label
-                              htmlFor="lead_name"
-                              className="block text-sm font-medium text-gray-700 mb-1"
-                            >
-                              Name <span className="text-red-500">*</span>
-                            </label>
-                            <Input
-                              type="text"
-                              id="lead_name"
-                              name="lead_name"
-                              value={formData.lead_name || ""}
-                              onChange={handleInputChange}
-                              required
-                              placeholder="Enter your name"
-                            />
-                          </div>
-                          <div>
-                            <label
-                              htmlFor="phone"
-                              className="block text-sm font-medium text-gray-700 mb-1"
-                            >
-                              Phone Number
-                              <span className="text-red-500">*</span>
-                            </label>
-                            <input
-                              type="tel"
-                              id="phone"
-                              name="phone"
-                              value={formData.mobile_no || phoneNumber}
-                              onChange={handlePhoneChange}
-                              onKeyDown={handleKeyDown}
-                              placeholder="+971 XX XXX XXXX"
-                              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                              maxLength={17} // Changed from 16 to 17 to accommodate mobile numbers
-                            />
-                            <p className="mt-1 text-xs text-gray-500">
-                              Mobile: +971 5XX XXX XXXX | Landline: +971 0X XXX
-                              XXXX
-                            </p>
-                            {phoneError && (
-                              <p className="text-xs text-red-500 mt-1">
-                                {phoneError}
-                              </p>
-                            )}
-                          </div>
-                          <div>
-                            <label
-                              htmlFor="email_id"
-                              className="block text-sm font-medium text-gray-700 mb-1"
-                            >
-                              Email
-                            </label>
-                            <Input
-                              type="email"
-                              id="email_id"
-                              name="email_id"
-                              value={formData.email_id || ""}
-                              onChange={handleInputChange}
-                              required
-                              placeholder="Enter your email"
-                            />
-                          </div>
-                          <div>
-                            <label
-                              htmlFor="utm_source"
-                              className="block text-sm font-medium text-gray-700 mb-1"
-                            >
-                              Source Of Inquiry{" "}
-                              <span className="text-red-500">*</span>
-                            </label>
-
-                            <Select
-                              value={formData.utm_source || ""}
-                              onValueChange={(value) =>
-                                handleSelectChange("utm_source", value)
-                              }
-                            >
-                              <SelectTrigger
-                                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                                id="utm_source"
-                              >
-                                <SelectValue placeholder="Select source" />
-                              </SelectTrigger>
-
-                              <SelectContent className="bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
-                                {utmSource.map((utms) => (
-                                  <SelectItem
-                                    key={utms.name}
-                                    value={utms.name}
-                                    className="px-4 py-2 text-sm text-gray-700 hover:bg-emerald-100 focus:bg-emerald-100 cursor-pointer"
-                                  >
-                                    {utms.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        </div>
-                      )}
-
-                      {section.id === "job" && (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div className="mb-4">
-                            <label
-                              htmlFor="custom_job_type"
-                              className="block text-sm font-medium text-gray-700 mb-1"
-                            >
-                              Job Type <span className="text-red-500">*</span>
-                            </label>
-
-                            <Select
-                              value={formData.custom_job_type || ""}
-                              onValueChange={(value) =>
-                                handleSelectChange("custom_job_type", value)
-                              }
-                            >
-                              <SelectTrigger
-                                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                                id="custom_job_type"
-                              >
-                                <SelectValue placeholder="Select job type" />
-                              </SelectTrigger>
-
-                              <SelectContent className="bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
-                                {jobTypes.map((jobType) => (
-                                  <SelectItem
-                                    key={jobType.name}
-                                    value={jobType.name}
-                                    className="px-4 py-2 text-sm text-gray-700 hover:bg-emerald-100 focus:bg-emerald-100 cursor-pointer"
-                                  >
-                                    {jobType.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-
-                          <div className="mb-4">
-                            <label
-                              htmlFor="custom_budget_range"
-                              className="block text-sm font-medium text-gray-700 mb-1"
-                            >
-                              Budget Range
-                            </label>
-
-                            <Select
-                              value={formData.custom_budget_range || ""}
-                              onValueChange={(value) =>
-                                handleSelectChange("custom_budget_range", value)
-                              }
-                            >
-                              <SelectTrigger
-                                id="custom_budget_range"
-                                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                              >
-                                <SelectValue placeholder="Select budget range" />
-                              </SelectTrigger>
-
-                              <SelectContent className="bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
-                                {budgetRanges.map((range) => (
-                                  <SelectItem
-                                    key={range}
-                                    value={range}
-                                    className="px-4 py-2 text-sm text-gray-700 hover:bg-emerald-100 focus:bg-emerald-100 cursor-pointer"
-                                  >
-                                    {range}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          {/* Project Urgency */}
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Project Urgency
-                            </label>
-                            <Select
-                              value={formData.custom_project_urgency || ""}
-                              onValueChange={(value) =>
-                                handleSelectChange(
-                                  "custom_project_urgency",
-                                  value
-                                )
-                              }
-                            >
-                              <SelectTrigger className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                                <SelectValue placeholder="Select urgency" />
-                              </SelectTrigger>
-                              <SelectContent className="bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
-                                {projectUrgency.map((urgency) => (
-                                  <SelectItem
-                                    key={urgency.name}
-                                    value={urgency.name}
-                                    className="px-4 py-2 text-sm text-gray-700 hover:bg-emerald-100 focus:bg-emerald-100 cursor-pointer"
-                                  >
-                                    {urgency.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        </div>
-                      )}
-
-                      {section.id === "property" && (
-                        <div>
-                          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {/* Property Type */}
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Category
-                              </label>
-                              <Select
-                                value={formData.custom_property_type || ""}
-                                onValueChange={(value) =>
-                                  handleSelectChange(
-                                    "custom_property_type",
-                                    value
-                                  )
-                                }
-                              >
-                                <SelectTrigger className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                                  <SelectValue placeholder="Select property type" />
-                                </SelectTrigger>
-                                <SelectContent className="bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
-                                  {propertyTypes.map((type) => (
-                                    <SelectItem
-                                      key={type}
-                                      value={type}
-                                      className="px-4 py-2 text-sm text-gray-700 hover:bg-emerald-100 focus:bg-emerald-100 cursor-pointer"
-                                    >
-                                      {type}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-
-                            {/* Building Type */}
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Type
-                              </label>
-                              <Select
-                                value={formData.custom_type_of_building || ""}
-                                onValueChange={(value) =>
-                                  handleSelectChange(
-                                    "custom_type_of_building",
-                                    value
-                                  )
-                                }
-                              >
-                                <SelectTrigger className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                                  <SelectValue placeholder="Select building type" />
-                                </SelectTrigger>
-                                <SelectContent className="bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
-                                  {buildingTypes.map((type) => (
-                                    <SelectItem
-                                      key={type}
-                                      value={type}
-                                      className="px-4 py-2 text-sm text-gray-700 hover:bg-emerald-100 focus:bg-emerald-100 cursor-pointer"
-                                    >
-                                      {type}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-                          </div>
-                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-2">
-                            {/* Building Name */}
-                            <div>
-                              <label
-                                htmlFor="custom_building_name"
-                                className="block text-sm font-medium text-gray-700 mb-1"
-                              >
-                                Name
-                              </label>
-                              <Input
-                                type="text"
-                                id="custom_building_name"
-                                name="custom_building_name"
-                                value={formData.custom_building_name || ""}
-                                onChange={handleInputChange}
-                                placeholder="Enter Property name"
-                                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                              />
-                            </div>
-
-                            {/* Building Number */}
-                            <div>
-                              <label
-                                htmlFor="custom_building_number"
-                                className="block text-sm font-medium text-gray-700 mb-1"
-                              >
-                                Number
-                              </label>
-                              <Input
-                                type="text"
-                                id="custom_building_number"
-                                name="custom_building_number"
-                                value={formData.custom_building_number || ""}
-                                onChange={handleInputChange}
-                                placeholder="Enter Property number"
-                                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                              />
-                            </div>
-
-                            {/* Map Location */}
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Location
-                              </label>
-
-                              <AddressFinder
-                                onSelect={(location) => {
-                                  if (location) {
-                                    setFormData((prev) => ({
-                                      ...prev,
-                                      // Store only the display_name as a simple string
-                                      custom_map_data: location.display_name,
-                                    }));
-                                  } else {
-                                    setFormData((prev) => ({
-                                      ...prev,
-                                      custom_map_data: "",
-                                    }));
-                                  }
-                                }}
-                                initialValue={formData.custom_map_data || ""}
-                              />
-
-                              {formData.custom_map_data && (
-                                <p className="mt-2 text-sm text-gray-600">
-                                  <span className="font-medium">Selected:</span>{" "}
-                                  {formData.custom_map_data}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      {section.id === "inspection" && (
-                        <div className="grid grid-cols-12 gap-4">
-                          {/* Preferred Date - 70% width */}
-                          <div className="col-span-8">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Date
-                            </label>
-                            <Input
-                              type="date"
-                              min={new Date().toISOString().split("T")[0]}
-                              value={
-                                formData.custom_preferred_inspection_date
-                                  ? new Date(
-                                      formData.custom_preferred_inspection_date
-                                    )
-                                      .toISOString()
-                                      .split("T")[0]
-                                  : ""
-                              }
-                              onChange={(e) =>
-                                handleDateChange(
-                                  "custom_preferred_inspection_date",
-                                  e.target.value
-                                    ? new Date(e.target.value)
-                                    : undefined
-                                )
-                              }
-                              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-black shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                            />
-                          </div>
-
-                          {/* Preferred Time - 30% width */}
-                          <div className="col-span-4">
-                            <label
-                              htmlFor="custom_preferred_inspection_time"
-                              className="block text-sm font-medium text-gray-700 mb-1"
-                            >
-                              Time
-                            </label>
-                            <Input
-                              type="time"
-                              id="custom_preferred_inspection_time"
-                              name="custom_preferred_inspection_time"
-                              value={
-                                formData.custom_preferred_inspection_time || ""
-                              }
-                              onChange={handleInputChange}
-                              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-black shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                            />
-                          </div>
-                        </div>
-                      )}
-
-                      {section.id === "additional" && (
-                        <div className="space-y-4">
-                          <div>
-                            <label
-                              htmlFor="custom_special_requirements"
-                              className="block text-sm font-medium text-gray-700 mb-1"
-                            >
-                              Special Requirements
-                            </label>
-                            <Textarea
-                              id="custom_special_requirements"
-                              name="custom_special_requirements"
-                              value={formData.custom_special_requirements || ""}
-                              onChange={handleInputChange}
-                              placeholder="Enter any special requirements or notes"
-                              rows={3}
-                            />
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
-
-              <div className="flex justify-end gap-3 pt-6 border-t border-gray-200">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={closeSidebar}
-                  className="px-6"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={loading}
-                  className="px-6 bg-gradient-to-r from-emerald-600 to-blue-600 hover:from-emerald-700 hover:to-blue-700"
-                >
-                  {loading ? (
-                    <div className="flex items-center gap-2">
-                      <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white"></div>
-                      Saving...
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <Save className="h-4 w-4" />
-                      {currentInquiry ? "Update" : "Create"} Inquiry
-                    </div>
-                  )}
-                </Button>
-              </div>
-            </form>
-          </div>
-        </div>
-      </div>
-
-      {/* View Modal */}
+      {/* View Modal - Keep this as is */}
       {viewModalOpen && viewInquiry && (
         <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
@@ -1514,7 +436,6 @@ const InquiryPage = () => {
                     size="sm"
                     className="h-8 w-8 p-0 rounded-full text-white hover:bg-white/10"
                     onClick={() => {
-                      // Navigate to assign tab with the inquiry data
                       navigate("/sales?tab=assign", {
                         state: { inquiry: viewInquiry },
                       });
@@ -1681,7 +602,7 @@ const InquiryPage = () => {
               <Button
                 onClick={() => {
                   closeViewModal();
-                  openSidebar(viewInquiry);
+                  openEditInquiryForm(viewInquiry);
                 }}
                 className="flex-1 bg-gradient-to-r from-emerald-600 to-blue-600 hover:from-emerald-700 hover:to-blue-700 text-white"
               >
@@ -1698,14 +619,6 @@ const InquiryPage = () => {
             </div>
           </div>
         </div>
-      )}
-
-      {/* Overlay for sidebar */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-40"
-          onClick={closeSidebar}
-        />
       )}
     </div>
   );
