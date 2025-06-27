@@ -103,17 +103,18 @@ const sections: FormSection[] = [
     completed: false,
   },
   {
-    id: "inspector",
-    title: "Assign Inspector",
-    icon: <User className="h-4 w-4" />,
-    completed: false,
-  },
-  {
     id: "additional",
     title: "Additional Information",
     icon: <FileText className="h-4 w-4" />,
     completed: true,
   },
+  {
+    id: "inspector",
+    title: "Assign Inspector",
+    icon: <User className="h-4 w-4" />,
+    completed: false,
+  },
+  
 ];
 
 const InquiryForm: React.FC<InquiryFormProps> = ({ isOpen, onClose, inquiry }) => {
@@ -600,7 +601,7 @@ const Section = ({
                   value={formData.lead_name || ""}
                   onChange={handleInputChange}
                   required
-                  placeholder="Enter your name"
+                  placeholder="Enter Name"
                 />
               </div>
               <div>
@@ -609,7 +610,7 @@ const Section = ({
                   className="block text-sm font-medium text-gray-700 mb-1"
                 >
                   Phone Number
-                  <span className="text-red-500">*</span>
+                  <span className="text-red-500"> *</span>
                 </label>
                 <input
                   type="tel"
@@ -637,7 +638,7 @@ const Section = ({
                   value={formData.email_id || ""}
                   onChange={handleInputChange}
                   required
-                  placeholder="Enter your email"
+                  placeholder="Enter Email"
                 />
               </div>
               <div>
@@ -936,6 +937,26 @@ const Section = ({
               </div>
             </div>
           )}
+           {section.id === "additional" && (
+            <div className="space-y-4">
+              <div>
+                <label
+                  htmlFor="custom_special_requirements"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
+                  Special Requirements
+                </label>
+                <Textarea
+                  id="custom_special_requirements"
+                  name="custom_special_requirements"
+                  value={formData.custom_special_requirements || ""}
+                  onChange={handleInputChange}
+                  placeholder="Enter any special requirements or notes"
+                  rows={3}
+                />
+              </div>
+            </div>
+          )}
 
           
 
@@ -1061,26 +1082,7 @@ const Section = ({
             </div>
           )}
 
-          {section.id === "additional" && (
-            <div className="space-y-4">
-              <div>
-                <label
-                  htmlFor="custom_special_requirements"
-                  className="block text-sm font-medium text-gray-700 mb-1"
-                >
-                  Special Requirements
-                </label>
-                <Textarea
-                  id="custom_special_requirements"
-                  name="custom_special_requirements"
-                  value={formData.custom_special_requirements || ""}
-                  onChange={handleInputChange}
-                  placeholder="Enter any special requirements or notes"
-                  rows={3}
-                />
-              </div>
-            </div>
-          )}
+         
         </div>
       </div>
     </div>
