@@ -1,9 +1,7 @@
 // TodoPage.tsx
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { format } from "date-fns";
 import {
   CalendarIcon,
-  ClipboardCheck,
   ClipboardList,
   FileText,
   Filter,
@@ -12,6 +10,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
+import { getPriorityColor, getStatusColor } from "../../helpers/helper";
 import { useAssignStore } from "../../store/assign";
 import { Alert, AlertDescription } from "../ui/alert";
 import { Badge } from "../ui/badge";
@@ -41,6 +40,7 @@ export default function TodoPage() {
   const [selectedStatus, setSelectedStatus] = useState("All");
   const [selectedPriority, setSelectedPriority] = useState("All");
   const [selectedInspector, setSelectedInspector] = useState("All");
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
   const { user } = useAuth();
 
   // Set current user
@@ -64,12 +64,6 @@ export default function TodoPage() {
       return () => clearTimeout(timer);
     }
   }, [success, clearError]);
-
-  const priorityVariant = {
-    Low: "secondary",
-    Medium: "default",
-    High: "destructive",
-  } as const;
 
   // Filter todos based on search and filters
   const filteredTodos = todos.filter((todo) => {
@@ -153,37 +147,78 @@ export default function TodoPage() {
             </div>
 
             {/* Mobile View */}
-            <div className="md:hidden flex items-center gap-2 w-full">
-              <div className="relative w-[70%]">
+            <div className="md:hidden space-y-2">
+              <div className="relative w-full">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
                   type="text"
-                  placeholder="Search..."
+                  placeholder="Search inspections..."
                   className="pl-10 w-full bg-white border border-gray-300"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
-              <div className="w-[30%] flex justify-end">
-                <Select
-                  value={selectedStatus}
-                  onValueChange={setSelectedStatus}
-                >
-                  <SelectTrigger className="w-full px-2 bg-white border border-gray-300 justify-center">
-                    <Filter className="h-4 w-4 text-gray-600" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white border border-gray-300 shadow-md w-[200px]">
-                    <SelectItem value="All">All Inspectors</SelectItem>
-                    {Array.from(
-                      new Set(todos.map((todo) => todo.allocated_to))
-                    ).map((inspector) => (
-                      <SelectItem key={inspector} value={inspector}>
-                        {inspector}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+
+              <Button
+                variant="outline"
+                className="w-full flex items-center justify-center gap-2"
+                onClick={() => setShowMobileFilters(!showMobileFilters)}
+              >
+                <Filter className="h-4 w-4" />
+                <span>Filters</span>
+              </Button>
+
+              {showMobileFilters && (
+                <div className="space-y-2 mt-2 p-2 bg-gray-50 rounded-lg">
+                  <Select
+                    value={selectedStatus}
+                    onValueChange={setSelectedStatus}
+                  >
+                    <SelectTrigger className="w-full bg-white">
+                      <SelectValue placeholder="Status" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white border border-gray-300">
+                      <SelectItem value="All">All Statuses</SelectItem>
+                      <SelectItem value="Open">Open</SelectItem>
+                      <SelectItem value="Completed">Completed</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <Select
+                    value={selectedPriority}
+                    onValueChange={setSelectedPriority}
+                  >
+                    <SelectTrigger className="w-full bg-white">
+                      <SelectValue placeholder="Priority" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white border border-gray-300">
+                      <SelectItem value="All">All Priorities</SelectItem>
+                      <SelectItem value="Low">Low</SelectItem>
+                      <SelectItem value="Medium">Medium</SelectItem>
+                      <SelectItem value="High">High</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <Select
+                    value={selectedInspector}
+                    onValueChange={setSelectedInspector}
+                  >
+                    <SelectTrigger className="w-full bg-white">
+                      <SelectValue placeholder="Inspector" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white border border-gray-300">
+                      <SelectItem value="All">All Inspectors</SelectItem>
+                      {Array.from(
+                        new Set(todos.map((todo) => todo.allocated_to))
+                      ).map((inspector) => (
+                        <SelectItem key={inspector} value={inspector}>
+                          {inspector}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -212,6 +247,7 @@ export default function TodoPage() {
                 setSelectedStatus("All");
                 setSelectedPriority("All");
                 setSelectedInspector("All");
+                setShowMobileFilters(false);
               }}
               className="mt-1 md:mt-2 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5 text-sm md:text-base"
               size="sm"
@@ -220,87 +256,92 @@ export default function TodoPage() {
             </Button>
           </div>
         ) : (
-          <div className="space-y-3 md:space-y-4 p-2 md:p-4">
+          <div className="space-y-3 md:space-y-4 px-2">
             {filteredTodos.map((todo) => (
               <div
                 key={todo.name}
-                className="bg-gradient-to-br from-white to-gray-50 rounded-lg md:rounded-xl p-3 md:p-4 border border-gray-100 shadow-xs hover:shadow-sm hover:border-emerald-100 transition-all duration-300 cursor-pointer"
+                className="bg-gradient-to-br from-white to-gray-50 rounded-lg p-3 border border-gray-100 shadow-xs hover:shadow-sm hover:border-emerald-100 transition-all duration-300 cursor-pointer"
               >
-                <div className="flex justify-between items-start gap-2 md:gap-3">
-                  <div className="flex items-start gap-2 md:gap-3 min-w-0 flex-1">
-                    <div className="bg-emerald-100/50 text-emerald-800 rounded-md md:rounded-lg p-1.5 md:p-2 mt-0.5">
-                      <ClipboardCheck className="h-4 w-4 md:h-5 md:w-5" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <h4 className="font-semibold text-sm md:text-base text-gray-800 truncate group-hover:text-emerald-700 transition-colors">
-                        {todo.inquiry_data?.lead_name || todo.reference_name}
-                      </h4>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Badge
-                          variant={
-                            priorityVariant[
-                              todo.priority as "Low" | "Medium" | "High"
-                            ]
-                          }
-                          className="text-xs"
-                        >
-                          {todo.priority}
-                        </Badge>
-                        <Badge
-                          variant={
-                            todo.status === "Open" ? "default" : "secondary"
-                          }
-                          className="text-xs"
-                        >
-                          {todo.status}
-                        </Badge>
+                <div className="flex justify-between items-start gap-2">
+                  <div className="flex items-center  w-full">
+                    
+
+                    {/* Main content row */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2 w-full">
+                        {/* Lead name with truncation */}
+                        <h4 className="font-semibold text-sm text-gray-800 truncate flex-1">
+                          {todo.inquiry_data?.lead_name || todo.reference_name}
+                        </h4>
+
+                        {/* Priority and Status badges aligned to right */}
+                        <div className="flex items-center gap-1 ml-2">
+                          <Badge
+                            style={{
+                              backgroundColor: getPriorityColor(todo.priority)
+                                .bg,
+                              color: getPriorityColor(todo.priority).text,
+                              borderColor: getPriorityColor(todo.priority)
+                                .border,
+                            }}
+                            className="text-xs whitespace-nowrap"
+                          >
+                            {todo.priority}
+                          </Badge>
+                          <Badge
+                            style={{
+                              backgroundColor: getStatusColor(todo.status).bg,
+                              color: getStatusColor(todo.status).text,
+                              borderColor: getStatusColor(todo.status).border,
+                            }}
+                            className="text-xs whitespace-nowrap"
+                          >
+                            {todo.status}
+                          </Badge>
+                        </div>
+                      </div>
+
+                      {/* Additional details below */}
+                      <div className="mt-2 space-y-1.5 text-xs">
+                        <div className="flex items-center gap-2">
+                          <User className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
+                          <span className="text-gray-600 truncate">
+                            Inspector:{" "}
+                            <span className="font-medium">
+                              {todo.allocated_to}
+                            </span>
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <CalendarIcon className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
+                          <span className="text-gray-600">
+                            Due:{" "}
+                            <span className="font-medium">
+                              {todo.inquiry_data
+                                ?.custom_preferred_inspection_date
+                                ? format(
+                                    new Date(
+                                      todo.inquiry_data.custom_preferred_inspection_date
+                                    ),
+                                    "MMM d, yyyy"
+                                  )
+                                : "Not specified"}
+                            </span>
+                          </span>
+                        </div>
+
+                        {todo.inquiry_data?.custom_special_requirements && (
+                          <div className="flex items-start gap-2">
+                            <FileText className="h-3.5 w-3.5 mt-0.5 text-gray-400 flex-shrink-0" />
+                            <span className="text-gray-600 leading-tight line-clamp-2">
+                              {todo.inquiry_data.custom_special_requirements}
+                            </span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
-
-                  <div className="flex items-center gap-1 flex-shrink-0">
-                    <div className="text-right hidden md:block">
-                      <p className="text-xs text-gray-500">Assigned to</p>
-                      <p className="text-sm font-medium">{todo.allocated_to}</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Additional details */}
-                <div className="mt-2 space-y-2">
-                  <div className="flex items-center gap-2">
-                    <User className="h-3.5 w-3.5 text-gray-400" />
-                    <span className="text-xs text-gray-600">
-                      Inspector:{" "}
-                      <span className="font-medium">{todo.allocated_to}</span>
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <CalendarIcon className="h-3.5 w-3.5 text-gray-400" />
-                    <span className="text-xs text-gray-600">
-                      Due Date:{" "}
-                      <span className="font-medium">
-                        {todo.inquiry_data?.custom_preferred_inspection_date
-                          ? format(
-                              new Date(
-                                todo.inquiry_data.custom_preferred_inspection_date
-                              ),
-                              "PPP"
-                            )
-                          : "Not specified"}
-                      </span>
-                    </span>
-                  </div>
-
-                  {todo.inquiry_data?.custom_special_requirements && (
-                    <div className="flex items-start gap-2">
-                      <FileText className="h-3.5 w-3.5 mt-0.5 text-gray-400" />
-                      <span className="text-xs text-gray-600 leading-tight line-clamp-2">
-                        {todo.inquiry_data.custom_special_requirements}
-                      </span>
-                    </div>
-                  )}
                 </div>
               </div>
             ))}

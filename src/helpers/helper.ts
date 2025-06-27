@@ -272,3 +272,57 @@ export const formatSubmissionData = (formData: any) => {
 
   return submissionData;
 };
+
+
+// Color Mapping Helpers
+export const getStatusColor = (status: string) => {
+  const colors: Record<string, { bg: string; text: string; border: string }> = {
+    "Open": {
+      bg: "#EFF6FF",
+      text: "#1E40AF",
+      border: "#3B82F6",
+    },
+    "Completed": {
+      bg: "#ECFDF5",
+      text: "#065F46",
+      border: "#10B981",
+    },
+    "Cancelled": {
+      bg: "#FEF2F2",
+      text: "#991B1B",
+      border: "#EF4444",
+    },
+  };
+
+  return colors[status] || {
+    bg: "#F3F4F6",
+    text: "#4B5563",
+    border: "#9CA3AF",
+  };
+};
+
+export const getPriorityColor = (priority: string) => {
+  const colors: Record<string, { bg: string; text: string; border: string }> = {
+    "High": {
+      bg: "#FEE2E2",
+      text: "#991B1B",
+      border: "#EF4444",
+    },
+    "Medium": {
+      bg: "#FEF3C7",
+      text: "#92400E",
+      border: "#F59E0B",
+    },
+    "Low": {
+      bg: "#ECFDF5",
+      text: "#065F46",
+      border: "#10B981",
+    },
+  };
+
+  return colors[priority] || {
+    bg: "#F3F4F6",
+    text: "#4B5563",
+    border: "#9CA3AF",
+  };
+};
