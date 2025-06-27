@@ -6,16 +6,17 @@ import {
   CalendarIcon,
   Check,
   Edit,
-  // FileText,
+  FileText,
   Home,
   Image as ImageIcon,
   Info,
   Phone,
   Plus,
+  Ruler,
   Trash2,
   Upload,
   User,
-  X,
+  X
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
@@ -23,6 +24,7 @@ import { toast } from "react-hot-toast";
 import { useLocation, useNavigate } from "react-router-dom";
 import * as z from "zod";
 import { frappeAPI } from "../../api/frappeClient";
+import DeleteConfirmation from "../../common/DeleteComfirmation";
 import { useInspectionStore } from "../../store/inspectionStore";
 import {
   Accordion,
@@ -45,16 +47,24 @@ import { Input } from "../ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { Progress } from "../ui/progress";
 import { Textarea } from "../ui/textarea";
-import DeleteConfirmation from "../../common/DeleteComfirmation";
+// import {
+//   Select,
+//   SelectContent,
+//   SelectItem,
+//   SelectTrigger,
+//   SelectValue,
+// } from "../ui/select";
 
 const formSchema = z.object({
   inspection_date: z.date(),
-  status: z.string().optional(),
+  status: z
+    .enum(["Scheduled", "In Progress", "Completed"])
+    .default("Scheduled"),
   customer_name: z.string().optional(),
   inspection_time: z.string(),
   property_type: z.string(),
   site_photos: z.any().optional(),
-  measurement_sketch: z.any().optional(),
+  measurement_sketch: z.union([z.string(), z.instanceof(File)]).optional(),
   inspection_notes: z.string().optional(),
   site_dimensions: z
     .array(
@@ -76,68 +86,43 @@ const formSchema = z.object({
 });
 
 const uploadFile = async (file: File): Promise<string> => {
-  console.log("🎯 uploadFile called with:", file.name);
-
   if (!file || file.size === 0) {
     throw new Error("Invalid file selected");
   }
 
   try {
-    console.log("📞 Calling frappeAPI.upload...");
     const response = await frappeAPI.upload(file);
 
     if (!response.success) {
-      console.error("💥 Upload failed in frappeAPI:", response);
       throw new Error(response.error || "Upload failed");
     }
 
     const data = response.data;
-    console.log("🎉 Upload response received:", data);
-
     let fileUrl = "";
 
     if (data?.message?.file_url) {
       fileUrl = data.message.file_url;
-      console.log("✅ Found file_url in message:", fileUrl);
     } else if (data?.message?.file_name) {
       fileUrl = data.message.file_name;
-      console.log("✅ Found file_name in message:", fileUrl);
     } else if (data?.file_url) {
       fileUrl = data.file_url;
-      console.log("✅ Found file_url in root:", fileUrl);
     } else if (data?.file_name) {
       fileUrl = data.file_name;
-      console.log("✅ Found file_name in root:", fileUrl);
-    } else if (data?.message && typeof data.message === "string") {
-      console.log("🔍 Attempting to parse string message:", data.message);
-      try {
-        const parsed = JSON.parse(data.message);
-        fileUrl = parsed.file_url || parsed.file_name || "";
-        console.log("✅ Parsed file URL:", fileUrl);
-      } catch {
-        fileUrl = data.message;
-        console.log("⚠️ Using raw message as URL:", fileUrl);
-      }
+    } else if (typeof data?.message === "string") {
+      fileUrl = data.message;
     }
 
     if (!fileUrl) {
-      console.error("❌ No file URL found in response!");
-      console.error(
-        "📋 Full response structure:",
-        JSON.stringify(data, null, 2)
-      );
-      throw new Error("No file URL found in response. Check server logs.");
+      throw new Error("No file URL found in response");
     }
 
-    if (!fileUrl.startsWith("/") && !fileUrl.startsWith("http")) {
-      fileUrl = "/files/" + fileUrl;
-      console.log("🔧 Formatted URL:", fileUrl);
+    if (!fileUrl.startsWith("http") && !fileUrl.startsWith("/")) {
+      fileUrl = `/files/${fileUrl}`;
     }
 
-    console.log("🎯 Final file URL:", fileUrl);
     return fileUrl;
   } catch (error) {
-    console.error("💥 File upload error:", error);
+    console.error("File upload error:", error);
     throw error;
   }
 };
@@ -199,9 +184,9 @@ const CreateInspection = () => {
       inspection_time: "",
       customer_name: getCustomerName(),
       property_type: "Residential",
-      status: "Scheduled",
+      status: inspection?.status || "Scheduled",
       site_photos: undefined,
-      measurement_sketch: undefined,
+      measurement_sketch: inspection?.measurement_sketch || undefined,
       inspection_notes: "",
       site_dimensions: [] as Array<{
         area_name: string;
@@ -215,6 +200,15 @@ const CreateInspection = () => {
     },
   });
 
+// Add near the top of your component
+useEffect(() => {
+  const subscription = form.watch((value, { name }) => {
+    if (name === "measurement_sketch" || !name) {
+      console.log("Measurement sketch value changed:", value.measurement_sketch);
+    }
+  });
+  return () => subscription.unsubscribe();
+}, [form]);
   const { fields, append, remove, replace } = useFieldArray({
     control: form.control,
     name: "site_dimensions",
@@ -315,6 +309,8 @@ const CreateInspection = () => {
           );
         if (inspectionToUse.customer_name)
           form.setValue("customer_name", inspectionToUse.customer_name);
+        if (inspectionToUse.status)
+          form.setValue("status", inspectionToUse.status);
         if (
           inspectionToUse.site_dimensions &&
           Array.isArray(inspectionToUse.site_dimensions)
@@ -479,11 +475,20 @@ const CreateInspection = () => {
   };
 
   const handleSubmit = async (values: z.infer<typeof formSchema>) => {
+    console.log("Form values before submission:", values); // Debug
+
     try {
       setLoading(true);
       const inspectionToUpdate = inspection || currentInspection;
       const leadReference = todo?.reference_name || inspection?.lead;
       const customerName = getCustomerName();
+
+      // Debug: Check measurement sketch value
+      console.log("Measurement sketch value:", values.measurement_sketch);
+      console.log(
+        "Type of measurement sketch:",
+        typeof values.measurement_sketch
+      );
 
       const inspectionData = {
         ...values,
@@ -495,47 +500,40 @@ const CreateInspection = () => {
         inspection_date: format(values.inspection_date, "yyyy-MM-dd"),
         inspection_time: values.inspection_time,
         doctype: "SiteInspection",
+        measurement_sketch: values.measurement_sketch || undefined, // Explicitly include
         site_dimensions: values.site_dimensions?.map((dim) => ({
           area_name: dim.area_name,
           dimensionsunits: dim.dimensionsunits,
           media: typeof dim.media === "string" ? dim.media : "",
         })),
         custom_site_images: values.custom_site_images
-          ?.filter(
-            (img): img is { image: string; remarks: string } =>
-              typeof img.image === "string" && typeof img.remarks === "string"
-          )
-          .map((img) => ({
-            image: img.image,
-            remarks: img.remarks,
+          ?.filter((img) => typeof img.image === "string" && typeof img.remarks === "string")
+          ?.map((img) => ({
+            image: img.image ?? "",
+            remarks: img.remarks ?? "",
           })),
       };
+
+      console.log("Final submission data:", inspectionData); // Debug
 
       if (isUpdateMode && inspectionToUpdate?.name) {
         await updateInspectionbyId(inspectionToUpdate.name, inspectionData);
         toast.success("Inspection updated successfully!");
 
         if (todo?.name) {
-          try {
-            await updateTodoStatus(todo.name, "Completed");
-          } catch (todoError) {
-            console.error("Failed to update todo status:", todoError);
-          }
+          await updateTodoStatus(todo.name, "Completed");
         }
-
         navigate("/inspector?tab=inspections");
       } else {
-        const result = await createInspection(inspectionData, todo?.name);
-        console.log("Created inspection:", result);
+        await createInspection(inspectionData, todo?.name);
         toast.success("Inspection created successfully!");
         navigate("/inspector?tab=inspections");
       }
     } catch (error) {
-      const message = isUpdateMode
-        ? "Failed to update inspection"
-        : "Failed to create inspection";
-      toast.error(`${message}. Please try again.`);
-      console.error("Error with inspection:", error);
+      console.error("Submission error:", error);
+      toast.error(
+        `Failed to ${isUpdateMode ? "update" : "create"} inspection.`
+      );
     } finally {
       setLoading(false);
     }
@@ -603,7 +601,7 @@ const CreateInspection = () => {
 
   if (!displayData) {
     return (
-      <div className=" max-w-md mx-auto">
+      <div className="max-w-md mx-auto">
         <Card className="border-none shadow-none">
           <CardHeader>
             <CardTitle>Inspection Dashboard</CardTitle>
@@ -627,7 +625,7 @@ const CreateInspection = () => {
   return (
     <div className="w-full bg-gradient-to-b from-gray-50 to-white min-h-screen m-0 p-0">
       <Card className="border-none shadow-sm max-w-7xl mx-auto p-0 m-0 gap-0">
-        <CardHeader className="bg-gradient-to-r from-emerald-500 to-blue-500 text-white  px-4 py-1">
+        <CardHeader className="bg-gradient-to-r from-emerald-500 to-blue-500 text-white px-4 py-1">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
             <div className="flex flex-col">
               <CardTitle className="flex items-center gap-2 text-lg m-0 p-0">
@@ -641,7 +639,7 @@ const CreateInspection = () => {
                 )}
               </CardTitle>
 
-              <div className="flex flex-wrap items-center gap-x-4  mt-1 text-sm">
+              <div className="flex flex-wrap items-center gap-x-4 mt-1 text-sm">
                 <div className="flex items-center gap-1">
                   <User className="h-4 w-4 opacity-80" />
                   <span>{displayData.customerName}</span>
@@ -658,10 +656,12 @@ const CreateInspection = () => {
                 </div>
               </div>
             </div>
+
+          
           </div>
 
           {storeError && (
-            <div className="text-yellow-200 text-sm flex items-center  mt-1">
+            <div className="text-yellow-200 text-sm flex items-center mt-1">
               <Info className="h-4 w-4" />
               Error: {storeError}
             </div>
@@ -783,7 +783,7 @@ const CreateInspection = () => {
                       >
                         <AccordionTrigger className="px-4 py-3 hover:no-underline bg-gray-50 rounded-t-lg">
                           <div className="flex items-center gap-2">
-                            <Plus className="h-4 w-4 text-emerald-600" />
+                            <Ruler className="h-4 w-4 text-emerald-600" />
                             <span className="font-medium">Site Dimensions</span>
                           </div>
                         </AccordionTrigger>
@@ -967,14 +967,14 @@ const CreateInspection = () => {
                                                             <div
                                                               className="w-20 h-20 rounded-md overflow-hidden border border-gray-200 cursor-pointer"
                                                               onClick={() => {
-                                                                console.log(
-                                                                  "View image:",
-                                                                  media
+                                                                window.open(
+                                                                  `${ImageUrl}${media}`,
+                                                                  "_blank"
                                                                 );
                                                               }}
                                                             >
                                                               <img
-                                                                src={`${ImageUrl}/${media}`}
+                                                                src={`${ImageUrl}${media}`}
                                                                 alt={`Media ${
                                                                   mediaIndex + 1
                                                                 }`}
@@ -1080,7 +1080,7 @@ const CreateInspection = () => {
                                             {field.value ? (
                                               <div className="relative group">
                                                 <img
-                                                  src={`${ImageUrl}/${field.value}`}
+                                                  src={`${ImageUrl}${field.value}`}
                                                   alt={`Site Image ${
                                                     index + 1
                                                   }`}
@@ -1190,7 +1190,7 @@ const CreateInspection = () => {
                       </AccordionItem>
 
                       {/* Measurement Sketch Section */}
-                      {/* <AccordionItem
+                      <AccordionItem
                         value="media"
                         className="border border-gray-200 rounded-lg"
                       >
@@ -1206,131 +1206,146 @@ const CreateInspection = () => {
                           <FormField
                             control={form.control}
                             name="measurement_sketch"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel className="text-gray-700 text-sm font-medium">
-                                  Sketch File
-                                </FormLabel>
-                                <FormControl>
-                                  <div className="space-y-2">
-                                    <div className="flex flex-wrap gap-2">
-                                      {field.value && (
-                                        <div className="relative group">
-                                          {field.value.match(/\.(pdf)$/i) ? (
-                                            <div className="w-20 h-20 flex flex-col items-center justify-center border border-gray-200 rounded-lg p-2">
-                                              <FileText className="h-8 w-8 text-gray-400" />
-                                              <span className="text-xs mt-1 text-gray-600 truncate w-full text-center">
-                                                Sketch PDF
-                                              </span>
-                                            </div>
-                                          ) : (
-                                            <div className="w-20 h-20 rounded-lg border border-gray-200 overflow-hidden">
-                                              <img
-                                                src={
-                                                  field.value.startsWith("http")
-                                                    ? field.value
-                                                    : field.value.startsWith(
-                                                        "/"
-                                                      )
-                                                    ? `${ImageUrl}${field.value}`
-                                                    : `${ImageUrl}/${field.value}`
+                            render={({ field }) => {
+                              console.log(
+                                "Rendering measurement sketch field, current value:",
+                                field.value
+                              ); // Debug
+
+                              return (
+                                <FormItem>
+                                  <FormLabel className="text-gray-700 text-sm font-medium">
+                                    Sketch File
+                                  </FormLabel>
+                                  <FormControl>
+                                    <div className="space-y-2">
+                                      <div className="flex flex-wrap gap-2">
+                                        {field.value ? (
+                                          <div className="relative group">
+                                            {typeof field.value === "string" ? (
+                                              <>
+                                                {field.value.match(
+                                                  /\.(pdf)$/i
+                                                ) ? (
+                                                  <a
+                                                    href={`${ImageUrl}${field.value}`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="flex items-center gap-2 p-2 border border-gray-200 rounded-lg hover:bg-gray-50"
+                                                  >
+                                                    <FileText className="h-5 w-5 text-red-500" />
+                                                    <span>View Sketch PDF</span>
+                                                  </a>
+                                                ) : (
+                                                  <div className="w-20 h-20 rounded-lg border border-gray-200 overflow-hidden">
+                                                    <img
+                                                      src={`${ImageUrl}${field.value}`}
+                                                      alt="Measurement Sketch"
+                                                      className="w-full h-full object-cover"
+                                                      onError={(e) => {
+                                                        (
+                                                          e.target as HTMLImageElement
+                                                        ).src =
+                                                          "/placeholder-image.jpg";
+                                                      }}
+                                                    />
+                                                  </div>
+                                                )}
+                                              </>
+                                            ) : (
+                                              <div className="p-2 text-sm text-gray-500">
+                                                File selected:{" "}
+                                                {field.value.name}
+                                              </div>
+                                            )}
+                                            <button
+                                              type="button"
+                                              className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                              onClick={() => {
+                                                console.log(
+                                                  "Clearing measurement sketch"
+                                                );
+                                                field.onChange(undefined);
+                                              }}
+                                            >
+                                              <X className="h-3 w-3" />
+                                            </button>
+                                          </div>
+                                        ) : null}
+
+                                        <label
+                                          htmlFor="measurement-sketch"
+                                          className={`flex items-center justify-center gap-2 p-4 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors ${
+                                            uploading
+                                              ? "opacity-50 cursor-not-allowed"
+                                              : ""
+                                          }`}
+                                        >
+                                          <Upload className="h-5 w-5 text-gray-400" />
+                                          <span>
+                                            {field.value
+                                              ? "Change Sketch File"
+                                              : "Upload Measurement Sketch"}
+                                          </span>
+                                          <Input
+                                            type="file"
+                                            accept="image/*,application/pdf"
+                                            className="hidden"
+                                            id="measurement-sketch"
+                                            disabled={uploading}
+                                            onChange={async (e) => {
+                                              const file = e.target.files?.[0];
+                                              if (file) {
+                                                console.log(
+                                                  "File selected:",
+                                                  file.name
+                                                );
+                                                try {
+                                                  setUploading(true);
+                                                  const uploadedUrl =
+                                                    await uploadFile(file);
+                                                  console.log(
+                                                    "Upload successful, URL:",
+                                                    uploadedUrl
+                                                  );
+                                                  field.onChange(uploadedUrl);
+                                                } catch (error) {
+                                                  console.error(
+                                                    "Upload failed:",
+                                                    error
+                                                  );
+                                                  toast.error(
+                                                    "Failed to upload measurement sketch"
+                                                  );
+                                                } finally {
+                                                  setUploading(false);
                                                 }
-                                                alt="Uploaded Measurement Sketch"
-                                                className="w-full h-full object-cover"
-                                                onError={(e) => {
-                                                  console.error(
-                                                    "Failed to load image:",
-                                                    field.value
-                                                  );
-                                                  console.error(
-                                                    "Constructed URL:",
-                                                    field.value.startsWith(
-                                                      "http"
-                                                    )
-                                                      ? field.value
-                                                      : field.value.startsWith(
-                                                          "/"
-                                                        )
-                                                      ? `${ImageUrl}${field.value}`
-                                                      : `${ImageUrl}/${field.value}`
-                                                  );
-                                                  (
-                                                    e.target as HTMLImageElement
-                                                  ).src =
-                                                    "/placeholder-image.jpg";
-                                                }}
-                                              />
-                                            </div>
-                                          )}
-                                          <button
-                                            type="button"
-                                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                                            onClick={() => field.onChange("")}
-                                          >
-                                            <X className="h-3 w-3" />
-                                          </button>
+                                              }
+                                            }}
+                                          />
+                                        </label>
+                                      </div>
+
+                                      {uploading && (
+                                        <div className="space-y-1">
+                                          <Progress
+                                            value={uploadProgress}
+                                            className="h-2 bg-gray-100"
+                                          />
+                                          <p className="text-xs text-gray-500">
+                                            Uploading file...
+                                          </p>
                                         </div>
                                       )}
-
-                                      <label
-                                        htmlFor="measurement-sketch"
-                                        className={`w-20 h-20 flex items-center justify-center border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors ${
-                                          uploading
-                                            ? "opacity-50 cursor-not-allowed"
-                                            : ""
-                                        }`}
-                                      >
-                                        {field.value ? (
-                                          <Plus className="h-4 w-4 text-gray-400" />
-                                        ) : (
-                                          <Plus className="h-8 w-8 text-gray-400" />
-                                        )}
-                                        <Input
-                                          type="file"
-                                          accept="image/*,application/pdf"
-                                          onChange={async (e) => {
-                                            const files = e.target.files;
-                                            if (files && files.length > 0) {
-                                              try {
-                                                const uploadedUrl =
-                                                  await handleFileUpload(
-                                                    files[0],
-                                                    "measurement_sketch"
-                                                  );
-                                                console.log(
-                                                  "Uploaded URL for measurement sketch:",
-                                                  uploadedUrl
-                                                );
-                                                field.onChange(uploadedUrl);
-                                              } catch (error) {
-                                                console.error(
-                                                  "Failed to upload measurement sketch:",
-                                                  error
-                                                );
-                                              }
-                                            }
-                                          }}
-                                          className="hidden"
-                                          id="measurement-sketch"
-                                          disabled={uploading}
-                                        />
-                                      </label>
                                     </div>
-
-                                    {uploadProgress > 0 && (
-                                      <Progress
-                                        value={uploadProgress}
-                                        className="h-2 bg-gray-100"
-                                      />
-                                    )}
-                                  </div>
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              );
+                            }}
                           />
                         </AccordionContent>
-                      </AccordionItem> */}
+                      </AccordionItem>
 
                       {/* Notes Section */}
                       <AccordionItem
