@@ -6,7 +6,7 @@ import {
   CalendarIcon,
   Check,
   Edit,
-  FileText,
+  // FileText,
   Home,
   Image as ImageIcon,
   Info,
@@ -1190,7 +1190,7 @@ const CreateInspection = () => {
                       </AccordionItem>
 
                       {/* Measurement Sketch Section */}
-                      <AccordionItem
+                      {/* <AccordionItem
                         value="media"
                         className="border border-gray-200 rounded-lg"
                       >
@@ -1330,7 +1330,7 @@ const CreateInspection = () => {
                             )}
                           />
                         </AccordionContent>
-                      </AccordionItem>
+                      </AccordionItem> */}
 
                       {/* Notes Section */}
                       <AccordionItem
