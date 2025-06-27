@@ -37,6 +37,11 @@ interface SiteInspection {
     dimensionsunits: string;
     media: string;
   }>;
+
+  custom_site_images?: Array<{
+    image: string;
+    remarks: string;
+  }>;
   // Add other fields as needed
 }
 
