@@ -59,8 +59,6 @@ import { Textarea } from "../ui/textarea";
 //   SelectValue,
 // } from "../ui/select";
 
-
-
 const formSchema = z.object({
   inspection_date: z.date(),
   status: z
@@ -153,6 +151,9 @@ const uploadFile = async (
 const CreateInspection = () => {
   const ImageUrl =
     import.meta.env.VITE_IMAGEURL || "https://eits.thebigocommunity.org";
+  const cleanImageUrl = ImageUrl.endsWith("/")
+    ? ImageUrl.slice(0, -1)
+    : ImageUrl;
   const location = useLocation();
   const navigate = useNavigate();
   const { todo, inspection, mode = "create" } = location.state || {};
@@ -465,78 +466,78 @@ const CreateInspection = () => {
   };
 
   // Keep your existing single file upload function for backward compatibility
-  const handleFileUpload = async (
-    file: File,
-    fieldName: string,
-    index?: number
-  ) => {
-    if (!file) {
-      toast.error("No file selected");
-      return;
-    }
-    if (!(file instanceof File)) {
-      toast.error("Invalid file object");
-      return;
-    }
+  // const handleFileUpload = async (
+  //   file: File,
+  //   fieldName: string,
+  //   index?: number
+  // ) => {
+  //   if (!file) {
+  //     toast.error("No file selected");
+  //     return;
+  //   }
+  //   if (!(file instanceof File)) {
+  //     toast.error("Invalid file object");
+  //     return;
+  //   }
 
-    try {
-      setUploading(true);
-      setUploadProgress(0);
-      const toastId = toast.loading("Uploading file...", { id: "upload" });
+  //   try {
+  //     setUploading(true);
+  //     setUploadProgress(0);
+  //     const toastId = toast.loading("Uploading file...", { id: "upload" });
 
-      const maxSize = 10 * 1024 * 1024;
-      if (file.size > maxSize) {
-        throw new Error("File size exceeds 10MB limit");
-      }
+  //     const maxSize = 10 * 1024 * 1024;
+  //     if (file.size > maxSize) {
+  //       throw new Error("File size exceeds 10MB limit");
+  //     }
 
-      const allowedTypes = [
-        "image/jpeg",
-        "image/jpg",
-        "image/png",
-        "image/gif",
-        "application/pdf",
-      ];
-      if (!allowedTypes.includes(file.type)) {
-        throw new Error(
-          `File type "${file.type}" not supported. Please use JPEG, PNG, GIF, or PDF.`
-        );
-      }
+  //     const allowedTypes = [
+  //       "image/jpeg",
+  //       "image/jpg",
+  //       "image/png",
+  //       "image/gif",
+  //       "application/pdf",
+  //     ];
+  //     if (!allowedTypes.includes(file.type)) {
+  //       throw new Error(
+  //         `File type "${file.type}" not supported. Please use JPEG, PNG, GIF, or PDF.`
+  //       );
+  //     }
 
-      const fileUrl = await uploadFile(file, (progress) => {
-        setUploadProgress(progress);
-      });
+  //     const fileUrl = await uploadFile(file, (progress) => {
+  //       setUploadProgress(progress);
+  //     });
 
-      if (!fileUrl) {
-        throw new Error("File uploaded but no URL returned");
-      }
+  //     if (!fileUrl) {
+  //       throw new Error("File uploaded but no URL returned");
+  //     }
 
-      if (index !== undefined) {
-        form.setValue(`site_dimensions.${index}.media`, fileUrl);
-      } else {
-        form.setValue(fieldName as any, fileUrl);
-      }
+  //     if (index !== undefined) {
+  //       form.setValue(`site_dimensions.${index}.media`, fileUrl);
+  //     } else {
+  //       form.setValue(fieldName as any, fileUrl);
+  //     }
 
-      toast.dismiss(toastId);
-      toast.success(`File "${file.name}" uploaded successfully!`);
-      form.trigger(fieldName as any);
-    } catch (error) {
-      toast.dismiss("upload");
-      const errorMessage =
-        error instanceof Error ? error.message : "Failed to upload file";
-      toast.error(`Upload failed: ${errorMessage}`);
-      console.error("File upload error:", {
-        error,
-        file: {
-          name: file.name,
-          size: file.size,
-          type: file.type,
-        },
-      });
-    } finally {
-      setUploading(false);
-      setTimeout(() => setUploadProgress(0), 1000);
-    }
-  };
+  //     toast.dismiss(toastId);
+  //     toast.success(`File "${file.name}" uploaded successfully!`);
+  //     form.trigger(fieldName as any);
+  //   } catch (error) {
+  //     toast.dismiss("upload");
+  //     const errorMessage =
+  //       error instanceof Error ? error.message : "Failed to upload file";
+  //     toast.error(`Upload failed: ${errorMessage}`);
+  //     console.error("File upload error:", {
+  //       error,
+  //       file: {
+  //         name: file.name,
+  //         size: file.size,
+  //         type: file.type,
+  //       },
+  //     });
+  //   } finally {
+  //     setUploading(false);
+  //     setTimeout(() => setUploadProgress(0), 1000);
+  //   }
+  // };
 
   // Function to remove a specific image
   const removeCustomImage = (index: number) => {
@@ -1192,92 +1193,127 @@ const CreateInspection = () => {
                                           return (
                                             <FormItem>
                                               <FormLabel className="text-gray-700 text-sm">
-                                                Media
+                                                Media (Photos/Sketches)
                                               </FormLabel>
                                               <FormControl>
                                                 <div className="space-y-2">
-                                                  <label
-                                                    htmlFor={`media-${index}`}
-                                                    className={`flex flex-col items-center justify-center gap-1 p-2 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors ${
-                                                      uploading
-                                                        ? "opacity-50 cursor-not-allowed"
-                                                        : ""
-                                                    }`}
-                                                  >
-                                                    <Plus className="h-5 w-5 text-gray-400" />
-                                                    <span className="text-xs font-medium text-gray-600">
-                                                      {uploading
-                                                        ? "Uploading..."
-                                                        : "Add Media"}
-                                                    </span>
-                                                    <Input
-                                                      type="file"
-                                                      accept="image/*"
-                                                      multiple
-                                                      onChange={async (e) => {
-                                                        const files =
-                                                          e.target.files;
-                                                        if (
-                                                          files &&
-                                                          files.length > 0
-                                                        ) {
-                                                          const uploadedUrls: string[] =
-                                                            [];
-
-                                                          for (const file of Array.from(
-                                                            files
-                                                          )) {
-                                                            try {
-                                                              await handleFileUpload(
-                                                                file,
-                                                                "",
-                                                                index
-                                                              );
-                                                            } catch (error) {
-                                                              console.error(
-                                                                "Upload failed:",
-                                                                error
-                                                              );
-                                                              toast.error(
-                                                                `Failed to upload ${file.name}`
-                                                              );
-                                                            }
-                                                          }
-
+                                                  <div className="flex gap-2">
+                                                    <label
+                                                      htmlFor={`media-upload-${index}`}
+                                                      className={`flex-1 flex items-center justify-center gap-2 p-3 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors ${
+                                                        uploading
+                                                          ? "opacity-50 cursor-not-allowed"
+                                                          : ""
+                                                      }`}
+                                                    >
+                                                      <Upload className="h-5 w-5 text-gray-400" />
+                                                      <span className="text-sm">
+                                                        Upload
+                                                      </span>
+                                                      <Input
+                                                        type="file"
+                                                        accept="image/*"
+                                                        multiple
+                                                        className="hidden"
+                                                        id={`media-upload-${index}`}
+                                                        onChange={async (e) => {
                                                           if (
-                                                            uploadedUrls.length >
-                                                            0
+                                                            e.target.files &&
+                                                            e.target.files
+                                                              .length > 0
                                                           ) {
+                                                            const uploadedUrls: string[] =
+                                                              [];
+                                                            for (const file of Array.from(
+                                                              e.target.files
+                                                            )) {
+                                                              try {
+                                                                const url =
+                                                                  await uploadFile(
+                                                                    file
+                                                                  );
+                                                                uploadedUrls.push(
+                                                                  url
+                                                                );
+                                                              } catch (error) {
+                                                                console.error(
+                                                                  "Upload failed:",
+                                                                  error
+                                                                );
+                                                                toast.error(
+                                                                  `Failed to upload ${file.name}`
+                                                                );
+                                                              }
+                                                            }
                                                             field.onChange([
                                                               ...mediaArray,
                                                               ...uploadedUrls,
                                                             ]);
                                                           }
+                                                        }}
+                                                        disabled={uploading}
+                                                      />
+                                                    </label>
+
+                                                    <Button
+                                                      type="button"
+                                                      variant="outline"
+                                                      className="flex-1 gap-2"
+                                                      onClick={async () => {
+                                                        const imageUrl =
+                                                          await captureImageFromCamera();
+                                                        if (imageUrl) {
+                                                          try {
+                                                            setUploading(true);
+                                                            // Convert data URL to File object
+                                                            const response =
+                                                              await fetch(
+                                                                imageUrl as string
+                                                              );
+                                                            const blob =
+                                                              await response.blob();
+                                                            const file =
+                                                              new File(
+                                                                [blob],
+                                                                `camera-${Date.now()}.jpg`,
+                                                                {
+                                                                  type: "image/jpeg",
+                                                                }
+                                                              );
+                                                            const uploadedUrl =
+                                                              await uploadFile(
+                                                                file
+                                                              );
+                                                            field.onChange([
+                                                              ...mediaArray,
+                                                              uploadedUrl,
+                                                            ]);
+                                                          } catch (error) {
+                                                            toast.error(
+                                                              "Failed to upload camera image"
+                                                            );
+                                                          } finally {
+                                                            setUploading(false);
+                                                          }
                                                         }
                                                       }}
-                                                      className="hidden"
-                                                      id={`media-${index}`}
                                                       disabled={uploading}
-                                                    />
-                                                  </label>
-
-                                                  {uploadProgress > 0 && (
-                                                    <Progress
-                                                      value={uploadProgress}
-                                                      className="h-2 bg-gray-100"
-                                                    />
-                                                  )}
+                                                    >
+                                                      <Camera className="h-5 w-5" />
+                                                      <span>Camera</span>
+                                                    </Button>
+                                                  </div>
 
                                                   {mediaArray.length > 0 && (
-                                                    <div className="flex flex-wrap gap-2 mt-2">
+                                                    <div className="grid grid-cols-3 gap-2 mt-2">
                                                       {mediaArray.map(
                                                         (media, mediaIndex) => (
                                                           <div
                                                             key={mediaIndex}
-                                                            className="relative group"
+                                                            className="relative group aspect-square"
                                                           >
                                                             <div
-                                                              className="w-20 h-20 rounded-md overflow-hidden border border-gray-200 cursor-pointer"
+                                                              className="w-full h-full rounded-md overflow-hidden border border-gray-200 cursor-pointer"
                                                               onClick={() => {
                                                                 window.open(
                                                                   `${ImageUrl}${media}`,
@@ -1294,14 +1330,16 @@ const CreateInspection = () => {
                                                                 onError={(
                                                                   e
                                                                 ) => {
-                                                                  e.currentTarget.src =
+                                                                  (
+                                                                    e.target as HTMLImageElement
+                                                                  ).src =
                                                                     "/placeholder-image.jpg";
                                                                 }}
                                                               />
                                                             </div>
                                                             <button
                                                               type="button"
-                                                              className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                              className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
                                                               onClick={(e) => {
                                                                 e.stopPropagation();
                                                                 const updatedMedia =
@@ -1359,8 +1397,6 @@ const CreateInspection = () => {
                         </AccordionContent>
                       </AccordionItem>
 
-                      {/* Custom Site Images Section */}
-                      {/* Custom Site Images Section - Mobile Optimized */}
                       <AccordionItem
                         value="custom-images"
                         className="border border-gray-200 rounded-lg"
@@ -1569,70 +1605,28 @@ const CreateInspection = () => {
                             render={({ field }) => (
                               <FormItem>
                                 <FormLabel className="text-gray-700 text-sm font-medium">
-                                  Sketch File
+                                  Measurement Sketch
                                 </FormLabel>
                                 <FormControl>
-                                  <div className="space-y-2">
-                                    <div className="flex flex-wrap gap-2">
-                                      {field.value ? (
-                                        <div className="relative group">
-                                          {typeof field.value === "string" ? (
-                                            <>
-                                              {field.value.match(
-                                                /\.(pdf)$/i
-                                              ) ? (
-                                                <div className="flex items-center gap-2">
-                                                  <a
-                                                    href={`${ImageUrl}${field.value}`}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="flex items-center gap-2 p-2 border border-gray-200 rounded-lg hover:bg-gray-50"
-                                                  >
-                                                    <FileText className="h-5 w-5 text-red-500" />
-                                                    <span>View Sketch PDF</span>
-                                                  </a>
-                                                  <button
-                                                    type="button"
-                                                    className="p-2 text-red-500 hover:text-red-700"
-                                                    onClick={() =>
-                                                      field.onChange(undefined)
-                                                    }
-                                                  >
-                                                    <Trash2 className="h-5 w-5" />
-                                                  </button>
-                                                </div>
-                                              ) : (
-                                                <div className="relative">
-                                                  <div className="w-20 h-20 rounded-lg border border-gray-200 overflow-hidden">
-                                                    <img
-                                                      src={`${ImageUrl}${field.value}`}
-                                                      alt="Measurement Sketch"
-                                                      className="w-full h-full object-cover"
-                                                      onError={(e) => {
-                                                        (
-                                                          e.target as HTMLImageElement
-                                                        ).src =
-                                                          "/placeholder-image.jpg";
-                                                      }}
-                                                    />
-                                                  </div>
-                                                  <button
-                                                    type="button"
-                                                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                                                    onClick={() =>
-                                                      field.onChange(undefined)
-                                                    }
-                                                  >
-                                                    <X className="h-3 w-3" />
-                                                  </button>
-                                                </div>
-                                              )}
-                                            </>
-                                          ) : (
-                                            <div className="flex items-center gap-2">
-                                              <div className="p-2 text-sm text-gray-500">
-                                                File selected:{" "}
-                                                {field.value.name}
+                                  <div className="space-y-3">
+                                    {field.value && (
+                                      <div className="relative group">
+                                        {typeof field.value === "string" ? (
+                                          field.value.match(/\.(pdf)$/i) ? (
+                                            <div className="flex items-center gap-2 p-3 border border-gray-200 rounded-lg">
+                                              <FileText className="h-8 w-8 text-red-500" />
+                                              <div className="flex-1">
+                                                <p className="text-sm font-medium">
+                                                  PDF Sketch
+                                                </p>
+                                                <a
+                                                  href={`${ImageUrl}${field.value}`}
+                                                  target="_blank"
+                                                  rel="noopener noreferrer"
+                                                  className="text-xs text-blue-600 hover:underline"
+                                                >
+                                                  View PDF
+                                                </a>
                                               </div>
                                               <button
                                                 type="button"
@@ -1644,90 +1638,141 @@ const CreateInspection = () => {
                                                 <Trash2 className="h-5 w-5" />
                                               </button>
                                             </div>
-                                          )}
-                                        </div>
-                                      ) : null}
-
-                                      <div className="flex flex-col gap-2">
-                                        <label
-                                          htmlFor="measurement-sketch"
-                                          className={`flex items-center justify-center gap-2 p-4 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors ${
-                                            uploading
-                                              ? "opacity-50 cursor-not-allowed"
-                                              : ""
-                                          }`}
-                                        >
-                                          <Upload className="h-5 w-5 text-gray-400" />
-                                          <span>
-                                            {field.value
-                                              ? "Change Sketch File"
-                                              : "Upload Measurement Sketch"}
-                                          </span>
-                                          <Input
-                                            type="file"
-                                            accept="image/*,application/pdf"
-                                            className="hidden"
-                                            id="measurement-sketch"
-                                            disabled={uploading}
-                                            onChange={async (e) => {
-                                              const file = e.target.files?.[0];
-                                              if (file) {
-                                                try {
-                                                  setUploading(true);
-                                                  const uploadedUrl =
-                                                    await uploadFile(file);
-                                                  field.onChange(uploadedUrl);
-                                                } catch (error) {
-                                                  toast.error(
-                                                    "Failed to upload measurement sketch"
-                                                  );
-                                                } finally {
-                                                  setUploading(false);
+                                          ) : (
+                                            <div className="relative border border-gray-200 rounded-lg overflow-hidden">
+                                              <img
+                                                src={`${ImageUrl}${field.value}`}
+                                                alt="Measurement Sketch"
+                                                className="w-full h-48 object-contain bg-gray-50"
+                                                onError={(e) => {
+                                                  (
+                                                    e.target as HTMLImageElement
+                                                  ).src =
+                                                    "/placeholder-image.jpg";
+                                                }}
+                                              />
+                                              <button
+                                                type="button"
+                                                className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                onClick={() =>
+                                                  field.onChange(undefined)
                                                 }
+                                              >
+                                                <X className="h-4 w-4" />
+                                              </button>
+                                            </div>
+                                          )
+                                        ) : (
+                                          <div className="flex items-center gap-2 p-3 border border-gray-200 rounded-lg">
+                                            <FileText className="h-8 w-8 text-gray-400" />
+                                            <div className="flex-1">
+                                              <p className="text-sm font-medium">
+                                                {field.value.name}
+                                              </p>
+                                              <p className="text-xs text-gray-500">
+                                                {(
+                                                  field.value.size / 1024
+                                                ).toFixed(1)}{" "}
+                                                KB
+                                              </p>
+                                            </div>
+                                            <button
+                                              type="button"
+                                              className="p-2 text-red-500 hover:text-red-700"
+                                              onClick={() =>
+                                                field.onChange(undefined)
                                               }
-                                            }}
-                                          />
-                                        </label>
+                                            >
+                                              <Trash2 className="h-5 w-5" />
+                                            </button>
+                                          </div>
+                                        )}
+                                      </div>
+                                    )}
 
-                                        <button
-                                          type="button"
-                                          className="flex items-center justify-center gap-2 p-4 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
-                                          onClick={async () => {
-                                            try {
-                                              const imageData =
-                                                await captureImageFromCamera();
-                                              if (
-                                                imageData &&
-                                                typeof imageData === "string" &&
-                                                imageData.length > 0
-                                              ) {
+                                    <div className="flex flex-col gap-2">
+                                      <label
+                                        htmlFor="measurement-sketch-upload"
+                                        className={`flex items-center justify-center gap-2 p-4 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors ${
+                                          uploading
+                                            ? "opacity-50 cursor-not-allowed"
+                                            : ""
+                                        }`}
+                                      >
+                                        <Upload className="h-5 w-5 text-gray-400" />
+                                        <span className="text-sm font-medium">
+                                          {field.value
+                                            ? "Replace Sketch"
+                                            : "Upload Measurement Sketch"}
+                                        </span>
+                                        <Input
+                                          type="file"
+                                          accept="image/*,application/pdf"
+                                          className="hidden"
+                                          id="measurement-sketch-upload"
+                                          onChange={async (e) => {
+                                            const file = e.target.files?.[0];
+                                            if (file) {
+                                              try {
                                                 setUploading(true);
-                                                // Convert the captured image data to a file
-                                                const blob = await fetch(
-                                                  imageData
-                                                ).then((r) => r.blob());
-                                                const file = new File(
-                                                  [blob],
-                                                  "camera-capture.jpg",
-                                                  { type: blob.type }
-                                                );
                                                 const uploadedUrl =
                                                   await uploadFile(file);
                                                 field.onChange(uploadedUrl);
+                                              } catch (error) {
+                                                toast.error(
+                                                  "Failed to upload measurement sketch"
+                                                );
+                                              } finally {
+                                                setUploading(false);
                                               }
+                                            }
+                                          }}
+                                          disabled={uploading}
+                                        />
+                                      </label>
+
+                                      <Button
+                                        type="button"
+                                        variant="outline"
+                                        className="flex items-center justify-center gap-2"
+                                        onClick={async () => {
+                                          const imageUrl =
+                                            await captureImageFromCamera();
+                                          if (imageUrl) {
+                                            try {
+                                              setUploading(true);
+                                              // Convert data URL to File object
+                                              const response = await fetch(
+                                                typeof imageUrl === "string"
+                                                  ? imageUrl
+                                                  : ""
+                                              );
+                                              const blob =
+                                                await response.blob();
+                                              const file = new File(
+                                                [blob],
+                                                `sketch-${Date.now()}.jpg`,
+                                                {
+                                                  type: "image/jpeg",
+                                                }
+                                              );
+                                              const uploadedUrl =
+                                                await uploadFile(file);
+                                              field.onChange(uploadedUrl);
                                             } catch (error) {
                                               toast.error(
-                                                "Failed to capture image from camera"
+                                                "Failed to upload camera image"
                                               );
                                             } finally {
                                               setUploading(false);
                                             }
-                                          }}
-                                          disabled={uploading}
-                                        >
-                                          <Camera className="h-5 w-5 text-gray-400" />
-                                        </button>
-                                      </div>
+                                          }
+                                        }}
+                                        disabled={uploading}
+                                      >
+                                        <Camera className="h-5 w-5" />
+                                        <span>Capture from Camera</span>
+                                      </Button>
                                     </div>
 
                                     {uploading && (
@@ -1737,7 +1782,7 @@ const CreateInspection = () => {
                                           className="h-2 bg-gray-100"
                                         />
                                         <p className="text-xs text-gray-500">
-                                          Uploading file...
+                                          Uploading...
                                         </p>
                                       </div>
                                     )}
@@ -1855,186 +1900,214 @@ const CreateInspection = () => {
         </CardContent>
       </Card>
 
-      {selectedImageIndex !== null && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg max-w-lg w-full max-h-[90vh] overflow-y-auto">
-            {/* Modal Header */}
-            <div className="flex items-center justify-between p-4 border-b">
-              <h3 className="text-lg font-semibold">
-                Image {selectedImageIndex + 1} of {customImageFields.length}
-              </h3>
-              <button
-                type="button"
-                className="p-2 hover:bg-gray-100 rounded-full"
-                onClick={() => setSelectedImageIndex(null)}
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
+      {selectedImageIndex !== null &&
+        (console.log("Selected Image Index:", selectedImageIndex),
+        (
+          <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-lg max-w-lg w-full max-h-[90vh] overflow-y-auto">
+              {/* Modal Header */}
+              <div className="flex items-center justify-between p-4 border-b">
+                <h3 className="text-lg font-semibold">
+                  Image {selectedImageIndex + 1} of {customImageFields.length}
+                </h3>
+                <button
+                  type="button"
+                  className="p-2 hover:bg-gray-100 rounded-full"
+                  onClick={() => setSelectedImageIndex(null)}
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
 
-            {/* Modal Content */}
-            <div className="p-4 space-y-4">
-              {/* Image Display */}
-              <FormField
-                control={form.control}
-                name={`custom_site_images.${selectedImageIndex}.image`}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormControl>
-                      <div className="space-y-3">
-                        {field.value && (
-                          <div className="relative">
-                            <img
-                              src={`${ImageUrl}${field.value}`}
-                              alt={`Site Image ${selectedImageIndex + 1}`}
-                              className="w-full h-64 object-cover rounded-lg border border-gray-200"
-                            />
-                          </div>
-                        )}
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* Remarks Input */}
-              <FormField
-                control={form.control}
-                name={`custom_site_images.${selectedImageIndex}.remarks`}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-gray-700 text-sm font-medium">
-                      Remarks
-                    </FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="e.g., Front view, Damaged wall, etc."
-                        className="bg-white border-gray-300"
-                        {...field}
+              {/* Modal Content */}
+              <div className="p-4 space-y-4">
+                {/* Image Display */}
+                <div className="relative w-full h-96 flex items-center justify-center bg-gray-100 rounded-lg">
+                  {customImageFields[selectedImageIndex]?.image ? (
+                    (console.log(
+                      "Displaying Image:",
+                      customImageFields[selectedImageIndex].image
+                    ),
+                    (
+                      <img
+                        src={
+                          customImageFields[
+                            selectedImageIndex
+                          ]?.image?.startsWith("http")
+                            ? customImageFields[selectedImageIndex].image
+                            : `${cleanImageUrl}${
+                                customImageFields[
+                                  selectedImageIndex
+                                ]?.image?.startsWith("/")
+                                  ? ""
+                                  : "/"
+                              }${
+                                customImageFields[selectedImageIndex]?.image ||
+                                ""
+                              }`
+                        }
+                        alt={`Site Image ${selectedImageIndex + 1}`}
+                        className="max-w-full max-h-full object-contain"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.src = "/placeholder-image.jpg";
+                          target.classList.add("bg-gray-200");
+                        }}
                       />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                    ))
+                  ) : (
+                    <div className="text-gray-500 flex flex-col items-center">
+                      <ImageIcon className="h-12 w-12 mb-2" />
+                      <span>No image available</span>
+                    </div>
+                  )}
+                </div>
 
-              {/* Action Buttons */}
-              <div className="flex flex-col gap-2">
-                <div className="flex gap-2">
+                {/* Remarks Input */}
+                <FormField
+                  control={form.control}
+                  name={`custom_site_images.${selectedImageIndex}.remarks`}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-gray-700 text-sm font-medium">
+                        Remarks
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="e.g., Front view, Damaged wall, etc."
+                          className="bg-white border-gray-300"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Action Buttons */}
+                <div className="flex flex-col gap-2">
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="flex-1 text-blue-600 border-blue-200 hover:bg-blue-50"
+                      onClick={() => {
+                        document
+                          .getElementById(`replace-image-${selectedImageIndex}`)
+                          ?.click();
+                      }}
+                      disabled={uploading}
+                    >
+                      <Upload className="h-4 w-4 mr-2" />
+                      Replace
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="flex-1 text-green-600 border-green-200 hover:bg-green-50"
+                      onClick={async () => {
+                        const imageUrl = await captureImageFromCamera();
+                        if (
+                          typeof imageUrl === "string" &&
+                          imageUrl.length > 0
+                        ) {
+                          // Convert data URL to File object
+                          const response = await fetch(imageUrl);
+                          const blob = await response.blob();
+                          const file = new File(
+                            [blob],
+                            `camera-${Date.now()}.jpg`,
+                            { type: "image/jpeg" }
+                          );
+                          const fileList = new DataTransfer();
+                          fileList.items.add(file);
+                          replaceCustomImage(
+                            fileList.files,
+                            selectedImageIndex
+                          );
+                        }
+                      }}
+                      disabled={uploading}
+                    >
+                      <Camera className="h-4 w-4 mr-2" />
+                      Camera
+                    </Button>
+                  </div>
+
                   <Button
                     type="button"
                     variant="outline"
-                    className="flex-1 text-blue-600 border-blue-200 hover:bg-blue-50"
+                    className="w-full text-red-600 border-red-200 hover:bg-red-50"
                     onClick={() => {
-                      document
-                        .getElementById(`replace-image-${selectedImageIndex}`)
-                        ?.click();
-                    }}
-                    disabled={uploading}
-                  >
-                    <Upload className="h-4 w-4 mr-2" />
-                    Replace
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="flex-1 text-green-600 border-green-200 hover:bg-green-50"
-                    onClick={async () => {
-                      const imageUrl = await captureImageFromCamera();
-                      if (typeof imageUrl === "string" && imageUrl.length > 0) {
-                        // Convert data URL to File object
-                        const response = await fetch(imageUrl);
-                        const blob = await response.blob();
-                        const file = new File(
-                          [blob],
-                          `camera-${Date.now()}.jpg`,
-                          { type: "image/jpeg" }
-                        );
-                        const fileList = new DataTransfer();
-                        fileList.items.add(file);
-                        replaceCustomImage(fileList.files, selectedImageIndex);
+                      if (window.confirm("Remove this image?")) {
+                        removeCustomImage(selectedImageIndex);
+                        setSelectedImageIndex(null);
                       }
                     }}
                     disabled={uploading}
                   >
-                    <Camera className="h-4 w-4 mr-2" />
-                    Camera
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Remove Image
                   </Button>
                 </div>
 
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full text-red-600 border-red-200 hover:bg-red-50"
-                  onClick={() => {
-                    if (window.confirm("Remove this image?")) {
-                      removeCustomImage(selectedImageIndex);
-                      setSelectedImageIndex(null);
-                    }
-                  }}
-                  disabled={uploading}
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Remove Image
-                </Button>
+                {/* Navigation Buttons */}
+                {customImageFields.length > 1 && (
+                  <div className="flex justify-between pt-2 border-t">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() =>
+                        setSelectedImageIndex(
+                          Math.max(0, selectedImageIndex - 1)
+                        )
+                      }
+                      disabled={selectedImageIndex === 0}
+                    >
+                      <ChevronLeft className="h-4 w-4 mr-1" />
+                      Previous
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() =>
+                        setSelectedImageIndex(
+                          Math.min(
+                            customImageFields.length - 1,
+                            selectedImageIndex + 1
+                          )
+                        )
+                      }
+                      disabled={
+                        selectedImageIndex === customImageFields.length - 1
+                      }
+                    >
+                      Next
+                      <ChevronRight className="h-4 w-4 ml-1" />
+                    </Button>
+                  </div>
+                )}
               </div>
 
-              {/* Navigation Buttons */}
-              {customImageFields.length > 1 && (
-                <div className="flex justify-between pt-2 border-t">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() =>
-                      setSelectedImageIndex(Math.max(0, selectedImageIndex - 1))
-                    }
-                    disabled={selectedImageIndex === 0}
-                  >
-                    <ChevronLeft className="h-4 w-4 mr-1" />
-                    Previous
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() =>
-                      setSelectedImageIndex(
-                        Math.min(
-                          customImageFields.length - 1,
-                          selectedImageIndex + 1
-                        )
-                      )
-                    }
-                    disabled={
-                      selectedImageIndex === customImageFields.length - 1
-                    }
-                  >
-                    Next
-                    <ChevronRight className="h-4 w-4 ml-1" />
-                  </Button>
-                </div>
-              )}
+              {/* Hidden file input for replacement */}
+              <input
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="hidden"
+                id={`replace-image-${selectedImageIndex}`}
+                onChange={(e) => {
+                  if (e.target.files && e.target.files.length > 0) {
+                    replaceCustomImage(e.target.files, selectedImageIndex);
+                  }
+                }}
+                disabled={uploading}
+              />
             </div>
-
-            {/* Hidden file input for replacement */}
-            <input
-              type="file"
-              accept="image/*"
-              capture="environment"
-              className="hidden"
-              id={`replace-image-${selectedImageIndex}`}
-              onChange={(e) => {
-                if (e.target.files && e.target.files.length > 0) {
-                  replaceCustomImage(e.target.files, selectedImageIndex);
-                }
-              }}
-              disabled={uploading}
-            />
           </div>
-        </div>
-      )}
+        ))}
 
       <DeleteConfirmation
         text="Are you sure you want to delete this area dimension? This action cannot be undone."
