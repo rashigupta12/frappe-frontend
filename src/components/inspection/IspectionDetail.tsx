@@ -73,6 +73,7 @@ const CreateInspection = () => {
     fetchFirstInspectionByField,
     currentInspection,
     error: storeError,
+    UpdateLeadStatus,
   } = useInspectionStore();
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -131,10 +132,6 @@ useEffect(() => {
     setDataLoaded(false);
     let dataToPopulate = null;
     let isUpdate = false;
-
-    // Simple mode detection:
-    // 1. If we have an inspection object directly -> UPDATE mode
-    // 2. If we have a todo object -> CREATE mode (always)
     if (inspection) {
       // Direct inspection access -> Update mode
       isUpdate = true;
@@ -322,6 +319,7 @@ const handleSubmit = async (values: z.infer<typeof formSchema>) => {
     } else {
       // Create new inspection
       await createInspection(inspectionData, todo?.name);
+
       toast.success("Inspection created successfully!");
     }
 
@@ -352,6 +350,8 @@ const handleSubmit = async (values: z.infer<typeof formSchema>) => {
       setCancelling(true);
       if (todo?.name) {
         await updateTodoStatus(todo.name, "Cancelled");
+        await UpdateLeadStatus(todo.reference_name,"Lead")
+        
         toast.success("Todo cancelled successfully!");
         navigate("/inspector?tab=inspections");
       }

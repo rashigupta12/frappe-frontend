@@ -41,6 +41,7 @@ import { format } from "date-fns";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { cn } from "../../lib/utils";
 import { useAuth } from "../../context/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 type FormSection = {
   id: string;
@@ -149,6 +150,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({ isOpen, onClose, inquiry }) =
   const [inspectorEmail, setInspectorEmail] = useState("");
   const [hasFetchedInitialData, setHasFetchedInitialData] = useState(false);
   const [formData, setFormData] = useState<LeadFormData>({ ...defaultFormData });
+  const navigate = useNavigate()
 
   // Update section completion status
   const updatedSections = sections.map(section => {
@@ -373,6 +375,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({ isOpen, onClose, inquiry }) =
       });
 
       alert("Inspector assigned successfully!");
+      navigate("/sales?tab=assign")
       onClose();
     } catch (error) {
       console.error("Error assigning inspector:", error);

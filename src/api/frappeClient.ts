@@ -315,6 +315,9 @@ export const frappeAPI = {
   updateLead: async (leadId: string, leadData: Record<string, unknown>) => {
     return await frappeAPI.makeAuthenticatedRequest('PUT', `/api/resource/Lead/${leadId}`, leadData);
   },
+  updateLeadStatus:async(LeaId: string, status: string)=>{
+    return await frappeAPI.makeAuthenticatedRequest('PUT', `/api/resource/Lead/${LeaId}`, { status });
+  },
   ispectionUser: async () => {
     return await frappeAPI.makeAuthenticatedRequest('GET', `/api/resource/User`);
   },
