@@ -1,14 +1,15 @@
 import React from "react";
-import { Dialog, DialogContent, DialogOverlay } from "../../../ui/dialog"; // Assuming you have these from Shadcn UI
+import { Dialog, DialogContent, DialogOverlay, DialogTitle } from "../../../ui/dialog";
 import { Button } from "../../../ui/button";
-import { Mic, Trash2, X } from "lucide-react";
-import { type MediaItem } from "../utils/fileUpload"; // Adjust path as needed
+import { Mic, Trash2, X, Edit3, MessageSquare } from "lucide-react";
+import { type MediaItem } from "../utils/fileUpload";
 
 interface MediaPreviewModalProps {
   isOpen: boolean;
   onClose: () => void;
   media: MediaItem;
   onRemove: () => void;
+  onEditRemark?: () => void;
 }
 
 const MediaPreviewModal: React.FC<MediaPreviewModalProps> = ({
@@ -16,17 +17,23 @@ const MediaPreviewModal: React.FC<MediaPreviewModalProps> = ({
   onClose,
   media,
   onRemove,
+  onEditRemark,
 }) => {
   const imageurl = "https://eits.thebigocommunity.org";
+  
   if (!isOpen) return null;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogOverlay className="bg-black/70" />
+      <DialogOverlay className="bg-white/70" />
+      <DialogTitle className="sr-only">
+        Media Preview
+      </DialogTitle>
       <DialogContent className="sm:max-w-3xl md:max-w-4xl lg:max-w-5xl p-0 overflow-hidden rounded-lg">
-        <div className="relative w-full h-[70vh] bg-gray-900 flex items-center justify-center">
+        <div className="relative w-full h-[70vh]  flex items-center justify-center">
           {media.type === "image" && (
             <img
+              src={`${imageurl}${media.url}`}
               alt={media.remarks || "Media preview"}
               className="max-w-full max-h-full object-contain"
             />
@@ -52,6 +59,7 @@ const MediaPreviewModal: React.FC<MediaPreviewModalProps> = ({
             </div>
           )}
 
+          {/* Close button */}
           <Button
             variant="ghost"
             size="icon"
@@ -60,15 +68,56 @@ const MediaPreviewModal: React.FC<MediaPreviewModalProps> = ({
           >
             <X className="h-5 w-5" />
           </Button>
-          <Button
-            variant="destructive"
-            size="icon"
-            className="absolute bottom-2 left-2"
-            onClick={onRemove}
-          >
-            <Trash2 className="h-5 w-5" />
-          </Button>
+
+          {/* Action buttons */}
+          <div className="absolute bottom-2 left-2 flex gap-2">
+            {onEditRemark && (
+              <Button
+                variant="secondary"
+                size="icon"
+                className="bg-white/90 hover:bg-white text-gray-900"
+                onClick={onEditRemark}
+                title="Edit Remark"
+              >
+                <Edit3 className="h-5 w-5" />
+              </Button>
+            )}
+            <Button
+              variant="destructive"
+              size="icon"
+              onClick={onRemove}
+              title="Delete Media"
+            >
+              <Trash2 className="h-5 w-5" />
+            </Button>
+          </div>
         </div>
+
+        {/* Remarks section */}
+        {media.remarks && (
+          <div className="bg-white p-4 border-t border-gray-200">
+            <div className="flex items-start gap-3">
+              <MessageSquare className="h-5 w-5 text-gray-400 mt-0.5 flex-shrink-0" />
+              <div className="flex-1">
+                <h4 className="text-sm font-medium text-gray-700 mb-1">Remark</h4>
+                <p className="text-sm text-gray-600 leading-relaxed">
+                  {media.remarks}
+                </p>
+              </div>
+              {onEditRemark && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onEditRemark}
+                  className="text-blue-600 hover:text-blue-800 p-1"
+                  title="Edit Remark"
+                >
+                  <Edit3 className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );

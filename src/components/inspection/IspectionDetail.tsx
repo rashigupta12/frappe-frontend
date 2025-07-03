@@ -8,7 +8,7 @@ import {
   Info,
   Plus,
   Ruler,
-  Trash2,
+  Trash2
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react"; // Added useCallback, useRef
 import { useFieldArray, useForm } from "react-hook-form";
@@ -18,8 +18,6 @@ import * as z from "zod";
 import { frappeAPI } from "../../api/frappeClient";
 import DeleteConfirmation from "../../common/DeleteComfirmation";
 import { useInspectionStore } from "../../store/inspectionStore";
-import InspectionHeader from "./components/InspectionHeader";
-// Import the refactored utilities and new MediaUpload component
 import {
   formSchema,
   getMediaType,
@@ -45,18 +43,18 @@ import {
 } from "../ui/form";
 import { Input } from "../ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
-// Removed Progress import as it's handled internally by MediaUpload
-import MediaUpload from "./components/MediaUpload/MediaUpload";
 import { Textarea } from "../ui/textarea";
+import InspectionHeader from "./components/InspectionHeader";
+import MediaUpload from "./components/MediaUpload/MediaUpload";
 
 const CreateInspection = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { todo, inspection, mode = "create" } = location.state || {};
+  const { todo, inspection } = location.state || {};
 
   const [loading, setLoading] = useState(false);
   const [cancelling, setCancelling] = useState(false);
-  const [isUpdateMode, setIsUpdateMode] = useState(mode === "update");
+  const [isUpdateMode, setIsUpdateMode] = useState(false);
   const [dataLoaded, setDataLoaded] = useState(false);
   const [leadData, setLeadData] = useState<any>(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -98,10 +96,7 @@ const CreateInspection = () => {
     name: "site_dimensions",
   });
 
-  const { fields: customImageFields } = useFieldArray({
-    control: form.control,
-    name: "custom_site_images",
-  });
+
 
   const hasInitializedForm = useRef(false);
 
@@ -125,174 +120,219 @@ const CreateInspection = () => {
 
     return "Unknown Lead";
   }, [todo, inspection, leadData]);
-  useEffect(() => {
-    const initializeFormData = async () => {
-      if (
-        hasInitializedForm.current &&
-        ((todo && form.getValues("customer_name") === getCustomerName()) ||
-          (inspection && form.getValues("customer_name") === getCustomerName()))
-      ) {
-        return;
-      }
+  // Replace the existing useEffect with this simplified version
 
-      setDataLoaded(false);
-      let dataToPopulate = null;
-      let isUpdate = false;
+useEffect(() => {
+  const initializeFormData = async () => {
+    if (hasInitializedForm.current) {
+      return;
+    }
 
-      if (todo) {
-        form.setValue("customer_name", getCustomerName());
-        if (todo.inquiry_data?.custom_property_type) {
-          form.setValue(
-            "property_type",
-            todo.inquiry_data.custom_property_type
-          );
-        }
-        if (todo.reference_name) {
-          const fetchedInspection = await fetchFirstInspectionByField(
-            "lead",
-            todo.reference_name
-          );
-          dataToPopulate = fetchedInspection || todo;
-        } else {
-          dataToPopulate = todo;
-        }
-        isUpdate = !!dataToPopulate?.name;
-      } else if (inspection) {
-        dataToPopulate = inspection;
-        isUpdate = true;
-        if (inspection.lead) {
-          const fetchedLeadData = await fetchLeadData(inspection.lead);
-          setLeadData(fetchedLeadData);
-          if (fetchedLeadData?.custom_property_type) {
-            form.setValue(
-              "property_type",
-              fetchedLeadData.custom_property_type
-            );
-          }
-          form.setValue(
-            "customer_name",
-            fetchedLeadData?.lead_name ||
-              inspection.customer_name ||
-              "Unknown Lead"
-          );
-        }
-      } else if (currentInspection) {
-        dataToPopulate = currentInspection;
-        isUpdate = true;
-      } else {
-        navigate("/inspector?tab=inspections");
-        return;
-      }
+    setDataLoaded(false);
+    let dataToPopulate = null;
+    let isUpdate = false;
 
-      setIsUpdateMode(isUpdate);
-
-      if (dataToPopulate) {
-        // Set basic fields
-        if (dataToPopulate.inspection_date) {
-          try {
-            form.setValue(
-              "inspection_date",
-              parseISO(dataToPopulate.inspection_date)
-            );
-          } catch (error) {
-            console.error("Error parsing inspection date:", error);
-          }
+    // Simple mode detection:
+    // 1. If we have an inspection object directly -> UPDATE mode
+    // 2. If we have a todo object -> CREATE mode (always)
+    if (inspection) {
+      // Direct inspection access -> Update mode
+      isUpdate = true;
+      dataToPopulate = inspection;
+      
+      // Fetch lead data if needed
+      if (inspection.lead) {
+        const fetchedLeadData = await fetchLeadData(inspection.lead);
+        setLeadData(fetchedLeadData);
+        if (fetchedLeadData?.custom_property_type) {
+          form.setValue("property_type", fetchedLeadData.custom_property_type);
         }
-        form.setValue("inspection_time", dataToPopulate.inspection_time || "");
         form.setValue(
-          "property_type",
-          dataToPopulate.property_type || "Residential"
+          "customer_name",
+          fetchedLeadData?.lead_name || inspection.customer_name || "Unknown Lead"
         );
-        form.setValue(
-          "inspection_notes",
-          dataToPopulate.inspection_notes || ""
+      }
+    } else if (todo) {
+      // Todo -> Create mode (always create new inspection)
+      isUpdate = false;
+      dataToPopulate = todo;
+      
+      // Set customer name from todo
+      form.setValue("customer_name", getCustomerName());
+      
+      // Set property type if available
+      if (todo.inquiry_data?.custom_property_type) {
+        form.setValue("property_type", todo.inquiry_data.custom_property_type);
+      }
+      
+      // Optional: Check if there's an existing inspection for this lead
+      // This is just for informational purposes, we still create a new one
+      if (todo.reference_name) {
+        const existingInspection = await fetchFirstInspectionByField(
+          "lead",
+          todo.reference_name
         );
-        form.setValue("status", dataToPopulate.status || "Scheduled");
+        if (existingInspection) {
+          console.log("Note: Existing inspection found for this lead:", existingInspection);
+          // You could populate some fields from existing inspection if needed
+          // but still maintain CREATE mode
+        }
+      }
+    } else if (currentInspection) {
+      // Fallback to current inspection -> Update mode
+      isUpdate = true;
+      dataToPopulate = currentInspection;
+    } else {
+      // No data available, redirect
+      navigate("/inspector?tab=inspections");
+      return;
+    }
 
-        // Set measurement_sketch (MediaItem)
-        if (dataToPopulate.measurement_sketch) {
-          const mediaType = getMediaType(dataToPopulate.measurement_sketch);
-          if (mediaType !== "unknown") {
-            form.setValue("measurement_sketch", {
-              id: `sketch-${Date.now()}`,
-              url: dataToPopulate.measurement_sketch,
-              type: mediaType,
-              remarks: "Measurement Sketch",
-            } as MediaItem);
-          } else {
-            console.warn(
-              "Unknown media type for measurement sketch:",
-              dataToPopulate.measurement_sketch
-            );
-            form.setValue("measurement_sketch", undefined);
-          }
+    setIsUpdateMode(isUpdate);
+    console.log("Mode determined:", isUpdate ? "UPDATE" : "CREATE");
+    console.log("Data source:", inspection ? "inspection" : todo ? "todo" : "currentInspection");
+
+    // Populate form with data
+    if (dataToPopulate) {
+      // Set basic fields
+      if (dataToPopulate.inspection_date) {
+        try {
+          form.setValue("inspection_date", parseISO(dataToPopulate.inspection_date));
+        } catch (error) {
+          console.error("Error parsing inspection date:", error);
+        }
+      }
+      
+      form.setValue("inspection_time", dataToPopulate.inspection_time || "");
+      form.setValue("property_type", dataToPopulate.property_type || "Residential");
+      form.setValue("inspection_notes", dataToPopulate.inspection_notes || "");
+      form.setValue("status", dataToPopulate.status || "Scheduled");
+
+      // Set measurement_sketch (MediaItem)
+      if (dataToPopulate.measurement_sketch) {
+        const mediaType = getMediaType(dataToPopulate.measurement_sketch);
+        if (mediaType !== "unknown") {
+          form.setValue("measurement_sketch", {
+            id: `sketch-${Date.now()}`,
+            url: dataToPopulate.measurement_sketch,
+            type: mediaType,
+            remarks: "Measurement Sketch",
+          } as MediaItem);
         } else {
           form.setValue("measurement_sketch", undefined);
         }
-
-        // Set site_dimensions with MediaItem for media field
-        if (
-          dataToPopulate.site_dimensions &&
-          Array.isArray(dataToPopulate.site_dimensions)
-        ) {
-          const formattedDimensions = dataToPopulate.site_dimensions.map(
-            (dim: any) => ({
-              area_name: dim.area_name || "",
-              dimensionsunits: dim.dimensionsunits || "",
-              media: dim.media
-                ? ({
-                    id: `${dim.media.split("/").pop()}-${Math.random()
-                      .toString(36)
-                      .substr(2, 9)}`,
-                    url: dim.media,
-                    type: getMediaType(dim.media),
-                    remarks: dim.media.split("/").pop(),
-                  } as MediaItem)
-                : undefined,
-            })
-          );
-          replace(formattedDimensions);
-        } else {
-          replace([]);
-        }
-
-        // Set custom_site_images
-        if (
-          dataToPopulate.custom_site_images &&
-          Array.isArray(dataToPopulate.custom_site_images)
-        ) {
-          form.setValue(
-            "custom_site_images",
-            dataToPopulate.custom_site_images.map((img: any) => ({
-              id:
-                img.id ||
-                `${img.image.split("/").pop()}-${Math.random()
-                  .toString(36)
-                  .substr(2, 9)}`,
-              url: img.image || "",
-              type: getMediaType(img.image),
-              remarks: img.remarks || "",
-            }))
-          );
-        } else {
-          form.setValue("custom_site_images", []);
-        }
+      } else {
+        form.setValue("measurement_sketch", undefined);
       }
-      setDataLoaded(true);
-      hasInitializedForm.current = true;
+
+      // Set site_dimensions with MediaItem for media field
+      if (dataToPopulate.site_dimensions && Array.isArray(dataToPopulate.site_dimensions)) {
+        const formattedDimensions = dataToPopulate.site_dimensions.map((dim: any) => ({
+          area_name: dim.area_name || "",
+          dimensionsunits: dim.dimensionsunits || "",
+          media: dim.media
+            ? ({
+                id: `${dim.media.split("/").pop()}-${Math.random().toString(36).substr(2, 9)}`,
+                url: dim.media,
+                type: getMediaType(dim.media),
+                remarks: dim.media.split("/").pop(),
+              } as MediaItem)
+            : undefined,
+        }));
+        replace(formattedDimensions);
+      } else {
+        replace([]);
+      }
+
+      // Set custom_site_images
+      if (dataToPopulate.custom_site_images && Array.isArray(dataToPopulate.custom_site_images)) {
+        form.setValue(
+          "custom_site_images",
+          dataToPopulate.custom_site_images.map((img: any) => ({
+            id: img.id || `${img.image.split("/").pop()}-${Math.random().toString(36).substr(2, 9)}`,
+            url: img.image || "",
+            type: getMediaType(img.image),
+            remarks: img.remarks || "",
+          }))
+        );
+      } else {
+        form.setValue("custom_site_images", []);
+      }
+    }
+
+    setDataLoaded(true);
+    hasInitializedForm.current = true;
+  };
+
+  initializeFormData();
+}, [
+  todo,
+  inspection,
+  currentInspection,
+  getCustomerName,
+  form,
+  replace,
+  navigate,
+  fetchFirstInspectionByField,
+]);
+
+// Also update the handleSubmit function to be clearer
+const handleSubmit = async (values: z.infer<typeof formSchema>) => {
+  console.log("Form values before submission:", values);
+  console.log("Submission mode:", isUpdateMode ? "UPDATE" : "CREATE");
+
+  try {
+    setLoading(true);
+    const leadReference = todo?.reference_name || inspection?.lead;
+    const customerName = getCustomerName();
+
+    // Extract URLs from MediaItems
+    const measurementSketchUrl = values.measurement_sketch?.url || undefined;
+    const siteDimensionsWithUrls = values.site_dimensions?.map((dim) => ({
+      area_name: dim.area_name,
+      dimensionsunits: dim.dimensionsunits,
+      media: dim.media?.url || "",
+    }));
+    const customSiteImagesWithUrls = values.custom_site_images
+      ?.filter((img) => typeof img.url === "string")
+      ?.map((img) => ({
+        image: img.url,
+        remarks: img.remarks ?? "",
+      }));
+
+    const inspectionData = {
+      ...values,
+      status: isUpdateMode ? (inspection?.status || "In Progress") : "In Progress",
+      lead: leadReference,
+      customer_name: customerName,
+      inspection_date: format(values.inspection_date, "yyyy-MM-dd"),
+      inspection_time: values.inspection_time,
+      doctype: "SiteInspection",
+      measurement_sketch: measurementSketchUrl,
+      site_dimensions: siteDimensionsWithUrls,
+      custom_site_images: customSiteImagesWithUrls,
     };
 
-    initializeFormData();
-  }, [
-    todo,
-    inspection,
-    currentInspection,
-    getCustomerName,
-    form,
-    replace, // Now this is safely available
-    navigate,
-    fetchFirstInspectionByField,
-  ]);
+    console.log("Final submission data:", inspectionData);
+
+    if (isUpdateMode && inspection?.name) {
+      // Update existing inspection
+      await updateInspectionbyId(inspection.name, inspectionData);
+      toast.success("Inspection updated successfully!");
+    } else {
+      // Create new inspection
+      await createInspection(inspectionData, todo?.name);
+      toast.success("Inspection created successfully!");
+    }
+
+    navigate("/inspector?tab=inspections");
+  } catch (error) {
+    console.error("Submission error:", error);
+    toast.error(`Failed to ${isUpdateMode ? "update" : "create"} inspection.`);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const fetchLeadData = async (leadName: string) => {
     try {
@@ -305,70 +345,7 @@ const CreateInspection = () => {
     }
   };
 
-  const handleSubmit = async (values: z.infer<typeof formSchema>) => {
-    console.log("Form values before submission:", values);
 
-    try {
-      setLoading(true);
-      const inspectionToUpdate = inspection || currentInspection;
-      const leadReference = todo?.reference_name || inspection?.lead;
-      const customerName = getCustomerName();
-
-      // Fix: Properly extract URL from MediaItem for measurement_sketch
-      const measurementSketchUrl = values.measurement_sketch?.url || undefined;
-
-      // Fix: Properly extract URLs from MediaItems for site_dimensions
-      const siteDimensionsWithUrls = values.site_dimensions?.map((dim) => ({
-        area_name: dim.area_name,
-        dimensionsunits: dim.dimensionsunits,
-        media: dim.media?.url || "", // Extract URL from MediaItem
-      }));
-
-      const customSiteImagesWithUrls = values.custom_site_images
-        ?.filter((img) => typeof img.url === "string")
-        ?.map((img) => ({
-          image: img.url,
-          remarks: img.remarks ?? "",
-        }));
-
-      const inspectionData = {
-        ...values,
-        status: isUpdateMode
-          ? inspectionToUpdate?.status || "In Progress"
-          : "In Progress",
-        lead: leadReference,
-        customer_name: customerName,
-        inspection_date: format(values.inspection_date, "yyyy-MM-dd"),
-        inspection_time: values.inspection_time,
-        doctype: "SiteInspection",
-        measurement_sketch: measurementSketchUrl,
-        site_dimensions: siteDimensionsWithUrls,
-        custom_site_images: customSiteImagesWithUrls,
-      };
-
-      console.log("Final submission data:", inspectionData);
-
-      if (isUpdateMode && inspectionToUpdate?.name) {
-        await updateInspectionbyId(inspectionToUpdate.name, inspectionData);
-        toast.success("Inspection updated successfully!");
-        if (todo?.name) {
-          await updateTodoStatus(todo.name, "Completed");
-        }
-        navigate("/inspector?tab=inspections");
-      } else {
-        await createInspection(inspectionData, todo?.name);
-        toast.success("Inspection created successfully!");
-        navigate("/inspector?tab=inspections");
-      }
-    } catch (error) {
-      console.error("Submission error:", error);
-      toast.error(
-        `Failed to ${isUpdateMode ? "update" : "create"} inspection.`
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleCancelTodo = async () => {
     try {
@@ -386,25 +363,29 @@ const CreateInspection = () => {
     }
   };
 
-  const getDisplayData = () => {
-    const customerName = getCustomerName();
-    if (todo) {
-      return {
-        customerName,
-        leadDetails: todo.inquiry_data,
-        showTodoActions: true,
-      };
-    } else if (inspection) {
-      return {
-        customerName:
-          leadData?.lead_name || inspection.customer_name || customerName,
-        leadDetails: leadData,
-        showTodoActions: false,
-      };
-    }
-    return null;
+const getDisplayData = () => {
+  const customerName = getCustomerName();
+  if (todo) {
+    return {
+      customerName,
+      leadDetails: todo.inquiry_data,
+      showTodoActions: true,
+    };
+  } else if (inspection) {
+    return {
+      customerName:
+        leadData?.lead_name || inspection.customer_name || customerName,
+      leadDetails: leadData,
+      showTodoActions: false,
+    };
+  }
+  // Return a fallback object instead of null
+  return {
+    customerName: customerName || "Unknown Customer",
+    leadDetails: null,
+    showTodoActions: false,
   };
-
+};
   const displayData = getDisplayData();
 
   const handleDeleteAreaDimension = (
@@ -437,16 +418,57 @@ const CreateInspection = () => {
       </div>
     );
   }
-
+console.log("Display Data:", displayData);
+console.log("is update" ,isUpdateMode)
   return (
     <div className="w-full bg-gradient-to-b from-gray-50 to-white min-h-screen m-0 p-0">
       <Card className="border-none shadow-sm max-w-7xl mx-auto p-0 m-0 gap-0">
-        <InspectionHeader
+        {/* <CardHeader className="bg-gradient-to-r from-emerald-500 to-blue-500 text-white px-4 py-1">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+            <div className="flex flex-col">
+              <CardTitle className="flex items-center gap-2 text-lg m-0 p-0">
+
+                {isUpdateMode ? (
+                  <>
+                    <Edit className="h-4 w-4" />
+                    <span>Update Inspection</span>
+                  </>
+                ) : (
+                  <span>Create Inspection</span>
+                )}
+              </CardTitle>
+
+              <div className="flex flex-wrap items-center gap-x-4 mt-1 text-sm">
+                <div className="flex items-center gap-1">
+                  <User className="h-4 w-4 opacity-80" />
+                  <span>{displayData.customerName}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Phone className="h-4 w-4 opacity-80" />
+                  <span>{displayData.leadDetails?.mobile_no || "N/A"}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Home className="h-4 w-4 opacity-80" />
+                  <span>
+                    {displayData.leadDetails?.custom_property_type || "N/A"}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {storeError && (
+            <div className="text-yellow-200 text-sm flex items-center mt-1">
+              <Info className="h-4 w-4" />
+              Error: {storeError}
+            </div>
+          )}
+        </CardHeader> */}
+   <InspectionHeader
           isUpdateMode={isUpdateMode}
           displayData={displayData}
           storeError={storeError}
         />
-
         <CardContent className="p-0 m-0">
           <div className="flex flex-col">
             <div className="flex-1">
@@ -650,7 +672,7 @@ const CreateInspection = () => {
                                         />
                                       </div>
 
-                                      {/* Site Dimensions Media Upload - Only ONE file */}
+                                      {/* Site Dimensions Media Upload - Only ONE file and image/vedio(both select and caputer) */}
                                       <FormField
                                         control={form.control}
                                         name={`site_dimensions.${index}.media`}
@@ -698,7 +720,7 @@ const CreateInspection = () => {
                         </AccordionContent>
                       </AccordionItem>
 
-                      {/* Custom Images Section (Multiple images, videos, audio) */}
+                      {/* Custom Images Section (Multiple images, videos, audio)  */}
                       <AccordionItem
                         value="custom-images"
                         className="border border-gray-200 rounded-lg"
@@ -732,51 +754,11 @@ const CreateInspection = () => {
                             )}
                           />
 
-                          {/* Remarks for each custom image (if needed - currently handled by MediaItem remarks) */}
-                          {/* You could add an "Edit" button on each thumbnail to open a modal for remarks */}
-                          {customImageFields.length > 0 && (
-                            <div className="mt-4 border-t pt-4">
-                              <h4 className="text-md font-semibold mb-2">
-                                Media Remarks (Optional)
-                              </h4>
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {customImageFields.map((field, index) => (
-                                  <FormField
-                                    key={field.id}
-                                    control={form.control}
-                                    name={`custom_site_images.${index}.remarks`}
-                                    render={({ field: remarksField }) => (
-                                      <FormItem>
-                                        <FormLabel className="text-gray-700 text-sm">
-                                          Remarks for "
-                                          {form.watch(
-                                            `custom_site_images.${index}.remarks`
-                                          )}
-                                          "
-                                        </FormLabel>
-                                        <FormControl>
-                                          <Input
-                                            placeholder={`Remarks for ${getMediaType(
-                                              form.watch(
-                                                `custom_site_images.${index}.url`
-                                              )
-                                            )}`}
-                                            className="bg-white border-gray-300 h-9"
-                                            {...remarksField}
-                                          />
-                                        </FormControl>
-                                        <FormMessage />
-                                      </FormItem>
-                                    )}
-                                  />
-                                ))}
-                              </div>
-                            </div>
-                          )}
+                        
                         </AccordionContent>
                       </AccordionItem>
 
-                      {/* Measurement Sketch Section (Single Image/Video) */}
+                      {/* Measurement Sketch Section (Single Image/Video) selection / caputer */}
                       <AccordionItem
                         value="measurement-sketch"
                         className="border border-gray-200 rounded-lg"
