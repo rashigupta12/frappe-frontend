@@ -18,6 +18,7 @@ interface TodoItem {
 }
 
 interface SiteInspection {
+  customer_name: string;
   owner: string;
   creation: string;
   modified: string;

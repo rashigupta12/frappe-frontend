@@ -171,7 +171,7 @@ const MobileSiteInspectionList = ({ userEmail }: InspectionListProps) => {
     const matchesStatus = selectedStatus === "all" || inspection.inspection_status === selectedStatus;
     const matchesSearch = searchTerm === "" || 
       (
-        // inspection.customer_name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        inspection.customer_name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
        inspection.lead?.toLowerCase().includes(searchTerm.toLowerCase()) ||
        inspection.property_type?.toLowerCase().includes(searchTerm.toLowerCase()) ||
        inspection.inspection_id?.toLowerCase().includes(searchTerm.toLowerCase()));
@@ -316,12 +316,12 @@ const MobileSiteInspectionList = ({ userEmail }: InspectionListProps) => {
 
                 {/* Info Grid */}
                 <div className="grid grid-cols-2 gap-2 text-xs">
-                  {/* <div className="flex items-center space-x-1">
+                  <div className="flex items-center space-x-1">
                     <span className="text-gray-400">👤</span>
                     <span className="text-gray-600 truncate">
                       {inspection.customer_name || "N/A"}
                     </span>
-                  </div> */}
+                  </div>
                   <div className="flex items-center space-x-1">
                     <span className="text-gray-400">🏠</span>
                     <span className="text-gray-600 truncate">
