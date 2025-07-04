@@ -25,17 +25,18 @@ const MediaPreviewModal: React.FC<MediaPreviewModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogOverlay className="bg-white/70" />
+      <DialogOverlay className="bg-black/70" />
       <DialogTitle className="sr-only">
         Media Preview
       </DialogTitle>
       <DialogContent className="sm:max-w-3xl md:max-w-4xl lg:max-w-5xl p-0 overflow-hidden rounded-lg">
-        <div className="relative w-full h-[70vh]  flex items-center justify-center">
+        <div className="relative w-full h-[70vh] flex items-center justify-center">
           {media.type === "image" && (
             <img
               src={`${imageurl}${media.url}`}
               alt={media.remarks || "Media preview"}
               className="max-w-full max-h-full object-contain"
+              style={{ touchAction: 'manipulation' }}
             />
           )}
           {media.type === "video" && (
