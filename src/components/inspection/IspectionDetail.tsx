@@ -10,7 +10,7 @@ import {
   Ruler,
   Trash2
 } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react"; // Added useCallback, useRef
+import { useEffect, useRef, useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { toast } from "react-hot-toast";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -61,6 +61,7 @@ const CreateInspection = () => {
   const [dimensionToDelete, setDimensionToDelete] = useState<number | null>(
     null
   );
+  
   console.log("CreateInspection component initialized");
   console.log("Todo:", todo);
   console.log("Inspection:", inspection);
@@ -81,9 +82,8 @@ const CreateInspection = () => {
     defaultValues: {
       inspection_date: new Date(),
       inspection_time: "",
-      customer_name: "",
       property_type: "Residential",
-      status: "Scheduled",
+      inspection_status: "Scheduled",
       measurement_sketch: undefined,
       inspection_notes: "",
       site_dimensions: [],
@@ -91,246 +91,211 @@ const CreateInspection = () => {
     },
   });
 
-  // Fix: Move useFieldArray declarations BEFORE useEffect
   const { fields, append, remove, replace } = useFieldArray({
     control: form.control,
     name: "site_dimensions",
   });
 
-
-
   const hasInitializedForm = useRef(false);
 
-  const getCustomerName = useCallback(() => {
-    if (todo?.inquiry_data) {
-      if (todo.inquiry_data.lead_name) {
-        return todo.inquiry_data.lead_name;
+  useEffect(() => {
+    const initializeFormData = async () => {
+      if (hasInitializedForm.current) {
+        return;
       }
-      const firstName = todo.inquiry_data.first_name || "";
-      const lastName = todo.inquiry_data.last_name || "";
-      return `${firstName} ${lastName}`.trim() || "Unknown Lead";
-    }
 
-    if (leadData?.lead_name) {
-      return leadData.lead_name;
-    }
-
-    if (inspection?.customer_name) {
-      return inspection.customer_name;
-    }
-
-    return "Unknown Lead";
-  }, [todo, inspection, leadData]);
-  // Replace the existing useEffect with this simplified version
-
-useEffect(() => {
-  const initializeFormData = async () => {
-    if (hasInitializedForm.current) {
-      return;
-    }
-
-    setDataLoaded(false);
-    let dataToPopulate = null;
-    let isUpdate = false;
-    if (inspection) {
-      // Direct inspection access -> Update mode
-      isUpdate = true;
-      dataToPopulate = inspection;
+      setDataLoaded(false);
+      let dataToPopulate = null;
+      let isUpdate = false;
       
-      // Fetch lead data if needed
-      if (inspection.lead) {
-        const fetchedLeadData = await fetchLeadData(inspection.lead);
-        setLeadData(fetchedLeadData);
-        if (fetchedLeadData?.custom_property_type) {
-          form.setValue("property_type", fetchedLeadData.custom_property_type);
+      if (inspection) {
+        // Direct inspection access -> Update mode
+        isUpdate = true;
+        dataToPopulate = inspection;
+        
+        // Fetch lead data if needed
+        if (inspection.lead) {
+          const fetchedLeadData = await fetchLeadData(inspection.lead);
+          setLeadData(fetchedLeadData);
+          if (fetchedLeadData?.custom_property_type) {
+            form.setValue("property_type", fetchedLeadData.custom_property_type);
+          }
         }
-        form.setValue(
-          "customer_name",
-          fetchedLeadData?.lead_name || inspection.customer_name || "Unknown Lead"
-        );
-      }
-    } else if (todo) {
-      // Todo -> Create mode (always create new inspection)
-      isUpdate = false;
-      dataToPopulate = todo;
-      
-      // Set customer name from todo
-      form.setValue("customer_name", getCustomerName());
-      
-      // Set property type if available
-      if (todo.inquiry_data?.custom_property_type) {
-        form.setValue("property_type", todo.inquiry_data.custom_property_type);
-      }
-      
-      // Optional: Check if there's an existing inspection for this lead
-      // This is just for informational purposes, we still create a new one
-      if (todo.reference_name) {
-        const existingInspection = await fetchFirstInspectionByField(
-          "lead",
-          todo.reference_name
-        );
-        if (existingInspection) {
-          console.log("Note: Existing inspection found for this lead:", existingInspection);
-          // You could populate some fields from existing inspection if needed
-          // but still maintain CREATE mode
+      } else if (todo) {
+        // Todo -> Create mode (always create new inspection)
+        isUpdate = false;
+        dataToPopulate = todo;
+        
+        
+        // Set property type if available
+        if (todo.inquiry_data?.custom_property_type) {
+          form.setValue("property_type", todo.inquiry_data.custom_property_type);
         }
-      }
-    } else if (currentInspection) {
-      // Fallback to current inspection -> Update mode
-      isUpdate = true;
-      dataToPopulate = currentInspection;
-    } else {
-      // No data available, redirect
-      navigate("/inspector?tab=inspections");
-      return;
-    }
-
-    setIsUpdateMode(isUpdate);
-    console.log("Mode determined:", isUpdate ? "UPDATE" : "CREATE");
-    console.log("Data source:", inspection ? "inspection" : todo ? "todo" : "currentInspection");
-
-    // Populate form with data
-    if (dataToPopulate) {
-      // Set basic fields
-      if (dataToPopulate.inspection_date) {
-        try {
-          form.setValue("inspection_date", parseISO(dataToPopulate.inspection_date));
-        } catch (error) {
-          console.error("Error parsing inspection date:", error);
+        
+        // Optional: Check if there's an existing inspection for this lead
+        if (todo.reference_name) {
+          const existingInspection = await fetchFirstInspectionByField(
+            "lead",
+            todo.reference_name
+          );
+          if (existingInspection) {
+            console.log("Note: Existing inspection found for this lead:", existingInspection);
+          }
         }
+      } else if (currentInspection) {
+        // Fallback to current inspection -> Update mode
+        isUpdate = true;
+        dataToPopulate = currentInspection;
+      } else {
+        // No data available, redirect
+        navigate("/inspector?tab=inspections");
+        return;
       }
-      
-      form.setValue("inspection_time", dataToPopulate.inspection_time || "");
-      form.setValue("property_type", dataToPopulate.property_type || "Residential");
-      form.setValue("inspection_notes", dataToPopulate.inspection_notes || "");
-      form.setValue("status", dataToPopulate.status || "Scheduled");
 
-      // Set measurement_sketch (MediaItem)
-      if (dataToPopulate.measurement_sketch) {
-        const mediaType = getMediaType(dataToPopulate.measurement_sketch);
-        if (mediaType !== "unknown") {
-          form.setValue("measurement_sketch", {
-            id: `sketch-${Date.now()}`,
-            url: dataToPopulate.measurement_sketch,
-            type: mediaType,
-            remarks: "Measurement Sketch",
-          } as MediaItem);
+      setIsUpdateMode(isUpdate);
+      console.log("Mode determined:", isUpdate ? "UPDATE" : "CREATE");
+      console.log("Data source:", inspection ? "inspection" : todo ? "todo" : "currentInspection");
+
+      // Populate form with data
+      if (dataToPopulate) {
+        // Set basic fields
+        if (dataToPopulate.inspection_date) {
+          try {
+            form.setValue("inspection_date", parseISO(dataToPopulate.inspection_date));
+          } catch (error) {
+            console.error("Error parsing inspection date:", error);
+          }
+        }
+        
+        form.setValue("inspection_time", dataToPopulate.inspection_time || "");
+        form.setValue("property_type", dataToPopulate.property_type || "Residential");
+        form.setValue("inspection_notes", dataToPopulate.inspection_notes || "");
+        form.setValue("inspection_status", dataToPopulate.status || "Scheduled");
+
+        // Set measurement_sketch (MediaItem)
+        if (dataToPopulate.measurement_sketch) {
+          const mediaType = getMediaType(dataToPopulate.measurement_sketch);
+          if (mediaType !== "unknown") {
+            form.setValue("measurement_sketch", {
+              id: `sketch-${Date.now()}`,
+              url: dataToPopulate.measurement_sketch,
+              type: mediaType,
+              remarks: "Measurement Sketch",
+            } as MediaItem);
+          } else {
+            form.setValue("measurement_sketch", undefined);
+          }
         } else {
           form.setValue("measurement_sketch", undefined);
         }
-      } else {
-        form.setValue("measurement_sketch", undefined);
+
+        // Set site_dimensions with MediaItem for media field
+        if (dataToPopulate.site_dimensions && Array.isArray(dataToPopulate.site_dimensions)) {
+          const formattedDimensions = dataToPopulate.site_dimensions.map((dim: any) => ({
+            area_name: dim.area_name || "",
+            dimensionsunits: dim.dimensionsunits || "",
+            media: dim.media
+              ? ({
+                  id: `${dim.media.split("/").pop()}-${Math.random().toString(36).substr(2, 9)}`,
+                  url: dim.media,
+                  type: getMediaType(dim.media),
+                  remarks: dim.media.split("/").pop(),
+                } as MediaItem)
+              : undefined,
+          }));
+          replace(formattedDimensions);
+        } else {
+          replace([]);
+        }
+
+        // Set custom_site_images
+        if (dataToPopulate.custom_site_images && Array.isArray(dataToPopulate.custom_site_images)) {
+          form.setValue(
+            "custom_site_images",
+            dataToPopulate.custom_site_images.map((img: any) => ({
+              id: img.id || `${img.image.split("/").pop()}-${Math.random().toString(36).substr(2, 9)}`,
+              url: img.image || "",
+              type: getMediaType(img.image),
+              remarks: img.remarks || "",
+            }))
+          );
+        } else {
+          form.setValue("custom_site_images", []);
+        }
       }
 
-      // Set site_dimensions with MediaItem for media field
-      if (dataToPopulate.site_dimensions && Array.isArray(dataToPopulate.site_dimensions)) {
-        const formattedDimensions = dataToPopulate.site_dimensions.map((dim: any) => ({
-          area_name: dim.area_name || "",
-          dimensionsunits: dim.dimensionsunits || "",
-          media: dim.media
-            ? ({
-                id: `${dim.media.split("/").pop()}-${Math.random().toString(36).substr(2, 9)}`,
-                url: dim.media,
-                type: getMediaType(dim.media),
-                remarks: dim.media.split("/").pop(),
-              } as MediaItem)
-            : undefined,
-        }));
-        replace(formattedDimensions);
-      } else {
-        replace([]);
-      }
-
-      // Set custom_site_images
-      if (dataToPopulate.custom_site_images && Array.isArray(dataToPopulate.custom_site_images)) {
-        form.setValue(
-          "custom_site_images",
-          dataToPopulate.custom_site_images.map((img: any) => ({
-            id: img.id || `${img.image.split("/").pop()}-${Math.random().toString(36).substr(2, 9)}`,
-            url: img.image || "",
-            type: getMediaType(img.image),
-            remarks: img.remarks || "",
-          }))
-        );
-      } else {
-        form.setValue("custom_site_images", []);
-      }
-    }
-
-    setDataLoaded(true);
-    hasInitializedForm.current = true;
-  };
-
-  initializeFormData();
-}, [
-  todo,
-  inspection,
-  currentInspection,
-  getCustomerName,
-  form,
-  replace,
-  navigate,
-  fetchFirstInspectionByField,
-]);
-
-// Also update the handleSubmit function to be clearer
-const handleSubmit = async (values: z.infer<typeof formSchema>) => {
-  console.log("Form values before submission:", values);
-  console.log("Submission mode:", isUpdateMode ? "UPDATE" : "CREATE");
-
-  try {
-    setLoading(true);
-    const leadReference = todo?.reference_name || inspection?.lead;
-    const customerName = getCustomerName();
-
-    // Extract URLs from MediaItems
-    const measurementSketchUrl = values.measurement_sketch?.url || undefined;
-    const siteDimensionsWithUrls = values.site_dimensions?.map((dim) => ({
-      area_name: dim.area_name,
-      dimensionsunits: dim.dimensionsunits,
-      media: dim.media?.url || "",
-    }));
-    const customSiteImagesWithUrls = values.custom_site_images
-      ?.filter((img) => typeof img.url === "string")
-      ?.map((img) => ({
-        image: img.url,
-        remarks: img.remarks ?? "",
-      }));
-
-    const inspectionData = {
-      ...values,
-      status: isUpdateMode ? (inspection?.status || "In Progress") : "In Progress",
-      lead: leadReference,
-      customer_name: customerName,
-      inspection_date: format(values.inspection_date, "yyyy-MM-dd"),
-      inspection_time: values.inspection_time,
-      doctype: "SiteInspection",
-      measurement_sketch: measurementSketchUrl,
-      site_dimensions: siteDimensionsWithUrls,
-      custom_site_images: customSiteImagesWithUrls,
+      setDataLoaded(true);
+      hasInitializedForm.current = true;
     };
 
-    console.log("Final submission data:", inspectionData);
+    initializeFormData();
+  }, [
+    todo,
+    inspection,
+    currentInspection,
+    form,
+    replace,
+    navigate,
+    fetchFirstInspectionByField,
+  ]);
 
-    if (isUpdateMode && inspection?.name) {
-      // Update existing inspection
-      await updateInspectionbyId(inspection.name, inspectionData);
-      toast.success("Inspection updated successfully!");
-    } else {
-      // Create new inspection
-      await createInspection(inspectionData, todo?.name);
+  const handleSubmit = async (values: z.infer<typeof formSchema>) => {
+    console.log("Form values before submission:", values);
+    console.log("Submission mode:", isUpdateMode ? "UPDATE" : "CREATE");
 
-      toast.success("Inspection created successfully!");
+    try {
+      setLoading(true);
+      const leadReference = todo?.reference_name || inspection?.lead;
+
+      // Extract URLs from MediaItems
+      const measurementSketchUrl = values.measurement_sketch?.url || undefined;
+      const siteDimensionsWithUrls = values.site_dimensions?.map((dim) => ({
+        floor: dim.floor || "",
+        room: dim.room || "",
+        entity: dim.entity || "",
+        area_name: dim.area_name,
+        dimensionsunits: dim.dimensionsunits,
+        media: dim.media?.url || "",
+      }));
+      const customSiteImagesWithUrls = values.custom_site_images
+        ?.filter((img) => typeof img.url === "string")
+        ?.map((img) => ({
+          image: img.url,
+          remarks: img.remarks ?? "",
+        }));
+
+      const inspectionData = {
+        ...values,
+       inspection_status: isUpdateMode ? (inspection?.status || "In Progress") : "In Progress",
+        lead: leadReference,
+        inspection_date: format(values.inspection_date, "yyyy-MM-dd"),
+        inspection_time: values.inspection_time,
+        doctype: "SiteInspection",
+        measurement_sketch: measurementSketchUrl,
+        site_dimensions: siteDimensionsWithUrls,
+        custom_site_images: customSiteImagesWithUrls,
+      };
+
+      console.log("Final submission data:", inspectionData);
+
+      if (isUpdateMode && inspection?.name) {
+        // Update existing inspection
+        await updateInspectionbyId(inspection.name, inspectionData);
+        toast.success("Inspection updated successfully!");
+      } else {
+        // Create new inspection
+        await createInspection(inspectionData, todo?.name);
+        toast.success("Inspection created successfully!");
+      }
+
+      navigate("/inspector?tab=inspections");
+    } catch (error) {
+      console.error("Submission error:", error);
+      toast.error(`Failed to ${isUpdateMode ? "update" : "create"} inspection.`);
+    } finally {
+      setLoading(false);
     }
-
-    navigate("/inspector?tab=inspections");
-  } catch (error) {
-    console.error("Submission error:", error);
-    toast.error(`Failed to ${isUpdateMode ? "update" : "create"} inspection.`);
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   const fetchLeadData = async (leadName: string) => {
     try {
@@ -343,14 +308,12 @@ const handleSubmit = async (values: z.infer<typeof formSchema>) => {
     }
   };
 
-
-
   const handleCancelTodo = async () => {
     try {
       setCancelling(true);
       if (todo?.name) {
         await updateTodoStatus(todo.name, "Cancelled");
-        await UpdateLeadStatus(todo.reference_name,"Lead")
+        await UpdateLeadStatus(todo.reference_name, "Lead");
         
         toast.success("Todo cancelled successfully!");
         navigate("/inspector?tab=inspections");
@@ -363,29 +326,36 @@ const handleSubmit = async (values: z.infer<typeof formSchema>) => {
     }
   };
 
-const getDisplayData = () => {
-  const customerName = getCustomerName();
-  if (todo) {
+  // FIXED: Updated getDisplayData to handle inspection name properly
+  const getDisplayData = () => {
+    
+    if (todo) {
+      return {
+        leadDetails: todo.inquiry_data,
+        showTodoActions: true,
+        inspectionName: null, // No inspection name for new inspections
+        inspectionId: null,   // No inspection ID for new inspections
+      };
+    } else if (inspection) {
+      return {
+       
+        leadDetails: leadData,
+        showTodoActions: false,
+        inspectionName: inspection.name || null,           // Use actual inspection name
+        inspectionId: inspection.inspection_id || null,   // Use actual inspection ID
+      };
+    }
+    
+    // Return a fallback object
     return {
-      customerName,
-      leadDetails: todo.inquiry_data,
-      showTodoActions: true,
-    };
-  } else if (inspection) {
-    return {
-      customerName:
-        leadData?.lead_name || inspection.customer_name || customerName,
-      leadDetails: leadData,
+      
+      leadDetails: null,
       showTodoActions: false,
+      inspectionName: null,
+      inspectionId: null,
     };
-  }
-  // Return a fallback object instead of null
-  return {
-    customerName: customerName || "Unknown Customer",
-    leadDetails: null,
-    showTodoActions: false,
   };
-};
+
   const displayData = getDisplayData();
 
   const handleDeleteAreaDimension = (
@@ -411,59 +381,18 @@ const getDisplayData = () => {
   };
 
   if (!dataLoaded) {
-    // Show loading or empty state until data is loaded
     return (
       <div className="flex justify-center items-center h-screen">
         <p>Loading inspection data...</p>
       </div>
     );
   }
-console.log("Display Data:", displayData);
-console.log("is update" ,isUpdateMode)
+
+  console.log("Display Data:", displayData);
+  console.log("is update", isUpdateMode);
   return (
     <div className="w-full bg-gradient-to-b from-gray-50 to-white min-h-screen m-0 p-0">
       <Card className="border-none shadow-sm max-w-7xl mx-auto p-0 m-0 gap-0">
-        {/* <CardHeader className="bg-gradient-to-r from-emerald-500 to-blue-500 text-white px-4 py-1">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-            <div className="flex flex-col">
-              <CardTitle className="flex items-center gap-2 text-lg m-0 p-0">
-
-                {isUpdateMode ? (
-                  <>
-                    <Edit className="h-4 w-4" />
-                    <span>Update Inspection</span>
-                  </>
-                ) : (
-                  <span>Create Inspection</span>
-                )}
-              </CardTitle>
-
-              <div className="flex flex-wrap items-center gap-x-4 mt-1 text-sm">
-                <div className="flex items-center gap-1">
-                  <User className="h-4 w-4 opacity-80" />
-                  <span>{displayData.customerName}</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <Phone className="h-4 w-4 opacity-80" />
-                  <span>{displayData.leadDetails?.mobile_no || "N/A"}</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <Home className="h-4 w-4 opacity-80" />
-                  <span>
-                    {displayData.leadDetails?.custom_property_type || "N/A"}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {storeError && (
-            <div className="text-yellow-200 text-sm flex items-center mt-1">
-              <Info className="h-4 w-4" />
-              Error: {storeError}
-            </div>
-          )}
-        </CardHeader> */}
    <InspectionHeader
           isUpdateMode={isUpdateMode}
           displayData={displayData}
@@ -608,7 +537,7 @@ console.log("is update" ,isUpdateMode)
                                       <div className="flex items-center gap-2">
                                         <span className="font-medium text-gray-700 text-sm">
                                           {form.watch(
-                                            `site_dimensions.${index}.area_name`
+                                            `site_dimensions.${index}.room`
                                           ) || `Area ${index + 1}`}
                                         </span>
                                       </div>
@@ -630,19 +559,17 @@ console.log("is update" ,isUpdateMode)
                                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                         <FormField
                                           control={form.control}
-                                          name={`site_dimensions.${index}.area_name`}
-                                          render={({
-                                            field: areaNameField,
-                                          }) => (
+                                          name={`site_dimensions.${index}.floor`}
+                                          render={({ field: floorField }) => (
                                             <FormItem>
                                               <FormLabel className="text-gray-700 text-sm">
-                                                Area Name
+                                                Floor
                                               </FormLabel>
                                               <FormControl>
                                                 <Input
-                                                  placeholder="e.g., Living Room"
+                                                  placeholder="e.g., 1st Floor"
                                                   className="bg-white border-gray-300 h-9"
-                                                  {...areaNameField}
+                                                  {...floorField}
                                                 />
                                               </FormControl>
                                               <FormMessage />
@@ -651,13 +578,73 @@ console.log("is update" ,isUpdateMode)
                                         />
                                         <FormField
                                           control={form.control}
+                                          name={`site_dimensions.${index}.room`}
+                                          render={({ field: roomField }) => (
+                                            <FormItem>
+                                              <FormLabel className="text-gray-700 text-sm">
+                                                Room
+                                              </FormLabel>
+                                              <FormControl>
+                                                <Input
+                                                  placeholder="e.g., Bedroom"
+                                                  className="bg-white border-gray-300 h-9"
+                                                  {...roomField}
+                                                />
+                                              </FormControl>
+                                              <FormMessage />
+                                            </FormItem>
+                                          )}
+                                        />
+                                        <FormField
+                                          control={form.control}
+                                          name={`site_dimensions.${index}.entity`}
+                                          render={({ field: entityField }) => (
+                                            <FormItem>
+                                              <FormLabel className="text-gray-700 text-sm">
+                                                Entity
+                                              </FormLabel>
+                                              <FormControl>
+                                                <Input
+                                                  placeholder="e.g., Wall"
+                                                  className="bg-white border-gray-300 h-9"
+                                                  {...entityField}
+                                                />
+                                              </FormControl>
+                                              <FormMessage />
+                                            </FormItem>
+                                          )}
+                                        />
+                                        <FormField
+                                          control={form.control}
+                                          name={`site_dimensions.${index}.area_name`}
+                                          render={({
+                                            field: areaNameField,
+                                          }) => (
+                                            <FormItem>
+                                              <FormLabel className="text-gray-700 text-sm">
+                                                Area Name<span className="text-red-500">*</span>
+                                              </FormLabel>
+                                              <FormControl>
+                                                <Input
+                                                  placeholder="e.g., Right side"
+                                                  className="bg-white border-gray-300 h-9"
+                                                  {...areaNameField}
+                                                />
+                                              </FormControl>
+                                              <FormMessage />
+                                            </FormItem>
+                                          )}
+                                        />
+                                        
+                                        <FormField
+                                          control={form.control}
                                           name={`site_dimensions.${index}.dimensionsunits`}
                                           render={({
                                             field: dimensionsField,
                                           }) => (
                                             <FormItem>
                                               <FormLabel className="text-gray-700 text-sm">
-                                                Dimensions/Units
+                                                Dimensions/Units<span className="text-red-500">*</span>
                                               </FormLabel>
                                               <FormControl>
                                                 <Input

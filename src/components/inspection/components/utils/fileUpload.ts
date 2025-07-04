@@ -148,8 +148,7 @@ import toast from "react-hot-toast";
 
 export const formSchema = z.object({
   inspection_date: z.date(),
-  status: z.string().optional(),
-  customer_name: z.string().optional(),
+  inspection_status: z.string().optional(),
   inspection_time: z.string(),
   property_type: z.string(),
   site_photos: z.any().optional(),
@@ -167,6 +166,9 @@ export const formSchema = z.object({
   site_dimensions: z
     .array(
       z.object({
+        floor: z.string().optional(),
+        room: z.string().optional(),
+        entity: z.string().optional(),
         area_name: z.string(),
         dimensionsunits: z.string(),
         // Fix: Change media to accept MediaItem or undefined

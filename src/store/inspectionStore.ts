@@ -22,7 +22,6 @@ interface SiteInspection {
   creation: string;
   modified: string;
   inspection_id: string;
-  customer_name: string;
   follow_up_required: number;
   measurement_sketch: any;
   site_photos: any;
@@ -34,6 +33,9 @@ interface SiteInspection {
   lead: string;
   inspection_status: string;
   site_dimensions: Array<{
+    floor: string;
+    room: string;
+    entity: string;
     area_name: string;
     dimensionsunits: string;
     media: string;
@@ -44,6 +46,7 @@ interface SiteInspection {
     remarks: string;
   }>;
   // Add other fields as needed
+
 }
 
 interface InspectionStore {
@@ -56,7 +59,7 @@ interface InspectionStore {
   updateTodoStatus: (todoId: string, status: string) => Promise<void>;
   createInspection: (inspectionData: any, todoId?: string) => Promise<SiteInspection>;
   fetchInspectionDetails: (inspectionName: string) => Promise<void>;
-  fetchFirstInspectionByField: (key:string,name: string) => Promise<SiteInspection | null>;
+  fetchFirstInspectionByField: (key: string, name: string) => Promise<SiteInspection | null>;
   updateInspectionbyId: (inspectionId: string, updatedData: Partial<SiteInspection>) => Promise<void>;
   fetchAllInspectionsByField: (key: string, value: string) => Promise<SiteInspection[]>;
   UpdateLeadStatus: (reference_name: string, status: string) => Promise<void>;
@@ -69,12 +72,12 @@ export const useInspectionStore = create<InspectionStore>((set, get) => ({
   currentInspection: null,
   siteInspections: [], // Add th
 
-   fetchAllInspectionsByField: async (fieldName: string, fieldValue: string) => {
+  fetchAllInspectionsByField: async (fieldName: string, fieldValue: string) => {
     try {
       set({ loading: true, error: null });
       const response = await frappeAPI.getAllInspections({ [fieldName]: fieldValue });
       const inspections = response?.data ?? [];
-      
+
       // If you need to fetch full details for each inspection:
       const detailedInspections = await Promise.all(
         inspections.map(async (inspection: any) => {
@@ -99,7 +102,7 @@ export const useInspectionStore = create<InspectionStore>((set, get) => ({
       set({ loading: false });
     }
   },
-  
+
   fetchTodos: async (userEmail) => {
     if (!userEmail) {
       set({ error: 'Current user email not set' });
@@ -148,13 +151,13 @@ export const useInspectionStore = create<InspectionStore>((set, get) => ({
       set({ loading: false });
     }
   },
-  
+
   updateTodoStatus: async (todoId, status) => {
     try {
       set({ loading: true });
       await frappeAPI.updateTodoStatus(todoId, status);
       set((state) => ({
-        todos: state.todos.map(todo => 
+        todos: state.todos.map(todo =>
           todo.name === todoId ? { ...todo, status } : todo
         )
       }));
@@ -168,7 +171,7 @@ export const useInspectionStore = create<InspectionStore>((set, get) => ({
     }
   },
 
-  UpdateLeadStatus : async (reference_name, status) => {
+  UpdateLeadStatus: async (reference_name, status) => {
     try {
       set({ loading: true, error: null });
       await frappeAPI.updateLeadStatus(reference_name, status);
@@ -189,7 +192,7 @@ export const useInspectionStore = create<InspectionStore>((set, get) => ({
 
       // Step 1: Create the Site Inspection
       const createResponse = await frappeAPI.createInspection(inspectionData);
-      
+
       if (!createResponse.data?.name) {
         throw new Error('Failed to create inspection: No name returned');
       }
@@ -209,7 +212,7 @@ export const useInspectionStore = create<InspectionStore>((set, get) => ({
           // Don't fail the whole operation if todo update fails
         }
       }
-      
+
 
 
       const currentInspection = get().currentInspection;
@@ -243,40 +246,82 @@ export const useInspectionStore = create<InspectionStore>((set, get) => ({
     }
   },
 
-fetchFirstInspectionByField: async (fieldName: string, fieldValue: string) => {
-  try {
-    set({ loading: true, error: null });
-
-    const response = await frappeAPI.getAllInspections({ [fieldName]: fieldValue });
-    const inspections = response?.data ?? [];
-
-    if (inspections.length === 0) {
-      console.log(`No inspections found for ${fieldName}: ${fieldValue}`);
-      set({ currentInspection: null });
-      return null;
-    }
-
-    const inspectionName = inspections[0].name;
-    await get().fetchInspectionDetails(inspectionName);
-    return get().currentInspection;
-    
-  } catch (error) {
-    const err = error instanceof Error ? error.message : `Failed to fetch inspection by ${fieldName}`;
-    console.error(`Error fetching inspection by ${fieldName}:`, err);
-    set({ error: err });
-    return null;
-  } finally {
-    set({ loading: false });
-  }
-},
-
-  updateInspectionbyId: async (inspectionId, updatedData) => {
+  fetchFirstInspectionByField: async (fieldName: string, fieldValue: string) => {
     try {
       set({ loading: true, error: null });
+
+      const response = await frappeAPI.getAllInspections({ [fieldName]: fieldValue });
+      const inspections = response?.data ?? [];
+
+      if (inspections.length === 0) {
+        console.log(`No inspections found for ${fieldName}: ${fieldValue}`);
+        set({ currentInspection: null });
+        return null;
+      }
+
+      const inspectionName = inspections[0].name;
+      await get().fetchInspectionDetails(inspectionName);
+      return get().currentInspection;
+
+    } catch (error) {
+      const err = error instanceof Error ? error.message : `Failed to fetch inspection by ${fieldName}`;
+      console.error(`Error fetching inspection by ${fieldName}:`, err);
+      set({ error: err });
+      return null;
+    } finally {
+      set({ loading: false });
+    }
+  },
+
+  updateInspectionbyId: async (inspectionId, updatedData) => {
+    console.log('Updating inspection with ID:', inspectionId, 'and data:', updatedData);
+    try {
+      set({ loading: true, error: null });
+
+      // First update the inspection
       await frappeAPI.UpdateInspection(inspectionId, updatedData);
-      
-      // Optionally, refetch the updated inspection details
-      
+
+      // If the inspection is marked as completed
+      if (updatedData.inspection_status === "Completed") {
+        // Get the current inspection to access the lead reference
+        const currentInspection = get().currentInspection;
+
+        // Use either the lead from updatedData or from currentInspection
+        const leadName = updatedData.lead || currentInspection?.lead;
+
+        if (leadName) {
+          try {
+            await get().UpdateLeadStatus(leadName, 'Quotation');
+            console.log(`Successfully updated lead ${leadName} status to Completed`);
+          } catch (error) {
+            console.error(`Failed to update lead ${leadName} status:`, error);
+            // Don't throw error here - we still want to proceed with the inspection update
+          }
+        } else {
+          console.warn('No lead reference found for completed inspection');
+        }
+      }
+
+      if (updatedData.inspection_status === "Cancelled") {
+        // If the inspection is cancelled, update the lead status to "Cancelled"
+        const currentInspection = get().currentInspection;
+        const leadName = updatedData.lead || currentInspection?.lead;
+
+        if (leadName) {
+          try {
+            await get().UpdateLeadStatus(leadName, 'Lead');
+            console.log(`Successfully updated lead ${leadName} status to Cancelled`);
+          } catch (error) {
+            console.error(`Failed to update lead ${leadName} status:`, error);
+            // Don't throw error here - we still want to proceed with the inspection update
+          }
+        } else {
+          console.warn('No lead reference found for cancelled inspection');
+        }
+
+      }
+
+      // Refetch the updated inspection details
       await get().fetchInspectionDetails(inspectionId);
     } catch (error) {
       const err = error instanceof Error ? error.message : 'Failed to update inspection';
@@ -287,45 +332,4 @@ fetchFirstInspectionByField: async (fieldName: string, fieldValue: string) => {
       set({ loading: false });
     }
   }
-
-//    updateInspectionbyId: async (inspectionId, updatedData) => {
-//   console.log('Updating inspection with ID:', inspectionId, 'and data:', updatedData);
-//   try {
-//     set({ loading: true, error: null });
-    
-//     // First update the inspection
-//     await frappeAPI.UpdateInspection(inspectionId, updatedData);
-    
-//     // If the inspection is marked as completed
-//     if (updatedData.inspection_status === "Completed") {
-//       // Get the current inspection to access the lead reference
-//       const currentInspection = get().currentInspection;
-      
-//       // Use either the lead from updatedData or from currentInspection
-//       const leadName = updatedData.lead || currentInspection?.lead;
-      
-//       if (leadName) {
-//         try {
-//           await get().UpdateLeadStatus(leadName, 'Completed');
-//           console.log(`Successfully updated lead ${leadName} status to Completed`);
-//         } catch (error) {
-//           console.error(`Failed to update lead ${leadName} status:`, error);
-//           // Don't throw error here - we still want to proceed with the inspection update
-//         }
-//       } else {
-//         console.warn('No lead reference found for completed inspection');
-//       }
-//     }
-
-//     // Refetch the updated inspection details
-//     await get().fetchInspectionDetails(inspectionId);
-//   } catch (error) {
-//     const err = error instanceof Error ? error.message : 'Failed to update inspection';
-//     set({ error: err });
-//     console.error('Error updating inspection:', error);
-//     throw error;
-//   } finally {
-//     set({ loading: false });
-//   }
-// }
 }));
