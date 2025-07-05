@@ -4,11 +4,12 @@ import { format } from "date-fns";
 import { parseISO } from "date-fns/parseISO";
 import {
   CalendarIcon,
+  CheckCheckIcon,
   FileText,
   Info,
   Plus,
   Ruler,
-  Trash2
+  Trash2,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
@@ -61,7 +62,9 @@ const CreateInspection = () => {
   const [dimensionToDelete, setDimensionToDelete] = useState<number | null>(
     null
   );
-  
+  const isSubmitted = inspection?.docstatus === 1;
+  const isReadOnly = isSubmitted;
+
   console.log("CreateInspection component initialized");
   console.log("Todo:", todo);
   console.log("Inspection:", inspection);
@@ -107,31 +110,36 @@ const CreateInspection = () => {
       setDataLoaded(false);
       let dataToPopulate = null;
       let isUpdate = false;
-      
+
       if (inspection) {
         // Direct inspection access -> Update mode
         isUpdate = true;
         dataToPopulate = inspection;
-        
+
         // Fetch lead data if needed
         if (inspection.lead) {
           const fetchedLeadData = await fetchLeadData(inspection.lead);
           setLeadData(fetchedLeadData);
           if (fetchedLeadData?.custom_property_type) {
-            form.setValue("property_type", fetchedLeadData.custom_property_type);
+            form.setValue(
+              "property_type",
+              fetchedLeadData.custom_property_type
+            );
           }
         }
       } else if (todo) {
         // Todo -> Create mode (always create new inspection)
         isUpdate = false;
         dataToPopulate = todo;
-        
-        
+
         // Set property type if available
         if (todo.inquiry_data?.custom_property_type) {
-          form.setValue("property_type", todo.inquiry_data.custom_property_type);
+          form.setValue(
+            "property_type",
+            todo.inquiry_data.custom_property_type
+          );
         }
-        
+
         // Optional: Check if there's an existing inspection for this lead
         if (todo.reference_name) {
           const existingInspection = await fetchFirstInspectionByField(
@@ -139,7 +147,10 @@ const CreateInspection = () => {
             todo.reference_name
           );
           if (existingInspection) {
-            console.log("Note: Existing inspection found for this lead:", existingInspection);
+            console.log(
+              "Note: Existing inspection found for this lead:",
+              existingInspection
+            );
           }
         }
       } else if (currentInspection) {
@@ -154,23 +165,38 @@ const CreateInspection = () => {
 
       setIsUpdateMode(isUpdate);
       console.log("Mode determined:", isUpdate ? "UPDATE" : "CREATE");
-      console.log("Data source:", inspection ? "inspection" : todo ? "todo" : "currentInspection");
+      console.log(
+        "Data source:",
+        inspection ? "inspection" : todo ? "todo" : "currentInspection"
+      );
 
       // Populate form with data
       if (dataToPopulate) {
         // Set basic fields
         if (dataToPopulate.inspection_date) {
           try {
-            form.setValue("inspection_date", parseISO(dataToPopulate.inspection_date));
+            form.setValue(
+              "inspection_date",
+              parseISO(dataToPopulate.inspection_date)
+            );
           } catch (error) {
             console.error("Error parsing inspection date:", error);
           }
         }
-        
+
         form.setValue("inspection_time", dataToPopulate.inspection_time || "");
-        form.setValue("property_type", dataToPopulate.property_type || "Residential");
-        form.setValue("inspection_notes", dataToPopulate.inspection_notes || "");
-        form.setValue("inspection_status", dataToPopulate.status || "Scheduled");
+        form.setValue(
+          "property_type",
+          dataToPopulate.property_type || "Residential"
+        );
+        form.setValue(
+          "inspection_notes",
+          dataToPopulate.inspection_notes || ""
+        );
+        form.setValue(
+          "inspection_status",
+          dataToPopulate.status || "Scheduled"
+        );
 
         // Set measurement_sketch (MediaItem)
         if (dataToPopulate.measurement_sketch) {
@@ -190,30 +216,44 @@ const CreateInspection = () => {
         }
 
         // Set site_dimensions with MediaItem for media field
-        if (dataToPopulate.site_dimensions && Array.isArray(dataToPopulate.site_dimensions)) {
-          const formattedDimensions = dataToPopulate.site_dimensions.map((dim: any) => ({
-            area_name: dim.area_name || "",
-            dimensionsunits: dim.dimensionsunits || "",
-            media: dim.media
-              ? ({
-                  id: `${dim.media.split("/").pop()}-${Math.random().toString(36).substr(2, 9)}`,
-                  url: dim.media,
-                  type: getMediaType(dim.media),
-                  remarks: dim.media.split("/").pop(),
-                } as MediaItem)
-              : undefined,
-          }));
+        if (
+          dataToPopulate.site_dimensions &&
+          Array.isArray(dataToPopulate.site_dimensions)
+        ) {
+          const formattedDimensions = dataToPopulate.site_dimensions.map(
+            (dim: any) => ({
+              area_name: dim.area_name || "",
+              dimensionsunits: dim.dimensionsunits || "",
+              media: dim.media
+                ? ({
+                    id: `${dim.media.split("/").pop()}-${Math.random()
+                      .toString(36)
+                      .substr(2, 9)}`,
+                    url: dim.media,
+                    type: getMediaType(dim.media),
+                    remarks: dim.media.split("/").pop(),
+                  } as MediaItem)
+                : undefined,
+            })
+          );
           replace(formattedDimensions);
         } else {
           replace([]);
         }
 
         // Set custom_site_images
-        if (dataToPopulate.custom_site_images && Array.isArray(dataToPopulate.custom_site_images)) {
+        if (
+          dataToPopulate.custom_site_images &&
+          Array.isArray(dataToPopulate.custom_site_images)
+        ) {
           form.setValue(
             "custom_site_images",
             dataToPopulate.custom_site_images.map((img: any) => ({
-              id: img.id || `${img.image.split("/").pop()}-${Math.random().toString(36).substr(2, 9)}`,
+              id:
+                img.id ||
+                `${img.image.split("/").pop()}-${Math.random()
+                  .toString(36)
+                  .substr(2, 9)}`,
               url: img.image || "",
               type: getMediaType(img.image),
               remarks: img.remarks || "",
@@ -266,7 +306,9 @@ const CreateInspection = () => {
 
       const inspectionData = {
         ...values,
-       inspection_status: isUpdateMode ? (inspection?.status || "In Progress") : "In Progress",
+        inspection_status: isUpdateMode
+          ? inspection?.status || "In Progress"
+          : "In Progress",
         lead: leadReference,
         inspection_date: format(values.inspection_date, "yyyy-MM-dd"),
         inspection_time: values.inspection_time,
@@ -291,7 +333,9 @@ const CreateInspection = () => {
       navigate("/inspector?tab=inspections");
     } catch (error) {
       console.error("Submission error:", error);
-      toast.error(`Failed to ${isUpdateMode ? "update" : "create"} inspection.`);
+      toast.error(
+        `Failed to ${isUpdateMode ? "update" : "create"} inspection.`
+      );
     } finally {
       setLoading(false);
     }
@@ -314,7 +358,7 @@ const CreateInspection = () => {
       if (todo?.name) {
         await updateTodoStatus(todo.name, "Cancelled");
         await UpdateLeadStatus(todo.reference_name, "Lead");
-        
+
         toast.success("Todo cancelled successfully!");
         navigate("/inspector?tab=inspections");
       }
@@ -328,27 +372,24 @@ const CreateInspection = () => {
 
   // FIXED: Updated getDisplayData to handle inspection name properly
   const getDisplayData = () => {
-    
     if (todo) {
       return {
         leadDetails: todo.inquiry_data,
         showTodoActions: true,
         inspectionName: null, // No inspection name for new inspections
-        inspectionId: null,   // No inspection ID for new inspections
+        inspectionId: null, // No inspection ID for new inspections
       };
     } else if (inspection) {
       return {
-       
         leadDetails: leadData,
         showTodoActions: false,
-        inspectionName: inspection.name || null,           // Use actual inspection name
-        inspectionId: inspection.inspection_id || null,   // Use actual inspection ID
+        inspectionName: inspection.name || null, // Use actual inspection name
+        inspectionId: inspection.inspection_id || null, // Use actual inspection ID
       };
     }
-    
+
     // Return a fallback object
     return {
-      
       leadDetails: null,
       showTodoActions: false,
       inspectionName: null,
@@ -393,11 +434,23 @@ const CreateInspection = () => {
   return (
     <div className="w-full bg-gradient-to-b from-gray-50 to-white min-h-screen m-0 p-0">
       <Card className="border-none shadow-sm max-w-7xl mx-auto p-0 m-0 gap-0">
-   <InspectionHeader
+        <InspectionHeader
           isUpdateMode={isUpdateMode}
           displayData={displayData}
           storeError={storeError}
+          isSubmitted={isSubmitted}
         />
+
+        {isReadOnly && (
+          <div className="bg-green-50 border border-green-200 rounded-lg p-3 ">
+            <div className="flex items-center gap-2">
+              <CheckCheckIcon className="h-4 w-4 text-green-600" />
+              <span className="text-green-800 font-medium">
+                This inspection is submitted and cannot be edited.
+              </span>
+            </div>
+          </div>
+        )}
         <CardContent className="p-0 m-0">
           <div className="flex flex-col">
             <div className="flex-1">
@@ -442,6 +495,7 @@ const CreateInspection = () => {
                                         <FormControl>
                                           <Button
                                             variant="outline"
+                                            disabled={isReadOnly} // Add this line
                                             className="w-full justify-between text-left font-normal bg-white border-gray-300 hover:bg-gray-50 h-10"
                                           >
                                             {field.value ? (
@@ -457,21 +511,23 @@ const CreateInspection = () => {
                                           </Button>
                                         </FormControl>
                                       </PopoverTrigger>
-                                      <PopoverContent
-                                        className="w-auto p-0"
-                                        align="start"
-                                      >
-                                        <Calendar
-                                          mode="single"
-                                          selected={field.value}
-                                          onSelect={field.onChange}
-                                          disabled={(date) =>
-                                            date < new Date("1900-01-01")
-                                          }
-                                          initialFocus
-                                          className="rounded-md border"
-                                        />
-                                      </PopoverContent>
+                                      {!isReadOnly && ( // Conditionally render popover content
+                                        <PopoverContent
+                                          className="w-auto p-0"
+                                          align="start"
+                                        >
+                                          <Calendar
+                                            mode="single"
+                                            selected={field.value}
+                                            onSelect={field.onChange}
+                                            disabled={(date) =>
+                                              date < new Date("1900-01-01")
+                                            }
+                                            initialFocus
+                                            className="rounded-md border"
+                                          />
+                                        </PopoverContent>
+                                      )}
                                     </Popover>
                                     <FormMessage className="text-xs" />
                                   </FormItem>
@@ -492,6 +548,7 @@ const CreateInspection = () => {
                                       <div className="relative">
                                         <Input
                                           type="time"
+                                          disabled={isReadOnly} // Add this line
                                           className="pl-3 bg-white border-gray-300 h-10 text-gray-900"
                                           {...field}
                                         />
@@ -545,6 +602,7 @@ const CreateInspection = () => {
                                         type="button"
                                         variant="ghost"
                                         size="sm"
+                                        disabled={isReadOnly} // Add this line
                                         className="text-red-500 hover:text-red-600 hover:bg-red-50 h-7 w-7 p-0 mr-2"
                                         onClick={(e) => {
                                           handleDeleteAreaDimension(e, index);
@@ -568,6 +626,7 @@ const CreateInspection = () => {
                                               <FormControl>
                                                 <Input
                                                   placeholder="e.g., 1st Floor"
+                                                  disabled={isReadOnly} // Add this line
                                                   className="bg-white border-gray-300 h-9"
                                                   {...floorField}
                                                 />
@@ -587,6 +646,7 @@ const CreateInspection = () => {
                                               <FormControl>
                                                 <Input
                                                   placeholder="e.g., Bedroom"
+                                                  disabled={isReadOnly} // Add this line
                                                   className="bg-white border-gray-300 h-9"
                                                   {...roomField}
                                                 />
@@ -606,6 +666,7 @@ const CreateInspection = () => {
                                               <FormControl>
                                                 <Input
                                                   placeholder="e.g., Wall"
+                                                  disabled={isReadOnly} // Add this line
                                                   className="bg-white border-gray-300 h-9"
                                                   {...entityField}
                                                 />
@@ -622,11 +683,15 @@ const CreateInspection = () => {
                                           }) => (
                                             <FormItem>
                                               <FormLabel className="text-gray-700 text-sm">
-                                                Area Name<span className="text-red-500">*</span>
+                                                Area Name
+                                                <span className="text-red-500">
+                                                  *
+                                                </span>
                                               </FormLabel>
                                               <FormControl>
                                                 <Input
                                                   placeholder="e.g., Right side"
+                                                  disabled={isReadOnly} // Add this line
                                                   className="bg-white border-gray-300 h-9"
                                                   {...areaNameField}
                                                 />
@@ -635,7 +700,7 @@ const CreateInspection = () => {
                                             </FormItem>
                                           )}
                                         />
-                                        
+
                                         <FormField
                                           control={form.control}
                                           name={`site_dimensions.${index}.dimensionsunits`}
@@ -644,11 +709,15 @@ const CreateInspection = () => {
                                           }) => (
                                             <FormItem>
                                               <FormLabel className="text-gray-700 text-sm">
-                                                Dimensions/Units<span className="text-red-500">*</span>
+                                                Dimensions/Units
+                                                <span className="text-red-500">
+                                                  *
+                                                </span>
                                               </FormLabel>
                                               <FormControl>
                                                 <Input
                                                   placeholder="e.g., 10x12 ft"
+                                                  disabled={isReadOnly} // Add this line
                                                   className="bg-white border-gray-300 h-9"
                                                   {...dimensionsField}
                                                 />
@@ -691,6 +760,7 @@ const CreateInspection = () => {
                             <Button
                               type="button"
                               variant="outline"
+                              disabled={isReadOnly} // Add this line
                               onClick={() =>
                                 append({
                                   area_name: "",
@@ -740,8 +810,6 @@ const CreateInspection = () => {
                               </FormItem>
                             )}
                           />
-
-                        
                         </AccordionContent>
                       </AccordionItem>
 
@@ -806,6 +874,7 @@ const CreateInspection = () => {
                                   <FormControl>
                                     <Textarea
                                       placeholder="Add detailed inspection notes here..."
+                                      disabled={isReadOnly} // Add this line
                                       className="min-h-[120px] resize-y bg-white border-gray-300"
                                       {...field}
                                     />
@@ -820,28 +889,31 @@ const CreateInspection = () => {
                     </Accordion>
 
                     <div className="flex justify-end gap-2 p-4 pt-0">
-                      {displayData?.showTodoActions && (
+                      {displayData?.showTodoActions &&
+                        !isReadOnly && ( // Add !isReadOnly condition
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={handleCancelTodo}
+                            disabled={cancelling || loading || storeLoading}
+                            className="bg-red-50 text-red-600 hover:bg-red-100 border-red-200"
+                          >
+                            {cancelling ? "Cancelling..." : "Cancel Todo"}
+                          </Button>
+                        )}
+                      {!isReadOnly && ( // Only show submit button if not read-only
                         <Button
-                          type="button"
-                          variant="outline"
-                          onClick={handleCancelTodo}
-                          disabled={cancelling || loading || storeLoading}
-                          className="bg-red-50 text-red-600 hover:bg-red-100 border-red-200"
+                          type="submit"
+                          disabled={loading || storeLoading}
+                          className="bg-emerald-600 hover:bg-emerald-700 text-white"
                         >
-                          {cancelling ? "Cancelling..." : "Cancel Todo"}
+                          {loading || storeLoading
+                            ? "Saving..."
+                            : isUpdateMode
+                            ? "Update Inspection"
+                            : "Create Inspection"}
                         </Button>
                       )}
-                      <Button
-                        type="submit"
-                        disabled={loading || storeLoading}
-                        className="bg-emerald-600 hover:bg-emerald-700 text-white"
-                      >
-                        {loading || storeLoading
-                          ? "Saving..."
-                          : isUpdateMode
-                          ? "Update Inspection"
-                          : "Create Inspection"}
-                      </Button>
                     </div>
                   </form>
                 </Form>

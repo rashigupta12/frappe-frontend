@@ -18,6 +18,7 @@ interface TodoItem {
 }
 
 interface SiteInspection {
+  docstatus: number;
   customer_name: string;
   owner: string;
   creation: string;
@@ -274,63 +275,77 @@ export const useInspectionStore = create<InspectionStore>((set, get) => ({
     }
   },
 
-  updateInspectionbyId: async (inspectionId, updatedData) => {
-    console.log('Updating inspection with ID:', inspectionId, 'and data:', updatedData);
-    try {
-      set({ loading: true, error: null });
+ updateInspectionbyId: async (inspectionId, updatedData) => {
+  console.log('Updating inspection with ID:', inspectionId, 'and data:', updatedData);
+  try {
+    set({ loading: true, error: null });
 
-      // First update the inspection
-      await frappeAPI.UpdateInspection(inspectionId, updatedData);
+    // Prepare the data to be sent
+    const finalUpdateData = { ...updatedData };
 
-      // If the inspection is marked as completed
-      if (updatedData.inspection_status === "Completed") {
-        // Get the current inspection to access the lead reference
-        const currentInspection = get().currentInspection;
-
-        // Use either the lead from updatedData or from currentInspection
-        const leadName = updatedData.lead || currentInspection?.lead;
-
-        if (leadName) {
-          try {
-            await get().UpdateLeadStatus(leadName, 'Quotation');
-            console.log(`Successfully updated lead ${leadName} status to Completed`);
-          } catch (error) {
-            console.error(`Failed to update lead ${leadName} status:`, error);
-            // Don't throw error here - we still want to proceed with the inspection update
-          }
-        } else {
-          console.warn('No lead reference found for completed inspection');
-        }
-      }
-
-      if (updatedData.inspection_status === "Cancelled") {
-        // If the inspection is cancelled, update the lead status to "Cancelled"
-        const currentInspection = get().currentInspection;
-        const leadName = updatedData.lead || currentInspection?.lead;
-
-        if (leadName) {
-          try {
-            await get().UpdateLeadStatus(leadName, 'Lead');
-            console.log(`Successfully updated lead ${leadName} status to Cancelled`);
-          } catch (error) {
-            console.error(`Failed to update lead ${leadName} status:`, error);
-            // Don't throw error here - we still want to proceed with the inspection update
-          }
-        } else {
-          console.warn('No lead reference found for cancelled inspection');
-        }
-
-      }
-
-      // Refetch the updated inspection details
-      await get().fetchInspectionDetails(inspectionId);
-    } catch (error) {
-      const err = error instanceof Error ? error.message : 'Failed to update inspection';
-      set({ error: err });
-      console.error('Error updating inspection:', error);
-      throw error;
-    } finally {
-      set({ loading: false });
+    // Handle status changes for completed inspection
+    if (updatedData.inspection_status === "Completed") {
+      // Set status to "Submitted" when inspection_status is "Completed"
+      finalUpdateData.docstatus = 1;
     }
+
+    console.log('Final update data:', finalUpdateData);
+    // First update the inspection with the combined data
+    await frappeAPI.UpdateInspection(inspectionId, finalUpdateData);
+
+    // Get the current inspection to access the lead and todo references
+    const currentInspection = get().currentInspection;
+    const leadName = updatedData.lead || currentInspection?.lead;
+
+    // Handle status changes
+    if (updatedData.inspection_status === "Completed") {
+      // 1. Change the status of lead to Quotation
+      if (leadName) {
+        try {
+          await get().UpdateLeadStatus(leadName, 'Quotation');
+          console.log(`Successfully updated lead ${leadName} status to Quotation`);
+        } catch (error) {
+          console.error(`Failed to update lead ${leadName} status:`, error);
+        }
+      }
+    } 
+    else if (updatedData.inspection_status === "Cancelled") {
+      // 1. Change the status of lead to Lead
+      if (leadName) {
+        try {
+          await get().UpdateLeadStatus(leadName, 'Lead');
+          console.log(`Successfully updated lead ${leadName} status to Lead`);
+        } catch (error) {
+          console.error(`Failed to update lead ${leadName} status:`, error);
+        }
+      }
+
+      // 2. Change the todo status to Cancelled
+      // Find the todo associated with this inspection
+      const todo = get().todos.find(t => 
+        t.reference_type === 'Site Inspection' && 
+        t.reference_name === inspectionId
+      );
+      
+      if (todo?.name) {
+        try {
+          await get().updateTodoStatus(todo.name, "Cancelled");
+          console.log(`Successfully updated todo ${todo.name} status to Cancelled`);
+        } catch (error) {
+          console.error(`Failed to update todo status:`, error);
+        }
+      }
+    }
+
+    // Refetch the updated inspection details
+    await get().fetchInspectionDetails(inspectionId);
+  } catch (error) {
+    const err = error instanceof Error ? error.message : 'Failed to update inspection';
+    set({ error: err });
+    console.error('Error updating inspection:', error);
+    throw error;
+  } finally {
+    set({ loading: false });
   }
+}
 }));

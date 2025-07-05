@@ -6,12 +6,14 @@ interface InspectionHeaderProps {
   isUpdateMode: boolean;
   displayData: any;
   storeError: string | null;
+   isSubmitted?: boolean; // Optional prop to indicate if the inspection is submitted
 }
 
 const InspectionHeader = ({
   isUpdateMode,
   displayData,
   storeError,
+   isSubmitted,
 }: InspectionHeaderProps) => {
   // Handle null displayData case
   if (!displayData) {
@@ -67,6 +69,11 @@ const InspectionHeader = ({
         <span className="text-sm text-gray-200 truncate max-w-[280px] sm:max-w-[400px] md:max-w-[500px]">
           {displayData.inspectionName || displayData.leadDetails?.name || "New Inspection"}
         </span>
+        {isSubmitted && (
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+          Submitted
+        </span>
+      )}
       </CardTitle>
 
       <div className="flex flex-wrap items-center gap-x-4 mt-1 text-sm">

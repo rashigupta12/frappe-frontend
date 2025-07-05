@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 // /* eslint-disable @typescript-eslint/no-explicit-any */
 
 
@@ -296,81 +297,73 @@ export const uploadFile = async (
   throw lastError || new Error("Upload failed after retries");
 };
 
-// Helper to extract file URL from various response formats
-const extractFileUrl = (data: any): string => {
-  if (data?.message?.file_url) return data.message.file_url;
-  if (data?.file_url) return data.file_url;
-  if (typeof data?.message === "string" && data.message.startsWith("/")) {
-    return data.message;
-  }
-  return "";
-};
+
 
 /**
  * Captures media (image/video) from device camera
  * @param type - 'image' or 'video'
  * @returns Promise resolving to the captured File or null
  */
-export const captureMediaFromCamera = async (
-  type: "image" | "video"
-): Promise<File | null> => {
-  return new Promise((resolve) => {
-    try {
-      const input = document.createElement("input");
-      input.type = "file";
-      input.accept = type === "image" ? "image/*" : "video/*";
+// export const captureMediaFromCamera = async (
+//   type: "image" | "video"
+// ): Promise<File | null> => {
+//   return new Promise((resolve) => {
+//     try {
+//       const input = document.createElement("input");
+//       input.type = "file";
+//       input.accept = type === "image" ? "image/*" : "video/*";
       
-      // Use these attributes for best mobile compatibility
-      input.capture = type === "image" ? "environment" : "user";
-      input.setAttribute("capture", "camera");
+//       // Use these attributes for best mobile compatibility
+//       input.capture = type === "image" ? "environment" : "user";
+//       input.setAttribute("capture", "camera");
       
-      input.style.display = "none";
-      document.body.appendChild(input);
+//       input.style.display = "none";
+//       document.body.appendChild(input);
 
-      const cleanup = () => {
-        if (document.body.contains(input)) {
-          document.body.removeChild(input);
-        }
-      };
+//       const cleanup = () => {
+//         if (document.body.contains(input)) {
+//           document.body.removeChild(input);
+//         }
+//       };
 
-      const timeout = setTimeout(() => {
-        cleanup();
-        resolve(null);
-      }, 30000); // 30 second timeout
+//       const timeout = setTimeout(() => {
+//         cleanup();
+//         resolve(null);
+//       }, 30000); // 30 second timeout
 
-      input.onchange = async (event: Event) => {
-        clearTimeout(timeout);
-        const target = event.target as HTMLInputElement;
-        if (target.files?.length) {
-          const file = target.files[0];
-          // Basic validation
-          if (file.size > 0) {
-            resolve(file);
-          } else {
-            toast.error("Captured file is empty");
-            resolve(null);
-          }
-        } else {
-          resolve(null);
-        }
-        cleanup();
-      };
+//       input.onchange = async (event: Event) => {
+//         clearTimeout(timeout);
+//         const target = event.target as HTMLInputElement;
+//         if (target.files?.length) {
+//           const file = target.files[0];
+//           // Basic validation
+//           if (file.size > 0) {
+//             resolve(file);
+//           } else {
+//             toast.error("Captured file is empty");
+//             resolve(null);
+//           }
+//         } else {
+//           resolve(null);
+//         }
+//         cleanup();
+//       };
 
-      input.onerror = () => {
-        clearTimeout(timeout);
-        toast.error("Could not access camera");
-        cleanup();
-        resolve(null);
-      };
+//       input.onerror = () => {
+//         clearTimeout(timeout);
+//         toast.error("Could not access camera");
+//         cleanup();
+//         resolve(null);
+//       };
 
-      input.click();
-    } catch (error) {
-      console.error("Camera capture error:", error);
-      toast.error("Failed to access camera");
-      resolve(null);
-    }
-  });
-};
+//       input.click();
+//     } catch (error) {
+//       console.error("Camera capture error:", error);
+//       toast.error("Failed to access camera");
+//       resolve(null);
+//     }
+//   });
+// };
 
 /**
  * Records audio from microphone
@@ -546,4 +539,443 @@ export const validateFile = (
   }
   
   return null;
+};
+
+
+// Fixed camera capture function with better laptop support
+const captureMediaFromCamera = async (
+  type: "image" | "video"
+): Promise<File | null> => {
+  return new Promise((resolve) => {
+    try {
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = type === "image" ? "image/*" : "video/*";
+      
+      // Remove capture attribute for laptop compatibility
+      // The capture attribute forces mobile camera, which doesn't work on laptops
+      // input.setAttribute("capture", "environment"); // Remove this line
+      
+      input.style.display = "none";
+      document.body.appendChild(input);
+
+      const cleanup = () => {
+        if (document.body.contains(input)) {
+          document.body.removeChild(input);
+        }
+      };
+
+      // Add timeout to prevent hanging
+      const timeout = setTimeout(() => {
+        cleanup();
+        console.log("Camera capture timed out");
+        resolve(null);
+      }, 60000); // 60 second timeout
+
+      input.onchange = async (event: Event) => {
+        clearTimeout(timeout);
+        const target = event.target as HTMLInputElement;
+        
+        if (target.files && target.files.length > 0) {
+          const file = target.files[0];
+          console.log("File selected:", {
+            name: file.name,
+            size: file.size,
+            type: file.type,
+            lastModified: file.lastModified
+          });
+          
+          // Validate file
+          if (file.size > 0) {
+            resolve(file);
+          } else {
+            console.error("Selected file is empty");
+            resolve(null);
+          }
+        } else {
+          console.log("No file selected");
+          resolve(null);
+        }
+        cleanup();
+      };
+
+      input.onerror = (error) => {
+        clearTimeout(timeout);
+        console.error("File input error:", error);
+        cleanup();
+        resolve(null);
+      };
+
+      // Trigger file dialog
+      input.click();
+      
+    } catch (error) {
+      console.error("Camera capture setup error:", error);
+      resolve(null);
+    }
+  });
+};
+
+// Alternative: Use WebRTC for actual camera access (better for laptops)
+const captureFromWebRTCCamera = async (
+  type: "image" | "video"
+): Promise<File | null> => {
+  try {
+    // Check if browser supports camera access
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      throw new Error("Camera access not supported in this browser");
+    }
+
+    // Request camera permissions
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        width: { ideal: 1920 },
+        height: { ideal: 1080 },
+        facingMode: "environment" // Use back camera if available
+      },
+      audio: type === "video" ? true : false
+    });
+
+    if (type === "image") {
+      return await captureImageFromStream(stream);
+    } else {
+      return await captureVideoFromStream(stream);
+    }
+  } catch (error) {
+    console.error("WebRTC camera error:", error);
+    
+    // Provide user-friendly error messages
+    if (error instanceof DOMException) {
+      switch (error.name) {
+        case "NotAllowedError":
+          throw new Error("Camera access denied. Please allow camera permissions and try again.");
+        case "NotFoundError":
+          throw new Error("No camera found on this device.");
+        case "NotReadableError":
+          throw new Error("Camera is already in use by another application.");
+        case "NotSupportedError":
+          throw new Error("Camera access is not supported on this device.");
+        default:
+          throw new Error(`Camera error: ${error.message}`);
+      }
+    }
+    
+    throw error;
+  }
+};
+
+// Capture image from camera stream
+const captureImageFromStream = async (stream: MediaStream): Promise<File | null> => {
+  try {
+    const video = document.createElement("video");
+    video.srcObject = stream;
+    video.autoplay = true;
+    video.muted = true;
+    
+    // Wait for video to load
+    await new Promise((resolve) => {
+      video.onloadedmetadata = () => resolve(void 0);
+    });
+
+    // Create canvas and capture frame
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    
+    if (!ctx) {
+      throw new Error("Could not get canvas context");
+    }
+
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    
+    ctx.drawImage(video, 0, 0);
+    
+    // Stop the stream
+    stream.getTracks().forEach(track => track.stop());
+    
+    // Convert canvas to blob
+    return new Promise((resolve) => {
+      canvas.toBlob((blob) => {
+        if (blob) {
+          const file = new File([blob], `camera-${Date.now()}.jpg`, {
+            type: "image/jpeg",
+            lastModified: Date.now()
+          });
+          resolve(file);
+        } else {
+          resolve(null);
+        }
+      }, "image/jpeg", 0.8); // 80% quality
+    });
+    
+  } catch (error) {
+    console.error("Image capture error:", error);
+    // Stop stream if it exists
+    stream.getTracks().forEach(track => track.stop());
+    return null;
+  }
+};
+
+// Capture video from camera stream
+const captureVideoFromStream = async (stream: MediaStream): Promise<File | null> => {
+  try {
+    // Check for MediaRecorder support
+    if (!window.MediaRecorder) {
+      throw new Error("Video recording is not supported in this browser");
+    }
+
+    const mimeTypes = [
+      'video/webm;codecs=vp9',
+      'video/webm;codecs=vp8',
+      'video/webm',
+      'video/mp4'
+    ];
+    
+    let selectedMimeType = '';
+    for (const mimeType of mimeTypes) {
+      if (MediaRecorder.isTypeSupported(mimeType)) {
+        selectedMimeType = mimeType;
+        break;
+      }
+    }
+    
+    if (!selectedMimeType) {
+      throw new Error("No supported video format found");
+    }
+
+    const recorder = new MediaRecorder(stream, {
+      mimeType: selectedMimeType,
+      videoBitsPerSecond: 2500000 // 2.5 Mbps
+    });
+
+    const chunks: Blob[] = [];
+    
+    recorder.ondataavailable = (event) => {
+      if (event.data.size > 0) {
+        chunks.push(event.data);
+      }
+    };
+
+    // Start recording
+    recorder.start();
+
+    // Record for 10 seconds (you can modify this or add UI controls)
+    return new Promise((resolve) => {
+      const recordingTimer = setTimeout(() => {
+        if (recorder.state === 'recording') {
+          recorder.stop();
+        }
+      }, 10000); // 10 seconds
+
+      recorder.onstop = () => {
+        clearTimeout(recordingTimer);
+        stream.getTracks().forEach(track => track.stop());
+        
+        if (chunks.length === 0) {
+          resolve(null);
+          return;
+        }
+
+        const blob = new Blob(chunks, { type: selectedMimeType });
+        const extension = selectedMimeType.includes('mp4') ? 'mp4' : 'webm';
+        const file = new File([blob], `video-${Date.now()}.${extension}`, {
+          type: selectedMimeType,
+          lastModified: Date.now()
+        });
+        
+        resolve(file);
+      };
+
+      recorder.onerror = (event) => {
+        clearTimeout(recordingTimer);
+        console.error("Recording error:", event);
+        stream.getTracks().forEach(track => track.stop());
+        resolve(null);
+      };
+    });
+
+  } catch (error) {
+    console.error("Video capture error:", error);
+    stream.getTracks().forEach(track => track.stop());
+    return null;
+  }
+};
+
+// Fixed upload function with better error handling
+export const uploadFileFixed = async (
+  file: File,
+  onProgress?: (progress: number) => void,
+  retries = 3
+): Promise<string> => {
+  console.log("Starting upload for file:", {
+    name: file.name,
+    size: file.size,
+    type: file.type
+  });
+
+  if (!file || file.size === 0) {
+    throw new Error("Invalid file selected");
+  }
+
+  // Validate file size (50MB limit)
+  if (file.size > 50 * 1024 * 1024) {
+    throw new Error("File is too large. Maximum size is 50MB.");
+  }
+
+  let lastError: Error | null = null;
+  
+  for (let attempt = 0; attempt < retries; attempt++) {
+    try {
+      console.log(`Upload attempt ${attempt + 1}/${retries}`);
+      
+      if (onProgress) onProgress(5);
+
+      // Create FormData
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      // Add additional fields if needed
+      formData.append('is_private', '0');
+      formData.append('folder', 'Home');
+
+      // Use XMLHttpRequest for better progress tracking
+      const xhr = new XMLHttpRequest();
+      
+      const uploadPromise = new Promise<any>((resolve, reject) => {
+        xhr.upload.onprogress = (event) => {
+          if (event.lengthComputable && onProgress) {
+            const progress = Math.round((event.loaded / event.total) * 90) + 5; // 5-95%
+            onProgress(progress);
+          }
+        };
+
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            try {
+              const response = JSON.parse(xhr.responseText);
+              resolve(response);
+            } catch (e) {
+              reject(new Error("Invalid response format"));
+            }
+          } else {
+            reject(new Error(`HTTP ${xhr.status}: ${xhr.statusText}`));
+          }
+        };
+
+        xhr.onerror = () => {
+          reject(new Error("Network error occurred"));
+        };
+
+        xhr.ontimeout = () => {
+          reject(new Error("Upload timeout"));
+        };
+      });
+
+      // Configure request
+      xhr.timeout = 60000; // 60 seconds timeout
+      xhr.open('POST', '/api/method/upload_file', true);
+      
+      // Add authentication headers if needed
+      // xhr.setRequestHeader('Authorization', 'Bearer ' + token);
+      
+      // Start upload
+      xhr.send(formData);
+      
+      const response = await uploadPromise;
+
+      if (onProgress) onProgress(97);
+
+      // Extract file URL from response
+      const fileUrl = extractFileUrl(response);
+      if (!fileUrl) {
+        throw new Error("No file URL found in response");
+      }
+
+      if (onProgress) onProgress(100);
+
+      console.log("Upload successful:", fileUrl);
+      return fileUrl;
+
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      console.error(`Upload attempt ${attempt + 1} failed:`, lastError);
+      
+      if (attempt < retries - 1) {
+        const delay = Math.min(1000 * Math.pow(2, attempt), 5000); // Exponential backoff
+        console.log(`Retrying in ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+  }
+
+  throw lastError || new Error("Upload failed after retries");
+};
+
+// Helper function to extract file URL from response
+const extractFileUrl = (data: any): string => {
+  console.log("Extracting file URL from response:", data);
+  
+  // Try different response formats
+  if (data?.message?.file_url) return data.message.file_url;
+  if (data?.message?.file_name) return data.message.file_name;
+  if (data?.file_url) return data.file_url;
+  if (data?.file_name) return data.file_name;
+  if (data?.message && typeof data.message === 'string') {
+    if (data.message.startsWith('/')) return data.message;
+    if (data.message.includes('file_url')) {
+      // Try to extract URL from message string
+      const match = data.message.match(/file_url['":]?\s*['"]?([^'",\s]+)/);
+      if (match) return match[1];
+    }
+  }
+  
+  console.error("Could not extract file URL from response:", data);
+  return "";
+};
+
+// Enhanced camera support detection
+export const hasEnhancedCameraSupport = async (): Promise<{
+  hasWebRTC: boolean;
+  hasFileInput: boolean;
+  cameras: MediaDeviceInfo[];
+}> => {
+  const result = {
+    hasWebRTC: false,
+    hasFileInput: true, // File input is widely supported
+    cameras: [] as MediaDeviceInfo[]
+  };
+
+  try {
+    // Check WebRTC support
+    if (navigator.mediaDevices && typeof navigator.mediaDevices.getUserMedia === "function") {
+      result.hasWebRTC = true;
+      
+      // Get available cameras
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      result.cameras = devices.filter(device => device.kind === 'videoinput');
+    }
+  } catch (error) {
+    console.error('Camera support check failed:', error);
+  }
+
+  return result;
+};
+
+// Usage example for the fixed camera capture
+export const handleCameraCapture = async (
+  type: "image" | "video",
+  useWebRTC: boolean = false
+): Promise<File | null> => {
+  try {
+    if (useWebRTC) {
+      // Use WebRTC for actual camera access (better for laptops)
+      return await captureFromWebRTCCamera(type);
+    } else {
+      // Use file input (fallback, works on all devices)
+      return await captureMediaFromCamera(type);
+    }
+  } catch (error) {
+    console.error("Camera capture failed:", error);
+    throw error;
+  }
 };

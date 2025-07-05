@@ -1,5 +1,12 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-import { Camera, Edit3, MessageSquare, Mic, Trash2, Upload, X } from "lucide-react";
+import {
+  Camera,
+  Edit3,
+  MessageSquare,
+  Mic,
+  Trash2,
+  Upload,
+  X,
+} from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 import { toast } from "react-hot-toast";
 import { Button } from "../../../ui/button";
@@ -9,7 +16,9 @@ import { Textarea } from "../../../ui/textarea";
 import {
   getMediaType,
   uploadFile,
-  type MediaItem
+  type MediaItem,
+  hasEnhancedCameraSupport,
+  handleCameraCapture,
 } from "../utils/fileUpload";
 
 interface MediaUploadProps {
@@ -23,49 +32,49 @@ interface MediaUploadProps {
 }
 
 // Fixed camera capture function
-const captureMediaFromCamera = async (
-  type: "image" | "video"
-): Promise<File | null> => {
-  return new Promise((resolve) => {
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = type === "image" ? "image/*" : "video/*";
-    
-    // Fixed: Use proper capture attribute values
-    if (type === "image") {
-      input.setAttribute("capture", "environment"); // This works on mobile
-    } else {
-      input.setAttribute("capture", "camcorder"); // Better for video
-    }
+// const captureMediaFromCamera = async (
+//   type: "image" | "video"
+// ): Promise<File | null> => {
+//   return new Promise((resolve) => {
+//     const input = document.createElement("input");
+//     input.type = "file";
+//     input.accept = type === "image" ? "image/*" : "video/*";
 
-    input.onchange = async (event: Event) => {
-      const target = event.target as HTMLInputElement;
-      if (target.files && target.files.length > 0) {
-        const file = target.files[0];
-        resolve(file);
-      } else {
-        resolve(null);
-      }
-    };
+//     // Fixed: Use proper capture attribute values
+//     if (type === "image") {
+//       input.setAttribute("capture", "environment"); // This works on mobile
+//     } else {
+//       input.setAttribute("capture", "camcorder"); // Better for video
+//     }
 
-    input.onerror = (error) => {
-      console.error("Camera capture input error:", error);
-      resolve(null); // Return null instead of rejecting
-    };
+//     input.onchange = async (event: Event) => {
+//       const target = event.target as HTMLInputElement;
+//       if (target.files && target.files.length > 0) {
+//         const file = target.files[0];
+//         resolve(file);
+//       } else {
+//         resolve(null);
+//       }
+//     };
 
-    // Clean up the input element after use
-    input.style.display = "none";
-    document.body.appendChild(input);
-    input.click();
-    
-    // Clean up after a delay
-    setTimeout(() => {
-      if (document.body.contains(input)) {
-        document.body.removeChild(input);
-      }
-    }, 1000);
-  });
-};
+//     input.onerror = (error) => {
+//       console.error("Camera capture input error:", error);
+//       resolve(null); // Return null instead of rejecting
+//     };
+
+//     // Clean up the input element after use
+//     input.style.display = "none";
+//     document.body.appendChild(input);
+//     input.click();
+
+//     // Clean up after a delay
+//     setTimeout(() => {
+//       if (document.body.contains(input)) {
+//         document.body.removeChild(input);
+//       }
+//     }, 1000);
+//   });
+// };
 
 const MediaPreviewModal: React.FC<{
   isOpen: boolean;
@@ -75,7 +84,7 @@ const MediaPreviewModal: React.FC<{
   onEditRemark?: () => void;
 }> = ({ isOpen, onClose, media, onRemove, onEditRemark }) => {
   const imageurl = "https://eits.thebigocommunity.org";
-  
+
   if (!isOpen) return null;
 
   return (
@@ -100,7 +109,7 @@ const MediaPreviewModal: React.FC<{
             src={`${imageurl}${media.url}`}
             alt={media.remarks || "Media preview"}
             className="max-w-full max-h-full object-contain rounded-lg"
-            style={{ touchAction: 'manipulation' }}
+            style={{ touchAction: "manipulation" }}
           />
         )}
         {media.type === "video" && (
@@ -135,7 +144,9 @@ const MediaPreviewModal: React.FC<{
             <div className="flex items-start gap-3">
               <MessageSquare className="h-5 w-5 text-blue-400 mt-0.5 flex-shrink-0" />
               <div className="flex-1">
-                <h4 className="text-sm font-medium text-gray-200 mb-2">Remark</h4>
+                <h4 className="text-sm font-medium text-gray-200 mb-2">
+                  Remark
+                </h4>
                 <p className="text-sm text-gray-300 leading-relaxed">
                   {media.remarks}
                 </p>
@@ -218,17 +229,13 @@ const RemarksDialog: React.FC<{
             className="w-full min-h-20 resize-none"
             maxLength={200}
           />
-          
+
           <div className="text-xs text-gray-500 text-right">
             {remark.length}/200 characters
           </div>
 
           <div className="flex gap-3">
-            <Button
-              onClick={handleSkip}
-              variant="outline"
-              className="flex-1"
-            >
+            <Button onClick={handleSkip} variant="outline" className="flex-1">
               Skip
             </Button>
             <Button
@@ -251,39 +258,41 @@ const AudioRecordingDialog: React.FC<{
 }> = ({ isOpen, onClose, onComplete }) => {
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
-  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
+  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(
+    null
+  );
   // Removed unused audioChunks state
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      
+
       const mimeTypes = [
-        'audio/webm;codecs=opus',
-        'audio/webm',
-        'audio/mp4',
-        'audio/wav'
+        "audio/webm;codecs=opus",
+        "audio/webm",
+        "audio/mp4",
+        "audio/wav",
       ];
-      
-      let selectedMimeType = '';
+
+      let selectedMimeType = "";
       for (const mimeType of mimeTypes) {
         if (MediaRecorder.isTypeSupported(mimeType)) {
           selectedMimeType = mimeType;
           break;
         }
       }
-      
+
       if (!selectedMimeType) {
         throw new Error("No supported audio format found");
       }
-      
+
       const recorder = new MediaRecorder(stream, {
-        mimeType: selectedMimeType
+        mimeType: selectedMimeType,
       });
-      
+
       const chunks: Blob[] = [];
-      
+
       recorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
           chunks.push(event.data);
@@ -295,24 +304,27 @@ const AudioRecordingDialog: React.FC<{
           toast.error("No audio data recorded");
           return;
         }
-        
+
         const audioBlob = new Blob(chunks, { type: selectedMimeType });
-        const extension = selectedMimeType.includes('wav') ? 'wav' : 
-                         selectedMimeType.includes('mp4') ? 'm4a' : 'webm';
+        const extension = selectedMimeType.includes("wav")
+          ? "wav"
+          : selectedMimeType.includes("mp4")
+          ? "m4a"
+          : "webm";
         const fileName = `recording-${Date.now()}.${extension}`;
-        
-        const audioFile = new File([audioBlob], fileName, { 
+
+        const audioFile = new File([audioBlob], fileName, {
           type: selectedMimeType,
-          lastModified: Date.now()
+          lastModified: Date.now(),
         });
-        
+
         if (audioFile.size > 0) {
           onComplete(audioFile);
         } else {
           toast.error("Recording failed - no audio data captured");
         }
-        
-        stream.getTracks().forEach(track => track.stop());
+
+        stream.getTracks().forEach((track) => track.stop());
         setRecordingTime(0);
         // setAudioChunks([]);
       };
@@ -323,18 +335,17 @@ const AudioRecordingDialog: React.FC<{
       // setAudioChunks(chunks);
 
       intervalRef.current = setInterval(() => {
-        setRecordingTime(prev => prev + 1);
+        setRecordingTime((prev) => prev + 1);
       }, 1000);
-
     } catch (error) {
-      console.error('Error accessing microphone:', error);
-      toast.error('Could not access microphone. Please check permissions.');
+      console.error("Error accessing microphone:", error);
+      toast.error("Could not access microphone. Please check permissions.");
       onClose();
     }
   };
 
   const stopRecording = () => {
-    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+    if (mediaRecorder && mediaRecorder.state !== "inactive") {
       mediaRecorder.stop();
       setIsRecording(false);
       if (intervalRef.current) {
@@ -351,7 +362,7 @@ const AudioRecordingDialog: React.FC<{
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
       }
-      if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+      if (mediaRecorder && mediaRecorder.state !== "inactive") {
         mediaRecorder.stop();
       }
     };
@@ -360,7 +371,9 @@ const AudioRecordingDialog: React.FC<{
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    return `${mins.toString().padStart(2, "0")}:${secs
+      .toString()
+      .padStart(2, "0")}`;
   };
 
   if (!isOpen) return null;
@@ -370,15 +383,19 @@ const AudioRecordingDialog: React.FC<{
       <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 animate-in fade-in-0 zoom-in-95">
         <div className="text-center">
           <div className="mx-auto w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mb-4">
-            <div className={`w-12 h-12 rounded-full flex items-center justify-center ${isRecording ? 'bg-red-500 animate-pulse' : 'bg-gray-400'}`}>
+            <div
+              className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                isRecording ? "bg-red-500 animate-pulse" : "bg-gray-400"
+              }`}
+            >
               <Mic className="w-6 h-6 text-white" />
             </div>
           </div>
-          
+
           <h3 className="text-xl font-semibold text-gray-900 mb-2">
-            {isRecording ? 'Recording Audio...' : 'Starting Recording...'}
+            {isRecording ? "Recording Audio..." : "Starting Recording..."}
           </h3>
-          
+
           <div className="text-3xl font-mono text-gray-600 mb-6">
             {formatTime(recordingTime)}
           </div>
@@ -392,7 +409,7 @@ const AudioRecordingDialog: React.FC<{
               <div className="w-4 h-4 bg-white rounded-sm" />
               Stop Recording
             </Button>
-            
+
             <Button
               onClick={onClose}
               variant="outline"
@@ -478,9 +495,29 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
   const [showRecordingDialog, setShowRecordingDialog] = useState(false);
   const [showRemarksDialog, setShowRemarksDialog] = useState(false);
   const [showCameraOptions, setShowCameraOptions] = useState(false);
-  const [pendingMediaItem, setPendingMediaItem] = useState<MediaItem | null>(null);
+  const [pendingMediaItem, setPendingMediaItem] = useState<MediaItem | null>(
+    null
+  );
   const [editingRemark, setEditingRemark] = useState<string | null>(null);
+  const [cameraSupport, setCameraSupport] = useState<{
+    hasWebRTC: boolean;
+    hasFileInput: boolean;
+    cameras: MediaDeviceInfo[];
+  }>({
+    hasWebRTC: false,
+    hasFileInput: true,
+    cameras: [],
+  });
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    // Check camera support when component mounts
+    const checkCameraSupport = async () => {
+      const support = await hasEnhancedCameraSupport();
+      setCameraSupport(support);
+    };
+    checkCameraSupport();
+  }, []);
 
   const currentMediaItems = multiple
     ? (value as MediaItem[]) || []
@@ -492,7 +529,7 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
     if (pendingMediaItem) {
       const updatedMediaItem = {
         ...pendingMediaItem,
-        remarks: remark || pendingMediaItem.remarks
+        remarks: remark || pendingMediaItem.remarks,
       };
 
       if (multiple) {
@@ -504,22 +541,26 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
       setPendingMediaItem(null);
       toast.success("Media uploaded successfully!");
     } else if (editingRemark) {
-      const updatedItems = currentMediaItems.map(item =>
+      const updatedItems = currentMediaItems.map((item) =>
         item.id === editingRemark ? { ...item, remarks: remark } : item
       );
-      
+
       if (multiple) {
         onChange(updatedItems);
       } else {
         onChange(updatedItems[0]);
       }
-      
+
       setEditingRemark(null);
       toast.success("Remark updated successfully!");
     }
   };
 
-  const uploadFileWithRetry = async (file: File, onProgress: (progress: number) => void, retries = 3) => {
+  const uploadFileWithRetry = async (
+    file: File,
+    onProgress: (progress: number) => void,
+    retries = 3
+  ) => {
     let lastError;
     for (let i = 0; i < retries; i++) {
       try {
@@ -528,26 +569,35 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
         lastError = error;
         console.log(`Upload attempt ${i + 1} failed:`, error);
         if (i < retries - 1) {
-          await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
+          await new Promise((resolve) => setTimeout(resolve, 1000 * (i + 1)));
         }
       }
     }
     throw lastError || new Error("Upload failed after retries");
   };
 
-  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const files = event.target.files;
     if (!files || files.length === 0) return;
 
     const filesToUpload = Array.from(files);
-    console.log("Selected files:", filesToUpload.map(f => ({ name: f.name, size: f.size, type: f.type })));
+    console.log(
+      "Selected files:",
+      filesToUpload.map((f) => ({ name: f.name, size: f.size, type: f.type }))
+    );
 
     if (!multiple && filesToUpload.length > 1) {
       toast.error(`Only one ${label.toLowerCase()} file is allowed.`);
       return;
     }
 
-    if (multiple && maxFiles && currentMediaItems.length + filesToUpload.length > maxFiles) {
+    if (
+      multiple &&
+      maxFiles &&
+      currentMediaItems.length + filesToUpload.length > maxFiles
+    ) {
       toast.error(`You can only upload a maximum of ${maxFiles} files.`);
       return;
     }
@@ -556,16 +606,14 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
     for (const file of filesToUpload) {
       const type = getMediaType(file);
       if (type === "unknown" || !allowedTypes.includes(type)) {
-        toast.error(`File "${file.name}" has an unsupported format. Allowed: ${allowedTypes.join(", ")}`);
+        toast.error(
+          `File "${
+            file.name
+          }" has an unsupported format. Allowed: ${allowedTypes.join(", ")}`
+        );
         continue;
       }
-      
-      // Special handling for video files
-      if (type === "video" && file.size > 50 * 1024 * 1024) {
-        toast.error("Video files must be smaller than 50MB");
-        continue;
-      }
-      
+
       if (file.size > maxSizeMB * 1024 * 1024) {
         toast.error(`File "${file.name}" exceeds ${maxSizeMB}MB limit.`);
         continue;
@@ -585,14 +633,22 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
         const fileProgressStart = (i / validFiles.length) * 100;
 
         try {
-          console.log(`Uploading file ${i + 1}/${validFiles.length}:`, file.name);
-          
-          const fileUrl = await uploadFileWithRetry(file, (progress: number) => {
-            setUploadProgress(fileProgressStart + progress / validFiles.length);
-          });
-          
+          console.log(
+            `Uploading file ${i + 1}/${validFiles.length}:`,
+            file.name
+          );
+
+          const fileUrl = await uploadFileWithRetry(
+            file,
+            (progress: number) => {
+              setUploadProgress(
+                fileProgressStart + progress / validFiles.length
+              );
+            }
+          );
+
           console.log("Upload successful, URL:", fileUrl);
-          
+
           const mediaItem: MediaItem = {
             id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
             url: fileUrl,
@@ -603,10 +659,10 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
           setPendingMediaItem(mediaItem);
           setShowRemarksDialog(true);
           break; // Process one file at a time for better UX
-          
         } catch (error) {
           console.error(`Error uploading ${file.name}:`, error);
-          const errorMsg = error instanceof Error ? error.message : "Upload failed";
+          const errorMsg =
+            error instanceof Error ? error.message : "Upload failed";
           toast.error(`Failed to upload ${file.name}: ${errorMsg}`);
         }
       }
@@ -625,19 +681,25 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
   const handleCapture = async (type: "image" | "video") => {
     setShowCameraOptions(false);
     setIsUploading(true);
-    
+
     try {
       console.log(`Attempting to capture ${type}`);
-      
-      const file = await captureMediaFromCamera(type);
+
+      // Use WebRTC if available, otherwise fall back to file input
+      const useWebRTC = cameraSupport.hasWebRTC;
+      const file = await handleCameraCapture(type, useWebRTC);
+
       if (!file) {
         toast.error("No file captured or capture was cancelled");
         return;
       }
-      
-      console.log("Captured file:", { name: file.name, size: file.size, type: file.type });
-      
-      // Additional validation for captured files
+
+      console.log("Captured file:", {
+        name: file.name,
+        size: file.size,
+        type: file.type,
+      });
+
       if (file.size > maxSizeMB * 1024 * 1024) {
         toast.error(`Captured ${type} exceeds ${maxSizeMB}MB size limit`);
         return;
@@ -649,11 +711,11 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
       }
 
       console.log("Starting upload for captured file");
-      
+
       const fileUrl = await uploadFileWithRetry(file, setUploadProgress);
-      
+
       console.log("Upload successful for captured file, URL:", fileUrl);
-      
+
       const mediaItem: MediaItem = {
         id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         url: fileUrl,
@@ -663,23 +725,23 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
 
       setPendingMediaItem(mediaItem);
       setShowRemarksDialog(true);
-      
     } catch (error) {
       console.error("Camera capture or upload error:", error);
       let errorMessage = `Failed to capture ${type}.`;
-      
+
       if (error instanceof Error) {
-        if (error.message.includes('permission')) {
-          errorMessage = "Camera access was denied. Please enable camera permissions.";
-        } else if (error.message.includes('not supported')) {
+        if (error.message.includes("permission")) {
+          errorMessage =
+            "Camera access was denied. Please enable camera permissions.";
+        } else if (error.message.includes("not supported")) {
           errorMessage = "Camera access is not supported on this device.";
-        } else if (error.message.includes('size limit')) {
+        } else if (error.message.includes("size limit")) {
           errorMessage = `The captured ${type} is too large. Please try again.`;
         } else {
           errorMessage = `Failed to capture ${type}: ${error.message}`;
         }
       }
-      
+
       toast.error(errorMessage);
     } finally {
       setIsUploading(false);
@@ -690,16 +752,16 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
   const handleAudioRecordingComplete = async (audioFile: File) => {
     setShowRecordingDialog(false);
     setIsUploading(true);
-    
+
     try {
       if (!audioFile || audioFile.size === 0) {
         throw new Error("Invalid audio file generated");
       }
-      
+
       if (audioFile.size > maxSizeMB * 1024 * 1024) {
         throw new Error(`Audio file exceeds ${maxSizeMB}MB limit`);
       }
-      
+
       const fileUrl = await uploadFileWithRetry(audioFile, setUploadProgress);
       const mediaItem: MediaItem = {
         id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -707,10 +769,9 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
         type: "audio",
         remarks: "Recorded Audio",
       };
-      
+
       setPendingMediaItem(mediaItem);
       setShowRemarksDialog(true);
-      
     } catch (error) {
       console.error("Audio upload error:", error);
       const errorMsg = error instanceof Error ? error.message : String(error);
@@ -728,7 +789,9 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
 
   const handleRemoveMedia = (idToRemove: string) => {
     if (multiple) {
-      const updatedItems = currentMediaItems.filter((item) => item.id !== idToRemove);
+      const updatedItems = currentMediaItems.filter(
+        (item) => item.id !== idToRemove
+      );
       onChange(updatedItems);
     } else {
       onChange(undefined);
@@ -743,7 +806,11 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
       toast.error("No media files to clear.");
       return;
     }
-    if (!window.confirm("Are you sure you want to clear all media files? This action cannot be undone.")) {
+    if (
+      !window.confirm(
+        "Are you sure you want to clear all media files? This action cannot be undone."
+      )
+    ) {
       return;
     }
     if (multiple) {
@@ -759,7 +826,7 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
 
   const getCurrentEditingRemark = () => {
     if (editingRemark) {
-      const item = currentMediaItems.find(item => item.id === editingRemark);
+      const item = currentMediaItems.find((item) => item.id === editingRemark);
       return item?.remarks || "";
     }
     return "";
@@ -767,7 +834,7 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
 
   const getCurrentEditingMediaType = () => {
     if (editingRemark) {
-      const item = currentMediaItems.find(item => item.id === editingRemark);
+      const item = currentMediaItems.find((item) => item.id === editingRemark);
       return item?.type || "media";
     }
     return pendingMediaItem?.type || "media";
@@ -792,7 +859,7 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
       <FormLabel className="text-gray-700 text-sm font-medium block">
         {label}
       </FormLabel>
-      
+
       {/* Upload Controls */}
       <div className="bg-white rounded-2xl p-4 border border-gray-200 shadow-sm">
         <div className="grid grid-cols-4 gap-4">
@@ -802,30 +869,39 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
               type="button"
               variant="outline"
               onClick={() => fileInputRef.current?.click()}
-              disabled={isUploading || (!multiple && currentMediaItems.length > 0)}
+              disabled={
+                isUploading || (!multiple && currentMediaItems.length > 0)
+              }
               className="h-14 w-14 rounded-2xl border-2 border-dashed border-gray-300 hover:border-blue-500 hover:bg-blue-50 transition-all duration-200 flex items-center justify-center"
             >
               <Upload className="h-6 w-6 text-gray-600" />
             </Button>
-            <span className="text-xs text-gray-500 mt-2 text-center">Upload</span>
+            <span className="text-xs text-gray-500 mt-2 text-center">
+              Upload
+            </span>
           </div>
-          
+
           {/* Camera Options */}
-          {(allowedTypes.includes("image") || allowedTypes.includes("video")) && (
+          {(allowedTypes.includes("image") ||
+            allowedTypes.includes("video")) && (
             <div className="flex flex-col items-center">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => setShowCameraOptions(true)}
-                disabled={isUploading || (!multiple && currentMediaItems.length > 0)}
+                disabled={
+                  isUploading || (!multiple && currentMediaItems.length > 0)
+                }
                 className="h-14 w-14 rounded-2xl border-2 border-dashed border-gray-300 hover:border-green-500 hover:bg-green-50 transition-all duration-200 flex items-center justify-center"
               >
                 <Camera className="h-6 w-6 text-gray-600" />
               </Button>
-              <span className="text-xs text-gray-500 mt-2 text-center">Camera</span>
+              <span className="text-xs text-gray-500 mt-2 text-center">
+                Camera
+              </span>
             </div>
           )}
-          
+
           {/* Audio Recording */}
           {allowedTypes.includes("audio") && (
             <div className="flex flex-col items-center">
@@ -833,15 +909,19 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
                 type="button"
                 variant="outline"
                 onClick={() => setShowRecordingDialog(true)}
-                disabled={isUploading || (!multiple && currentMediaItems.length > 0)}
+                disabled={
+                  isUploading || (!multiple && currentMediaItems.length > 0)
+                }
                 className="h-14 w-14 rounded-2xl border-2 border-dashed border-gray-300 hover:border-red-500 hover:bg-red-50 transition-all duration-200 flex items-center justify-center"
               >
                 <Mic className="h-6 w-6 text-gray-600" />
               </Button>
-              <span className="text-xs text-gray-500 mt-2 text-center">Record</span>
+              <span className="text-xs text-gray-500 mt-2 text-center">
+                Record
+              </span>
             </div>
           )}
-          
+
           {/* Clear All Button */}
           {multiple && currentMediaItems.length > 0 && (
             <div className="flex flex-col items-center">
@@ -854,22 +934,26 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
               >
                 <Trash2 className="h-6 w-6 text-red-600" />
               </Button>
-              <span className="text-xs text-gray-500 mt-2 text-center">Clear All</span>
+              <span className="text-xs text-gray-500 mt-2 text-center">
+                Clear All
+              </span>
             </div>
           )}
         </div>
-        
+
         {/* Progress Bar */}
         {isUploading && (
           <div className="mt-4 space-y-2">
             <div className="flex justify-between text-sm">
               <span className="text-gray-600">Uploading...</span>
-              <span className="text-blue-600">{Math.round(uploadProgress)}%</span>
+              <span className="text-blue-600">
+                {Math.round(uploadProgress)}%
+              </span>
             </div>
             <Progress value={uploadProgress} className="h-2" />
           </div>
         )}
-        
+
         {/* File Input */}
         <input
           ref={fileInputRef}
@@ -880,7 +964,7 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
           multiple={multiple}
         />
       </div>
-      
+
       {/* Media Grid */}
       {currentMediaItems.length > 0 && (
         <div className="bg-white rounded-2xl p-4 border border-gray-200 shadow-sm">
@@ -917,10 +1001,10 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
                     <Mic className="h-8 w-8 text-white" />
                   </div>
                 )}
-                
+
                 {/* Overlay */}
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-200" />
-                
+
                 {/* Quick Actions */}
                 <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-all duration-200">
                   <Button
@@ -935,7 +1019,7 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
                     <X className="h-4 w-4" />
                   </Button>
                 </div>
-                
+
                 {/* Remarks Indicator */}
                 {media.remarks && (
                   <div className="absolute bottom-2 left-2 right-2">
@@ -949,15 +1033,16 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
           </div>
         </div>
       )}
-      
+
       {/* Media Count */}
       {currentMediaItems.length > 0 && (
         <div className="text-sm text-gray-600 text-center">
-          {currentMediaItems.length} {currentMediaItems.length === 1 ? 'file' : 'files'} selected
+          {currentMediaItems.length}{" "}
+          {currentMediaItems.length === 1 ? "file" : "files"} selected
           {maxFiles && ` (${maxFiles} max)`}
         </div>
       )}
-      
+
       {/* Modals */}
       {selectedMedia && (
         <MediaPreviewModal
@@ -971,7 +1056,7 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
           onEditRemark={() => handleEditRemark(selectedMedia.id)}
         />
       )}
-      
+
       <RemarksDialog
         isOpen={showRemarksDialog}
         onClose={() => {
@@ -983,13 +1068,13 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
         initialRemark={getCurrentEditingRemark()}
         mediaType={getCurrentEditingMediaType()}
       />
-      
+
       <AudioRecordingDialog
         isOpen={showRecordingDialog}
         onClose={() => setShowRecordingDialog(false)}
         onComplete={handleAudioRecordingComplete}
       />
-      
+
       <CameraOptionsModal
         isOpen={showCameraOptions}
         onClose={() => setShowCameraOptions(false)}
