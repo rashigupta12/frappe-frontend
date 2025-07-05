@@ -222,6 +222,9 @@ const CreateInspection = () => {
         ) {
           const formattedDimensions = dataToPopulate.site_dimensions.map(
             (dim: any) => ({
+              floor: dim.floor || "", // Add this line
+              room: dim.room || "", // Add this line
+              entity: dim.entity || "", // Add this line
               area_name: dim.area_name || "",
               dimensionsunits: dim.dimensionsunits || "",
               media: dim.media
@@ -583,178 +586,199 @@ const CreateInspection = () => {
                               )}
                               className="w-full space-y-3"
                             >
-                              {fields.map((field, index) => (
-                                <AccordionItem
-                                  key={field.id}
-                                  value={`area-${index}`}
-                                  className="border border-gray-200 rounded-lg bg-gray-50"
-                                >
-                                  <AccordionTrigger className="px-3 py-3 hover:no-underline">
-                                    <div className="flex items-center justify-between w-full">
-                                      <div className="flex items-center gap-2">
-                                        <span className="font-medium text-gray-700 text-sm">
-                                          {form.watch(
-                                            `site_dimensions.${index}.room`
-                                          ) || `Area ${index + 1}`}
-                                        </span>
-                                      </div>
-                                      <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="sm"
-                                        disabled={isReadOnly} // Add this line
-                                        className="text-red-500 hover:text-red-600 hover:bg-red-50 h-7 w-7 p-0 mr-2"
-                                        onClick={(e) => {
-                                          handleDeleteAreaDimension(e, index);
-                                        }}
-                                      >
-                                        <Trash2 className="h-4 w-4" />
-                                      </Button>
-                                    </div>
-                                  </AccordionTrigger>
-                                  <AccordionContent className="px-3 pb-3">
-                                    <div className="space-y-3">
-                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                        <FormField
-                                          control={form.control}
-                                          name={`site_dimensions.${index}.floor`}
-                                          render={({ field: floorField }) => (
-                                            <FormItem>
-                                              <FormLabel className="text-gray-700 text-sm">
-                                                Floor
-                                              </FormLabel>
-                                              <FormControl>
-                                                <Input
-                                                  placeholder="e.g., 1st Floor"
-                                                  disabled={isReadOnly} // Add this line
-                                                  className="bg-white border-gray-300 h-9"
-                                                  {...floorField}
-                                                />
-                                              </FormControl>
-                                              <FormMessage />
-                                            </FormItem>
-                                          )}
-                                        />
-                                        <FormField
-                                          control={form.control}
-                                          name={`site_dimensions.${index}.room`}
-                                          render={({ field: roomField }) => (
-                                            <FormItem>
-                                              <FormLabel className="text-gray-700 text-sm">
-                                                Room
-                                              </FormLabel>
-                                              <FormControl>
-                                                <Input
-                                                  placeholder="e.g., Bedroom"
-                                                  disabled={isReadOnly} // Add this line
-                                                  className="bg-white border-gray-300 h-9"
-                                                  {...roomField}
-                                                />
-                                              </FormControl>
-                                              <FormMessage />
-                                            </FormItem>
-                                          )}
-                                        />
-                                        <FormField
-                                          control={form.control}
-                                          name={`site_dimensions.${index}.entity`}
-                                          render={({ field: entityField }) => (
-                                            <FormItem>
-                                              <FormLabel className="text-gray-700 text-sm">
-                                                Entity
-                                              </FormLabel>
-                                              <FormControl>
-                                                <Input
-                                                  placeholder="e.g., Wall"
-                                                  disabled={isReadOnly} // Add this line
-                                                  className="bg-white border-gray-300 h-9"
-                                                  {...entityField}
-                                                />
-                                              </FormControl>
-                                              <FormMessage />
-                                            </FormItem>
-                                          )}
-                                        />
-                                        <FormField
-                                          control={form.control}
-                                          name={`site_dimensions.${index}.area_name`}
-                                          render={({
-                                            field: areaNameField,
-                                          }) => (
-                                            <FormItem>
-                                              <FormLabel className="text-gray-700 text-sm">
-                                                Area Name
-                                                <span className="text-red-500">
-                                                  *
-                                                </span>
-                                              </FormLabel>
-                                              <FormControl>
-                                                <Input
-                                                  placeholder="e.g., Right side"
-                                                  disabled={isReadOnly} // Add this line
-                                                  className="bg-white border-gray-300 h-9"
-                                                  {...areaNameField}
-                                                />
-                                              </FormControl>
-                                              <FormMessage />
-                                            </FormItem>
-                                          )}
-                                        />
-
-                                        <FormField
-                                          control={form.control}
-                                          name={`site_dimensions.${index}.dimensionsunits`}
-                                          render={({
-                                            field: dimensionsField,
-                                          }) => (
-                                            <FormItem>
-                                              <FormLabel className="text-gray-700 text-sm">
-                                                Dimensions/Units
-                                                <span className="text-red-500">
-                                                  *
-                                                </span>
-                                              </FormLabel>
-                                              <FormControl>
-                                                <Input
-                                                  placeholder="e.g., 10x12 ft"
-                                                  disabled={isReadOnly} // Add this line
-                                                  className="bg-white border-gray-300 h-9"
-                                                  {...dimensionsField}
-                                                />
-                                              </FormControl>
-                                              <FormMessage />
-                                            </FormItem>
-                                          )}
-                                        />
-                                      </div>
-
-                                      {/* Site Dimensions Media Upload - Only ONE file and image/vedio(both select and caputer) */}
-                                      <FormField
-                                        control={form.control}
-                                        name={`site_dimensions.${index}.media`}
-                                        render={({ field: mediaField }) => (
-                                          <FormItem>
-                                            <MediaUpload
-                                              label="Area Photo/Video"
-                                              multiple={false} // Only one file
-                                              allowedTypes={["image", "video"]}
-                                              value={
-                                                mediaField.value as
-                                                  | MediaItem
-                                                  | undefined
-                                              }
-                                              onChange={(newMedia) => {
-                                                mediaField.onChange(newMedia);
-                                              }}
+                              {fields.map(
+                                (field, index) => (
+                                  console.log(
+                                    `Rendering area dimension ${index}`
+                                  ),
+                                  (
+                                    <AccordionItem
+                                      key={field.id}
+                                      value={`area-${index}`}
+                                      className="border border-gray-200 rounded-lg bg-gray-50"
+                                    >
+                                      <AccordionTrigger className="px-3 py-3 hover:no-underline">
+                                        <div className="flex items-center justify-between w-full">
+                                          <div className="flex items-center gap-2">
+                                            <span className="font-medium text-gray-700 text-sm">
+                                              {form.watch(
+                                                `site_dimensions.${index}.room`
+                                              ) || `Area ${index + 1}`}
+                                            </span>
+                                          </div>
+                                          <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="sm"
+                                            disabled={isReadOnly} // Add this line
+                                            className="text-red-500 hover:text-red-600 hover:bg-red-50 h-7 w-7 p-0 mr-2"
+                                            onClick={(e) => {
+                                              handleDeleteAreaDimension(
+                                                e,
+                                                index
+                                              );
+                                            }}
+                                          >
+                                            <Trash2 className="h-4 w-4" />
+                                          </Button>
+                                        </div>
+                                      </AccordionTrigger>
+                                      <AccordionContent className="px-3 pb-3">
+                                        <div className="space-y-3">
+                                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                            <FormField
+                                              control={form.control}
+                                              name={`site_dimensions.${index}.floor`}
+                                              render={({
+                                                field: floorField,
+                                              }) => (
+                                                <FormItem>
+                                                  <FormLabel className="text-gray-700 text-sm">
+                                                    Floor
+                                                  </FormLabel>
+                                                  <FormControl>
+                                                    <Input
+                                                      placeholder="e.g., 1st Floor"
+                                                      disabled={isReadOnly} // Add this line
+                                                      className="bg-white border-gray-300 h-9"
+                                                      {...floorField}
+                                                    />
+                                                  </FormControl>
+                                                  <FormMessage />
+                                                </FormItem>
+                                              )}
                                             />
-                                            <FormMessage />
-                                          </FormItem>
-                                        )}
-                                      />
-                                    </div>
-                                  </AccordionContent>
-                                </AccordionItem>
-                              ))}
+                                            <FormField
+                                              control={form.control}
+                                              name={`site_dimensions.${index}.room`}
+                                              render={({
+                                                field: roomField,
+                                              }) => (
+                                                <FormItem>
+                                                  <FormLabel className="text-gray-700 text-sm">
+                                                    Room
+                                                  </FormLabel>
+                                                  <FormControl>
+                                                    <Input
+                                                      placeholder="e.g., Bedroom"
+                                                      disabled={isReadOnly} // Add this line
+                                                      className="bg-white border-gray-300 h-9"
+                                                      {...roomField}
+                                                    />
+                                                  </FormControl>
+                                                  <FormMessage />
+                                                </FormItem>
+                                              )}
+                                            />
+                                            <FormField
+                                              control={form.control}
+                                              name={`site_dimensions.${index}.entity`}
+                                              render={({
+                                                field: entityField,
+                                              }) => (
+                                                <FormItem>
+                                                  <FormLabel className="text-gray-700 text-sm">
+                                                    Entity
+                                                  </FormLabel>
+                                                  <FormControl>
+                                                    <Input
+                                                      placeholder="e.g., Wall"
+                                                      disabled={isReadOnly} // Add this line
+                                                      className="bg-white border-gray-300 h-9"
+                                                      {...entityField}
+                                                    />
+                                                  </FormControl>
+                                                  <FormMessage />
+                                                </FormItem>
+                                              )}
+                                            />
+                                            <FormField
+                                              control={form.control}
+                                              name={`site_dimensions.${index}.area_name`}
+                                              render={({
+                                                field: areaNameField,
+                                              }) => (
+                                                <FormItem>
+                                                  <FormLabel className="text-gray-700 text-sm">
+                                                    Area Name
+                                                    <span className="text-red-500">
+                                                      *
+                                                    </span>
+                                                  </FormLabel>
+                                                  <FormControl>
+                                                    <Input
+                                                      placeholder="e.g., Right side"
+                                                      disabled={isReadOnly} // Add this line
+                                                      className="bg-white border-gray-300 h-9"
+                                                      {...areaNameField}
+                                                    />
+                                                  </FormControl>
+                                                  <FormMessage />
+                                                </FormItem>
+                                              )}
+                                            />
+
+                                            <FormField
+                                              control={form.control}
+                                              name={`site_dimensions.${index}.dimensionsunits`}
+                                              render={({
+                                                field: dimensionsField,
+                                              }) => (
+                                                <FormItem>
+                                                  <FormLabel className="text-gray-700 text-sm">
+                                                    Dimensions/Units
+                                                    <span className="text-red-500">
+                                                      *
+                                                    </span>
+                                                  </FormLabel>
+                                                  <FormControl>
+                                                    <Input
+                                                      placeholder="e.g., 10x12 ft"
+                                                      disabled={isReadOnly} // Add this line
+                                                      className="bg-white border-gray-300 h-9"
+                                                      {...dimensionsField}
+                                                    />
+                                                  </FormControl>
+                                                  <FormMessage />
+                                                </FormItem>
+                                              )}
+                                            />
+                                          </div>
+
+                                          {/* Site Dimensions Media Upload - Only ONE file and image/vedio(both select and caputer) */}
+                                          <FormField
+                                            control={form.control}
+                                            name={`site_dimensions.${index}.media`}
+                                            render={({ field: mediaField }) => (
+                                              <FormItem>
+                                                <MediaUpload
+                                                  label="Area Photo/Video"
+                                                  multiple={false} // Only one file
+                                                  allowedTypes={[
+                                                    "image",
+                                                    "video",
+                                                  ]}
+                                                  value={
+                                                    mediaField.value as
+                                                      | MediaItem
+                                                      | undefined
+                                                  }
+                                                  onChange={(newMedia) => {
+                                                    mediaField.onChange(
+                                                      newMedia
+                                                    );
+                                                  }}
+                                                />
+                                                <FormMessage />
+                                              </FormItem>
+                                            )}
+                                          />
+                                        </div>
+                                      </AccordionContent>
+                                    </AccordionItem>
+                                  )
+                                )
+                              )}
                             </Accordion>
 
                             <Button
