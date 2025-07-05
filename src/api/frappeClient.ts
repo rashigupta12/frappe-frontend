@@ -328,7 +328,7 @@ export const frappeAPI = {
     const filterString = Object.entries(filters)
       .map(([key, value]) => `["${key}", "=", "${value}"]`)
       .join(',');
-    return await frappeAPI.makeAuthenticatedRequest('GET', `/api/resource/ToDo?filters=[${filterString}]`);
+    return await frappeAPI.makeAuthenticatedRequest('GET', `/api/resource/ToDo?filters=[${filterString}]&order_by=creation%20desc`);
   },
   getTodoByNAme: async (todoName: string) => {
     return await frappeAPI.makeAuthenticatedRequest('GET', `/api/resource/ToDo/${todoName}`);
@@ -358,7 +358,7 @@ export const frappeAPI = {
 
     return await frappeAPI.makeAuthenticatedRequest(
       'GET',
-      `/api/resource/SiteInspection?filters=${filterString}`
+      `/api/resource/SiteInspection?filters=${filterString}&order_by=creation%20desc`
     );
   },
   UpdateInspection: async (inspectionName: string, inspectionData: Record<string, unknown>) => {
