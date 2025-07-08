@@ -15,7 +15,6 @@ import {
   X,
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { useLeads, type Lead } from "../../context/LeadContext";
 import {
   formatDate,
@@ -36,19 +35,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
-import InquiryForm from "./InquiryForm"; // Import your InquiryForm component
+import InquiryForm from "./InquiryForm";
+import IspectionDialog from "./IspectionDialog";
 
 const InquiryPage = () => {
   const {
     leads,
-    // loading,
     error,
     fetchLeads,
     jobTypes,
     fetchJobTypes,
     fetchProjectUrgency,
-    // projectUrgency,
-    // utmSource,
     fetchUtmSource,
   } = useLeads();
 
@@ -56,11 +53,24 @@ const InquiryPage = () => {
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [viewInquiry, setViewInquiry] = useState<Lead | null>(null);
   const [selectedJobType, setSelectedJobType] = useState<string>("All");
-  const navigate = useNavigate();
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedInquiryForDialog, setSelectedInquiryForDialog] = useState<Lead | null>(null);
 
   // States for InquiryForm component
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedInquiry, setSelectedInquiry] = useState<Lead | null>(null);
+
+  // Fixed: Handle opening dialog with correct inquiry
+  const handleOpenDialog = (inquiry: Lead) => {
+    setSelectedInquiryForDialog(inquiry);
+    setIsDialogOpen(true);
+  };
+
+  // Fixed: Handle closing dialog
+  const handleCloseDialog = () => {
+    setIsDialogOpen(false);
+    setSelectedInquiryForDialog(null);
+  };
 
   useEffect(() => {
     fetchLeads();
@@ -132,7 +142,6 @@ const InquiryPage = () => {
       {/* Header */}
       <div className="bg-white shadow-sm p-3 mb-2 border border-emerald-100">
         <div className="flex flex-col gap-2">
-
           {/* Filters and Search */}
           <div className="bg-white rounded-md">
             {/* Desktop View */}
@@ -303,7 +312,6 @@ const InquiryPage = () => {
                   </div>
                 </div>
 
-                {/* Rest of the inquiry card content remains the same */}
                 <div className="mt-2 space-y-2">
                   {(inquiry.custom_project_urgency ||
                     inquiry.custom_budget_range) && (
@@ -375,6 +383,7 @@ const InquiryPage = () => {
                     )}
 
                     <div className="ml-auto">
+                      {/* Fixed: Corrected the status logic */}
                       {inquiry.status === "Open" ? (
                         <Badge
                           variant="outline"
@@ -384,22 +393,15 @@ const InquiryPage = () => {
                         </Badge>
                       ) : (
                         <Button
-                          variant="ghost"
+                          variant="outline"
                           size="sm"
-                          className="h-7 w-auto px-2 py-0 bg-white text-blue-600 border border-blue-200 
-                          hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300 
-                          transition-all duration-200 ease-in-out shadow-sm rounded-md"
-                          onClick={() => {
-                            navigate("/sales?tab=assign", {
-                              state: {
-                                inquiry: inquiry,
-                                from: "inquiry",
-                              },
-                            });
+                          className="h-7 px-3 text-xs bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white border-none shadow-sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOpenDialog(inquiry);
                           }}
                         >
-                          <Plus className="h-3 w-3" />
-                          <span className="ml-1 text-xs">Assign</span>
+                          Assign
                         </Button>
                       )}
                     </div>
@@ -411,14 +413,22 @@ const InquiryPage = () => {
         )}
       </div>
 
+      {/* Fixed: Moved dialog outside of map and used correct inquiry state */}
+      {isDialogOpen && selectedInquiryForDialog && (
+        <IspectionDialog
+          open={isDialogOpen}
+          onClose={handleCloseDialog}
+          inquiry={selectedInquiryForDialog}
+        />
+      )}
 
       <InquiryForm
         isOpen={isFormOpen}
         onClose={closeInquiryForm}
-        inquiry={selectedInquiry} // Pass null for new inquiry, or the inquiry object for editing
+        inquiry={selectedInquiry}
       />
 
-      {/* View Modal - Keep this as is */}
+      {/* View Modal */}
       {viewModalOpen && viewInquiry && (
         <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
@@ -426,34 +436,34 @@ const InquiryPage = () => {
               <div className="flex justify-between items-center">
                 <h3 className="text-xl font-semibold">Inquiry Details</h3>
 
-                {viewInquiry.status === "Open" ? (
-                  <span className="text-sm bg-emerald-100 text-emerald-800 px-2 py-1 rounded-full">
-                    Assigned
-                  </span>
-                ) : (
+                {/* Fixed: Updated modal dialog logic */}
+                <div className="flex items-center gap-2">
+                  {viewInquiry.status === "Open" ? (
+                    <span className="text-sm bg-emerald-100 text-emerald-800 px-2 py-1 rounded-full">
+                      Assigned
+                    </span>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 px-3 text-xs bg-white text-emerald-600 hover:bg-emerald-50"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleOpenDialog(viewInquiry);
+                      }}
+                    >
+                      Assign
+                    </Button>
+                  )}
                   <Button
                     variant="ghost"
                     size="sm"
                     className="h-8 w-8 p-0 rounded-full text-white hover:bg-white/10"
-                    onClick={() => {
-                      navigate("/sales?tab=assign", {
-                        state: { inquiry: viewInquiry },
-                      });
-                    }}
+                    onClick={closeViewModal}
                   >
-                    <span className="text-xl md:text-2xl font-semibold text-white">
-                      Assign
-                    </span>
+                    <X className="h-4 w-4" />
                   </Button>
-                )}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 w-8 p-0 rounded-full text-white hover:bg-white/10"
-                  onClick={closeViewModal}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
+                </div>
               </div>
             </div>
 

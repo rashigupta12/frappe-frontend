@@ -44,6 +44,22 @@ export default function SalesDashboard() {
   const initialTab = searchParams.get("tab") || "inquiry-form";
   const [activeTab, setActiveTab] = useState(initialTab);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  useEffect(() => {
+  const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+    e.preventDefault();
+    // Some browsers require setting returnValue
+    e.returnValue = 'Are you sure you want to leave? Your changes may not be saved.';
+    return e.returnValue;
+  };
+
+  // Add the event listener
+  window.addEventListener('beforeunload', handleBeforeUnload);
+
+  // Clean up the event listener
+  return () => {
+    window.removeEventListener('beforeunload', handleBeforeUnload);
+  };
+}, []); 
 
   useEffect(() => {
     setActiveTab(initialTab);
