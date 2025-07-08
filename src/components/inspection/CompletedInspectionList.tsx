@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { useEffect, useState, useRef } from "react";
 import { useInspectionStore } from "../../store/inspectionStore";
 import { Button } from "../ui/button";

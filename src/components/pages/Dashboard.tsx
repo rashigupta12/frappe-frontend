@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import {
   Home,
   HomeIcon,
@@ -45,21 +43,22 @@ export default function SalesDashboard() {
   const [activeTab, setActiveTab] = useState(initialTab);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   useEffect(() => {
-  const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-    e.preventDefault();
-    // Some browsers require setting returnValue
-    e.returnValue = 'Are you sure you want to leave? Your changes may not be saved.';
-    return e.returnValue;
-  };
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      // Some browsers require setting returnValue
+      e.returnValue =
+        "Are you sure you want to leave? Your changes may not be saved.";
+      return e.returnValue;
+    };
 
-  // Add the event listener
-  window.addEventListener('beforeunload', handleBeforeUnload);
+    // Add the event listener
+    window.addEventListener("beforeunload", handleBeforeUnload);
 
-  // Clean up the event listener
-  return () => {
-    window.removeEventListener('beforeunload', handleBeforeUnload);
-  };
-}, []); 
+    // Clean up the event listener
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, []);
 
   useEffect(() => {
     setActiveTab(initialTab);

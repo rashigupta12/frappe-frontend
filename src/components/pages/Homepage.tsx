@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import {
@@ -258,7 +257,7 @@ const HomePage = () => {
       setActiveService((prev) => (prev + 1) % services.length);
     }, 4000);
     return () => clearInterval(interval);
-  }, []);
+  }, [services.length]);
 
   type ContactButtonProps = {
     variant?: "primary" | "secondary";

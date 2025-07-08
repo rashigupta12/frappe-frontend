@@ -191,7 +191,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({ isOpen, onClose, inquiry }) =
       };
       fetchData();
     }
-  }, [isOpen, hasFetchedInitialData]);
+  }, [isOpen, hasFetchedInitialData, fetchJobTypes, fetchProjectUrgency, fetchUtmSource, fetchInspectors]);
 
   // Set default values when data is loaded
   useEffect(() => {
