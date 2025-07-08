@@ -13,13 +13,7 @@ import { Button } from "../../../ui/button";
 import { FormLabel } from "../../../ui/form";
 import { Progress } from "../../../ui/progress";
 import { Textarea } from "../../../ui/textarea";
-import {
-  getMediaType,
-  uploadFile,
-  type MediaItem,
-  hasEnhancedCameraSupport,
-  handleCameraCapture,
-} from "../utils/fileUpload";
+import { getMediaType, uploadFile, type MediaItem } from "../utils/fileUpload";
 
 interface MediaUploadProps {
   label: string;
@@ -30,51 +24,6 @@ interface MediaUploadProps {
   maxFiles?: number;
   maxSizeMB?: number;
 }
-
-// Fixed camera capture function
-// const captureMediaFromCamera = async (
-//   type: "image" | "video"
-// ): Promise<File | null> => {
-//   return new Promise((resolve) => {
-//     const input = document.createElement("input");
-//     input.type = "file";
-//     input.accept = type === "image" ? "image/*" : "video/*";
-
-//     // Fixed: Use proper capture attribute values
-//     if (type === "image") {
-//       input.setAttribute("capture", "environment"); // This works on mobile
-//     } else {
-//       input.setAttribute("capture", "camcorder"); // Better for video
-//     }
-
-//     input.onchange = async (event: Event) => {
-//       const target = event.target as HTMLInputElement;
-//       if (target.files && target.files.length > 0) {
-//         const file = target.files[0];
-//         resolve(file);
-//       } else {
-//         resolve(null);
-//       }
-//     };
-
-//     input.onerror = (error) => {
-//       console.error("Camera capture input error:", error);
-//       resolve(null); // Return null instead of rejecting
-//     };
-
-//     // Clean up the input element after use
-//     input.style.display = "none";
-//     document.body.appendChild(input);
-//     input.click();
-
-//     // Clean up after a delay
-//     setTimeout(() => {
-//       if (document.body.contains(input)) {
-//         document.body.removeChild(input);
-//       }
-//     }, 1000);
-//   });
-// };
 
 const MediaPreviewModal: React.FC<{
   isOpen: boolean;
@@ -261,7 +210,6 @@ const AudioRecordingDialog: React.FC<{
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(
     null
   );
-  // Removed unused audioChunks state
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const startRecording = async () => {
@@ -326,13 +274,11 @@ const AudioRecordingDialog: React.FC<{
 
         stream.getTracks().forEach((track) => track.stop());
         setRecordingTime(0);
-        // setAudioChunks([]);
       };
 
       recorder.start();
       setMediaRecorder(recorder);
       setIsRecording(true);
-      // setAudioChunks(chunks);
 
       intervalRef.current = setInterval(() => {
         setRecordingTime((prev) => prev + 1);
@@ -499,31 +445,118 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
     null
   );
   const [editingRemark, setEditingRemark] = useState<string | null>(null);
-  const [cameraSupport, setCameraSupport] = useState<{
-    hasWebRTC: boolean;
-    hasFileInput: boolean;
-    cameras: MediaDeviceInfo[];
-  }>({
-    hasWebRTC: false,
-    hasFileInput: true,
-    cameras: [],
-  });
+  const [showCameraPreview, setShowCameraPreview] = useState(false);
+  const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    // Check camera support when component mounts
-    const checkCameraSupport = async () => {
-      const support = await hasEnhancedCameraSupport();
-      setCameraSupport(support);
-    };
-    checkCameraSupport();
-  }, []);
 
   const currentMediaItems = multiple
     ? (value as MediaItem[]) || []
     : value
     ? [value as MediaItem]
     : [];
+
+  // Start camera and show preview
+  const startCamera = async () => {
+    try {
+      setShowCameraOptions(false);
+      setShowCameraPreview(true);
+      
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: "environment", // Prefer rear camera
+          width: { ideal: 1920 },
+          height: { ideal: 1080 }
+        }
+      });
+      
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        streamRef.current = stream;
+      }
+    } catch (error) {
+      console.error("Camera error:", error);
+      toast.error("Could not access camera. Please check permissions.");
+      setShowCameraPreview(false);
+    }
+  };
+
+  // Capture image manually
+  const captureImage = () => {
+    if (!videoRef.current || !canvasRef.current) return;
+    
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    
+    // Set canvas dimensions to match video
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    
+    // Draw current video frame to canvas
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      
+      // Convert canvas to data URL
+      const imageDataUrl = canvas.toDataURL('image/jpeg', 0.8);
+      setCapturedImage(imageDataUrl);
+      
+      // Stop camera stream
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+        streamRef.current = null;
+      }
+    }
+  };
+
+  // Upload the captured image
+  const uploadCapturedImage = async () => {
+    if (!capturedImage) return;
+    
+    setIsUploading(true);
+    setUploadProgress(0);
+    
+    try {
+      // Convert data URL to Blob
+      const blob = await fetch(capturedImage).then(res => res.blob());
+      const file = new File([blob], `captured-${Date.now()}.jpg`, {
+        type: 'image/jpeg',
+        lastModified: Date.now()
+      });
+      
+      const fileUrl = await uploadFile(file, setUploadProgress);
+      
+      const mediaItem: MediaItem = {
+        id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        url: fileUrl,
+        type: "image",
+        remarks: "Captured Image",
+      };
+      
+      setPendingMediaItem(mediaItem);
+      setShowRemarksDialog(true);
+    } catch (error) {
+      console.error("Upload error:", error);
+      toast.error("Failed to upload captured image");
+    } finally {
+      setIsUploading(false);
+      setUploadProgress(0);
+      setCapturedImage(null);
+      setShowCameraPreview(false);
+    }
+  };
+
+  // Cancel camera
+  const cancelCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+    setCapturedImage(null);
+    setShowCameraPreview(false);
+  };
 
   const handleRemarksComplete = (remark: string) => {
     if (pendingMediaItem) {
@@ -556,26 +589,6 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
     }
   };
 
-  const uploadFileWithRetry = async (
-    file: File,
-    onProgress: (progress: number) => void,
-    retries = 3
-  ) => {
-    let lastError;
-    for (let i = 0; i < retries; i++) {
-      try {
-        return await uploadFile(file, onProgress);
-      } catch (error) {
-        lastError = error;
-        console.log(`Upload attempt ${i + 1} failed:`, error);
-        if (i < retries - 1) {
-          await new Promise((resolve) => setTimeout(resolve, 1000 * (i + 1)));
-        }
-      }
-    }
-    throw lastError || new Error("Upload failed after retries");
-  };
-
   const handleFileChange = async (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
@@ -583,10 +596,6 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
     if (!files || files.length === 0) return;
 
     const filesToUpload = Array.from(files);
-    console.log(
-      "Selected files:",
-      filesToUpload.map((f) => ({ name: f.name, size: f.size, type: f.type }))
-    );
 
     if (!multiple && filesToUpload.length > 1) {
       toast.error(`Only one ${label.toLowerCase()} file is allowed.`);
@@ -633,12 +642,7 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
         const fileProgressStart = (i / validFiles.length) * 100;
 
         try {
-          console.log(
-            `Uploading file ${i + 1}/${validFiles.length}:`,
-            file.name
-          );
-
-          const fileUrl = await uploadFileWithRetry(
+          const fileUrl = await uploadFile(
             file,
             (progress: number) => {
               setUploadProgress(
@@ -646,8 +650,6 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
               );
             }
           );
-
-          console.log("Upload successful, URL:", fileUrl);
 
           const mediaItem: MediaItem = {
             id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -678,77 +680,6 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
     }
   };
 
-  const handleCapture = async (type: "image" | "video") => {
-    setShowCameraOptions(false);
-    setIsUploading(true);
-
-    try {
-      console.log(`Attempting to capture ${type}`);
-
-      // Use WebRTC if available, otherwise fall back to file input
-      const useWebRTC = cameraSupport.hasWebRTC;
-      const file = await handleCameraCapture(type, useWebRTC);
-
-      if (!file) {
-        toast.error("No file captured or capture was cancelled");
-        return;
-      }
-
-      console.log("Captured file:", {
-        name: file.name,
-        size: file.size,
-        type: file.type,
-      });
-
-      if (file.size > maxSizeMB * 1024 * 1024) {
-        toast.error(`Captured ${type} exceeds ${maxSizeMB}MB size limit`);
-        return;
-      }
-
-      if (file.size === 0) {
-        toast.error(`Captured ${type} appears to be empty`);
-        return;
-      }
-
-      console.log("Starting upload for captured file");
-
-      const fileUrl = await uploadFileWithRetry(file, setUploadProgress);
-
-      console.log("Upload successful for captured file, URL:", fileUrl);
-
-      const mediaItem: MediaItem = {
-        id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        url: fileUrl,
-        type,
-        remarks: `Captured ${type}`,
-      };
-
-      setPendingMediaItem(mediaItem);
-      setShowRemarksDialog(true);
-    } catch (error) {
-      console.error("Camera capture or upload error:", error);
-      let errorMessage = `Failed to capture ${type}.`;
-
-      if (error instanceof Error) {
-        if (error.message.includes("permission")) {
-          errorMessage =
-            "Camera access was denied. Please enable camera permissions.";
-        } else if (error.message.includes("not supported")) {
-          errorMessage = "Camera access is not supported on this device.";
-        } else if (error.message.includes("size limit")) {
-          errorMessage = `The captured ${type} is too large. Please try again.`;
-        } else {
-          errorMessage = `Failed to capture ${type}: ${error.message}`;
-        }
-      }
-
-      toast.error(errorMessage);
-    } finally {
-      setIsUploading(false);
-      setUploadProgress(0);
-    }
-  };
-
   const handleAudioRecordingComplete = async (audioFile: File) => {
     setShowRecordingDialog(false);
     setIsUploading(true);
@@ -762,7 +693,7 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
         throw new Error(`Audio file exceeds ${maxSizeMB}MB limit`);
       }
 
-      const fileUrl = await uploadFileWithRetry(audioFile, setUploadProgress);
+      const fileUrl = await uploadFile(audioFile, setUploadProgress);
       const mediaItem: MediaItem = {
         id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         url: fileUrl,
@@ -1043,6 +974,75 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
         </div>
       )}
 
+      {/* Camera Preview Modal */}
+      {showCameraPreview && (
+        <div className="fixed inset-0 bg-black z-50 flex flex-col">
+          {/* Camera Preview */}
+          <div className="flex-1 relative">
+            {!capturedImage ? (
+              <>
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  playsInline
+                  muted
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
+                <div className="absolute bottom-8 left-0 right-0 flex justify-center">
+                  <button
+                    onClick={captureImage}
+                    className="w-16 h-16 bg-white rounded-full border-4 border-white shadow-lg"
+                  >
+                    <div className="w-full h-full bg-white rounded-full"></div>
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div className="absolute inset-0 flex flex-col">
+                <img
+                  src={capturedImage}
+                  alt="Captured"
+                  className="flex-1 object-contain"
+                />
+                <div className="flex justify-between p-4 bg-black/50">
+                  <button
+                    onClick={() => setCapturedImage(null)}
+                    className="px-6 py-2 bg-gray-600 text-white rounded-lg"
+                  >
+                    Retake
+                  </button>
+                  <button
+                    onClick={uploadCapturedImage}
+                    disabled={isUploading}
+                    className="px-6 py-2 bg-blue-600 text-white rounded-lg flex items-center gap-2"
+                  >
+                    {isUploading ? (
+                      <>
+                        <span>Uploading...</span>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      </>
+                    ) : (
+                      "Use Photo"
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+          
+          {/* Cancel Button */}
+          <button
+            onClick={cancelCamera}
+            className="absolute top-4 right-4 p-2 bg-black/50 rounded-full text-white"
+          >
+            <X className="h-6 w-6" />
+          </button>
+
+          {/* Hidden canvas for capturing images */}
+          <canvas ref={canvasRef} className="hidden" />
+        </div>
+      )}
+
       {/* Modals */}
       {selectedMedia && (
         <MediaPreviewModal
@@ -1078,8 +1078,8 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
       <CameraOptionsModal
         isOpen={showCameraOptions}
         onClose={() => setShowCameraOptions(false)}
-        onSelectImage={() => handleCapture("image")}
-        onSelectVideo={() => handleCapture("video")}
+        onSelectImage={startCamera}
+        onSelectVideo={() => {}} // Empty function since we're only doing photos
         allowedTypes={allowedTypes}
       />
     </div>
