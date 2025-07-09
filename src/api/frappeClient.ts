@@ -368,6 +368,29 @@ export const frappeAPI = {
   GetUtmSoucre: async () => {
     return await frappeAPI.makeAuthenticatedRequest('GET', '/api/resource/UTM Source');
   },
+  getEmirate: async( ) =>{
+    return await frappeAPI.makeAuthenticatedRequest('GET', '/api/resource/UAE Emirate');
+  },
+  getCity: async (filters: Record<string, unknown> = {}) => {
+    // Convert filters to Frappe/ERPNext format
+    const filterArray = Object.entries(filters).map(([key, value]) => [key, "=", value]);
+    const filterString = encodeURIComponent(JSON.stringify(filterArray));
+
+    return await frappeAPI.makeAuthenticatedRequest(
+      'GET',
+      `/api/resource/UAE City?filters=${filterString}`
+    );
+  },
+  getArea: async (filters: Record<string, unknown> = {}) => {
+    // Convert filters to Frappe/ERPNext format
+    const filterArray = Object.entries(filters).map(([key, value]) => [key, "=", value]);
+    const filterString = encodeURIComponent(JSON.stringify(filterArray));
+
+    return await frappeAPI.makeAuthenticatedRequest(
+      'GET',
+      `/api/resource/UAE Area?filters=${filterString}`
+    );
+  },
   upload: async (file: File, options: {
     is_private?: boolean;
     folder?: string;

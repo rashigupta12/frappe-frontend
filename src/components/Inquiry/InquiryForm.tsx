@@ -16,7 +16,11 @@ import {
 } from "lucide-react";
 import { Calendar } from "../ui/calendar";
 import { useEffect, useState } from "react";
-import { type Lead, type LeadFormData, useLeads } from "../../context/LeadContext";
+import {
+  type Lead,
+  type LeadFormData,
+  useLeads,
+} from "../../context/LeadContext";
 import {
   budgetRanges,
   buildingTypes,
@@ -34,7 +38,6 @@ import {
   SelectValue,
 } from "../ui/select";
 import { Textarea } from "../ui/textarea";
-import AddressFinder from "./AddressFinder";
 import { Label } from "../ui/label";
 import { useAssignStore } from "../../store/assign";
 import { format } from "date-fns";
@@ -42,6 +45,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { cn } from "../../lib/utils";
 import { useAuth } from "../../context/AuthContext";
 import { useNavigate } from "react-router-dom";
+import PropertyAddressSection from "./PropertyAddress";
 
 type FormSection = {
   id: string;
@@ -73,7 +77,8 @@ const defaultFormData: LeadFormData = {
   custom_preferred_inspection_time: "",
   custom_special_requirements: "",
   custom_map_data: "",
-  custom_building_number: "",
+  custom_bulding__apartment__villa__office_number: "",
+  custom_reference_name: "",
   custom_alternative_inspection_time: "",
   utm_source: "",
 };
@@ -115,10 +120,13 @@ const sections: FormSection[] = [
     icon: <User className="h-4 w-4" />,
     completed: false,
   },
-  
 ];
 
-const InquiryForm: React.FC<InquiryFormProps> = ({ isOpen, onClose, inquiry }) => {
+const InquiryForm: React.FC<InquiryFormProps> = ({
+  isOpen,
+  onClose,
+  inquiry,
+}) => {
   const { user } = useAuth();
   const {
     loading,
@@ -139,7 +147,6 @@ const InquiryForm: React.FC<InquiryFormProps> = ({ isOpen, onClose, inquiry }) =
     createTodo,
     createTodoLoading,
     error: assignError,
-    // clearError,
     success: assignSuccess,
   } = useAssignStore();
 
@@ -149,28 +156,39 @@ const InquiryForm: React.FC<InquiryFormProps> = ({ isOpen, onClose, inquiry }) =
   const [priority, setPriority] = useState<PriorityLevel>("Medium");
   const [inspectorEmail, setInspectorEmail] = useState("");
   const [hasFetchedInitialData, setHasFetchedInitialData] = useState(false);
-  const [formData, setFormData] = useState<LeadFormData>({ ...defaultFormData });
-  const navigate = useNavigate()
+  const [formData, setFormData] = useState<LeadFormData>({
+    ...defaultFormData,
+  });
+  const [showReferenceInput, setShowReferenceInput] = useState(false);
+  const navigate = useNavigate();
 
   // Update section completion status
-  const updatedSections = sections.map(section => {
+  const updatedSections = sections.map((section) => {
     switch (section.id) {
       case "contact":
         return {
           ...section,
-          completed: !!formData.lead_name && !!formData.email_id && !!formData.mobile_no,
+          completed:
+            !!formData.lead_name && 
+            !!formData.email_id && 
+            !!formData.mobile_no &&
+            (!showReferenceInput || !!formData.custom_reference_name),
         };
       case "job":
         return { ...section, completed: !!formData.custom_job_type };
       case "property":
         return {
           ...section,
-          completed: !!formData.custom_property_type && !!formData.custom_type_of_building,
+          completed:
+            !!formData.custom_property_type &&
+            !!formData.custom_type_of_building,
         };
       case "inspection":
         return {
           ...section,
-          completed: !!formData.custom_preferred_inspection_date && !!formData.custom_preferred_inspection_time,
+          completed:
+            !!formData.custom_preferred_inspection_date &&
+            !!formData.custom_preferred_inspection_time,
         };
       case "inspector":
         return { ...section, completed: !!inspectorEmail };
@@ -191,12 +209,19 @@ const InquiryForm: React.FC<InquiryFormProps> = ({ isOpen, onClose, inquiry }) =
       };
       fetchData();
     }
-  }, [isOpen, hasFetchedInitialData, fetchJobTypes, fetchProjectUrgency, fetchUtmSource, fetchInspectors]);
+  }, [
+    isOpen,
+    hasFetchedInitialData,
+    fetchJobTypes,
+    fetchProjectUrgency,
+    fetchUtmSource,
+    fetchInspectors,
+  ]);
 
   // Set default values when data is loaded
   useEffect(() => {
     if (hasFetchedInitialData && !inquiry) {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
         custom_job_type: jobTypes[0]?.name || "",
         custom_project_urgency: projectUrgency[0]?.name || "",
@@ -212,17 +237,28 @@ const InquiryForm: React.FC<InquiryFormProps> = ({ isOpen, onClose, inquiry }) =
         ...defaultFormData,
         ...inquiry,
         custom_job_type: inquiry.custom_job_type || jobTypes[0]?.name || "",
-        custom_project_urgency: inquiry.custom_project_urgency || projectUrgency[0]?.name || "",
+        custom_project_urgency:
+          inquiry.custom_project_urgency || projectUrgency[0]?.name || "",
         utm_source: inquiry.utm_source || utmSource[0]?.name || "",
-        custom_preferred_inspection_date: inquiry.custom_preferred_inspection_date
-          ? new Date(inquiry.custom_preferred_inspection_date)
-          : null,
-        custom_alternative_inspection_date: inquiry.custom_alternative_inspection_date
-          ? new Date(inquiry.custom_alternative_inspection_date)
-          : null,
+        custom_preferred_inspection_date:
+          inquiry.custom_preferred_inspection_date
+            ? new Date(inquiry.custom_preferred_inspection_date)
+            : null,
+        custom_alternative_inspection_date:
+          inquiry.custom_alternative_inspection_date
+            ? new Date(inquiry.custom_alternative_inspection_date)
+            : null,
       });
       setPhoneNumber(inquiry.mobile_no || "+971 ");
-      setDate(inquiry.custom_preferred_inspection_date ? new Date(inquiry.custom_preferred_inspection_date) : new Date());
+      setDate(
+        inquiry.custom_preferred_inspection_date
+          ? new Date(inquiry.custom_preferred_inspection_date)
+          : new Date()
+      );
+      setShowReferenceInput(
+        inquiry.utm_source === "Reference" || 
+        inquiry.utm_source === "Supplier Reference"
+      );
     }
   }, [inquiry, hasFetchedInitialData, jobTypes, projectUrgency, utmSource]);
 
@@ -233,6 +269,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({ isOpen, onClose, inquiry }) =
     setPriority("Medium");
     setDate(new Date());
     setHasFetchedInitialData(false);
+    setShowReferenceInput(false);
   };
 
   const toggleSection = (sectionId: string) => {
@@ -243,15 +280,24 @@ const InquiryForm: React.FC<InquiryFormProps> = ({ isOpen, onClose, inquiry }) =
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSelectChange = (name: string, value: string) => {
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ 
+      ...prev, 
+      [name]: value,
+      ...(name === "utm_source" && { custom_reference_name: "" })
+    }));
+    if (name === "utm_source") {
+      setShowReferenceInput(
+        value === "Reference" || value === "Supplier Reference"
+      );
+    }
   };
 
   const handleDateChange = (name: string, date: Date | undefined) => {
-    setFormData(prev => ({ ...prev, [name]: date || null }));
+    setFormData((prev) => ({ ...prev, [name]: date || null }));
   };
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -259,7 +305,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({ isOpen, onClose, inquiry }) =
 
     if (!input.startsWith("+971 ")) {
       setPhoneNumber("+971 ");
-      setFormData(prev => ({ ...prev, mobile_no: "+971 " }));
+      setFormData((prev) => ({ ...prev, mobile_no: "+971 " }));
       return;
     }
 
@@ -291,7 +337,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({ isOpen, onClose, inquiry }) =
     }
 
     setPhoneNumber(formattedNumber);
-    setFormData(prev => ({ ...prev, mobile_no: formattedNumber }));
+    setFormData((prev) => ({ ...prev, mobile_no: formattedNumber }));
     validatePhoneNumber(formattedNumber);
   };
 
@@ -312,13 +358,21 @@ const InquiryForm: React.FC<InquiryFormProps> = ({ isOpen, onClose, inquiry }) =
       alert("Job type is required");
       return false;
     }
+    if (
+      (formData.utm_source === "Reference" || 
+       formData.utm_source === "Supplier Reference") &&
+      !formData.custom_reference_name
+    ) {
+      alert("Reference name is required");
+      return false;
+    }
     return true;
   };
 
   const saveLead = async (): Promise<string | undefined> => {
     try {
       const submissionData = formatSubmissionData(formData);
-      
+
       if (inquiry?.name) {
         await updateLead(inquiry.name, submissionData);
         return inquiry.name;
@@ -335,7 +389,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({ isOpen, onClose, inquiry }) =
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) return;
 
     try {
@@ -348,7 +402,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({ isOpen, onClose, inquiry }) =
 
   const handleAssignAndSave = async () => {
     if (!validateForm()) return;
-    
+
     if (!inspectorEmail) {
       alert("Please select an inspector");
       return;
@@ -364,7 +418,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({ isOpen, onClose, inquiry }) =
       if (!inquiryName) return;
 
       const preferredDate = format(date, "yyyy-MM-dd");
-      
+
       await createTodo({
         assigned_by: user?.username || "sales_rep@eits.com",
         inquiry_id: inquiryName,
@@ -375,7 +429,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({ isOpen, onClose, inquiry }) =
       });
 
       alert("Inspector assigned successfully!");
-      navigate("/sales?tab=assign")
+      navigate("/sales?tab=assign");
       onClose();
     } catch (error) {
       console.error("Error assigning inspector:", error);
@@ -448,6 +502,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({ isOpen, onClose, inquiry }) =
                   handleAssignAndSave={handleAssignAndSave}
                   createTodoLoading={createTodoLoading}
                   loading={loading}
+                  showReferenceInput={showReferenceInput}
                 />
               ))}
 
@@ -513,12 +568,15 @@ const Section = ({
   handleAssignAndSave,
   createTodoLoading,
   loading,
+  showReferenceInput,
 }: {
   section: FormSection;
   activeSection: string;
   toggleSection: (sectionId: string) => void;
   formData: LeadFormData;
-  handleInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
+  handleInputChange: (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => void;
   handleSelectChange: (name: string, value: string) => void;
   handleDateChange: (name: string, date: Date | undefined) => void;
   handlePhoneChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -539,6 +597,7 @@ const Section = ({
   handleAssignAndSave: () => Promise<void>;
   createTodoLoading: boolean;
   loading: boolean;
+  showReferenceInput: boolean;
 }) => {
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (
@@ -649,15 +708,14 @@ const Section = ({
                   htmlFor="utm_source"
                   className="block text-sm font-medium text-gray-700 mb-1"
                 >
-                  Source Of Inquiry{" "}
-                  <span className="text-red-500">*</span>
+                  Source Of Inquiry <span className="text-red-500">*</span>
                 </label>
 
                 <Select
                   value={formData.utm_source || ""}
-                  onValueChange={(value) =>
-                    handleSelectChange("utm_source", value)
-                  }
+                  onValueChange={(value) => {
+                    handleSelectChange("utm_source", value);
+                  }}
                 >
                   <SelectTrigger
                     className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
@@ -678,6 +736,26 @@ const Section = ({
                     ))}
                   </SelectContent>
                 </Select>
+
+                {showReferenceInput && (
+                  <div className="mt-4">
+                    <label
+                      htmlFor="custom_reference_name"
+                      className="block text-sm font-medium text-gray-700 mb-1"
+                    >
+                      Reference Name <span className="text-red-500">*</span>
+                    </label>
+                    <Input
+                      type="text"
+                      id="custom_reference_name"
+                      name="custom_reference_name"
+                      value={formData.custom_reference_name || ""}
+                      onChange={handleInputChange}
+                      required
+                      placeholder="Enter reference name"
+                    />
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -783,117 +861,13 @@ const Section = ({
           )}
 
           {section.id === "property" && (
-            <div>
-              <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Category
-                  </label>
-                  <Select
-                    value={formData.custom_property_type || ""}
-                    onValueChange={(value) =>
-                      handleSelectChange("custom_property_type", value)
-                    }
-                  >
-                    <SelectTrigger className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                      <SelectValue placeholder="Select property type" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
-                      {propertyTypes.map((type) => (
-                        <SelectItem
-                          key={type}
-                          value={type}
-                          className="px-4 py-2 text-sm text-gray-700 hover:bg-emerald-100 focus:bg-emerald-100 cursor-pointer"
-                        >
-                          {type}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Type
-                  </label>
-                  <Select
-                    value={formData.custom_type_of_building || ""}
-                    onValueChange={(value) =>
-                      handleSelectChange("custom_type_of_building", value)
-                    }
-                  >
-                    <SelectTrigger className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                      <SelectValue placeholder="Select building type" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
-                      {buildingTypes.map((type) => (
-                        <SelectItem
-                          key={type}
-                          value={type}
-                          className="px-4 py-2 text-sm text-gray-700 hover:bg-emerald-100 focus:bg-emerald-100 cursor-pointer"
-                        >
-                          {type}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-2">
-                <div>
-                  <label
-                    htmlFor="custom_building_name"
-                    className="block text-sm font-medium text-gray-700 mb-1"
-                  >
-                    Name
-                  </label>
-                  <Input
-                    type="text"
-                    id="custom_building_name"
-                    name="custom_building_name"
-                    value={formData.custom_building_name || ""}
-                    onChange={handleInputChange}
-                    placeholder="Enter Property name"
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  />
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="custom_building_number"
-                    className="block text-sm font-medium text-gray-700 mb-1"
-                  >
-                    Number
-                  </label>
-                  <Input
-                    type="text"
-                    id="custom_building_number"
-                    name="custom_building_number"
-                    value={formData.custom_building_number || ""}
-                    onChange={handleInputChange}
-                    placeholder="Enter Property number"
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Location
-                  </label>
-
-                  <AddressFinder
-                    onSelect={(location) => {
-                      if (location) {
-                        handleSelectChange("custom_map_data", location.display_name);
-                      } else {
-                        handleSelectChange("custom_map_data", "");
-                      }
-                    }}
-                    initialValue={formData.custom_map_data || ""}
-                  />
-                </div>
-              </div>
-            </div>
+            <PropertyAddressSection
+              formData={formData}
+              handleInputChange={handleInputChange}
+              handleSelectChange={handleSelectChange}
+              propertyTypes={propertyTypes}
+              buildingTypes={buildingTypes}
+            />
           )}
 
           {section.id === "inspection" && (
@@ -940,7 +914,7 @@ const Section = ({
               </div>
             </div>
           )}
-           {section.id === "additional" && (
+          {section.id === "additional" && (
             <div className="space-y-4">
               <div>
                 <label
@@ -960,8 +934,6 @@ const Section = ({
               </div>
             </div>
           )}
-
-          
 
           {section.id === "inspector" && (
             <div className="space-y-4">
@@ -988,10 +960,7 @@ const Section = ({
                   </SelectTrigger>
                   <SelectContent className="bg-white border border-gray-300 max-h-[200px]">
                     {inspectors.map((inspector) => (
-                      <SelectItem
-                        key={inspector.name}
-                        value={inspector.name}
-                      >
+                      <SelectItem key={inspector.name} value={inspector.name}>
                         <div className="flex items-center gap-2">
                           <span>{inspector.name}</span>
                         </div>
@@ -1016,18 +985,16 @@ const Section = ({
                         )}
                       >
                         <CalendarIcon className="mr-2 h-4 w-4" />
-                        {date ? (
-                          format(date, "PP")
-                        ) : (
-                          <span>Pick date</span>
-                        )}
+                        {date ? format(date, "PP") : <span>Pick date</span>}
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0 bg-white border border-gray-200 shadow-md">
                       <Calendar
                         mode="single"
                         selected={date}
-                        onSelect={(selectedDate: Date | undefined) => setDate(selectedDate)}
+                        onSelect={(selectedDate: Date | undefined) =>
+                          setDate(selectedDate)
+                        }
                         initialFocus
                       />
                     </PopoverContent>
@@ -1068,7 +1035,8 @@ const Section = ({
                     !formData.lead_name ||
                     !formData.email_id ||
                     !formData.mobile_no ||
-                    !formData.custom_job_type
+                    !formData.custom_job_type ||
+                    (showReferenceInput && !formData.custom_reference_name)
                   }
                   className="bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-700 hover:to-teal-600 text-white"
                 >
@@ -1084,8 +1052,6 @@ const Section = ({
               </div>
             </div>
           )}
-
-         
         </div>
       </div>
     </div>

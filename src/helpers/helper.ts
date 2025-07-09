@@ -124,32 +124,32 @@ export const getBudgetColor = (budget: string) => {
 
 export const getUrgencyColor = (urgency: string) => {
   const colors: Record<string, { bg: string; text: string; border: string }> = {
-    "1. Emergency in  1 Hr": {
+    "1. Emergency (1 Hr)": {
       bg: "#FECACA",
       text: "#991B1B",
       border: "#EF4444",
     },
-    "3. Fast 1 day": {
+    "3. Fast (1 day)": {
       bg: "#FDE68A",
       text: "#92400E",
       border: "#F59E0B",
     },
-    "4. Normal 1 to 7 days": {
+    "4. Normal (1 to 7 days)": {
       bg: "#BFDBFE",
       text: "#1E40AF",
       border: "#3B82F6",
     },
-    "6. Planned 1 month & above": {
+    "6. Planned (1 month & above)": {
       bg: "#DDD6FE",
       text: "#5B21B6",
       border: "#8B5CF6",
     },
-    "5. Relaxed 1 to 2 weeks": {
+    "5. Relaxed (1 to 2 weeks)": {
       bg: "#D1FAE5",
       text: "#065F46",
       border: "#10B981",
     },
-    "2. Urgent 1 to 4 Hrs": {
+    "2. Urgent (1 to 4 Hrs)": {
       bg: "#FEF3C7",
       text: "#92400E",
       border: "#F59E0B",
@@ -166,12 +166,12 @@ export const getUrgencyColor = (urgency: string) => {
 // Label Shortening Helpers
 export const getUrgencyShortLabel = (urgency: string) => {
   const labels: Record<string, string> = {
-    "1. Emergency in  1 Hr": "Emergency",
-    "2. Urgent 1 to 4 Hrs": "Urgent",
-    "3. Fast 1 day": "Fast",
-    "4. Normal 1 to 7 days": "Normal",
-    "5. Relaxed 1 to 2 weeks": "Relaxed",
-    "6. Planned 1 month & above": "Planned",
+    "1. Emergency (1 Hr)": "Emergency",
+    "2. Urgent (1 to 4 Hrs)": "Urgent",
+    "3. Fast (1 day)": "Fast",
+    "4. Normal (1 to 7 days)": "Normal",
+    "5. Relaxed (1 to 2 weeks)": "Relaxed",
+    "6. Planned (1 month & above)": "Planned",
   };
   return labels[urgency] || urgency;
 };

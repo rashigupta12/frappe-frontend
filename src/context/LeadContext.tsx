@@ -54,10 +54,13 @@ export interface Lead {
   unsubscribed: number;
   blog_subscriber: number;
   doctype: string;
-  custom_building_number: string;
+  custom_bulding__apartment__villa__office_number: string;
   custom_alternative_inspection_time: string;
   notes: any[];
-  utm_source: string; // Assuming this is a string, adjust if it's an object
+  utm_source: string;
+  custom_property_area?: string;
+  propertyarea?: string; // New field for combined address
+  custom_reference_name: string; // New field for reference name
 }
 
 // Define form data interface for creating/updating leads
@@ -71,7 +74,8 @@ export interface LeadFormData {
   custom_job_type?: string;
   custom_property_type?: string;
   custom_type_of_building?: string;
-  custom_building_name?: string;
+  custom_building_name?: string; // Address Line 1
+  custom_bulding__apartment__villa__office_number?: string; // Address Line 2
   custom_map_data?: string;
   custom_preferred_inspection_date?: string | Date | null;
   custom_preferred_inspection_time?: string;
@@ -83,23 +87,40 @@ export interface LeadFormData {
   company?: string;
   status?: string;
   qualification_status?: string;
-  custom_building_number?: string;
   custom_alternative_inspection_time?: string;
+  utm_source?: string;
+  propertyarea?: string; // Combined address field
   [key: string]: any;
-  utm_source?: string; // Assuming this is a string, adjust if it's an object
- 
+  custom_reference_name: string; // New field for reference name
 }
 
 export interface JobType {
   name: string;
- 
 }
 
 export interface ProjectUrgency {
   name: string;
 }
+
 export interface UTMSource {
   name: string;
+}
+
+// New interfaces for hierarchical address data
+export interface Emirate {
+  name: string;
+
+}
+
+export interface City {
+  name: string;
+  emirate?: string;
+}
+
+export interface Area {
+  name: string;
+  city?: string;
+  emirate?: string;
 }
 
 // Context state interface
@@ -116,11 +137,19 @@ interface LeadsContextState {
   clearError: () => void;
   jobTypes: JobType[];
   fetchJobTypes: () => Promise<void>;
-  // Add any other methods you need
-  projectUrgency: ProjectUrgency[]; // Define this if needed
-  fetchProjectUrgency?: () => Promise<void>; // Define this if needed
-  utmSource: UTMSource[]; // Define this if needed
-  fetchUtmSource: () => Promise<void> // Define this if needed
+  projectUrgency: ProjectUrgency[];
+  fetchProjectUrgency?: () => Promise<void>;
+  utmSource: UTMSource[];
+  fetchUtmSource: () => Promise<void>;
+  
+  // New address-related state and methods
+  emirates: Emirate[];
+  cities: City[];
+  areas: Area[];
+  fetchEmirates: () => Promise<void>;
+  fetchCities: (emirate: string) => Promise<void>;
+  fetchAreas: (city: string) => Promise<void>;
+  addressLoading: boolean;
 }
 
 // Create context
@@ -143,6 +172,12 @@ export const LeadsProvider: React.FC<LeadsProviderProps> = ({ children }) => {
   const [projectUrgency, setProjectUrgency] = useState<ProjectUrgency[]>([]);
   const [jobTypes, setJobTypes] = useState<JobType[]>([]);
   const [utmSource, setUtmSource] = useState<UTMSource[]>([]);
+  
+  // New state for address data
+  const [emirates, setEmirates] = useState<Emirate[]>([]);
+  const [cities, setCities] = useState<City[]>([]);
+  const [areas, setAreas] = useState<Area[]>([]);
+  const [addressLoading, setAddressLoading] = useState<boolean>(false);
 
   // Clear error
   const clearError = useCallback(() => {
@@ -162,14 +197,12 @@ export const LeadsProvider: React.FC<LeadsProviderProps> = ({ children }) => {
     try {
       const response = await frappeAPI.getAllLeads(user.username);
 
-      // If we only get names, fetch full details for each lead
       if (response.data && Array.isArray(response.data)) {
         if (
           response.data.length > 0 &&
           response.data[0].name &&
           !response.data[0].lead_name
         ) {
-          // We only have names, fetch full details
           const fullLeads: Lead[] = [];
           for (const leadSummary of response.data) {
             try {
@@ -181,7 +214,6 @@ export const LeadsProvider: React.FC<LeadsProviderProps> = ({ children }) => {
           }
           setLeads(fullLeads);
         } else {
-          // We have full lead data
           setLeads(response.data);
         }
       } else {
@@ -203,7 +235,6 @@ export const LeadsProvider: React.FC<LeadsProviderProps> = ({ children }) => {
     try {
       const response = await frappeAPI.getLeadById(leadId);
       return response.data;
-      // toast.success(`Lead ${leadId} fetched successfully!`);
     } catch (err) {
       console.error(`Error fetching lead ${leadId}:`, err);
       const errorMessage =
@@ -217,7 +248,7 @@ export const LeadsProvider: React.FC<LeadsProviderProps> = ({ children }) => {
   const processDate = (dateValue: any): string | null => {
     if (!dateValue) return null;
     if (dateValue instanceof Date && !isNaN(dateValue.getTime())) {
-      return dateValue.toISOString().split("T")[0]; // Format as YYYY-MM-DD
+      return dateValue.toISOString().split("T")[0];
     }
     if (typeof dateValue === "string" && dateValue.trim() !== "") {
       const date = new Date(dateValue);
@@ -232,7 +263,6 @@ export const LeadsProvider: React.FC<LeadsProviderProps> = ({ children }) => {
       setLoading(true);
       setError(null);
       try {
-        // Process dates
         const processedData = {
           ...leadData,
           custom_preferred_inspection_date: processDate(
@@ -248,7 +278,6 @@ export const LeadsProvider: React.FC<LeadsProviderProps> = ({ children }) => {
         const response = await frappeAPI.createLead(processedData);
         toast.success("Lead created successfully!");
 
-        // Refresh leads list
         await fetchLeads();
 
         return response.data;
@@ -272,7 +301,6 @@ export const LeadsProvider: React.FC<LeadsProviderProps> = ({ children }) => {
       setLoading(true);
       setError(null);
       try {
-        // Process dates
         const processedData = {
           ...leadData,
           custom_preferred_inspection_date: processDate(
@@ -286,9 +314,8 @@ export const LeadsProvider: React.FC<LeadsProviderProps> = ({ children }) => {
         console.log(`Updating lead ${leadId} with data:`, processedData);
 
         const response = await frappeAPI.updateLead(leadId, processedData);
-        toast.success(`Lead  updated successfully!`);
+        toast.success(`Lead updated successfully!`);
 
-        // Refresh leads list
         await fetchLeads();
 
         return response.data;
@@ -351,7 +378,6 @@ export const LeadsProvider: React.FC<LeadsProviderProps> = ({ children }) => {
       if (response.data && Array.isArray(response.data)) {
         console.log("Fetched UTM sources:", response.data);
         setUtmSource(response.data);
-        
       } else {
         setUtmSource([]);
       }
@@ -361,7 +387,72 @@ export const LeadsProvider: React.FC<LeadsProviderProps> = ({ children }) => {
     }
   }, []);
 
+  // Fetch emirates
+  const fetchEmirates = useCallback(async () => {
+    setAddressLoading(true);
+    try {
+      const response = await frappeAPI.getEmirate();
+      if (response.data && Array.isArray(response.data)) {
+        console.log("Fetched emirates:", response.data);
+        setEmirates(response.data);
+      } else {
+        setEmirates([]);
+      }
+    } catch (err) {
+      console.error("Error fetching emirates:", err);
+      setError(err instanceof Error ? err.message : "Failed to fetch emirates");
+    } finally {
+      setAddressLoading(false);
+    }
+  }, []);
 
+  // Fetch cities based on selected emirate
+  const fetchCities = useCallback(async (emirate: string) => {
+    if (!emirate) {
+      setCities([]);
+      return;
+    }
+
+    setAddressLoading(true);
+    try {
+      const response = await frappeAPI.getCity({ emirate });
+      if (response.data && Array.isArray(response.data)) {
+        console.log("Fetched cities:", response.data);
+        setCities(response.data);
+      } else {
+        setCities([]);
+      }
+    } catch (err) {
+      console.error("Error fetching cities:", err);
+      setError(err instanceof Error ? err.message : "Failed to fetch cities");
+    } finally {
+      setAddressLoading(false);
+    }
+  }, []);
+
+  // Fetch areas based on selected city
+  const fetchAreas = useCallback(async (city: string) => {
+    if (!city) {
+      setAreas([]);
+      return;
+    }
+
+    setAddressLoading(true);
+    try {
+      const response = await frappeAPI.getArea({ city });
+      if (response.data && Array.isArray(response.data)) {
+        console.log("Fetched areas:", response.data);
+        setAreas(response.data);
+      } else {
+        setAreas([]);
+      }
+    } catch (err) {
+      console.error("Error fetching areas:", err);
+      setError(err instanceof Error ? err.message : "Failed to fetch areas");
+    } finally {
+      setAddressLoading(false);
+    }
+  }, []);
 
   // Context value
   const contextValue: LeadsContextState = {
@@ -381,6 +472,13 @@ export const LeadsProvider: React.FC<LeadsProviderProps> = ({ children }) => {
     fetchProjectUrgency,
     utmSource,
     fetchUtmSource,
+    emirates,
+    cities,
+    areas,
+    fetchEmirates,
+    fetchCities,
+    fetchAreas,
+    addressLoading,
   };
 
   return (

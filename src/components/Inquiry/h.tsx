@@ -558,7 +558,7 @@ const InquiryPage = () => {
                   <div className="flex justify-between">
                     <span className="text-gray-600">Building Number:</span>
                     <span className="font-medium">
-                      {viewInquiry.custom_building_number || "-"}
+                      {viewInquiry.custom_bulding__apartment__villa__office_number || "-"}
                     </span>
                   </div>
                   {viewInquiry.custom_map_data && (
