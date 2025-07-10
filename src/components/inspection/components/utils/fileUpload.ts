@@ -40,6 +40,15 @@ export const formSchema = z.object({
           }),
           z.undefined()
         ]).optional(),
+        media2: z.union([
+          z.object({
+            id: z.string(),
+            url: z.string(),
+            type: z.enum(["image", "video", "audio"]),
+            remarks: z.string().optional(),
+          }),
+          z.undefined()
+        ]).optional(),
       })
     )
     .optional(),

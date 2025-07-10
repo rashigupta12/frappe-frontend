@@ -9,7 +9,7 @@ import {
   Info,
   Plus,
   Ruler,
-  Trash2,
+  Trash2
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
@@ -59,15 +59,12 @@ const CreateInspection = () => {
   const [dataLoaded, setDataLoaded] = useState(false);
   const [leadData, setLeadData] = useState<any>(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [cancelTodoModalOpen, setCancelTodoModalOpen] = useState(false);
   const [dimensionToDelete, setDimensionToDelete] = useState<number | null>(
     null
   );
   const isSubmitted = inspection?.docstatus === 1;
   const isReadOnly = isSubmitted;
-
-  console.log("CreateInspection component initialized");
-  console.log("Todo:", todo);
-  console.log("Inspection:", inspection);
 
   const {
     createInspection,
@@ -112,11 +109,9 @@ const CreateInspection = () => {
       let isUpdate = false;
 
       if (inspection) {
-        // Direct inspection access -> Update mode
         isUpdate = true;
         dataToPopulate = inspection;
 
-        // Fetch lead data if needed
         if (inspection.lead) {
           const fetchedLeadData = await fetchLeadData(inspection.lead);
           setLeadData(fetchedLeadData);
@@ -128,11 +123,9 @@ const CreateInspection = () => {
           }
         }
       } else if (todo) {
-        // Todo -> Create mode (always create new inspection)
         isUpdate = false;
         dataToPopulate = todo;
 
-        // Set property type if available
         if (todo.inquiry_data?.custom_property_type) {
           form.setValue(
             "property_type",
@@ -140,7 +133,6 @@ const CreateInspection = () => {
           );
         }
 
-        // Optional: Check if there's an existing inspection for this lead
         if (todo.reference_name) {
           const existingInspection = await fetchFirstInspectionByField(
             "lead",
@@ -154,25 +146,16 @@ const CreateInspection = () => {
           }
         }
       } else if (currentInspection) {
-        // Fallback to current inspection -> Update mode
         isUpdate = true;
         dataToPopulate = currentInspection;
       } else {
-        // No data available, redirect
         navigate("/inspector?tab=inspections");
         return;
       }
 
       setIsUpdateMode(isUpdate);
-      console.log("Mode determined:", isUpdate ? "UPDATE" : "CREATE");
-      console.log(
-        "Data source:",
-        inspection ? "inspection" : todo ? "todo" : "currentInspection"
-      );
 
-      // Populate form with data
       if (dataToPopulate) {
-        // Set basic fields
         if (dataToPopulate.inspection_date) {
           try {
             form.setValue(
@@ -198,7 +181,6 @@ const CreateInspection = () => {
           dataToPopulate.status || "Scheduled"
         );
 
-        // Set measurement_sketch (MediaItem)
         if (dataToPopulate.measurement_sketch) {
           const mediaType = getMediaType(dataToPopulate.measurement_sketch);
           if (mediaType !== "unknown") {
@@ -215,27 +197,36 @@ const CreateInspection = () => {
           form.setValue("measurement_sketch", undefined);
         }
 
-        // Set site_dimensions with MediaItem for media field
         if (
           dataToPopulate.site_dimensions &&
           Array.isArray(dataToPopulate.site_dimensions)
         ) {
           const formattedDimensions = dataToPopulate.site_dimensions.map(
             (dim: any) => ({
-              floor: dim.floor || "", // Add this line
-              room: dim.room || "", // Add this line
-              entity: dim.entity || "", // Add this line
+              floor: dim.floor || "",
+              room: dim.room || "",
+              entity: dim.entity || "",
               area_name: dim.area_name || "",
               dimensionsunits: dim.dimensionsunits || "",
               media: dim.media
-                ? ({
+                ? {
                     id: `${dim.media.split("/").pop()}-${Math.random()
                       .toString(36)
                       .substr(2, 9)}`,
                     url: dim.media,
                     type: getMediaType(dim.media),
                     remarks: dim.media.split("/").pop(),
-                  } as MediaItem)
+                  }
+                : undefined,
+              media2: dim.media2
+                ? {
+                    id: `${dim.media2.split("/").pop()}-${Math.random()
+                      .toString(36)
+                      .substr(2, 9)}`,
+                    url: dim.media2,
+                    type: getMediaType(dim.media2),
+                    remarks: dim.media2.split("/").pop(),
+                  }
                 : undefined,
             })
           );
@@ -244,7 +235,6 @@ const CreateInspection = () => {
           replace([]);
         }
 
-        // Set custom_site_images
         if (
           dataToPopulate.custom_site_images &&
           Array.isArray(dataToPopulate.custom_site_images)
@@ -283,14 +273,10 @@ const CreateInspection = () => {
   ]);
 
   const handleSubmit = async (values: z.infer<typeof formSchema>) => {
-    console.log("Form values before submission:", values);
-    console.log("Submission mode:", isUpdateMode ? "UPDATE" : "CREATE");
-
     try {
       setLoading(true);
       const leadReference = todo?.reference_name || inspection?.lead;
 
-      // Extract URLs from MediaItems
       const measurementSketchUrl = values.measurement_sketch?.url || undefined;
       const siteDimensionsWithUrls = values.site_dimensions?.map((dim) => ({
         floor: dim.floor || "",
@@ -299,6 +285,7 @@ const CreateInspection = () => {
         area_name: dim.area_name,
         dimensionsunits: dim.dimensionsunits,
         media: dim.media?.url || "",
+        media2: dim.media2?.url || "",
       }));
       const customSiteImagesWithUrls = values.custom_site_images
         ?.filter((img) => typeof img.url === "string")
@@ -321,14 +308,10 @@ const CreateInspection = () => {
         custom_site_images: customSiteImagesWithUrls,
       };
 
-      console.log("Final submission data:", inspectionData);
-
       if (isUpdateMode && inspection?.name) {
-        // Update existing inspection
         await updateInspectionbyId(inspection.name, inspectionData);
         toast.success("Inspection updated successfully!");
       } else {
-        // Create new inspection
         await createInspection(inspectionData, todo?.name);
         toast.success("Inspection created successfully!");
       }
@@ -361,7 +344,6 @@ const CreateInspection = () => {
       if (todo?.name) {
         await updateTodoStatus(todo.name, "Cancelled");
         await UpdateLeadStatus(todo.reference_name, "Lead");
-
         toast.success("Todo cancelled successfully!");
         navigate("/inspector?tab=inspections");
       }
@@ -370,28 +352,26 @@ const CreateInspection = () => {
       console.error("Error cancelling todo:", error);
     } finally {
       setCancelling(false);
+      setCancelTodoModalOpen(false);
     }
   };
 
-  // FIXED: Updated getDisplayData to handle inspection name properly
   const getDisplayData = () => {
     if (todo) {
       return {
         leadDetails: todo.inquiry_data,
         showTodoActions: true,
-        inspectionName: null, // No inspection name for new inspections
-        inspectionId: null, // No inspection ID for new inspections
+        inspectionName: null,
+        inspectionId: null,
       };
     } else if (inspection) {
       return {
         leadDetails: leadData,
         showTodoActions: false,
-        inspectionName: inspection.name || null, // Use actual inspection name
-        inspectionId: inspection.inspection_id || null, // Use actual inspection ID
+        inspectionName: inspection.name || null,
+        inspectionId: inspection.inspection_id || null,
       };
     }
-
-    // Return a fallback object
     return {
       leadDetails: null,
       showTodoActions: false,
@@ -432,8 +412,6 @@ const CreateInspection = () => {
     );
   }
 
-  console.log("Display Data:", displayData);
-  console.log("is update", isUpdateMode);
   return (
     <div className="w-full bg-gradient-to-b from-gray-50 to-white min-h-screen m-0 p-0">
       <Card className="border-none shadow-sm max-w-7xl mx-auto p-0 m-0 gap-0">
@@ -498,7 +476,7 @@ const CreateInspection = () => {
                                         <FormControl>
                                           <Button
                                             variant="outline"
-                                            disabled={isReadOnly} // Add this line
+                                            disabled={isReadOnly}
                                             className="w-full justify-between text-left font-normal bg-white border-gray-300 hover:bg-gray-50 h-10"
                                           >
                                             {field.value ? (
@@ -514,7 +492,7 @@ const CreateInspection = () => {
                                           </Button>
                                         </FormControl>
                                       </PopoverTrigger>
-                                      {!isReadOnly && ( // Conditionally render popover content
+                                      {!isReadOnly && (
                                         <PopoverContent
                                           className="w-auto p-0"
                                           align="start"
@@ -551,7 +529,7 @@ const CreateInspection = () => {
                                       <div className="relative">
                                         <Input
                                           type="time"
-                                          disabled={isReadOnly} // Add this line
+                                          disabled={isReadOnly}
                                           className="pl-3 bg-white border-gray-300 h-10 text-gray-900"
                                           {...field}
                                         />
@@ -566,7 +544,7 @@ const CreateInspection = () => {
                         </AccordionContent>
                       </AccordionItem>
 
-                      {/* Site Dimensions Section (Single media per dimension) */}
+                      {/* Site Dimensions Section */}
                       <AccordionItem
                         value="dimensions"
                         className="border border-gray-200 rounded-lg"
@@ -586,210 +564,212 @@ const CreateInspection = () => {
                               )}
                               className="w-full space-y-3"
                             >
-                              {fields.map(
-                                (field, index) => (
-                                  console.log(
-                                    `Rendering area dimension ${index}`
-                                  ),
-                                  (
-                                    <AccordionItem
-                                      key={field.id}
-                                      value={`area-${index}`}
-                                      className="border border-gray-200 rounded-lg bg-gray-50"
-                                    >
-                                      <AccordionTrigger className="px-3 py-3 hover:no-underline">
-                                        <div className="flex items-center justify-between w-full">
-                                          <div className="flex items-center gap-2">
-                                            <span className="font-medium text-gray-700 text-sm">
-                                              {form.watch(
-                                                `site_dimensions.${index}.room`
-                                              ) || `Area ${index + 1}`}
-                                            </span>
-                                          </div>
-                                          <Button
-                                            type="button"
-                                            variant="ghost"
-                                            size="sm"
-                                            disabled={isReadOnly} // Add this line
-                                            className="text-red-500 hover:text-red-600 hover:bg-red-50 h-7 w-7 p-0 mr-2"
-                                            onClick={(e) => {
-                                              handleDeleteAreaDimension(
-                                                e,
-                                                index
-                                              );
-                                            }}
-                                          >
-                                            <Trash2 className="h-4 w-4" />
-                                          </Button>
-                                        </div>
-                                      </AccordionTrigger>
-                                      <AccordionContent className="px-3 pb-3">
-                                        <div className="space-y-3">
-                                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                            <FormField
-                                              control={form.control}
-                                              name={`site_dimensions.${index}.floor`}
-                                              render={({
-                                                field: floorField,
-                                              }) => (
-                                                <FormItem>
-                                                  <FormLabel className="text-gray-700 text-sm">
-                                                    Floor
-                                                  </FormLabel>
-                                                  <FormControl>
-                                                    <Input
-                                                      placeholder="e.g., 1st Floor"
-                                                      disabled={isReadOnly} // Add this line
-                                                      className="bg-white border-gray-300 h-9"
-                                                      {...floorField}
-                                                    />
-                                                  </FormControl>
-                                                  <FormMessage />
-                                                </FormItem>
-                                              )}
-                                            />
-                                            <FormField
-                                              control={form.control}
-                                              name={`site_dimensions.${index}.room`}
-                                              render={({
-                                                field: roomField,
-                                              }) => (
-                                                <FormItem>
-                                                  <FormLabel className="text-gray-700 text-sm">
-                                                    Room
-                                                  </FormLabel>
-                                                  <FormControl>
-                                                    <Input
-                                                      placeholder="e.g., Bedroom"
-                                                      disabled={isReadOnly} // Add this line
-                                                      className="bg-white border-gray-300 h-9"
-                                                      {...roomField}
-                                                    />
-                                                  </FormControl>
-                                                  <FormMessage />
-                                                </FormItem>
-                                              )}
-                                            />
-                                            <FormField
-                                              control={form.control}
-                                              name={`site_dimensions.${index}.entity`}
-                                              render={({
-                                                field: entityField,
-                                              }) => (
-                                                <FormItem>
-                                                  <FormLabel className="text-gray-700 text-sm">
-                                                    Entity
-                                                  </FormLabel>
-                                                  <FormControl>
-                                                    <Input
-                                                      placeholder="e.g., Wall"
-                                                      disabled={isReadOnly} // Add this line
-                                                      className="bg-white border-gray-300 h-9"
-                                                      {...entityField}
-                                                    />
-                                                  </FormControl>
-                                                  <FormMessage />
-                                                </FormItem>
-                                              )}
-                                            />
-                                            <FormField
-                                              control={form.control}
-                                              name={`site_dimensions.${index}.area_name`}
-                                              render={({
-                                                field: areaNameField,
-                                              }) => (
-                                                <FormItem>
-                                                  <FormLabel className="text-gray-700 text-sm">
-                                                    Area Name
-                                                    <span className="text-red-500">
-                                                      *
-                                                    </span>
-                                                  </FormLabel>
-                                                  <FormControl>
-                                                    <Input
-                                                      placeholder="e.g., Right side"
-                                                      disabled={isReadOnly} // Add this line
-                                                      className="bg-white border-gray-300 h-9"
-                                                      {...areaNameField}
-                                                    />
-                                                  </FormControl>
-                                                  <FormMessage />
-                                                </FormItem>
-                                              )}
-                                            />
-
-                                            <FormField
-                                              control={form.control}
-                                              name={`site_dimensions.${index}.dimensionsunits`}
-                                              render={({
-                                                field: dimensionsField,
-                                              }) => (
-                                                <FormItem>
-                                                  <FormLabel className="text-gray-700 text-sm">
-                                                    Dimensions/Units
-                                                    <span className="text-red-500">
-                                                      *
-                                                    </span>
-                                                  </FormLabel>
-                                                  <FormControl>
-                                                    <Input
-                                                      placeholder="e.g., 10x12 ft"
-                                                      disabled={isReadOnly} // Add this line
-                                                      className="bg-white border-gray-300 h-9"
-                                                      {...dimensionsField}
-                                                    />
-                                                  </FormControl>
-                                                  <FormMessage />
-                                                </FormItem>
-                                              )}
-                                            />
-                                          </div>
-
-                                          {/* Site Dimensions Media Upload - Only ONE file and image/vedio(both select and caputer) */}
-                                          <FormField
-                                            control={form.control}
-                                            name={`site_dimensions.${index}.media`}
-                                            render={({ field: mediaField }) => (
-                                              <FormItem>
-                                                <MediaUpload
-                                                  label="Area Photo/Video"
-                                                  multiple={false} // Only one file
-                                                  allowedTypes={[
-                                                    "image",
-                                                    "video",
-                                                  ]}
-                                                  value={
-                                                    mediaField.value as
-                                                      | MediaItem
-                                                      | undefined
-                                                  }
-                                                  onChange={(newMedia) => {
-                                                    mediaField.onChange(
-                                                      newMedia
-                                                    );
-                                                  }}
+                              {fields.map((field, index) => (
+                                <AccordionItem
+                                  key={field.id}
+                                  value={`area-${index}`}
+                                  className="border border-gray-200 rounded-lg bg-gray-50"
+                                >
+                                  <AccordionTrigger className="px-3 py-3 hover:no-underline">
+                                    <div className="flex items-center justify-between w-full">
+                                      <div className="flex items-center gap-2">
+                                        <span className="font-medium text-gray-700 text-sm">
+                                          {form.watch(
+                                            `site_dimensions.${index}.room`
+                                          ) || `Area ${index + 1}`}
+                                        </span>
+                                      </div>
+                                      <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        disabled={isReadOnly}
+                                        className="text-red-500 hover:text-red-600 hover:bg-red-50 h-7 w-7 p-0 mr-2"
+                                        onClick={(e) => {
+                                          handleDeleteAreaDimension(e, index);
+                                        }}
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    </div>
+                                  </AccordionTrigger>
+                                  <AccordionContent className="px-3 pb-3">
+                                    <div className="space-y-3">
+                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                        <FormField
+                                          control={form.control}
+                                          name={`site_dimensions.${index}.floor`}
+                                          render={({ field: floorField }) => (
+                                            <FormItem>
+                                              <FormLabel className="text-gray-700 text-sm">
+                                                Floor
+                                              </FormLabel>
+                                              <FormControl>
+                                                <Input
+                                                  placeholder="e.g., 1st Floor"
+                                                  disabled={isReadOnly}
+                                                  className="bg-white border-gray-300 h-9"
+                                                  {...floorField}
                                                 />
-                                                <FormMessage />
-                                              </FormItem>
-                                            )}
-                                          />
-                                        </div>
-                                      </AccordionContent>
-                                    </AccordionItem>
-                                  )
-                                )
-                              )}
+                                              </FormControl>
+                                              <FormMessage />
+                                            </FormItem>
+                                          )}
+                                        />
+                                        <FormField
+                                          control={form.control}
+                                          name={`site_dimensions.${index}.room`}
+                                          render={({ field: roomField }) => (
+                                            <FormItem>
+                                              <FormLabel className="text-gray-700 text-sm">
+                                                Room
+                                              </FormLabel>
+                                              <FormControl>
+                                                <Input
+                                                  placeholder="e.g., Bedroom"
+                                                  disabled={isReadOnly}
+                                                  className="bg-white border-gray-300 h-9"
+                                                  {...roomField}
+                                                />
+                                              </FormControl>
+                                              <FormMessage />
+                                            </FormItem>
+                                          )}
+                                        />
+                                        <FormField
+                                          control={form.control}
+                                          name={`site_dimensions.${index}.entity`}
+                                          render={({ field: entityField }) => (
+                                            <FormItem>
+                                              <FormLabel className="text-gray-700 text-sm">
+                                                Entity
+                                              </FormLabel>
+                                              <FormControl>
+                                                <Input
+                                                  placeholder="e.g., Wall"
+                                                  disabled={isReadOnly}
+                                                  className="bg-white border-gray-300 h-9"
+                                                  {...entityField}
+                                                />
+                                              </FormControl>
+                                              <FormMessage />
+                                            </FormItem>
+                                          )}
+                                        />
+                                        <FormField
+                                          control={form.control}
+                                          name={`site_dimensions.${index}.area_name`}
+                                          render={({ field: areaNameField }) => (
+                                            <FormItem>
+                                              <FormLabel className="text-gray-700 text-sm">
+                                                Area Name
+                                                <span className="text-red-500">
+                                                  *
+                                                </span>
+                                              </FormLabel>
+                                              <FormControl>
+                                                <Input
+                                                  placeholder="e.g., Right side"
+                                                  disabled={isReadOnly}
+                                                  className="bg-white border-gray-300 h-9"
+                                                  {...areaNameField}
+                                                />
+                                              </FormControl>
+                                              <FormMessage />
+                                            </FormItem>
+                                          )}
+                                        />
+
+                                        <FormField
+                                          control={form.control}
+                                          name={`site_dimensions.${index}.dimensionsunits`}
+                                          render={({
+                                            field: dimensionsField,
+                                          }) => (
+                                            <FormItem>
+                                              <FormLabel className="text-gray-700 text-sm">
+                                                Dimensions/Units
+                                                <span className="text-red-500">
+                                                  *
+                                                </span>
+                                              </FormLabel>
+                                              <FormControl>
+                                                <Input
+                                                  placeholder="e.g., 10x12 ft"
+                                                  disabled={isReadOnly}
+                                                  className="bg-white border-gray-300 h-9"
+                                                  {...dimensionsField}
+                                                />
+                                              </FormControl>
+                                              <FormMessage />
+                                            </FormItem>
+                                          )}
+                                        />
+                                      </div>
+
+                                      {/* Photo/Video Upload */}
+                                      <FormField
+                                        control={form.control}
+                                        name={`site_dimensions.${index}.media`}
+                                        render={({ field: mediaField }) => (
+                                          <FormItem>
+                                            <MediaUpload
+                                              label="Area Photo/Video"
+                                              multiple={false}
+                                              allowedTypes={["image", "video"]}
+                                              value={
+                                                mediaField.value as
+                                                  | MediaItem
+                                                  | undefined
+                                              }
+                                              onChange={(newMedia) => {
+                                                mediaField.onChange(newMedia);
+                                              }}
+                                            />
+                                            <FormMessage />
+                                          </FormItem>
+                                        )}
+                                      />
+
+                                      {/* Audio Recording Upload */}
+                                      <FormField
+                                        control={form.control}
+                                        name={`site_dimensions.${index}.media2`}
+                                        render={({ field: mediaField }) => (
+                                          <FormItem>
+                                            <MediaUpload
+                                              label="Audio Notes"
+                                              multiple={false}
+                                              allowedTypes={["audio"]}
+                                              value={
+                                                mediaField.value as
+                                                  | MediaItem
+                                                  | undefined
+                                              }
+                                              onChange={(newMedia) => {
+                                                mediaField.onChange(newMedia);
+                                              }}
+                                            />
+                                            <FormMessage />
+                                          </FormItem>
+                                        )}
+                                      />
+                                    </div>
+                                  </AccordionContent>
+                                </AccordionItem>
+                              ))}
                             </Accordion>
 
                             <Button
                               type="button"
                               variant="outline"
-                              disabled={isReadOnly} // Add this line
+                              disabled={isReadOnly}
                               onClick={() =>
                                 append({
                                   area_name: "",
                                   dimensionsunits: "",
                                   media: undefined,
+                                  media2: undefined,
                                 })
                               }
                               className="w-full border-dashed border-gray-300 text-gray-600 hover:text-emerald-700 hover:border-emerald-700 hover:bg-emerald-50 transition-colors"
@@ -801,7 +781,7 @@ const CreateInspection = () => {
                         </AccordionContent>
                       </AccordionItem>
 
-                      {/* Custom Images Section (Multiple images, videos, audio)  */}
+                      {/* Custom Images Section */}
                       <AccordionItem
                         value="custom-images"
                         className="border border-gray-200 rounded-lg"
@@ -822,13 +802,13 @@ const CreateInspection = () => {
                               <FormItem>
                                 <MediaUpload
                                   label="Upload Custom Photos/Videos/Audio"
-                                  multiple={true} // Allow multiple files
+                                  multiple={true}
                                   allowedTypes={["image", "video", "audio"]}
                                   value={field.value as MediaItem[]}
                                   onChange={(newMediaArray) => {
                                     field.onChange(newMediaArray);
                                   }}
-                                  maxFiles={20} // Example: limit to 20 files
+                                  maxFiles={20}
                                 />
                                 <FormMessage />
                               </FormItem>
@@ -837,7 +817,7 @@ const CreateInspection = () => {
                         </AccordionContent>
                       </AccordionItem>
 
-                      {/* Measurement Sketch Section (Single Image/Video) selection / caputer */}
+                      {/* Measurement Sketch Section */}
                       <AccordionItem
                         value="measurement-sketch"
                         className="border border-gray-200 rounded-lg"
@@ -858,7 +838,7 @@ const CreateInspection = () => {
                               <FormItem>
                                 <MediaUpload
                                   label="Upload Measurement Sketch (Image or Video)"
-                                  multiple={false} // Only one file
+                                  multiple={false}
                                   allowedTypes={["image", "video"]}
                                   value={field.value as MediaItem | undefined}
                                   onChange={(newMedia) => {
@@ -898,7 +878,7 @@ const CreateInspection = () => {
                                   <FormControl>
                                     <Textarea
                                       placeholder="Add detailed inspection notes here..."
-                                      disabled={isReadOnly} // Add this line
+                                      disabled={isReadOnly}
                                       className="min-h-[120px] resize-y bg-white border-gray-300"
                                       {...field}
                                     />
@@ -913,19 +893,18 @@ const CreateInspection = () => {
                     </Accordion>
 
                     <div className="flex justify-end gap-2 p-4 pt-0">
-                      {displayData?.showTodoActions &&
-                        !isReadOnly && ( // Add !isReadOnly condition
-                          <Button
-                            type="button"
-                            variant="outline"
-                            onClick={handleCancelTodo}
-                            disabled={cancelling || loading || storeLoading}
-                            className="bg-red-50 text-red-600 hover:bg-red-100 border-red-200"
-                          >
-                            {cancelling ? "Cancelling..." : "Cancel Todo"}
-                          </Button>
-                        )}
-                      {!isReadOnly && ( // Only show submit button if not read-only
+                      {displayData?.showTodoActions && !isReadOnly && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => setCancelTodoModalOpen(true)}
+                          disabled={cancelling || loading || storeLoading}
+                          className="bg-red-50 text-red-600 hover:bg-red-100 border-red-200"
+                        >
+                          Cancel Todo
+                        </Button>
+                      )}
+                      {!isReadOnly && (
                         <Button
                           type="submit"
                           disabled={loading || storeLoading}
@@ -946,12 +925,25 @@ const CreateInspection = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Delete Dimension Confirmation */}
       <DeleteConfirmation
         text="Are you sure you want to delete this area dimension? This action cannot be undone."
         onConfirm={handleConfirmDelete}
         onCancel={handleCancelDelete}
         isOpen={deleteModalOpen}
         setIsOpen={setDeleteModalOpen}
+      />
+
+      {/* Cancel Todo Confirmation */}
+      <DeleteConfirmation
+        text="Are you sure you want to cancel this todo? This action cannot be undone and the todo will be marked as cancelled."
+        onConfirm={handleCancelTodo}
+        onCancel={() => setCancelTodoModalOpen(false)}
+        isOpen={cancelTodoModalOpen}
+        setIsOpen={setCancelTodoModalOpen}
+       
+        
       />
     </div>
   );
