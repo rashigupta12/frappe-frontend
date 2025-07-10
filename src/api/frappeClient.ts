@@ -358,7 +358,7 @@ export const frappeAPI = {
 
     return await frappeAPI.makeAuthenticatedRequest(
       'GET',
-      `/api/resource/SiteInspection?filters=${filterString}&order_by=creation%20aesc`
+      `/api/resource/SiteInspection?filters=${filterString}&order_by=creation%20asc`
     );
   },
   UpdateInspection: async (inspectionName: string, inspectionData: Record<string, unknown>) => {

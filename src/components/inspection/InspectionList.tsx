@@ -15,7 +15,7 @@ interface InquiryData {
   mobile_no?: string;
   phone?: string;
   custom_budget_range?: string;
-  custom_map_data?: string;
+  custom_property_area?: string;
 }
 
 interface Todo {
@@ -217,12 +217,12 @@ const MobileInspectionList = ({ userEmail }: InspectionListProps) => {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="text-xs px-2 py-1 h-7 ml-2"
+                    className="text-xs px-2 py-1 h-7 ml-2 bg-blue-600 text-white hover:bg-blue-700"
                     onClick={() => {
                       navigate(`/inspector?tab=details`, { state: { todo } });
                     }}
                   >
-                    View
+                    Create
                   </Button>
                 </div>
 

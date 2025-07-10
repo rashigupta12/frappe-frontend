@@ -361,11 +361,11 @@ const InquiryPage = () => {
                     </div>
                   )}
 
-                  {inquiry.custom_map_data && (
+                  {inquiry.custom_property_area && (
                     <div className="flex items-start gap-2">
                       <MapPin className="h-3.5 w-3.5 mt-0.5 text-gray-400 flex-shrink-0" />
                       <span className="text-xs text-gray-600 leading-tight flex-1 line-clamp-2">
-                        {inquiry.custom_map_data}
+                        {inquiry.custom_property_area}
                       </span>
                     </div>
                   )}
@@ -561,11 +561,11 @@ const InquiryPage = () => {
                       {viewInquiry.custom_bulding__apartment__villa__office_number || "-"}
                     </span>
                   </div>
-                  {viewInquiry.custom_map_data && (
+                  {viewInquiry.custom_property_area && (
                     <div>
                       <span className="text-gray-600">Location:</span>
                       <p className="text-sm text-gray-800 mt-1">
-                        {viewInquiry.custom_map_data}
+                        {viewInquiry.custom_property_area}
                       </p>
                     </div>
                   )}

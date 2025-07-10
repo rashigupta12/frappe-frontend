@@ -240,7 +240,7 @@ const IspectionDialog: React.FC<IspectionDialogProps> = ({
                         Location:
                       </span>
                       <span className="ml-2 text-gray-900">
-                        {inquiry?.custom_map_data || "N/A"}
+                        {inquiry?.custom_property_area || "N/A"}
                       </span>
                     </div>
                   </div>

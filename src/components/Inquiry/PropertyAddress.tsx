@@ -4,7 +4,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Input } from "../ui/input";
 import { useLeads } from "../../context/LeadContext";
 
-
 interface PropertyAddressSectionProps {
   formData: any;
   handleInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -42,15 +41,15 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
 
   // Function to combine address components into a single string
   const combineAddress = useCallback((
-    addressLine1: string,
-    addressLine2: string,
-    area: string,
+    number: string,
+    name: string,
+    emirate: string,
     city: string,
-    emirate: string
+    area: string
   ): string => {
     const addressParts = [
-      addressLine1,
-      addressLine2,
+      number,
+      name,
       area,
       city,
       emirate
@@ -62,19 +61,18 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
   // Update combined address whenever any address component changes
   useEffect(() => {
     const combinedAddress = combineAddress(
-      formData.custom_building_name || "",
       formData.custom_bulding__apartment__villa__office_number || "",
-      selectedArea,
+      formData.custom_building_name || "",
+      selectedEmirate,
       selectedCity,
-      selectedEmirate
+      selectedArea
     );
     
     // Only update if there's a change to avoid infinite loops
-    if (combinedAddress !== formData.propertyarea) {
-      handleSelectChange("propertyarea", combinedAddress);
+    if (combinedAddress !== formData.custom_property_area) {
+      handleSelectChange("custom_property_area", combinedAddress);
     }
   }, [
-    
     formData.custom_bulding__apartment__villa__office_number,
     formData.custom_building_name,
     selectedArea,
@@ -82,7 +80,7 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
     selectedEmirate,
     combineAddress,
     handleSelectChange,
-    formData.propertyarea
+    formData.custom_property_area
   ]);
 
   // Handle emirate selection
@@ -108,7 +106,7 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
   return (
     <div>
       {/* Property Type and Building Type Row */}
-      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Category
@@ -164,14 +162,14 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
         </div>
       </div>
 
-      {/* Address Line 1 and 2 Row */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
+      {/* Number and Name Row */}
+      <div className="grid grid-cols-2 gap-4 mt-4">
         <div>
           <label
             htmlFor="custom_bulding__apartment__villa__office_number"
             className="block text-sm font-medium text-gray-700 mb-1"
           >
-           Number
+            Number
           </label>
           <Input
             type="text"
@@ -179,7 +177,7 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
             name="custom_bulding__apartment__villa__office_number"
             value={formData.custom_bulding__apartment__villa__office_number || ""}
             onChange={handleInputChange}
-            placeholder="Enter address line 1 (e.g., Unit number, Floor)"
+            placeholder="Enter unit/floor number"
             className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
           />
         </div>
@@ -196,13 +194,14 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
             name="custom_building_name"
             value={formData.custom_building_name || ""}
             onChange={handleInputChange}
-            placeholder="Enter address line 2 (e.g., Building name, Street)"
+            placeholder="Enter building/street name"
             className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
           />
         </div>
+      </div>
 
-        
-
+      {/* Emirate and City Row */}
+      <div className="grid grid-cols-2 gap-4 mt-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Emirate
@@ -222,16 +221,13 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
                   value={emirate.name}
                   className="px-4 py-2 text-sm text-gray-700 hover:bg-emerald-100 focus:bg-emerald-100 cursor-pointer"
                 >
-                  { emirate.name}
+                  {emirate.name}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
-      </div>
 
-      {/* City and Area Row */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             City
@@ -263,7 +259,10 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
             </SelectContent>
           </Select>
         </div>
+      </div>
 
+      {/* Area Row (single column) */}
+      <div className="grid grid-cols-1 gap-4 mt-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Area
@@ -289,21 +288,23 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
                   value={area.name}
                   className="px-4 py-2 text-sm text-gray-700 hover:bg-emerald-100 focus:bg-emerald-100 cursor-pointer"
                 >
-                  { area.name}
+                  {area.name}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
+      </div>
 
-        {/* Combined Address Preview (Read-only) */}
+      {/* Combined Address Row (single column) */}
+      <div className="grid grid-cols-1 gap-4 mt-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Combined Address
           </label>
           <Input
             type="text"
-            value={formData.propertyarea || ""}
+            value={formData.custom_property_area || ""}
             readOnly
             placeholder="Address will be combined automatically"
             className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm bg-gray-50 text-gray-600 cursor-not-allowed"

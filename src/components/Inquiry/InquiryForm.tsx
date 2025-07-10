@@ -76,7 +76,7 @@ const defaultFormData: LeadFormData = {
   custom_alternative_inspection_date: null,
   custom_preferred_inspection_time: "",
   custom_special_requirements: "",
-  custom_map_data: "",
+  custom_property_area: "",
   custom_bulding__apartment__villa__office_number: "",
   custom_reference_name: "",
   custom_alternative_inspection_time: "",

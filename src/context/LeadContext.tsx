@@ -59,7 +59,6 @@ export interface Lead {
   notes: any[];
   utm_source: string;
   custom_property_area?: string;
-  propertyarea?: string; // New field for combined address
   custom_reference_name: string; // New field for reference name
 }
 
@@ -89,7 +88,7 @@ export interface LeadFormData {
   qualification_status?: string;
   custom_alternative_inspection_time?: string;
   utm_source?: string;
-  propertyarea?: string; // Combined address field
+  custom_property_area?: string; // Combined address field
   [key: string]: any;
   custom_reference_name: string; // New field for reference name
 }
