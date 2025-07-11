@@ -433,7 +433,7 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
   maxFiles,
   maxSizeMB = 10,
 }) => {
-  const imageurl =  "https://eits.thebigocommunity.org";
+  const imageurl = "https://eits.thebigocommunity.org";
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
@@ -463,15 +463,15 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
     try {
       setShowCameraOptions(false);
       setShowCameraPreview(true);
-      
+
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
           facingMode: "environment", // Prefer rear camera
           width: { ideal: 1920 },
-          height: { ideal: 1080 }
-        }
+          height: { ideal: 1080 },
+        },
       });
-      
+
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         streamRef.current = stream;
@@ -486,26 +486,26 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
   // Capture image manually
   const captureImage = () => {
     if (!videoRef.current || !canvasRef.current) return;
-    
+
     const video = videoRef.current;
     const canvas = canvasRef.current;
-    
+
     // Set canvas dimensions to match video
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
-    
+
     // Draw current video frame to canvas
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
     if (ctx) {
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      
+
       // Convert canvas to data URL
-      const imageDataUrl = canvas.toDataURL('image/jpeg', 0.8);
+      const imageDataUrl = canvas.toDataURL("image/jpeg", 0.8);
       setCapturedImage(imageDataUrl);
-      
+
       // Stop camera stream
       if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => track.stop());
+        streamRef.current.getTracks().forEach((track) => track.stop());
         streamRef.current = null;
       }
     }
@@ -514,27 +514,27 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
   // Upload the captured image
   const uploadCapturedImage = async () => {
     if (!capturedImage) return;
-    
+
     setIsUploading(true);
     setUploadProgress(0);
-    
+
     try {
       // Convert data URL to Blob
-      const blob = await fetch(capturedImage).then(res => res.blob());
+      const blob = await fetch(capturedImage).then((res) => res.blob());
       const file = new File([blob], `captured-${Date.now()}.jpg`, {
-        type: 'image/jpeg',
-        lastModified: Date.now()
+        type: "image/jpeg",
+        lastModified: Date.now(),
       });
-      
+
       const fileUrl = await uploadFile(file, setUploadProgress);
-      
+
       const mediaItem: MediaItem = {
         id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         url: fileUrl,
         type: "image",
         remarks: "Captured Image",
       };
-      
+
       setPendingMediaItem(mediaItem);
       setShowRemarksDialog(true);
     } catch (error) {
@@ -551,7 +551,7 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
   // Cancel camera
   const cancelCamera = () => {
     if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
     }
     setCapturedImage(null);
@@ -642,14 +642,9 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
         const fileProgressStart = (i / validFiles.length) * 100;
 
         try {
-          const fileUrl = await uploadFile(
-            file,
-            (progress: number) => {
-              setUploadProgress(
-                fileProgressStart + progress / validFiles.length
-              );
-            }
-          );
+          const fileUrl = await uploadFile(file, (progress: number) => {
+            setUploadProgress(fileProgressStart + progress / validFiles.length);
+          });
 
           const mediaItem: MediaItem = {
             id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -787,78 +782,69 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
 
   return (
     <div className="space-y-4">
-      
-
       {/* Upload Controls */}
       <div className=" ">
         <div className="grid grid-cols-4 gap-4">
-          {/* Upload Button */}
-          <div className="flex flex-col items-center">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={
-                isUploading || (!multiple && currentMediaItems.length > 0)
-              }
-              className="h-14 w-14 rounded-2xl border-2 border-dashed border-gray-300 hover:border-blue-500 hover:bg-blue-50 transition-all duration-200 flex items-center justify-center"
-            >
-              <Upload className="h-6 w-6 text-gray-600" />
-            </Button>
-            <span className="text-xs text-gray-500 mt-2 text-center">
-              Upload
-            </span>
-          </div>
-
-          {/* Camera Options */}
-          {(allowedTypes.includes("image") ||
-            allowedTypes.includes("video")) && (
+          {/* Upload Button - Hidden when uploading or when single file limit reached */}
+          {!(isUploading || (!multiple && currentMediaItems.length > 0)) && (
             <div className="flex flex-col items-center">
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setShowCameraOptions(true)}
-                disabled={
-                  isUploading || (!multiple && currentMediaItems.length > 0)
-                }
-                className="h-14 w-14 rounded-2xl border-2 border-dashed border-gray-300 hover:border-green-500 hover:bg-green-50 transition-all duration-200 flex items-center justify-center"
+                onClick={() => fileInputRef.current?.click()}
+                className="h-14 w-14 rounded-2xl border-2 border-dashed border-gray-300 hover:border-blue-500 hover:bg-blue-50 transition-all duration-200 flex items-center justify-center"
               >
-                <Camera className="h-6 w-6 text-gray-600" />
+                <Upload className="h-6 w-6 text-gray-600" />
               </Button>
               <span className="text-xs text-gray-500 mt-2 text-center">
-                Camera
+                Upload
               </span>
             </div>
           )}
 
-          {/* Audio Recording */}
-          {allowedTypes.includes("audio") && (
-            <div className="flex flex-col items-center">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setShowRecordingDialog(true)}
-                disabled={
-                  isUploading || (!multiple && currentMediaItems.length > 0)
-                }
-                className="h-14 w-14 rounded-2xl border-2 border-dashed border-gray-300 hover:border-red-500 hover:bg-red-50 transition-all duration-200 flex items-center justify-center"
-              >
-                <Mic className="h-6 w-6 text-gray-600" />
-              </Button>
-              <span className="text-xs text-gray-500 mt-2 text-center">
-                Record
-              </span>
-            </div>
-          )}
+          {/* Camera Options - Hidden when uploading or when single file limit reached */}
+          {(allowedTypes.includes("image") || allowedTypes.includes("video")) &&
+            !(isUploading || (!multiple && currentMediaItems.length > 0)) && (
+              <div className="flex flex-col items-center">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowCameraOptions(true)}
+                  className="h-14 w-14 rounded-2xl border-2 border-dashed border-gray-300 hover:border-green-500 hover:bg-green-50 transition-all duration-200 flex items-center justify-center"
+                >
+                  <Camera className="h-6 w-6 text-gray-600" />
+                </Button>
+                <span className="text-xs text-gray-500 mt-2 text-center">
+                  Camera
+                </span>
+              </div>
+            )}
 
-          {/* Clear All Button */}
-          {multiple && currentMediaItems.length > 0 && (
+          {/* Audio Recording - Hidden when uploading or when single file limit reached */}
+          {allowedTypes.includes("audio") &&
+            !(isUploading || (!multiple && currentMediaItems.length > 0)) && (
+              <div className="flex flex-col items-center">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowRecordingDialog(true)}
+                  className="h-14 w-14 rounded-2xl border-2 border-dashed border-gray-300 hover:border-red-500 hover:bg-red-50 transition-all duration-200 flex items-center justify-center"
+                >
+                  <Mic className="h-6 w-6 text-gray-600" />
+                </Button>
+                <span className="text-xs text-gray-500 mt-2 text-center">
+                  Record
+                </span>
+              </div>
+            )}
+
+          {/* Clear All Button - Hidden when uploading or when no files */}
+          {multiple && currentMediaItems.length > 0 && !isUploading && (
             <div className="flex flex-col items-center">
               <Button
                 type="button"
                 variant="outline"
                 onClick={handleClearAll}
-                disabled={isUploading}
                 className="h-14 w-14 rounded-2xl border-2 border-dashed border-red-300 hover:border-red-500 hover:bg-red-50 transition-all duration-200 flex items-center justify-center"
               >
                 <Trash2 className="h-6 w-6 text-red-600" />
@@ -1027,7 +1013,7 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
               </div>
             )}
           </div>
-          
+
           {/* Cancel Button */}
           <button
             onClick={cancelCamera}
