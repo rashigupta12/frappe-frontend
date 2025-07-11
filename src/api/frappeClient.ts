@@ -4,9 +4,15 @@ import axios from 'axios';
 
 // Use different base URLs for development and production
 const isDevelopment = import.meta.env.DEV;
+
+// For local development with different hosts, use direct API URL
+// For production, use relative URLs to leverage proxy/rewrites
 const FRAPPE_BASE_URL = isDevelopment
-  ? '' // Use relative URLs in development to leverage Vite proxy
-  : ''; // Use relative URLs in production to leverage Vercel rewrite
+  ? '' // Direct backend URL for development
+  : ''; // Use relative URLs in production
+
+console.log('🌐 Frappe Base URL:', FRAPPE_BASE_URL);
+console.log('🔧 Development mode:', isDevelopment);
 
 // Create axios instance with default config
 const frappeClient = axios.create({
@@ -19,8 +25,6 @@ const frappeClient = axios.create({
   }
 });
 
-
-
 const frappeFileClient = axios.create({
   baseURL: FRAPPE_BASE_URL,
   timeout: 30000, // Longer timeout for file uploads
@@ -30,12 +34,17 @@ const frappeFileClient = axios.create({
   }
 });
 
-
 // Add request interceptor for file client
 frappeFileClient.interceptors.request.use(
   (config) => {
     // Log file upload requests
     console.log('Making file upload request:', config.method?.toUpperCase(), config.url);
+
+    // For development, add CORS headers
+    if (isDevelopment) {
+      config.headers['Access-Control-Allow-Origin'] = 'http://localhost:3000';
+      config.headers['Access-Control-Allow-Credentials'] = 'true';
+    }
 
     // Don't manually set browser-controlled headers
     delete config.headers['Origin'];
@@ -76,11 +85,18 @@ frappeFileClient.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
 // Add request interceptor
 frappeClient.interceptors.request.use(
   (config) => {
     // Log requests for debugging
-    // console.log('Making request:', config.method?.toUpperCase(), config.url);
+    console.log('Making request:', config.method?.toUpperCase(), config.url);
+
+    // For development, add CORS headers
+    if (isDevelopment) {
+      config.headers['Access-Control-Allow-Origin'] = 'http://localhost:3000';
+      config.headers['Access-Control-Allow-Credentials'] = 'true';
+    }
 
     // Don't manually set browser-controlled headers
     delete config.headers['Origin'];
@@ -183,7 +199,6 @@ export const frappeAPI = {
     }
   },
 
-  // ... rest of your methods remain the same
   logout: async () => {
     try {
       const response = await frappeClient.post('/api/method/logout');
@@ -291,6 +306,8 @@ export const frappeAPI = {
       throw error;
     }
   },
+
+  // ... rest of your API methods remain the same
   getJobTypes: async () => {
     return await frappeAPI.makeAuthenticatedRequest('GET', '/api/resource/JobType');
   },
@@ -299,8 +316,6 @@ export const frappeAPI = {
   },
 
   getAllLeads: async (email: string) => {
-
-    // return await frappeAPI.makeAuthenticatedRequest('GET', '/api/resource/Lead?order_by=creation%20desc');
     return await frappeAPI.makeAuthenticatedRequest('GET', `/api/resource/Lead?filters=[["lead_owner", "=", "${email}"]]&order_by=creation%20desc`);
   },
 
@@ -315,7 +330,7 @@ export const frappeAPI = {
   updateLead: async (leadId: string, leadData: Record<string, unknown>) => {
     return await frappeAPI.makeAuthenticatedRequest('PUT', `/api/resource/Lead/${leadId}`, leadData);
   },
-  updateLeadStatus:async(LeaId: string, status: string)=>{
+  updateLeadStatus: async (LeaId: string, status: string) => {
     return await frappeAPI.makeAuthenticatedRequest('PUT', `/api/resource/Lead/${LeaId}`, { status });
   },
   ispectionUser: async () => {
@@ -352,7 +367,6 @@ export const frappeAPI = {
     return await frappeAPI.makeAuthenticatedRequest('GET', `/api/resource/SiteInspection/${inspectionName}`);
   },
   getAllInspections: async (filters: Record<string, unknown> = {}) => {
-    // Convert filters to Frappe/ERPNext format
     const filterArray = Object.entries(filters).map(([key, value]) => [key, "=", value]);
     const filterString = encodeURIComponent(JSON.stringify(filterArray));
 
@@ -368,11 +382,10 @@ export const frappeAPI = {
   GetUtmSoucre: async () => {
     return await frappeAPI.makeAuthenticatedRequest('GET', '/api/resource/UTM Source');
   },
-  getEmirate: async( ) =>{
+  getEmirate: async () => {
     return await frappeAPI.makeAuthenticatedRequest('GET', '/api/resource/UAE Emirate');
   },
   getCity: async (filters: Record<string, unknown> = {}) => {
-    // Convert filters to Frappe/ERPNext format
     const filterArray = Object.entries(filters).map(([key, value]) => [key, "=", value]);
     const filterString = encodeURIComponent(JSON.stringify(filterArray));
 
@@ -382,7 +395,6 @@ export const frappeAPI = {
     );
   },
   getArea: async (filters: Record<string, unknown> = {}) => {
-    // Convert filters to Frappe/ERPNext format
     const filterArray = Object.entries(filters).map(([key, value]) => [key, "=", value]);
     const filterString = encodeURIComponent(JSON.stringify(filterArray));
 
@@ -398,21 +410,15 @@ export const frappeAPI = {
     docname?: string;
     method?: string;
   } = {}) => {
-    // Validate file first
     if (!file || !(file instanceof File)) {
       throw new Error('Invalid file object');
     }
 
     const formData = new FormData();
-
-    // Add the file with proper naming (matching Frappe's expectation)
     formData.append("file", file, file.name);
-
-    // Add required Frappe parameters (matching the official implementation)
     formData.append('is_private', options.is_private ? '1' : '0');
     formData.append('folder', options.folder || 'Home');
 
-    // Optional parameters
     if (options.doctype) {
       formData.append('doctype', options.doctype);
     }
@@ -429,7 +435,6 @@ export const frappeAPI = {
     try {
       const response = await frappeFileClient.post('/api/method/upload_file', formData, {
         timeout: 30000,
-        // Important: Don't set Content-Type header - let axios handle it
         headers: {
           // Remove any Content-Type header to let browser set multipart boundary
         },
@@ -483,8 +488,6 @@ export const frappeAPI = {
       };
     }
   }
-
-
 };
 
 export default frappeClient;

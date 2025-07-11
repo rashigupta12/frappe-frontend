@@ -304,12 +304,12 @@ const MobileSiteInspectionList = ({ userEmail }: InspectionListProps) => {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="text-xs px-2 py-1 h-7 ml-2"
+                    className="text-xs px-2 py-1 h-7 ml-2 bg-purple-500 text-white hover:bg-amber-100"
                     onClick={() => {
                       navigate(`/inspector?tab=details`, { state: { inspection } });
                     }}
                   >
-                    View
+                    update
                   </Button>
                 </div>
 

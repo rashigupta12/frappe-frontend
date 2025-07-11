@@ -81,6 +81,13 @@ const CreateInspection = () => {
     null
   );
 
+  console.log("CreateInspection component initialized");
+  console.log("Location state:", locationState);
+  console.log("Todo:", todo);
+  console.log("Inspection:", inspection);
+  console.log("Is update mode:", isUpdateMode);
+
+
   // Memoize computed values
   const isSubmitted = useMemo(
     () => inspection?.docstatus === 1,
@@ -139,7 +146,7 @@ const CreateInspection = () => {
   const formatDimensionsData = useCallback((siteDimensions: any[]) => {
     return siteDimensions.map((dim: any) => {
       const mediaType = getMediaType(dim.media);
-      const media2Type = getMediaType(dim.media2);
+      const media2Type = getMediaType(dim.media_2);
       return {
         floor: dim.floor || "",
         room: dim.room || "",
@@ -157,15 +164,15 @@ const CreateInspection = () => {
                 remarks: dim.media.split("/").pop(),
               }
             : undefined,
-        media2:
-          dim.media2 && media2Type !== "unknown"
+        media_2:
+          dim.media_2 && media2Type !== "unknown"
             ? {
-                id: `${dim.media2.split("/").pop()}-${Math.random()
+                id: `${dim.media_2.split("/").pop()}-${Math.random()
                   .toString(36)
                   .substr(2, 9)}`,
-                url: typeof dim.media2 === "string" ? dim.media2 : "",
+                url: typeof dim.media_2 === "string" ? dim.media_2 : "",
                 type: media2Type,
-                remarks: dim.media2.split("/").pop(),
+                remarks: dim.media_2.split("/").pop(),
               }
             : undefined,
       };
@@ -367,7 +374,7 @@ const CreateInspection = () => {
           area_name: dim.area_name,
           dimensionsunits: dim.dimensionsunits,
           media: dim.media?.url || "",
-          media2: dim.media2?.url || "",
+          media_2: dim.media_2?.url || "",
         }));
         const customSiteImagesWithUrls = values.custom_site_images
           ?.filter((img) => typeof img.url === "string")
@@ -500,7 +507,7 @@ const CreateInspection = () => {
       area_name: "",
       dimensionsunits: "",
       media: undefined,
-      media2: undefined,
+      media_2: undefined,
     });
   }, [append]);
 
@@ -876,7 +883,7 @@ const CreateInspection = () => {
 
                                     <FormField
                                       control={form.control}
-                                      name={`site_dimensions.${index}.media2`}
+                                      name={`site_dimensions.${index}.media_2`}
                                       render={({ field: mediaField }) => (
                                         <FormItem>
                                           <FormLabel className="text-gray-700 text-xs font-medium">

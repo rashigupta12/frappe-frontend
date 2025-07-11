@@ -40,7 +40,7 @@ export const formSchema = z.object({
           }),
           z.undefined()
         ]).optional(),
-        media2: z.union([
+        media_2: z.union([
           z.object({
             id: z.string(),
             url: z.string(),

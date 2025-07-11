@@ -433,7 +433,7 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
   maxFiles,
   maxSizeMB = 10,
 }) => {
-  const imageurl = import.meta.env.VITE_IMAGE_URL || "https://eits.thebigocommunity.org";
+  const imageurl =  "https://eits.thebigocommunity.org";
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);

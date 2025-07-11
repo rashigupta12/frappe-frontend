@@ -41,7 +41,7 @@ interface SiteInspection {
     area_name: string;
     dimensionsunits: string;
     media: string;
-    media2: string;
+    media_2: string;
   }>;
 
   custom_site_images?: Array<{
