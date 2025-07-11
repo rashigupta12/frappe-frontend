@@ -58,18 +58,18 @@ const MobileInspectionList = ({ userEmail }: InspectionListProps) => {
     }
   }, [userEmail, fetchTodos]);
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case "High":
-        return "bg-red-500 text-white";
-      case "Medium":
-        return "bg-yellow-500 text-white";
-      case "Low":
-        return "bg-green-500 text-white";
-      default:
-        return "bg-gray-400 text-white";
-    }
-  };
+  // const getPriorityColor = (priority: string) => {
+  //   switch (priority) {
+  //     case "High":
+  //       return "bg-red-500 text-white";
+  //     case "Medium":
+  //       return "bg-yellow-500 text-white";
+  //     case "Low":
+  //       return "bg-green-500 text-white";
+  //     default:
+  //       return "bg-gray-400 text-white";
+  //   }
+  // };
 
   const getPriorityIcon = (priority: string) => {
     switch (priority) {
@@ -197,7 +197,7 @@ const MobileInspectionList = ({ userEmail }: InspectionListProps) => {
                       <span className="text-lg">
                         {getPriorityIcon(todo.priority || "")}
                       </span>
-                      <h3 className="text-sm font-semibold text-gray-900 truncate">
+                      <h3 className="text-xs font-semibold text-gray-900 truncate">
                         {todo.inquiry_data?.custom_job_type || "Inspection"}
                       </h3>
                     </div>
@@ -252,19 +252,32 @@ const MobileInspectionList = ({ userEmail }: InspectionListProps) => {
                       {todo.inquiry_data?.custom_budget_range || "N/A"}
                     </span>
                   </div>
+                 
                 </div>
+
+                {
+                  todo.inquiry_data?.custom_property_area && (
+                  <div className="mt-2 pt-2 border-t border-gray-100">
+                    <div className="flex items-center space-x-1">
+                      <span className="text-gray-400">📍</span>
+                      <span className="text-gray-600 truncate text-sm">
+                        {todo.inquiry_data.custom_property_area}
+                      </span>
+                    </div>
+                  </div>
+                  )
+                }
 
                 {/* Description */}
                 {todo.description && (
-                  
                   <div className="mt-2 pt-2 border-t border-gray-100">
-                    <p className="text-xs text-gray-600 line-clamp-2">
+                    <p className="text-md text-gray-600 line-clamp-2">
                       {todo.description.replace(/<[^>]*>/g, "")}
                     </p>
                   </div>
                 )}
 
-                {/* Assigned By */}
+                {/* Assigned By
                 <div className="mt-2 pt-2 border-t border-gray-100 flex items-center justify-between">
                   <span className="text-xs text-gray-500 truncate">
                     {todo.assigned_by_full_name 
@@ -275,7 +288,7 @@ const MobileInspectionList = ({ userEmail }: InspectionListProps) => {
                   <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${getPriorityColor(todo.priority || "")}`}>
                     {todo.priority || "N/A"}
                   </span>
-                </div>
+                </div> */}
               </div>
             ))}
           </div>

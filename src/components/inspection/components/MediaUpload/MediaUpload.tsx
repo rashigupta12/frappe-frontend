@@ -10,7 +10,7 @@ import {
 import React, { useEffect, useRef, useState } from "react";
 import { toast } from "react-hot-toast";
 import { Button } from "../../../ui/button";
-import { FormLabel } from "../../../ui/form";
+// import { FormLabel } from "../../../ui/form";
 import { Progress } from "../../../ui/progress";
 import { Textarea } from "../../../ui/textarea";
 import { getMediaType, uploadFile, type MediaItem } from "../utils/fileUpload";
@@ -433,7 +433,7 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
   maxFiles,
   maxSizeMB = 10,
 }) => {
-  const imageurl = "https://eits.thebigocommunity.org";
+  const imageurl = import.meta.env.VITE_IMAGE_URL || "https://eits.thebigocommunity.org";
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
@@ -787,12 +787,10 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
 
   return (
     <div className="space-y-4">
-      <FormLabel className="text-gray-700 text-sm font-medium block">
-        {label}
-      </FormLabel>
+      
 
       {/* Upload Controls */}
-      <div className="bg-white rounded-2xl p-4 border border-gray-200 shadow-sm">
+      <div className=" ">
         <div className="grid grid-cols-4 gap-4">
           {/* Upload Button */}
           <div className="flex flex-col items-center">
