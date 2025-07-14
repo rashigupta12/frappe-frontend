@@ -38,7 +38,6 @@ const IspectionDialog: React.FC<IspectionDialogProps> = ({
   onClose,
   inquiry,
 }) => {
-  console.log("IspectionDialog rendered with inquiry:", inquiry);
   const { user } = useAuth();
   const {
     fetchInspectors,

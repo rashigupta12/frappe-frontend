@@ -11,8 +11,6 @@ const FRAPPE_BASE_URL = isDevelopment
   ? '' // Direct backend URL for development
   : ''; // Use relative URLs in production
 
-console.log('🌐 Frappe Base URL:', FRAPPE_BASE_URL);
-console.log('🔧 Development mode:', isDevelopment);
 
 // Create axios instance with default config
 const frappeClient = axios.create({
@@ -38,7 +36,7 @@ const frappeFileClient = axios.create({
 frappeFileClient.interceptors.request.use(
   (config) => {
     // Log file upload requests
-    console.log('Making file upload request:', config.method?.toUpperCase(), config.url);
+    
 
     // For development, add CORS headers
     if (isDevelopment) {
@@ -62,7 +60,7 @@ frappeFileClient.interceptors.request.use(
 
 frappeFileClient.interceptors.response.use(
   (response) => {
-    console.log('File Upload Response:', response.status, response.config.url);
+    
     if (response.headers['set-cookie']) {
       console.log('Cookies received:', response.headers['set-cookie']);
     }
@@ -89,8 +87,7 @@ frappeFileClient.interceptors.response.use(
 // Add request interceptor
 frappeClient.interceptors.request.use(
   (config) => {
-    // Log requests for debugging
-    console.log('Making request:', config.method?.toUpperCase(), config.url);
+   
 
     // For development, add CORS headers
     if (isDevelopment) {
@@ -111,7 +108,7 @@ frappeClient.interceptors.request.use(
 frappeClient.interceptors.response.use(
   (response) => {
     // Log successful responses
-    console.log('API Response:', response.status, response.config.url);
+    
     if (response.headers['set-cookie']) {
       console.log('Cookies received:', response.headers['set-cookie']);
     }
@@ -158,19 +155,17 @@ export const frappeAPI = {
       localStorage.removeItem('frappe_user');
       localStorage.removeItem('frappe_session');
 
-      console.log('Attempting login for:', username);
+      
 
       const response = await frappeClient.post('/api/method/login', {
         usr: username,
         pwd: password
       });
 
-      console.log('Login response:', response.data);
-      console.log('Response status:', response.status);
 
       // Check for successful login
       if (response.data.message === 'Logged In' || response.status === 200) {
-        console.log('Login successful for:', response.data);
+
         const userData = {
           username: username,
           full_name: response.data.full_name || response.data.user || 'User',
@@ -429,8 +424,7 @@ export const frappeAPI = {
       formData.append('method', options.method);
     }
 
-    console.log('📦 Uploading file:', file.name, 'Size:', file.size, 'Type:', file.type);
-    console.log('📦 Upload options:', options);
+    
 
     try {
       const response = await frappeFileClient.post('/api/method/upload_file', formData, {
@@ -446,9 +440,6 @@ export const frappeAPI = {
         }
       });
 
-      console.log('✅ Upload successful!');
-      console.log('📊 Response status:', response.status);
-      console.log('📄 Response data:', response.data);
 
       return {
         success: true,
@@ -458,7 +449,6 @@ export const frappeAPI = {
       };
 
     } catch (error) {
-      console.error('❌ Upload failed!');
       console.error('🔍 Error details:', error);
 
       if (axios.isAxiosError(error)) {
@@ -470,10 +460,6 @@ export const frappeAPI = {
           statusText: error.response?.statusText,
           data: error.response?.data
         };
-
-        console.error('📊 Error status:', error.response?.status);
-        console.error('📄 Error response:', error.response?.data);
-
         return {
           success: false,
           error: errorMessage,

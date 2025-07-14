@@ -165,8 +165,7 @@ export const useAssignStore = create<AssignStore>((set, get) => ({
       return;
     }
 
-    console.log('Fetching todos for user:', currentUserEmail);
-
+    
     try {
       set({ todosLoading: true, error: null });
 
@@ -225,7 +224,6 @@ export const useAssignStore = create<AssignStore>((set, get) => ({
       return;
     }
 
-    console.log('Fetching available inquiries for user:', currentUserEmail);
 
     try {
       set({ inquiriesLoading: true, error: null });
@@ -237,8 +235,7 @@ export const useAssignStore = create<AssignStore>((set, get) => ({
       );
 
       const leads = response.data || [];
-      console.log('Fetched leads:', leads);
-
+     
       // Fetch detailed data for each lead
       const inquiriesPromises = leads.map(async (lead: any) => {
         try {
@@ -257,7 +254,6 @@ export const useAssignStore = create<AssignStore>((set, get) => ({
     } catch (err: any) {
       const errorMessage = err?.message || err?.response?.data?.message || 'Failed to fetch available inquiries';
       set({ error: errorMessage });
-      console.error('Error fetching available inquiries:', err);
     } finally {
       set({ inquiriesLoading: false });
     }
@@ -290,8 +286,7 @@ export const useAssignStore = create<AssignStore>((set, get) => ({
 
   createTodo: async (todoData: CreateTodoData) => {
 
-    console.log('Creating todo with data:', todoData);
-
+   
 
 
     try {
@@ -311,17 +306,15 @@ export const useAssignStore = create<AssignStore>((set, get) => ({
         doctype: 'ToDo'
       };
 
-      console.log('Creating todo with payload:', todoPayload);
 
       // Create the todo
-      const createResponse = await frappeAPI.toDo(todoPayload);
-      console.log('Todo created:', createResponse);
+       await frappeAPI.toDo(todoPayload);
+      
 
       // Update the lead status to "Open" (assigned)
-      const updateResponse = await frappeAPI.updateLead(todoData.inquiry_id, {
+       await frappeAPI.updateLead(todoData.inquiry_id, {
         status: 'Open'
       });
-      console.log('Lead updated:', updateResponse);
 
       set({ success: true });
 
@@ -341,7 +334,7 @@ export const useAssignStore = create<AssignStore>((set, get) => ({
     } catch (err: any) {
       const errorMessage = err?.message || err?.response?.data?.message || 'Failed to create todo';
       set({ error: errorMessage });
-      console.error('Error creating todo:', err);
+     
       
       // Don't throw the error, let the component handle it through the store state
     } finally {

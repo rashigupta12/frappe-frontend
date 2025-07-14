@@ -178,7 +178,7 @@ export const useInspectionStore = create<InspectionStore>((set, get) => ({
     try {
       set({ loading: true, error: null });
       await frappeAPI.updateLeadStatus(reference_name, status);
-      console.log(`Lead status updated successfully for ${reference_name} to ${status}`);
+      
     } catch (error) {
       const err = error instanceof Error ? error.message : 'Failed to update lead status';
       set({ error: err });
@@ -237,7 +237,7 @@ export const useInspectionStore = create<InspectionStore>((set, get) => ({
     try {
       set({ loading: true, error: null });
       const response = await frappeAPI.getInspectionDetails(inspectionName);
-      console.log('Fetched inspection details in store:', response.data);
+     
       set({ currentInspection: response.data });
     } catch (error) {
       const err = error instanceof Error ? error.message : 'Failed to fetch inspection details';
@@ -257,7 +257,6 @@ export const useInspectionStore = create<InspectionStore>((set, get) => ({
       const inspections = response?.data ?? [];
 
       if (inspections.length === 0) {
-        console.log(`No inspections found for ${fieldName}: ${fieldValue}`);
         set({ currentInspection: null });
         return null;
       }
@@ -277,7 +276,6 @@ export const useInspectionStore = create<InspectionStore>((set, get) => ({
   },
 
  updateInspectionbyId: async (inspectionId, updatedData) => {
-  console.log('Updating inspection with ID:', inspectionId, 'and data:', updatedData);
   try {
     set({ loading: true, error: null });
 
@@ -290,7 +288,6 @@ export const useInspectionStore = create<InspectionStore>((set, get) => ({
       finalUpdateData.docstatus = 1;
     }
 
-    console.log('Final update data:', finalUpdateData);
     // First update the inspection with the combined data
     await frappeAPI.UpdateInspection(inspectionId, finalUpdateData);
 
@@ -304,7 +301,7 @@ export const useInspectionStore = create<InspectionStore>((set, get) => ({
       if (leadName) {
         try {
           await get().UpdateLeadStatus(leadName, 'Quotation');
-          console.log(`Successfully updated lead ${leadName} status to Quotation`);
+         
         } catch (error) {
           console.error(`Failed to update lead ${leadName} status:`, error);
         }
@@ -315,7 +312,7 @@ export const useInspectionStore = create<InspectionStore>((set, get) => ({
       if (leadName) {
         try {
           await get().UpdateLeadStatus(leadName, 'Lead');
-          console.log(`Successfully updated lead ${leadName} status to Lead`);
+          
         } catch (error) {
           console.error(`Failed to update lead ${leadName} status:`, error);
         }
@@ -331,7 +328,7 @@ export const useInspectionStore = create<InspectionStore>((set, get) => ({
       if (todo?.name) {
         try {
           await get().updateTodoStatus(todo.name, "Cancelled");
-          console.log(`Successfully updated todo ${todo.name} status to Cancelled`);
+         
         } catch (error) {
           console.error(`Failed to update todo status:`, error);
         }

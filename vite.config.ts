@@ -16,8 +16,6 @@ export default defineConfig(({ mode }) => {
   // Get the API base URL from environment variables
   const apiBaseUrl = env.VITE_API_BASE_URL || (isDev ? 'https://eits.thebigocommunity.org' : 'https://eits.thebigocommunity.org')
   
-  console.log(`🔧 Mode: ${mode}`)
-  console.log(`🌐 API Base URL: ${apiBaseUrl}`)
   
   return {
     plugins: [

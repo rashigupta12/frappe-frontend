@@ -162,8 +162,6 @@ interface LeadsProviderProps {
 // Provider component
 export const LeadsProvider: React.FC<LeadsProviderProps> = ({ children }) => {
   const { user } = useAuth();
-  console.log("User in LeadsProvider:", user);
-  console.log("Current user in LeadsProvider:", user);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -272,8 +270,7 @@ export const LeadsProvider: React.FC<LeadsProviderProps> = ({ children }) => {
           ),
         };
 
-        console.log("Creating lead with data:", processedData);
-
+        
         const response = await frappeAPI.createLead(processedData);
         toast.success("Lead created successfully!");
 
@@ -310,7 +307,7 @@ export const LeadsProvider: React.FC<LeadsProviderProps> = ({ children }) => {
           ),
         };
 
-        console.log(`Updating lead ${leadId} with data:`, processedData);
+      
 
         const response = await frappeAPI.updateLead(leadId, processedData);
         toast.success(`Lead updated successfully!`);
@@ -339,7 +336,7 @@ export const LeadsProvider: React.FC<LeadsProviderProps> = ({ children }) => {
     try {
       const response = await frappeAPI.getJobTypes();
       if (response.data && Array.isArray(response.data)) {
-        console.log("Fetched job types:", response.data);
+       
         setJobTypes(response.data);
       } else {
         setJobTypes([]);
@@ -357,7 +354,7 @@ export const LeadsProvider: React.FC<LeadsProviderProps> = ({ children }) => {
     try {
       const response = await frappeAPI.getProjectUrgency();
       if (response.data && Array.isArray(response.data)) {
-        console.log("Fetched project urgency:", response.data);
+        
         setProjectUrgency(response.data);
       } else {
         setProjectUrgency([]);
@@ -375,7 +372,7 @@ export const LeadsProvider: React.FC<LeadsProviderProps> = ({ children }) => {
     try {
       const response = await frappeAPI.GetUtmSoucre();
       if (response.data && Array.isArray(response.data)) {
-        console.log("Fetched UTM sources:", response.data);
+        
         setUtmSource(response.data);
       } else {
         setUtmSource([]);
@@ -392,7 +389,7 @@ export const LeadsProvider: React.FC<LeadsProviderProps> = ({ children }) => {
     try {
       const response = await frappeAPI.getEmirate();
       if (response.data && Array.isArray(response.data)) {
-        console.log("Fetched emirates:", response.data);
+        
         setEmirates(response.data);
       } else {
         setEmirates([]);
@@ -416,7 +413,7 @@ export const LeadsProvider: React.FC<LeadsProviderProps> = ({ children }) => {
     try {
       const response = await frappeAPI.getCity({ emirate });
       if (response.data && Array.isArray(response.data)) {
-        console.log("Fetched cities:", response.data);
+        
         setCities(response.data);
       } else {
         setCities([]);
@@ -440,7 +437,7 @@ export const LeadsProvider: React.FC<LeadsProviderProps> = ({ children }) => {
     try {
       const response = await frappeAPI.getArea({ city });
       if (response.data && Array.isArray(response.data)) {
-        console.log("Fetched areas:", response.data);
+        
         setAreas(response.data);
       } else {
         setAreas([]);

@@ -32,12 +32,11 @@ export default function SalesDashboard() {
   const closeInquiryForm = () => {
     setIsFormOpen(false);
   };
-  console.log("SalesDashboard rendered");
+  
   const navigate = useNavigate();
   // const location = useLocation();
   const [searchParams] = useSearchParams();
   const { user, logout } = useAuth();
-  console.log("User in SalesDashboard:", user);
 
   const initialTab = searchParams.get("tab") || "inquiry-form";
   const [activeTab, setActiveTab] = useState(initialTab);

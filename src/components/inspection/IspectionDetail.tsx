@@ -81,12 +81,6 @@ const CreateInspection = () => {
     null
   );
 
-  console.log("CreateInspection component initialized");
-  console.log("Location state:", locationState);
-  console.log("Todo:", todo);
-  console.log("Inspection:", inspection);
-  console.log("Is update mode:", isUpdateMode);
-
 
   // Memoize computed values
   const isSubmitted = useMemo(

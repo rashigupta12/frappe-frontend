@@ -19,11 +19,11 @@ import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 
 
 export default function InspectorDashboard() {
-  console.log("InspectorDashboard rendered");
+ 
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { user, logout } = useAuth();
-  console.log("User in SalesDashboard:", user);
+
 
   const initialTab = searchParams.get("tab") || "todos";
   const [activeTab, setActiveTab] = useState(initialTab);

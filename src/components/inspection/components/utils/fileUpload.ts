@@ -129,71 +129,6 @@ export const uploadFile = async (
 
 
 
-/**
- * Captures media (image/video) from device camera
- * @param type - 'image' or 'video'
- * @returns Promise resolving to the captured File or null
- */
-// export const captureMediaFromCamera = async (
-//   type: "image" | "video"
-// ): Promise<File | null> => {
-//   return new Promise((resolve) => {
-//     try {
-//       const input = document.createElement("input");
-//       input.type = "file";
-//       input.accept = type === "image" ? "image/*" : "video/*";
-      
-//       // Use these attributes for best mobile compatibility
-//       input.capture = type === "image" ? "environment" : "user";
-//       input.setAttribute("capture", "camera");
-      
-//       input.style.display = "none";
-//       document.body.appendChild(input);
-
-//       const cleanup = () => {
-//         if (document.body.contains(input)) {
-//           document.body.removeChild(input);
-//         }
-//       };
-
-//       const timeout = setTimeout(() => {
-//         cleanup();
-//         resolve(null);
-//       }, 30000); // 30 second timeout
-
-//       input.onchange = async (event: Event) => {
-//         clearTimeout(timeout);
-//         const target = event.target as HTMLInputElement;
-//         if (target.files?.length) {
-//           const file = target.files[0];
-//           // Basic validation
-//           if (file.size > 0) {
-//             resolve(file);
-//           } else {
-//             toast.error("Captured file is empty");
-//             resolve(null);
-//           }
-//         } else {
-//           resolve(null);
-//         }
-//         cleanup();
-//       };
-
-//       input.onerror = () => {
-//         clearTimeout(timeout);
-//         toast.error("Could not access camera");
-//         cleanup();
-//         resolve(null);
-//       };
-
-//       input.click();
-//     } catch (error) {
-//       console.error("Camera capture error:", error);
-//       toast.error("Failed to access camera");
-//       resolve(null);
-//     }
-//   });
-// };
 
 /**
  * Records audio from microphone
@@ -398,7 +333,7 @@ const captureMediaFromCamera = async (
       // Add timeout to prevent hanging
       const timeout = setTimeout(() => {
         cleanup();
-        console.log("Camera capture timed out");
+        
         resolve(null);
       }, 60000); // 60 second timeout
 
@@ -408,12 +343,7 @@ const captureMediaFromCamera = async (
         
         if (target.files && target.files.length > 0) {
           const file = target.files[0];
-          console.log("File selected:", {
-            name: file.name,
-            size: file.size,
-            type: file.type,
-            lastModified: file.lastModified
-          });
+        
           
           // Validate file
           if (file.size > 0) {
@@ -423,7 +353,7 @@ const captureMediaFromCamera = async (
             resolve(null);
           }
         } else {
-          console.log("No file selected");
+         
           resolve(null);
         }
         cleanup();
@@ -637,11 +567,7 @@ export const uploadFileFixed = async (
   onProgress?: (progress: number) => void,
   retries = 3
 ): Promise<string> => {
-  console.log("Starting upload for file:", {
-    name: file.name,
-    size: file.size,
-    type: file.type
-  });
+  
 
   if (!file || file.size === 0) {
     throw new Error("Invalid file selected");
@@ -656,7 +582,7 @@ export const uploadFileFixed = async (
   
   for (let attempt = 0; attempt < retries; attempt++) {
     try {
-      console.log(`Upload attempt ${attempt + 1}/${retries}`);
+      
       
       if (onProgress) onProgress(5);
 
@@ -723,7 +649,6 @@ export const uploadFileFixed = async (
 
       if (onProgress) onProgress(100);
 
-      console.log("Upload successful:", fileUrl);
       return fileUrl;
 
     } catch (error) {
@@ -732,7 +657,7 @@ export const uploadFileFixed = async (
       
       if (attempt < retries - 1) {
         const delay = Math.min(1000 * Math.pow(2, attempt), 5000); // Exponential backoff
-        console.log(`Retrying in ${delay}ms...`);
+
         await new Promise(resolve => setTimeout(resolve, delay));
       }
     }
@@ -743,7 +668,7 @@ export const uploadFileFixed = async (
 
 // Helper function to extract file URL from response
 const extractFileUrl = (data: any): string => {
-  console.log("Extracting file URL from response:", data);
+ 
   
   // Try different response formats
   if (data?.message?.file_url) return data.message.file_url;

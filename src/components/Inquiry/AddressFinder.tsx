@@ -46,7 +46,7 @@ const AddressFinder: React.FC<AddressFinderProps> = ({
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [error, setError] = useState('');
   console.log(error)
-  // console.log('AddressFinder initialValue:', initialValue);
+
   const [dropdownPosition, setDropdownPosition] = useState<'bottom' | 'top'>('bottom');
   const inputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
@@ -223,7 +223,7 @@ const AddressFinder: React.FC<AddressFinderProps> = ({
         setError('No locations found. Try a different search term.');
       }
     } catch (error) {
-      // console.error('Error fetching addresses:', error);
+      
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch locations. Please check your internet connection.';
       setError(errorMessage);
       setSuggestions([]);

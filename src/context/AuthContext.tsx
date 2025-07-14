@@ -34,7 +34,7 @@ const AuthContext = createContext<AuthContextType>({
 });
 
 const mapUserToRole = (username: string, fullName: string): string => {
-  console.log('Mapping user to role - Username:', username, 'Full Name:', fullName);
+ 
   
   // First try to map from full_name if it exists
   if (fullName && fullName.trim() !== '') {
@@ -89,7 +89,6 @@ const mapUserToRole = (username: string, fullName: string): string => {
   
   // Try exact username match first
   if (usernameToRoleMap[username]) {
-    console.log('Found exact username match:', usernameToRoleMap[username]);
     return usernameToRoleMap[username];
   }
   
@@ -97,22 +96,21 @@ const mapUserToRole = (username: string, fullName: string): string => {
   const lowerUsername = username.toLowerCase();
   
   if (lowerUsername.includes('sales') || lowerUsername.includes('sale')) {
-    console.log('Username contains "sales", mapping to sales role');
+    
     return 'sales';
   }
   
   if (lowerUsername.includes('admin')) {
-    console.log('Username contains "admin", mapping to admin role');
+   
     return 'admin';
   }
   
   if (lowerUsername.includes('inspector') || lowerUsername.includes('inspection')) {
-    console.log('Username contains "inspector", mapping to inspector role');
+    
     return 'inspector';
   }
   
-  // Default to user role
-  console.log('No specific role found, defaulting to user');
+  
   return 'user';
 };
 
@@ -139,7 +137,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setError(null);
       
       const sessionCheck = await frappeAPI.checkSession();
-      console.log('Session check result:', sessionCheck);
       
       if (sessionCheck.authenticated) {
         const username = sessionCheck.user?.username || sessionCheck.user || '';
@@ -152,7 +149,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           role: mappedRole
         };
         
-        console.log('Session check user data:', userData);
         setUser(userData);
       } else {
         setUser(null);
@@ -175,14 +171,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setError(null);
       
       const response = await frappeAPI.login(username, password);
-      console.log('Login response:', response);
+      
       
       if (response.success && response.user) {
         // Get username and full_name from response
         const responseUsername = response.user.username || username;
         const fullName = response.data?.full_name || response.user.full_name || '';
-        
-        console.log('Login - Username:', responseUsername, 'Full Name:', fullName);
         
         // Use our enhanced mapping function
         const mappedRole = mapUserToRole(responseUsername, fullName);
@@ -193,7 +187,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           role: mappedRole
         };
         
-        console.log('Login success - Final user data:', userData);
+
         setUser(userData);
         return { success: true, user: userData };
       } else {

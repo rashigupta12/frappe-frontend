@@ -49,7 +49,7 @@ const HomePage = () => {
 
     if (isStandalone || isInWebAppPwa) {
       setIsInstalled(true);
-      console.log("App is already installed");
+     
     }
   }, []);
 
@@ -57,7 +57,7 @@ const HomePage = () => {
   useEffect(() => {
     const handleBeforeInstallPrompt = (e: Event) => {
       const event = e as BeforeInstallPromptEvent;
-      console.log("beforeinstallprompt event fired");
+      
 
       // Prevent the default browser install prompt
       event.preventDefault();
@@ -72,7 +72,6 @@ const HomePage = () => {
     };
 
     const handleAppInstalled = () => {
-      // console.log("PWA was installed");
       setIsInstalled(true);
       setShowInstallPrompt(false);
       setDeferredPrompt(null);
@@ -110,8 +109,7 @@ const HomePage = () => {
       return;
     }
 
-    if (!deferredPrompt) {
-      console.log("No deferred prompt available");
+    if (!deferredPrompt) {    
       // Fallback for browsers that don't support the API
       alert(
         'To install this app:\n\nChrome/Edge: Look for the install icon in the address bar\nOr click the menu (⋮) > "Install app"'
@@ -125,10 +123,9 @@ const HomePage = () => {
 
       // Wait for the user's response
       const { outcome } = await deferredPrompt.userChoice;
-      // console.log("User choice outcome:", outcome);
-
+    
       if (outcome === "accepted") {
-        // console.log("User accepted the install prompt");
+       
         setShowInstallPrompt(false);
       } else {
         console.log("User dismissed the install prompt");
