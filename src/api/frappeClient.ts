@@ -380,7 +380,7 @@ export const frappeAPI = {
   },
 
   GetUtmSoucre: async () => {
-    return await frappeAPI.makeAuthenticatedRequest('GET', '/api/resource/UTM Source');
+    return await frappeAPI.makeAuthenticatedRequest('GET', '/api/resource/Lead Source');
   },
   getEmirate: async () => {
     return await frappeAPI.makeAuthenticatedRequest('GET', '/api/resource/UAE Emirate');
