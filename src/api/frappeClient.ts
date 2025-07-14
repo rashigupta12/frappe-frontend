@@ -334,7 +334,7 @@ export const frappeAPI = {
     return await frappeAPI.makeAuthenticatedRequest('PUT', `/api/resource/Lead/${LeaId}`, { status });
   },
   ispectionUser: async () => {
-    return await frappeAPI.makeAuthenticatedRequest('GET', `/api/resource/User`);
+    return await frappeAPI.makeAuthenticatedRequest('GET', `/api/resource/User?filters=[["full_name", "=", "Inspector"]]`);
   },
   toDo: async (todoData: Record<string, unknown>) => {
     return await frappeAPI.makeAuthenticatedRequest('POST', '/api/resource/ToDo', todoData);
