@@ -8,6 +8,10 @@
     {
       "source": "/api/(.*)",
       "destination": "https://eits.thebigocommunity.org/api/$1"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ]
 }

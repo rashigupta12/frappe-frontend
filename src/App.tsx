@@ -62,18 +62,7 @@ const PublicRoute = ({ children }: { children: ReactNode }) => {
 
   // If user is authenticated, redirect to appropriate dashboard
   if (isAuthenticated && user) {
-    switch(user.role) {
-      case 'sales':
-        return <Navigate to="/sales" replace />;
-      case 'inspector':
-        return <Navigate to="/inspector" replace />;
-      case 'user':
-        return <Navigate to="/user" replace />;
-      case 'admin':
-        return <Navigate to="/admin" replace />;
-      default:
-        return <Navigate to="/dashboard" replace />;
-    }
+    return <Navigate to={`/${user.role}`} replace />;
   }
 
   return <>{children}</>;
@@ -87,18 +76,7 @@ const DashboardRouter = () => {
     return <Navigate to="/login" replace />;
   }
 
-  switch(user.role) {
-    case 'user':
-      return <Navigate to="/user" replace />;
-    case 'sales':
-      return <Navigate to="/sales" replace />;
-    case 'inspector':
-      return <Navigate to="/inspector" replace />;
-    case 'admin':
-      return <Navigate to="/admin" replace />;
-    default:
-      return <Navigate to="/unauthorized" replace />;
-  }
+  return <Navigate to={`/${user.role}`} replace />;
 };
 
 // Dashboard Components
