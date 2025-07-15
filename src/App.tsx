@@ -1,16 +1,14 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 // src/App.tsx
-import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './context/AuthContext';
-import LoginPage from './components/auth/Login';
-import HomePage from './components/pages/Homepage';
 import type { ReactNode } from 'react';
-import { roleMiddleware } from './middleware/roleMiddleware';
-import { useEffect } from 'react';
-import SalesDashboard from './components/pages/Dashboard';
-import { LeadsProvider } from './context/LeadContext';
-import InspectorDashboard from './components/pages/InspectorDashboard';
 import { Toaster } from "react-hot-toast";
+import { Navigate, Route, BrowserRouter as Router, Routes } from 'react-router-dom';
+import LoginPage from './components/auth/Login';
+import SalesDashboard from './components/pages/Dashboard';
+import InspectorDashboard from './components/pages/InspectorDashboard';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import { LeadsProvider } from './context/LeadContext';
+import { roleMiddleware } from './middleware/roleMiddleware';
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -45,34 +43,40 @@ const ProtectedRoute = ({ children, allowedRoles = [] }: ProtectedRouteProps) =>
   return <>{children}</>;
 };
 
-// Auto-redirect component for authenticated users
-const AuthenticatedRedirect = () => {
-  const { user, isAuthenticated } = useAuth();
-  const navigate = useNavigate();
+// Public Route - prevents authenticated users from accessing login
+const PublicRoute = ({ children }: { children: ReactNode }) => {
+  const { isAuthenticated, loading, user } = useAuth();
 
-  useEffect(() => {
-    if (isAuthenticated && user) {
-      // Redirect based on role
-      switch(user.role) {
-        case 'sales':
-          navigate('/sales', { replace: true });
-          break;
-        case 'inspector':
-          navigate('/inspector', { replace: true });
-          break;
-        case 'user':
-          navigate('/user', { replace: true });
-          break;
-        case 'admin':
-          navigate('/admin', { replace: true });
-          break;
-        default:
-          navigate('/dashboard', { replace: true });
-      }
+  if (loading) {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }}>
+        <div>Loading...</div>
+      </div>
+    );
+  }
+
+  // If user is authenticated, redirect to appropriate dashboard
+  if (isAuthenticated && user) {
+    switch(user.role) {
+      case 'sales':
+        return <Navigate to="/sales" replace />;
+      case 'inspector':
+        return <Navigate to="/inspector" replace />;
+      case 'user':
+        return <Navigate to="/user" replace />;
+      case 'admin':
+        return <Navigate to="/admin" replace />;
+      default:
+        return <Navigate to="/dashboard" replace />;
     }
-  }, [isAuthenticated, user, navigate]);
+  }
 
-  return null;
+  return <>{children}</>;
 };
 
 // Dashboard Router - routes users to appropriate dashboard based on role
@@ -113,8 +117,6 @@ const UserDashboard = () => (
   </div>
 );
 
-
-
 const AdminDashboard = () => (
   <div style={{ padding: '20px' }}>
     <h1>Admin Dashboard</h1>
@@ -131,7 +133,6 @@ const AdminDashboard = () => (
     </div>
   </div>
 );
-
 
 // Unauthorized component
 const Unauthorized = () => {
@@ -157,24 +158,23 @@ const Unauthorized = () => {
   );
 };
 
-// Login wrapper that handles post-login redirection
-const LoginWrapper = () => {
-  const { isAuthenticated } = useAuth();
-  
-  if (isAuthenticated) {
-    return <AuthenticatedRedirect />;
-  }
-  
-  return <LoginPage />;
-};
-
 function AppRoutes() {
   return (
     <Router>
       <Routes>
+        {/* Root redirect to login */}
+        <Route path="/" element={<Navigate to="/login" replace />} />
+
         {/* Public Routes */}
-        <Route path="/" element={<HomePage />} />
-        <Route path="/login" element={<LoginWrapper />} />
+        <Route 
+          path="/login" 
+          element={
+            <PublicRoute>
+              <LoginPage />
+            </PublicRoute>
+          } 
+        />
+        
         <Route path="/unauthorized" element={<Unauthorized />} />
 
         {/* Dashboard Router - redirects based on role */}
@@ -222,7 +222,7 @@ function AppRoutes() {
         />
 
         {/* Catch all route */}
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </Router>
   );
@@ -232,10 +232,9 @@ function App() {
   return (
     <AuthProvider>
       <LeadsProvider>
-      {/* Uncomment if you have LeadsProvider context */}
-      <div className="App">
-        <AppRoutes />
-        <Toaster 
+        <div className="App">
+          <AppRoutes />
+          <Toaster 
             position="top-right"
             toastOptions={{
               className: '',
@@ -243,9 +242,7 @@ function App() {
                 border: '1px solid #713200',
                 padding: '16px',
                 color: '#713200',
-
               },
-              // Customize Tailwind classes
               success: {
                 className: 'border border-green-500 bg-green-100 text-green-700',
               },
@@ -254,125 +251,10 @@ function App() {
               },
             }}
           />
-      </div>
+        </div>
       </LeadsProvider>
-      
     </AuthProvider>
   );
 }
 
 export default App;
-// App.tsx
-// import {
-//   BrowserRouter as Router,
-//   Routes,
-//   Route,
-//   Navigate,
-// } from "react-router-dom";
-// import { AuthProvider, useAuth } from "./context/AuthContext";
-// import LoginPage from "./components/auth/Login";
-// // import HomePage from "./components/pages/Homepage";
-// import { Loader2 } from "lucide-react";
-// import type { ReactNode } from "react";
-// import SalesDashboard from "./components/pages/Dashboard";
-// import { LeadsProvider } from "./context/LeadContext";
-
-// import { Toaster } from "react-hot-toast";
-
-// interface ProtectedRouteProps {
-//   children: ReactNode;
-// }
-
-// const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
-//   const { isAuthenticated, loading ,user } = useAuth();
-//   console.log("User in ProtectedRoute:", user);
-
-//   if (loading) {
-//     return (
-//       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-50 to-blue-50">
-//         <div className="flex flex-col items-center gap-4">
-//           <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
-//           <p className="text-emerald-700 font-medium">Loading...</p>
-//         </div>
-//       </div>
-//     );
-//   }
-
-//   if (!isAuthenticated) {
-//     return <Navigate to="/login" replace />;
-//   }
-
-//   return <>{children}</>;
-// };
-
-// const PublicRoute = ({ children }: ProtectedRouteProps) => {
-//   const { isAuthenticated, loading } = useAuth();
-
-//   if (loading) {
-//     return (
-//       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-50 to-blue-50">
-//         <div className="flex flex-col items-center gap-4">
-//           <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
-//           <p className="text-emerald-700 font-medium">Loading...</p>
-//         </div>
-//       </div>
-//     );
-//   }
-
-//   if (isAuthenticated) {
-//     return <Navigate to="/dashboard" replace />;
-//   }
-
-//   return <>{children}</>;
-// };
-
-// function AppRoutes() {
-//   return (
-//     <Router>
-//       <Routes>
-//         {/* Redirect root to login */}
-//         <Route path="/" element={<Navigate to="/login" replace />} />
-        
-//         {/* Public Routes */}
-//         <Route
-//           path="/login"
-//           element={
-//             <PublicRoute>
-//               <LoginPage />
-//             </PublicRoute>
-//           }
-//         />
-
-//         {/* Protected Dashboard Route */}
-//         <Route
-//           path="/dashboard"
-//           element={
-//             <ProtectedRoute>
-//               <SalesDashboard />
-//             </ProtectedRoute>
-//           }
-//         />
-
-//         {/* Catch all route */}
-//         <Route path="*" element={<Navigate to="/login" replace />} />
-//       </Routes>
-//     </Router>
-//   );
-// }
-
-// function App() {
-//   return (
-//      <AuthProvider>
-//       <LeadsProvider>
-     
-//         <div className="App">
-//           <AppRoutes />
-//           {/* Add the Toaster component here */}
-          
-//         </div>
-//       </LeadsProvider>
-//     </AuthProvider>
-//   );
-// }
-
-// export default App;
