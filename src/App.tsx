@@ -9,6 +9,7 @@ import InspectorDashboard from './components/pages/InspectorDashboard';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { LeadsProvider } from './context/LeadContext';
 import { roleMiddleware } from './middleware/roleMiddleware';
+import HomePage from './components/pages/Homepage';
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -141,7 +142,7 @@ function AppRoutes() {
     <Router>
       <Routes>
         {/* Root redirect to login */}
-        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route path="/" element={<HomePage/>} />
 
         {/* Public Routes */}
         <Route 
