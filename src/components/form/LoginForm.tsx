@@ -5,15 +5,21 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Form, FormControl, FormField, FormItem, FormMessage } from "../ui/form";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "../ui/form";
 import { Input } from "../ui/input";
-import { Eye, EyeOff } from "lucide-react";
+import { AlignEndVertical, ArrowRight, Eye, EyeOff, LockKeyhole } from "lucide-react";
 import { FormError } from "./form-error";
 import { FormSuccess } from "./form-success";
 import { useAuth } from "../../context/AuthContext";
-import { Navigate, Link } from 'react-router-dom';
-import { toast } from 'react-hot-toast';
-
+import { Navigate, Link } from "react-router-dom";
+import { toast } from "react-hot-toast";
 
 // Define form schema
 const formSchema = z.object({
@@ -51,21 +57,21 @@ function LoginForm() {
     setIsPending(true);
     setError("");
     setSuccess("");
-    
+
     try {
       const result = await login(values.email, values.password);
-      
+
       if (result.success) {
-        toast.success('Login successfully!');
-        
+        toast.success("Login successfully!");
+
         setSuccess("Login successful!");
         // Navigation will happen automatically due to isAuthenticated check
       } else {
-        toast.error('Login failed. Please check your credentials.');
+        toast.error("Login failed. Please check your credentials.");
         setError(result.error || "Login failed");
       }
     } catch (err) {
-      toast.error('Login failed. Invalid credentials.');
+      toast.error("Login failed. Invalid credentials.");
       setError("Invalid credentials");
     } finally {
       setIsPending(false);
@@ -73,112 +79,174 @@ function LoginForm() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-emerald-500 to-blue-500">
-  {/* Backdrop blur layer for enhanced glass effect */}
-  <div className="fixed inset-0 backdrop-blur-sm bg-black/10"></div>
-  
-  <div className="relative w-full max-w-md p-8 space-y-8 bg-white/20 rounded-xl shadow-2xl backdrop-blur-lg border border-white/30 overflow-hidden">
-    {/* Subtle gradient overlay for glass effect */}
-    <div className="absolute inset-0 bg-gradient-to-br from-emerald-400/10 to-blue-400/10"></div>
-    
-    {/* Content container with relative positioning */}
-    <div className="relative z-10">
-      {/* Logo Section */}
-      <Link to="/">
-        <div className="flex flex-col items-center space-y-2">
-          <img
-            src="/logo.jpg"
-            alt="logo"
-            height={100}
-            width={100}
-            className="shadow-md hover:shadow-xl transition-shadow duration-300 p-4 bg-white/30 rounded-full backdrop-blur-sm border border-white/20"
-          />
-        </div>
-      </Link>
-
-      {/* Login Header */}
-      <div className="text-center">
-        <h1 className="text-3xl font-bold text-white drop-shadow-md">Welcome Back</h1>
-        <p className="mt-2 text-sm text-white/90">Please login to your account</p>
+    <div className="min-h-screen flex items-center justify-center bg-white p-4">
+      {/* Subtle animated background elements */}
+      <div className="fixed inset-0 overflow-hidden">
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-emerald-100 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-cyan-100 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-4000"></div>
+        <div className="absolute top-1/3 right-1/3 w-64 h-64 bg-teal-100 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
       </div>
 
-      {/* Login Form */}
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          <FormField
-            control={form.control}
-            name="email"
-            render={({ field }) => (
-              <FormItem>
-                <div className="text-sm font-medium text-white">Email</div>
-                <FormControl>
-                  <Input
-                    {...field}
-                    placeholder="john.snow@gmail.com"
-                    className="h-12 rounded-lg border-white/30 bg-white/20 text-white placeholder-white/60 focus:ring-2 focus:ring-white/50 focus:border-transparent backdrop-blur-sm"
-                    type="email"
-                    disabled={isPending || loading}
-                  />
-                </FormControl>
-                <FormMessage className="text-sm text-amber-200 drop-shadow-sm" />
-              </FormItem>
-            )}
-          />
+      {/* Main card container */}
+      <div className="relative w-full max-w-md">
+        {/* Card shadow and outline */}
+        <div className="absolute -inset-1 rounded-3xl bg-gradient-to-br from-emerald-100 to-cyan-100 opacity-60 blur-md"></div>
+        <div className="absolute -inset-0.5 rounded-3xl bg-white border border-emerald-100/50"></div>
 
-          <FormField
-            control={form.control}
-            name="password"
-            render={({ field }) => (
-              <FormItem>
-                <div className="text-sm font-medium text-white/90">Password</div>
-                <div className="relative">
-                  <FormControl>
-                    <Input
-                      {...field}
-                      placeholder="********"
-                      className="h-12 rounded-lg border-white/30 bg-white/20 text-white placeholder-white/60 focus:ring-2 focus:ring-white/50 focus:border-transparent backdrop-blur-sm"
-                      type={showPassword ? "text" : "password"}
-                      disabled={isPending || loading}
-                    />
-                  </FormControl>
-                  <button
-                    type="button"
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-white hover:text-white transition-colors"
-                    onClick={togglePasswordVisibility}
-                  >
-                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                  </button>
-                </div>
-                <FormMessage className="text-sm text-amber-200 drop-shadow-sm" />
-              </FormItem>
-            )}
-          />
+        {/* Content container */}
+        <div className="relative z-10 p-8 space-y-6 bg-white/95 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+          {/* Accent light reflections */}
+          <div className="absolute inset-0 overflow-hidden">
+            <div className="absolute -top-20 -left-20 w-80 h-80 bg-emerald-50 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob"></div>
+            <div className="absolute -bottom-20 -right-20 w-80 h-80 bg-cyan-50 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob animation-delay-3000"></div>
+          </div>
 
-          <FormError message={error} />
-          <FormSuccess message={success} />
+          {/* Logo section */}
+          <div className="flex flex-col items-center">
+            <Link to="/" className="group">
+              <div className="p-1.5 bg-gradient-to-br from-emerald-100 to-cyan-100 rounded-full shadow-sm group-hover:shadow-md transition-all duration-300">
+                <img
+                  src="/logo.jpg"
+                  alt="logo"
+                  className="h-20 w-20 object-cover rounded-full border-2 border-white shadow-inner"
+                />
+              </div>
+            </Link>
+          </div>
 
-          <button
-            type="submit"
-            disabled={isPending || loading}
-            className="w-full h-12 bg-white/30 text-white rounded-lg font-medium hover:bg-white/40 transition-all duration-300 transform hover:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed backdrop-blur-sm border border-white/30 shadow-lg"
-          >
-            {isPending || loading ? (
-              <span className="flex items-center justify-center">
-                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Loading...
-              </span>
-            ) : (
-              "Login now"
-            )}
-          </button>
-        </form>
-      </Form>
+          {/* Header */}
+          <div className="text-center space-y-1">
+            <h1 className="text-3xl font-bold text-gray-800 tracking-tight">
+              Welcome Back
+            </h1>
+            <p className="text-emerald-600 font-light">
+              Sign in to continue your journey
+            </p>
+          </div>
+
+          {/* Form container */}
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+              {/* Email field */}
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem className="space-y-1">
+                    <FormLabel className="text-sm font-medium text-emerald-700">
+                      Email
+                    </FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Input
+                          {...field}
+                          placeholder="john.snow@gmail.com"
+                          className="h-12 pl-10 pr-4 rounded-xl border-emerald-200 bg-white text-gray-800 placeholder-black focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 transition-all"
+                          type="email"
+                          disabled={isPending || loading}
+                        />
+                        <AlignEndVertical
+                          className="absolute left-3 top-1/2 -translate-y-1/2 text-emerald-400"
+                          size={18}
+                        />
+                      </div>
+                    </FormControl>
+                    <FormMessage className="text-xs text-amber-500 font-medium" />
+                  </FormItem>
+                )}
+              />
+
+              {/* Password field */}
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem className="space-y-1">
+                    <div className="flex justify-between items-center">
+                      <FormLabel className="text-sm font-medium text-emerald-700">
+                        Password
+                      </FormLabel>
+                     
+                    </div>
+                    <FormControl>
+                      <div className="relative">
+                        <Input
+                          {...field}
+                          placeholder="••••••••"
+                          className="h-12 pl-10 pr-10 rounded-xl border-emerald-200 bg-white text-gray-800 placeholder-black focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 transition-all"
+                          type={showPassword ? "text" : "password"}
+                          disabled={isPending || loading}
+                        />
+                        <LockKeyhole
+                          className="absolute left-3 top-1/2 -translate-y-1/2 text-emerald-400"
+                          size={18}
+                        />
+                        <button
+                          type="button"
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-400 hover:text-emerald-600 transition-colors"
+                          onClick={togglePasswordVisibility}
+                        >
+                          {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                        </button>
+                      </div>
+                    </FormControl>
+                    <FormMessage className="text-xs text-amber-500 font-medium" />
+                  </FormItem>
+                )}
+              />
+
+              {/* Status messages */}
+              <div className="space-y-2">
+                <FormError message={error} />
+                <FormSuccess message={success} />
+              </div>
+
+              {/* Submit button */}
+              <button
+                type="submit"
+                disabled={isPending || loading}
+                className="w-full h-12 bg-gradient-to-r from-emerald-500 to-cyan-500 text-white font-medium rounded-xl hover:shadow-lg transition-all duration-300 transform hover:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2 relative overflow-hidden group"
+              >
+                <span className="absolute inset-0 bg-gradient-to-r from-emerald-600 to-cyan-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
+                <span className="relative z-10 flex items-center justify-center">
+                  {isPending || loading ? (
+                    <>
+                      <svg
+                        className="animate-spin h-5 w-5 text-white"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        ></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        ></path>
+                      </svg>
+                      <span className="ml-2">Signing in...</span>
+                    </>
+                  ) : (
+                    <>
+                      <ArrowRight className="w-4 h-4" />
+                      <span>Sign In</span>
+                    </>
+                  )}
+                </span>
+              </button>
+            </form>
+          </Form>
+
+        </div>
+      </div>
     </div>
-  </div>
-</div>
   );
 }
 
