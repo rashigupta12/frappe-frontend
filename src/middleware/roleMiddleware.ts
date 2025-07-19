@@ -15,7 +15,7 @@ export const roleMiddleware = (userRole: string, allowedRoles: string | string[]
 };
 
 // Enhanced middleware with permission checking
-type Role = 'user' | 'sales' | 'inspector' | 'admin';
+type Role = 'user' | 'sales' | 'inspector' | 'project_manager' | 'admin';
 type Resource =
   | 'dashboard'
   | 'profile'
@@ -23,7 +23,10 @@ type Resource =
   | 'customers'
   | 'reports'
   | 'users'
-  | 'settings';
+  | 'settings'
+  | 'projects'
+  | 'tasks'
+  | 'timeline';
 type Action = 'read' | 'create' | 'update' | 'delete';
 
 const permissions: Record<Role, Record<Resource, Action[]>> = {
@@ -34,7 +37,10 @@ const permissions: Record<Role, Record<Resource, Action[]>> = {
     customers: [],
     reports: [],
     users: [],
-    settings: []
+    settings: [],
+    projects: [],
+    tasks: [],
+    timeline: []
   },
   sales: {
     dashboard: ['read'],
@@ -43,7 +49,10 @@ const permissions: Record<Role, Record<Resource, Action[]>> = {
     customers: ['read', 'create', 'update'],
     reports: ['read'],
     users: [],
-    settings: ['read']
+    settings: ['read'],
+    projects: ['read'],
+    tasks: ['read'],
+    timeline: ['read']
   },
   inspector: {
     dashboard: ['read'],
@@ -52,7 +61,22 @@ const permissions: Record<Role, Record<Resource, Action[]>> = {
     customers: ['read'],
     reports: ['read', 'create'],
     users: ['read'],
-    settings: ['read']
+    settings: ['read'],
+    projects: ['read'],
+    tasks: ['read', 'update'],
+    timeline: ['read']
+  },
+  project_manager: {
+    dashboard: ['read'],
+    profile: ['read', 'update'],
+    orders: ['read', 'create', 'update'],
+    customers: ['read', 'create', 'update'],
+    reports: ['read', 'create', 'update'],
+    users: ['read'],
+    settings: ['read'],
+    projects: ['read', 'create', 'update', 'delete'],
+    tasks: ['read', 'create', 'update', 'delete'],
+    timeline: ['read', 'create', 'update']
   },
   admin: {
     dashboard: ['read'],
@@ -61,7 +85,10 @@ const permissions: Record<Role, Record<Resource, Action[]>> = {
     customers: ['read', 'create', 'update', 'delete'],
     reports: ['read', 'create', 'update', 'delete'],
     users: ['read', 'create', 'update', 'delete'],
-    settings: ['read', 'create', 'update', 'delete']
+    settings: ['read', 'create', 'update', 'delete'],
+    projects: ['read', 'create', 'update', 'delete'],
+    tasks: ['read', 'create', 'update', 'delete'],
+    timeline: ['read', 'create', 'update', 'delete']
   }
 };
 
@@ -83,7 +110,8 @@ const roleHierarchy: Record<Role, number> = {
   user: 1,
   sales: 2,
   inspector: 2, // Same level as sales but with different permissions
-  admin: 3
+  project_manager: 3, // Higher level with project management capabilities
+  admin: 4
 };
 
 export const hasRoleLevel = (userRole: Role, requiredLevel: Role): boolean => {
@@ -99,8 +127,13 @@ export const canAccessRoute = (userRole: string, requiredRoles: string[]): boole
   return requiredRoles.some(role => {
     if (role === userRole) return true;
     
-    // Check hierarchy for admin access
-    if (userRole === 'admin' && ['user', 'sales', 'inspector'].includes(role)) {
+    // Check hierarchy for admin access (highest level)
+    if (userRole === 'admin' && ['user', 'sales', 'inspector', 'project_manager'].includes(role)) {
+      return true;
+    }
+    
+    // Check hierarchy for project_manager access
+    if (userRole === 'project_manager' && ['user', 'sales', 'inspector'].includes(role)) {
       return true;
     }
     
@@ -116,4 +149,17 @@ export const canAccessRoute = (userRole: string, requiredRoles: string[]): boole
     
     return false;
   });
+};
+
+// Utility functions for project manager specific permissions
+export const canManageProjects = (userRole: Role): boolean => {
+  return hasPermission(userRole, 'projects', 'update') || hasPermission(userRole, 'projects', 'delete');
+};
+
+export const canManageTasks = (userRole: Role): boolean => {
+  return hasPermission(userRole, 'tasks', 'update') || hasPermission(userRole, 'tasks', 'delete');
+};
+
+export const canViewTimeline = (userRole: Role): boolean => {
+  return hasPermission(userRole, 'timeline', 'read');
 };

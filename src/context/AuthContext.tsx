@@ -34,8 +34,6 @@ const AuthContext = createContext<AuthContextType>({
 });
 
 const mapUserToRole = (username: string, fullName: string): string => {
- 
-  
   // First try to map from full_name if it exists
   if (fullName && fullName.trim() !== '') {
     const roleMap: Record<string, string> = {
@@ -50,7 +48,10 @@ const mapUserToRole = (username: string, fullName: string): string => {
       'Inspector': 'inspector',
       'Site Inspector': 'inspector',
       'Quality Inspector': 'inspector',
-      'Field Inspector': 'inspector'
+      'Field Inspector': 'inspector',
+      'Project': 'project_manager',
+      'Project Manager': 'project_manager',
+      'PM': 'project_manager',
     };
     
     if (roleMap[fullName]) {
@@ -69,6 +70,7 @@ const mapUserToRole = (username: string, fullName: string): string => {
     if (normalizedName.includes('sales')) return 'sales';
     if (normalizedName.includes('admin')) return 'admin';
     if (normalizedName.includes('inspector')) return 'inspector';
+    if (normalizedName.includes('project')) return 'project_manager';
   }
   
   // Fallback to username-based mapping when full_name is empty
@@ -81,10 +83,14 @@ const mapUserToRole = (username: string, fullName: string): string => {
     'quality_inspector@eits.com': 'inspector',
     'field_inspector@eits.com': 'inspector',
     'inspector@eits.com': 'inspector',
+    'project_manager@eits.com': 'project_manager',
+    'pm@eits.com': 'project_manager',
     
     // Pattern-based matches
     'inspection_': 'inspector',
-    '_inspector': 'inspector'
+    '_inspector': 'inspector',
+    'project_': 'project_manager',
+    '_project': 'project_manager'
   };
   
   // Try exact username match first
@@ -96,20 +102,20 @@ const mapUserToRole = (username: string, fullName: string): string => {
   const lowerUsername = username.toLowerCase();
   
   if (lowerUsername.includes('sales') || lowerUsername.includes('sale')) {
-    
     return 'sales';
   }
   
   if (lowerUsername.includes('admin')) {
-   
     return 'admin';
   }
   
   if (lowerUsername.includes('inspector') || lowerUsername.includes('inspection')) {
-    
     return 'inspector';
   }
   
+  if (lowerUsername.includes('project') || lowerUsername.includes('pm')) {
+    return 'project_manager';
+  }
   
   return 'user';
 };
@@ -172,7 +178,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       const response = await frappeAPI.login(username, password);
       
-      
       if (response.success && response.user) {
         // Get username and full_name from response
         const responseUsername = response.user.username || username;
@@ -186,7 +191,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           full_name: fullName,
           role: mappedRole
         };
-        
 
         setUser(userData);
         return { success: true, user: userData };

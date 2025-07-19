@@ -96,6 +96,30 @@ const UserDashboard = () => (
   </div>
 );
 
+const ProjectManagerDashboard = () => (
+  <div style={{ padding: '20px' }}>
+    <h1>Project Manager Dashboard</h1>
+    <p>Welcome to your project management dashboard!</p>
+    <div>
+      <h3>Available Actions:</h3>
+      <ul>
+        <li>Manage Projects</li>
+        <li>Create & Assign Tasks</li>
+        <li>Track Project Timeline</li>
+        <li>View & Create Reports</li>
+        <li>Manage Orders & Customers</li>
+        <li>View Team Members</li>
+      </ul>
+    </div>
+    <div style={{ marginTop: '20px', padding: '15px', backgroundColor: '#f8f9fa', borderRadius: '5px' }}>
+      <h4>Project Overview:</h4>
+      <p>• Active Projects: 0</p>
+      <p>• Pending Tasks: 0</p>
+      <p>• Team Members: 0</p>
+    </div>
+  </div>
+);
+
 const AdminDashboard = () => (
   <div style={{ padding: '20px' }}>
     <h1>Admin Dashboard</h1>
@@ -107,6 +131,7 @@ const AdminDashboard = () => (
         <li>Manage All Orders</li>
         <li>Manage All Customers</li>
         <li>Create & View Reports</li>
+        <li>Manage Projects & Tasks</li>
         <li>System Administration</li>
       </ul>
     </div>
@@ -188,6 +213,14 @@ function AppRoutes() {
           element={
             <ProtectedRoute allowedRoles={['inspector']}>
               <InspectorDashboard/>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/project_manager"
+          element={
+            <ProtectedRoute allowedRoles={['project_manager']}>
+              <ProjectManagerDashboard />   
             </ProtectedRoute>
           }
         />
