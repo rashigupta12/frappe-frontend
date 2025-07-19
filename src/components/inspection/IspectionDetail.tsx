@@ -564,7 +564,7 @@ const CreateInspection = () => {
                           <div className="flex items-center gap-2">
                             <CalendarIcon className="h-4 w-4 text-emerald-600" />
                             <span className="font-medium text-gray-800">
-                              Basic Information
+                              Inspection Details
                             </span>
                           </div>
                         </AccordionTrigger>
