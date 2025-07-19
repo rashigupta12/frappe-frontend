@@ -141,7 +141,7 @@ function LoginForm() {
                         <Input
                           {...field}
                           placeholder="john.snow@gmail.com"
-                          className="h-12 pl-10 pr-4 rounded-xl border-emerald-200 bg-white text-gray-800 placeholder-black focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 transition-all"
+                          className="h-12 pl-10 pr-4 rounded-xl border-emerald-200 bg-white text-black placeholder-gray-400 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 transition-all"
                           type="email"
                           disabled={isPending || loading}
                         />
@@ -173,7 +173,7 @@ function LoginForm() {
                         <Input
                           {...field}
                           placeholder="••••••••"
-                          className="h-12 pl-10 pr-10 rounded-xl border-emerald-200 bg-white text-gray-800 placeholder-black focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 transition-all"
+                          className="h-12 pl-10 pr-10 rounded-xl border-emerald-200 bg-white text-black placeholder-gray-400 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 transition-all"
                           type={showPassword ? "text" : "password"}
                           disabled={isPending || loading}
                         />
