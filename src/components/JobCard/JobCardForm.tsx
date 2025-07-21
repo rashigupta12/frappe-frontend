@@ -433,14 +433,32 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                 <p className="text-blue-100 text-sm">Veneer Pressing Details</p>
               </div>
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-10 w-10 p-0 rounded-full text-white hover:bg-white/10 transition-colors"
-              onClick={onClose}
-            >
-              <X className="h-5 w-5" />
-            </Button>
+            <div className="flex items-center space-x-4">
+              <div className="text-right">
+                <p className="text-sm text-blue-100">Today's Date</p>
+                <p className="font-medium">
+                  {new Date().toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric'
+                  })}
+                </p>
+              </div>
+              {formData.project_id_no && (
+                <div className="text-right">
+                  <p className="text-sm text-blue-100">Project ID</p>
+                  <p className="font-medium">{formData.project_id_no}</p>
+                </div>
+              )}
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-10 w-10 p-0 rounded-full text-white hover:bg-white/10 transition-colors"
+                onClick={onClose}
+              >
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -461,27 +479,6 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
 
                 <div className="p-6">
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <div className="space-y-2">
-                      <Label
-                        htmlFor="date"
-                        className="flex items-center space-x-2"
-                      >
-                        <Calendar className="h-4 w-4 text-gray-500" />
-                        <span>
-                          Date <span className="text-red-500">*</span>
-                        </span>
-                      </Label>
-                      <Input
-                        id="date"
-                        name="date"
-                        type="date"
-                        value={formData.date || ""}
-                        onChange={handleInputChange}
-                        required
-                        className="focus:ring-blue-500 focus:border-blue-500"
-                      />
-                    </div>
-
                     <div className="space-y-2 relative">
                       <Label
                         htmlFor="party_name"
@@ -612,18 +609,6 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                         onChange={handleInputChange}
                         placeholder="Enter area"
                         required
-                        className="focus:ring-blue-500 focus:border-blue-500"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="project_id_no">Project ID No</Label>
-                      <Input
-                        id="project_id_no"
-                        name="project_id_no"
-                        value={formData.project_id_no || ""}
-                        onChange={handleInputChange}
-                        placeholder="Enter project ID"
                         className="focus:ring-blue-500 focus:border-blue-500"
                       />
                     </div>
