@@ -398,6 +398,34 @@ export const frappeAPI = {
       `/api/resource/UAE Area?filters=${filterString}`
     );
   },
+   getAllJobCards: async (filters: Record<string, unknown> = {}) => {
+    const filterArray = Object.entries(filters).map(([key, value]) => [key, "=", value]);
+    const filterString = encodeURIComponent(JSON.stringify(filterArray));
+    return await frappeAPI.makeAuthenticatedRequest(
+      'GET', 
+      `/api/resource/Job Card -Veneer Pressing${filterArray.length ? `?filters=${filterString}` : ''}?order_by=creation%20desc`
+    );
+  },
+
+  getJobCardById: async (jobCardId: string) => {
+    return await frappeAPI.makeAuthenticatedRequest('GET', `/api/resource/Job Card -Veneer Pressing/${jobCardId}`);
+  },
+
+  // createJobCard: async (jobCardData: Record<string, unknown>) => {
+  //   return await frappeAPI.makeAuthenticatedRequest('POST', '/api/resource/Job Card -Veneer Pressing', jobCardData);
+  // },
+createJobCard: async (jobCardData: Record<string, unknown>) => {
+    return await frappeAPI.makeAuthenticatedRequest('POST', '/api/resource/Job Card -Veneer Pressing', jobCardData);
+  },
+
+
+  updateJobCard: async (jobCardId: string, jobCardData: Record<string, unknown>) => {
+    return await frappeAPI.makeAuthenticatedRequest('PUT', `/api/resource/Job Card -Veneer Pressing/${jobCardId}`, jobCardData);
+  },
+
+  deleteJobCard: async (jobCardId: string) => {
+    return await frappeAPI.makeAuthenticatedRequest('DELETE', `/api/resource/Job Card -Veneer Pressing/${jobCardId}`);
+  },
   upload: async (file: File, options: {
     is_private?: boolean;
     folder?: string;

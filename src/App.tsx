@@ -5,10 +5,12 @@ import { Toaster } from "react-hot-toast";
 import { Navigate, Route, BrowserRouter as Router, Routes } from 'react-router-dom';
 import LoginPage from './components/auth/Login';
 import SalesDashboard from './components/pages/Dashboard';
+import ProjectManagerDashboard from './components/pages/projectManagerDashboard';
 import InspectorDashboard from './components/pages/InspectorDashboard';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { LeadsProvider } from './context/LeadContext';
 import { roleMiddleware } from './middleware/roleMiddleware';
+import { JobCardProvider } from './context/JobCardContext';
 import HomePage from './components/pages/Homepage';
 
 interface ProtectedRouteProps {
@@ -96,29 +98,6 @@ const UserDashboard = () => (
   </div>
 );
 
-const ProjectManagerDashboard = () => (
-  <div style={{ padding: '20px' }}>
-    <h1>Project Manager Dashboard</h1>
-    <p>Welcome to your project management dashboard!</p>
-    <div>
-      <h3>Available Actions:</h3>
-      <ul>
-        <li>Manage Projects</li>
-        <li>Create & Assign Tasks</li>
-        <li>Track Project Timeline</li>
-        <li>View & Create Reports</li>
-        <li>Manage Orders & Customers</li>
-        <li>View Team Members</li>
-      </ul>
-    </div>
-    <div style={{ marginTop: '20px', padding: '15px', backgroundColor: '#f8f9fa', borderRadius: '5px' }}>
-      <h4>Project Overview:</h4>
-      <p>• Active Projects: 0</p>
-      <p>• Pending Tasks: 0</p>
-      <p>• Team Members: 0</p>
-    </div>
-  </div>
-);
 
 const AdminDashboard = () => (
   <div style={{ padding: '20px' }}>
@@ -216,14 +195,25 @@ function AppRoutes() {
             </ProtectedRoute>
           }
         />
-        <Route
+        {/* <Route
           path="/project_manager"
           element={
             <ProtectedRoute allowedRoles={['project_manager']}>
-              <ProjectManagerDashboard />   
+              <ProjectManagerDashboard/>   
             </ProtectedRoute>
           }
-        />
+        /> */}
+
+        <Route
+  path="/project_manager"
+  element={
+    <ProtectedRoute allowedRoles={['project_manager']}>
+      <JobCardProvider> {/* 🆕 ADDED THIS WRAPPER */}
+        <ProjectManagerDashboard/>   
+      </JobCardProvider> {/* 🆕 ADDED CLOSING TAG */}
+    </ProtectedRoute>
+  }
+/>
         <Route
           path="/admin"
           element={
