@@ -12,6 +12,7 @@ import { LeadsProvider } from './context/LeadContext';
 import { roleMiddleware } from './middleware/roleMiddleware';
 import { JobCardProvider } from './context/JobCardContext';
 import HomePage from './components/pages/Homepage';
+import { JobCardOtherProvider } from './context/JobCardOtherContext';
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -209,7 +210,9 @@ function AppRoutes() {
   element={
     <ProtectedRoute allowedRoles={['project_manager']}>
       <JobCardProvider> {/* 🆕 ADDED THIS WRAPPER */}
-        <ProjectManagerDashboard/>   
+        <JobCardOtherProvider>  {/* 🆕 For Other Services */}
+                  <ProjectManagerDashboard/>   
+                </JobCardOtherProvider>
       </JobCardProvider> {/* 🆕 ADDED CLOSING TAG */}
     </ProtectedRoute>
   }

@@ -448,6 +448,39 @@ createJobCard: async (jobCardData: Record<string, unknown>) => {
   getEmployees: async () => {
   return await frappeAPI.makeAuthenticatedRequest('GET', '/api/resource/Employee?fields=["name","employee_name"]&filters=[["status","=","Active"]]&order_by=employee_name');
 },
+ getAllJobCardsOther: async (filters: Record<string, unknown> = {}) => {
+    const filterArray = Object.entries(filters).map(([key, value]) => [key, "=", value]);
+    
+    const params = new URLSearchParams();
+    
+    // Add filters if they exist
+    if (filterArray.length > 0) {
+      params.append('filters', JSON.stringify(filterArray));
+    }
+    
+    // Add ordering
+    params.append('order_by', 'creation desc');
+    
+    const url = `/api/resource/Job Card -Other Services?${params.toString()}`;
+    
+    return await frappeAPI.makeAuthenticatedRequest('GET', url);
+  },
+
+  getJobCardOtherById: async (jobCardId: string) => {
+    return await frappeAPI.makeAuthenticatedRequest('GET', `/api/resource/Job Card -Other Services/${jobCardId}`);
+  },
+
+  createJobCardOther: async (jobCardData: Record<string, unknown>) => {
+    return await frappeAPI.makeAuthenticatedRequest('POST', '/api/resource/Job Card -Other Services', jobCardData);
+  },
+
+  updateJobCardOther: async (jobCardId: string, jobCardData: Record<string, unknown>) => {
+    return await frappeAPI.makeAuthenticatedRequest('PUT', `/api/resource/Job Card -Other Services/${jobCardId}`, jobCardData);
+  },
+
+  deleteJobCardOther: async (jobCardId: string) => {
+    return await frappeAPI.makeAuthenticatedRequest('DELETE', `/api/resource/Job Card -Other Services/${jobCardId}`);
+  },
   upload: async (file: File, options: {
     is_private?: boolean;
     folder?: string;
