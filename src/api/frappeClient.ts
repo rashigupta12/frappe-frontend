@@ -2,6 +2,7 @@
 // src/api/frappeClient.ts
 import axios from 'axios';
 
+
 // Use different base URLs for development and production
 const isDevelopment = import.meta.env.DEV;
 
@@ -36,7 +37,7 @@ const frappeFileClient = axios.create({
 frappeFileClient.interceptors.request.use(
   (config) => {
     // Log file upload requests
-    
+
 
     // For development, add CORS headers
     if (isDevelopment) {
@@ -60,7 +61,7 @@ frappeFileClient.interceptors.request.use(
 
 frappeFileClient.interceptors.response.use(
   (response) => {
-    
+
     if (response.headers['set-cookie']) {
       console.log('Cookies received:', response.headers['set-cookie']);
     }
@@ -87,7 +88,7 @@ frappeFileClient.interceptors.response.use(
 // Add request interceptor
 frappeClient.interceptors.request.use(
   (config) => {
-   
+
 
     // For development, add CORS headers
     if (isDevelopment) {
@@ -108,7 +109,7 @@ frappeClient.interceptors.request.use(
 frappeClient.interceptors.response.use(
   (response) => {
     // Log successful responses
-    
+
     if (response.headers['set-cookie']) {
       console.log('Cookies received:', response.headers['set-cookie']);
     }
@@ -155,7 +156,7 @@ export const frappeAPI = {
       localStorage.removeItem('frappe_user');
       localStorage.removeItem('frappe_session');
 
-      
+
 
       const response = await frappeClient.post('/api/method/login', {
         usr: username,
@@ -406,23 +407,23 @@ export const frappeAPI = {
   //     `/api/resource/Job Card -Veneer Pressing${filterArray.length ? `?filters=${filterString}` : ''}?order_by=creation%20desc`
   //   );
   // },
- getAllJobCards: async (filters: Record<string, unknown> = {}) => {
-  const filterArray = Object.entries(filters).map(([key, value]) => [key, "=", value]);
-  
-  const params = new URLSearchParams();
-  
-  // Add filters if they exist
-  if (filterArray.length > 0) {
-    params.append('filters', JSON.stringify(filterArray));
-  }
-  
-  // Add ordering - keep it simple
-  params.append('order_by', 'creation desc');
-  
-  const url = `/api/resource/Job Card -Veneer Pressing?${params.toString()}`;
-  
-  return await frappeAPI.makeAuthenticatedRequest('GET', url);
-},
+  getAllJobCards: async (filters: Record<string, unknown> = {}) => {
+    const filterArray = Object.entries(filters).map(([key, value]) => [key, "=", value]);
+
+    const params = new URLSearchParams();
+
+    // Add filters if they exist
+    if (filterArray.length > 0) {
+      params.append('filters', JSON.stringify(filterArray));
+    }
+
+    // Add ordering - keep it simple
+    params.append('order_by', 'creation desc');
+
+    const url = `/api/resource/Job Card -Veneer Pressing?${params.toString()}`;
+
+    return await frappeAPI.makeAuthenticatedRequest('GET', url);
+  },
 
 
 
@@ -433,7 +434,7 @@ export const frappeAPI = {
   // createJobCard: async (jobCardData: Record<string, unknown>) => {
   //   return await frappeAPI.makeAuthenticatedRequest('POST', '/api/resource/Job Card -Veneer Pressing', jobCardData);
   // },
-createJobCard: async (jobCardData: Record<string, unknown>) => {
+  createJobCard: async (jobCardData: Record<string, unknown>) => {
     return await frappeAPI.makeAuthenticatedRequest('POST', '/api/resource/Job Card -Veneer Pressing', jobCardData);
   },
 
@@ -446,8 +447,47 @@ createJobCard: async (jobCardData: Record<string, unknown>) => {
     return await frappeAPI.makeAuthenticatedRequest('DELETE', `/api/resource/Job Card -Veneer Pressing/${jobCardId}`);
   },
   getEmployees: async () => {
-  return await frappeAPI.makeAuthenticatedRequest('GET', '/api/resource/Employee?fields=["name","employee_name"]&filters=[["status","=","Active"]]&order_by=employee_name');
-},
+    return await frappeAPI.makeAuthenticatedRequest('GET', '/api/resource/Employee?fields=["name","employee_name"]&filters=[["status","=","Active"]]&order_by=employee_name');
+  },
+  getcustomer: async (searchParams: {
+    mobile_no?: string;
+    email_id?: string;
+    customer_name?: string;
+  }) => {
+    // Build the or_filters array based on provided search parameters
+    const orFilters = [];
+
+    if (searchParams.mobile_no) {
+      orFilters.push(['mobile_no', '=', searchParams.mobile_no]);
+    }
+
+    if (searchParams.email_id) {
+      orFilters.push(['email_id', '=', searchParams.email_id]);
+    }
+
+    if (searchParams.customer_name) {
+      orFilters.push(['customer_name', '=', searchParams.customer_name]);
+    }
+
+    // If no search parameters provided, return empty array or all customers
+    if (orFilters.length === 0) {
+      return await frappeAPI.makeAuthenticatedRequest('GET', '/api/resource/Customer');
+    }
+
+    // Encode the or_filters for URL
+    const orFiltersString = encodeURIComponent(JSON.stringify(orFilters));
+
+    return await frappeAPI.makeAuthenticatedRequest(
+      'GET',
+      `/api/resource/Customer?or_filters=${orFiltersString}`
+    );
+  },
+  getCustomerById: async (customerId: string) => {
+    return await frappeAPI.makeAuthenticatedRequest('GET', `/api/resource/Customer/${customerId}`);
+  },
+  getItem:async()=>{
+    return await frappeAPI.makeAuthenticatedRequest('GET', '/api/resource/Item');
+  },
   upload: async (file: File, options: {
     is_private?: boolean;
     folder?: string;
@@ -474,7 +514,7 @@ createJobCard: async (jobCardData: Record<string, unknown>) => {
       formData.append('method', options.method);
     }
 
-    
+
 
     try {
       const response = await frappeFileClient.post('/api/method/upload_file', formData, {

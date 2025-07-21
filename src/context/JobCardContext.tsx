@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // import React, {
 //   createContext,
 //   useContext,
@@ -514,6 +515,8 @@ export interface JobCard {
 }
 
 export interface JobCardFormData {
+  lead_id: string;
+  customer_id: string;
   date: string;
   party_name: string;
   property_no: string;
