@@ -42,13 +42,13 @@ const JobCardList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
         <h2 className="text-2xl font-bold text-emerald-800 mb-2 sm:mb-0">
           Job Cards ({jobCards.length})
         </h2>
-        <Button
+        {/* <Button
           onClick={onOpenForm}
           className="flex items-center bg-emerald-600 hover:bg-emerald-700"
         >
           <Plus className="h-4 w-4 mr-2" />
           New Job Card
-        </Button>
+        </Button> */}
       </div>
 
       {/* Empty state */}
