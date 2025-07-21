@@ -121,7 +121,7 @@ const AdminDashboard = () => (
 // Unauthorized component
 const Unauthorized = () => {
   const { user, logout } = useAuth();
-  
+
   return (
     <div style={{
       minHeight: '100vh',
@@ -147,18 +147,18 @@ function AppRoutes() {
     <Router>
       <Routes>
         {/* Root redirect to login */}
-        <Route path="/" element={<HomePage/>} />
+        <Route path="/" element={<HomePage />} />
 
         {/* Public Routes */}
-        <Route 
-          path="/login" 
+        <Route
+          path="/login"
           element={
             <PublicRoute>
               <LoginPage />
             </PublicRoute>
-          } 
+          }
         />
-        
+
         <Route path="/unauthorized" element={<Unauthorized />} />
 
         {/* Dashboard Router - redirects based on role */}
@@ -192,7 +192,7 @@ function AppRoutes() {
           path="/inspector"
           element={
             <ProtectedRoute allowedRoles={['inspector']}>
-              <InspectorDashboard/>
+              <InspectorDashboard />
             </ProtectedRoute>
           }
         />
@@ -206,17 +206,17 @@ function AppRoutes() {
         /> */}
 
         <Route
-  path="/project_manager"
-  element={
-    <ProtectedRoute allowedRoles={['project_manager']}>
-      <JobCardProvider> {/* 🆕 ADDED THIS WRAPPER */}
-        <JobCardOtherProvider>  {/* 🆕 For Other Services */}
-                  <ProjectManagerDashboard/>   
+          path="/project_manager"
+          element={
+            <ProtectedRoute allowedRoles={['project_manager']}>
+              <JobCardProvider> {/* 🆕 ADDED THIS WRAPPER */}
+                <JobCardOtherProvider>  {/* 🆕 For Other Services */}
+                  <ProjectManagerDashboard />
                 </JobCardOtherProvider>
-      </JobCardProvider> {/* 🆕 ADDED CLOSING TAG */}
-    </ProtectedRoute>
-  }
-/>
+              </JobCardProvider> {/* 🆕 ADDED CLOSING TAG */}
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="/admin"
           element={
@@ -239,7 +239,7 @@ function App() {
       <LeadsProvider>
         <div className="App">
           <AppRoutes />
-          <Toaster 
+          <Toaster
             position="top-right"
             toastOptions={{
               className: '',

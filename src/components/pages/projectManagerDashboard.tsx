@@ -1,3 +1,6 @@
+
+
+
 // import {
 //   FileText,
 //   Home,
@@ -5,6 +8,7 @@
 //   Menu,
 //   Plus,
 //   X,
+//   Wrench,
 // } from "lucide-react";
 // import { useEffect, useState } from "react";
 // import { Link, useNavigate, useSearchParams } from "react-router-dom";
@@ -13,10 +17,12 @@
 // import { Button } from "../ui/button";
 // import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 // import JobCardForm from "../JobCard/JobCardForm";
+// import JobCardOtherForm from "../JobCard/JobCardOtherForm"; // Import the new component
 // import JobCardList from "../JobCard/JobCardList";
 
 // export default function ProjectManagerDashboard() {
 //   const [isJobCardFormOpen, setIsJobCardFormOpen] = useState(false);
+//   const [isJobCardOtherFormOpen, setIsJobCardOtherFormOpen] = useState(false);
 //   const [selectedJobCard, setSelectedJobCard] = useState(null);
 
 //   const navigate = useNavigate();
@@ -59,11 +65,24 @@
 //   const openJobCardForm = () => {
 //     setSelectedJobCard(null);
 //     setIsJobCardFormOpen(true);
+//     setIsJobCardOtherFormOpen(false);
+//     setSidebarOpen(false);
+//   };
+
+//   const openJobCardOtherForm = () => {
+//     setSelectedJobCard(null);
+//     setIsJobCardOtherFormOpen(true);
+//     setIsJobCardFormOpen(false);
 //     setSidebarOpen(false);
 //   };
 
 //   const closeJobCardForm = () => {
 //     setIsJobCardFormOpen(false);
+//     setSelectedJobCard(null);
+//   };
+
+//   const closeJobCardOtherForm = () => {
+//     setIsJobCardOtherFormOpen(false);
 //     setSelectedJobCard(null);
 //   };
 
@@ -83,6 +102,16 @@
 //       );
 //     }
 
+//     if (isJobCardOtherFormOpen) {
+//       return (
+//         <JobCardOtherForm
+//           isOpen={isJobCardOtherFormOpen}
+//           onClose={closeJobCardOtherForm}
+//           jobCard={selectedJobCard}
+//         />
+//       );
+//     }
+
 //     switch (activeTab) {
 //       case "job-cards":
 //         return <JobCardList onEdit={handleEditJobCard} onOpenForm={openJobCardForm} />;
@@ -95,13 +124,22 @@
 //             <p className="text-emerald-600">
 //               Welcome to your Project Manager dashboard. Manage job cards here.
 //             </p>
-//             <Button 
-//               onClick={openJobCardForm}
-//               className="mt-4 bg-emerald-600 hover:bg-emerald-700"
-//             >
-//               <Plus className="h-4 w-4 mr-2" />
-//               Create New Job Card
-//             </Button>
+//             <div className="flex flex-col sm:flex-row gap-4 mt-4">
+//               <Button 
+//                 onClick={openJobCardForm}
+//                 className="bg-emerald-600 hover:bg-emerald-700"
+//               >
+//                 <Plus className="h-4 w-4 mr-2" />
+//                 New JC - Veneer Pressing
+//               </Button>
+//               <Button 
+//                 onClick={openJobCardOtherForm}
+//                 className="bg-blue-600 hover:bg-blue-700"
+//               >
+//                 <Wrench className="h-4 w-4 mr-2" />
+//                 New JC - Other Service
+//               </Button>
+//             </div>
 //           </div>
 //         );
 //     }
@@ -239,7 +277,7 @@
 
 //           {/* Footer - Sticky at bottom */}
 //           <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-30 safe-area-pb">
-//             <div className="flex items-center justify-center px-4 py-2">
+//             <div className="flex items-center justify-between px-4 py-2">
 //               {/* Home Button */}
 //               <Link
 //                 to="/project-manager?tab=job-cards"
@@ -267,7 +305,7 @@
 //                 </button>
 //               </Link>
 
-//               {/* Add Job Card Button */}
+//               {/* New JC - Veneer Pressing Button */}
 //               <div className="flex-1 max-w-xs flex justify-center">
 //                 <button
 //                   onClick={openJobCardForm}
@@ -281,11 +319,34 @@
 //                     />
 //                   </div>
 //                   <span
-//                     className={`text-xs font-medium mt-1 ${
+//                     className={`text-xs font-medium mt-1 text-center ${
 //                       isJobCardFormOpen ? "text-emerald-600" : "text-gray-600"
 //                     }`}
 //                   >
-//                     Add Job Card
+//                     New JC-Veneer
+//                   </span>
+//                 </button>
+//               </div>
+
+//               {/* New JC - Other Service Button */}
+//               <div className="flex-1 max-w-xs flex justify-center">
+//                 <button
+//                   onClick={openJobCardOtherForm}
+//                   className="flex flex-col items-center justify-center w-full py-1 group"
+//                 >
+//                   <div className="w-10 h-6 flex items-center justify-center group-active:scale-95 transition-transform">
+//                     <Wrench
+//                       className={`h-5 w-5 ${
+//                         isJobCardOtherFormOpen ? "text-blue-600" : "text-gray-500"
+//                       }`}
+//                     />
+//                   </div>
+//                   <span
+//                     className={`text-xs font-medium mt-1 text-center ${
+//                       isJobCardOtherFormOpen ? "text-blue-600" : "text-gray-600"
+//                     }`}
+//                   >
+//                     New JC-Other
 //                   </span>
 //                 </button>
 //               </div>
@@ -329,10 +390,18 @@
 //           jobCard={selectedJobCard}
 //         />
 //       )}
+
+//       {/* Job Card Other Form Modal */}
+//       {isJobCardOtherFormOpen && (
+//         <JobCardOtherForm
+//           isOpen={isJobCardOtherFormOpen}
+//           onClose={closeJobCardOtherForm}
+//           jobCard={selectedJobCard}
+//         />
+//       )}
 //     </div>
 //   );
 // }
-
 
 
 import {
@@ -351,19 +420,21 @@ import { useAuth } from "../../context/AuthContext";
 import { Button } from "../ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import JobCardForm from "../JobCard/JobCardForm";
-import JobCardOtherForm from "../JobCard/JobCardOtherForm"; // Import the new component
+import JobCardOtherForm from "../JobCard/JobCardOtherForm";
 import JobCardList from "../JobCard/JobCardList";
+import JobCardOtherList from "../JobCard/JobCardOtherList";
 
 export default function ProjectManagerDashboard() {
   const [isJobCardFormOpen, setIsJobCardFormOpen] = useState(false);
   const [isJobCardOtherFormOpen, setIsJobCardOtherFormOpen] = useState(false);
   const [selectedJobCard, setSelectedJobCard] = useState(null);
+  const [selectedJobCardOther, setSelectedJobCardOther] = useState(null);
 
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { user, logout } = useAuth();
 
-  const initialTab = searchParams.get("tab") || "job-cards";
+  const initialTab = searchParams.get("tab") || "veneer-pressing";
   const [activeTab, setActiveTab] = useState(initialTab);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -404,7 +475,7 @@ export default function ProjectManagerDashboard() {
   };
 
   const openJobCardOtherForm = () => {
-    setSelectedJobCard(null);
+    setSelectedJobCardOther(null);
     setIsJobCardOtherFormOpen(true);
     setIsJobCardFormOpen(false);
     setSidebarOpen(false);
@@ -417,12 +488,17 @@ export default function ProjectManagerDashboard() {
 
   const closeJobCardOtherForm = () => {
     setIsJobCardOtherFormOpen(false);
-    setSelectedJobCard(null);
+    setSelectedJobCardOther(null);
   };
 
   const handleEditJobCard = (jobCard: any) => {
     setSelectedJobCard(jobCard);
     setIsJobCardFormOpen(true);
+  };
+
+  const handleEditJobCardOther = (jobCard: any) => {
+    setSelectedJobCardOther(jobCard);
+    setIsJobCardOtherFormOpen(true);
   };
 
   const renderContent = () => {
@@ -441,14 +517,16 @@ export default function ProjectManagerDashboard() {
         <JobCardOtherForm
           isOpen={isJobCardOtherFormOpen}
           onClose={closeJobCardOtherForm}
-          jobCard={selectedJobCard}
+          jobCard={selectedJobCardOther}
         />
       );
     }
 
     switch (activeTab) {
-      case "job-cards":
+      case "veneer-pressing":
         return <JobCardList onEdit={handleEditJobCard} onOpenForm={openJobCardForm} />;
+      case "other-services":
+        return <JobCardOtherList onEdit={handleEditJobCardOther} onOpenForm={openJobCardOtherForm} />;
       default:
         return (
           <div className="bg-white rounded-xl shadow-sm p-6 border border-emerald-100">
@@ -586,22 +664,61 @@ export default function ProjectManagerDashboard() {
         >
           <nav className="space-y-2">
             <Button
-              variant={activeTab === "job-cards" ? "default" : "ghost"}
-              onClick={() => handleTabChange("job-cards")}
+              variant={activeTab === "veneer-pressing" ? "default" : "ghost"}
+              onClick={() => handleTabChange("veneer-pressing")}
               className={`w-full justify-start gap-3 rounded-xl p-3 text-left transition-all duration-200 ${
-                activeTab === "job-cards"
-                  ? "bg-gradient-to-r from-emerald-500 to-blue-500 text-white shadow-lg transform scale-105 hover:from-emerald-600 hover:to-blue-600"
+                activeTab === "veneer-pressing"
+                  ? "bg-gradient-to-r from-emerald-500 to-green-500 text-white shadow-lg transform scale-105 hover:from-emerald-600 hover:to-green-600"
                   : "text-emerald-700 hover:bg-emerald-50 hover:shadow-md"
               }`}
             >
               <FileText className="h-5 w-5" />
-              <span className="font-medium">Job Cards</span>
+              <span className="font-medium">Veneer Pressing</span>
+            </Button>
+
+            <Button
+              variant={activeTab === "other-services" ? "default" : "ghost"}
+              onClick={() => handleTabChange("other-services")}
+              className={`w-full justify-start gap-3 rounded-xl p-3 text-left transition-all duration-200 ${
+                activeTab === "other-services"
+                  ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg transform scale-105 hover:from-blue-600 hover:to-purple-600"
+                  : "text-blue-700 hover:bg-blue-50 hover:shadow-md"
+              }`}
+            >
+              <Wrench className="h-5 w-5" />
+              <span className="font-medium">Other Services</span>
             </Button>
           </nav>
         </aside>
 
         {/* Main Content Container */}
         <div className="flex-1 flex flex-col overflow-hidden">
+          {/* Tab Navigation - Mobile Only */}
+          <div className="lg:hidden bg-white border-b border-gray-200 px-4 py-2">
+            <div className="flex space-x-1">
+              <button
+                onClick={() => handleTabChange("veneer-pressing")}
+                className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
+                  activeTab === "veneer-pressing"
+                    ? "bg-emerald-100 text-emerald-700 border border-emerald-200"
+                    : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+                }`}
+              >
+                Veneer Pressing
+              </button>
+              <button
+                onClick={() => handleTabChange("other-services")}
+                className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
+                  activeTab === "other-services"
+                    ? "bg-blue-100 text-blue-700 border border-blue-200"
+                    : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+                }`}
+              >
+                Other Services
+              </button>
+            </div>
+          </div>
+
           {/* Main Content - Scrollable */}
           <main className="flex-1 overflow-y-auto">
             <div className="max-w-7xl mx-auto">
@@ -612,33 +729,6 @@ export default function ProjectManagerDashboard() {
           {/* Footer - Sticky at bottom */}
           <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-30 safe-area-pb">
             <div className="flex items-center justify-between px-4 py-2">
-              {/* Home Button */}
-              <Link
-                to="/project-manager?tab=job-cards"
-                className="flex-1 max-w-xs flex justify-center"
-              >
-                <button className="flex flex-col items-center justify-center w-full py-1 group">
-                  <div className="w-10 h-6 flex items-center justify-center group-active:scale-95 transition-transform">
-                    <Home
-                      className={`h-5 w-5 ${
-                        activeTab === "job-cards"
-                          ? "text-emerald-600"
-                          : "text-gray-500"
-                      }`}
-                    />
-                  </div>
-                  <span
-                    className={`text-xs font-medium mt-1 ${
-                      activeTab === "job-cards"
-                        ? "text-emerald-600"
-                        : "text-gray-600"
-                    }`}
-                  >
-                    Home
-                  </span>
-                </button>
-              </Link>
-
               {/* New JC - Veneer Pressing Button */}
               <div className="flex-1 max-w-xs flex justify-center">
                 <button
@@ -687,23 +777,23 @@ export default function ProjectManagerDashboard() {
 
               {/* View All Button */}
               <Link
-                to="/project-manager?tab=job-cards"
+                to={`/project-manager?tab=${activeTab}`}
                 className="flex-1 max-w-xs flex justify-center"
               >
                 <button className="flex flex-col items-center justify-center w-full py-1 group">
                   <div className="w-10 h-6 flex items-center justify-center group-active:scale-95 transition-transform">
                     <FileText
                       className={`h-5 w-5 ${
-                        activeTab === "job-cards"
-                          ? "text-emerald-600"
+                        activeTab === "veneer-pressing" || activeTab === "other-services"
+                          ? activeTab === "veneer-pressing" ? "text-emerald-600" : "text-blue-600"
                           : "text-gray-500"
                       }`}
                     />
                   </div>
                   <span
                     className={`text-xs font-medium mt-1 ${
-                      activeTab === "job-cards"
-                        ? "text-emerald-600"
+                      activeTab === "veneer-pressing" || activeTab === "other-services"
+                        ? activeTab === "veneer-pressing" ? "text-emerald-600" : "text-blue-600"
                         : "text-gray-600"
                     }`}
                   >
@@ -730,7 +820,7 @@ export default function ProjectManagerDashboard() {
         <JobCardOtherForm
           isOpen={isJobCardOtherFormOpen}
           onClose={closeJobCardOtherForm}
-          jobCard={selectedJobCard}
+          jobCard={selectedJobCardOther}
         />
       )}
     </div>
