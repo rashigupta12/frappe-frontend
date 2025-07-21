@@ -48,7 +48,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
   onClose,
   jobCard,
 }) => {
-  const { createJobCard, updateJobCard, loading, employees, fetchEmployees } =
+  const { createJobCard, updateJobCard, loading, fetchEmployees } =
     useJobCards();
 
   const [formData, setFormData] = useState<JobCardFormData>({
@@ -272,14 +272,14 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSelectChange = (field: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-  };
+  // const handleSelectChange = (field: string, value: string) => {
+  //   setFormData((prev) => ({ ...prev, [field]: value }));
+  // };
 
-  const getEmployeeDisplayName = (employeeId: string) => {
-    const employee = employees.find((emp) => emp.name === employeeId);
-    return employee ? employee.employee_name : employeeId;
-  };
+  // const getEmployeeDisplayName = (employeeId: string) => {
+  //   const employee = employees.find((emp) => emp.name === employeeId);
+  //   return employee ? employee.employee_name : employeeId;
+  // };
 
   // Pressing Charges functions
   const addPressingCharge = () => {
@@ -658,7 +658,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                       </div>
                     </div>
 
-                    <div className="flex gap-2">
+                    {/* <div className="flex gap-2">
                       <div className="space-y-2">
                         <Label htmlFor="prepared_by">Prepared By</Label>
                         <Select
@@ -738,9 +738,9 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                           </SelectContent>
                         </Select>
                       </div>
-                    </div>
+                    </div> */}
 
-                    <div className="space-y-2">
+                    {/* <div className="space-y-2">
                       <Label htmlFor="ac_v_no_and_date">AC V No / Date</Label>
                       <Input
                         id="ac_v_no_and_date"
@@ -750,7 +750,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                         placeholder="Enter AC V number/date"
                         className="focus:ring-blue-500 focus:border-blue-500"
                       />
-                    </div>
+                    </div> */}
                   </div>
                 </div>
               </div>

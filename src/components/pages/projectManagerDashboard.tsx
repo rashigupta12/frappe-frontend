@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 
 
@@ -406,23 +407,22 @@
 
 import {
   FileText,
-  Home,
   LogOut,
   Menu,
   Plus,
-  X,
   Wrench,
+  X
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
 import { useAuth } from "../../context/AuthContext";
+import JobCardForm from "../JobCard/JobCardForm";
+import JobCardList from "../JobCard/JobCardList";
+import JobCardOtherForm from "../JobCard/JobCardOtherForm";
+import JobCardOtherList from "../JobCard/JobCardOtherList";
 import { Button } from "../ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
-import JobCardForm from "../JobCard/JobCardForm";
-import JobCardOtherForm from "../JobCard/JobCardOtherForm";
-import JobCardList from "../JobCard/JobCardList";
-import JobCardOtherList from "../JobCard/JobCardOtherList";
 
 export default function ProjectManagerDashboard() {
   const [isJobCardFormOpen, setIsJobCardFormOpen] = useState(false);
