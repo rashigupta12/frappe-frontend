@@ -398,14 +398,33 @@ export const frappeAPI = {
       `/api/resource/UAE Area?filters=${filterString}`
     );
   },
-   getAllJobCards: async (filters: Record<string, unknown> = {}) => {
-    const filterArray = Object.entries(filters).map(([key, value]) => [key, "=", value]);
-    const filterString = encodeURIComponent(JSON.stringify(filterArray));
-    return await frappeAPI.makeAuthenticatedRequest(
-      'GET', 
-      `/api/resource/Job Card -Veneer Pressing${filterArray.length ? `?filters=${filterString}` : ''}?order_by=creation%20desc`
-    );
-  },
+  //  getAllJobCards: async (filters: Record<string, unknown> = {}) => {
+  //   const filterArray = Object.entries(filters).map(([key, value]) => [key, "=", value]);
+  //   const filterString = encodeURIComponent(JSON.stringify(filterArray));
+  //   return await frappeAPI.makeAuthenticatedRequest(
+  //     'GET', 
+  //     `/api/resource/Job Card -Veneer Pressing${filterArray.length ? `?filters=${filterString}` : ''}?order_by=creation%20desc`
+  //   );
+  // },
+ getAllJobCards: async (filters: Record<string, unknown> = {}) => {
+  const filterArray = Object.entries(filters).map(([key, value]) => [key, "=", value]);
+  
+  const params = new URLSearchParams();
+  
+  // Add filters if they exist
+  if (filterArray.length > 0) {
+    params.append('filters', JSON.stringify(filterArray));
+  }
+  
+  // Add ordering - keep it simple
+  params.append('order_by', 'creation desc');
+  
+  const url = `/api/resource/Job Card -Veneer Pressing?${params.toString()}`;
+  
+  return await frappeAPI.makeAuthenticatedRequest('GET', url);
+},
+
+
 
   getJobCardById: async (jobCardId: string) => {
     return await frappeAPI.makeAuthenticatedRequest('GET', `/api/resource/Job Card -Veneer Pressing/${jobCardId}`);
@@ -426,6 +445,9 @@ createJobCard: async (jobCardData: Record<string, unknown>) => {
   deleteJobCard: async (jobCardId: string) => {
     return await frappeAPI.makeAuthenticatedRequest('DELETE', `/api/resource/Job Card -Veneer Pressing/${jobCardId}`);
   },
+  getEmployees: async () => {
+  return await frappeAPI.makeAuthenticatedRequest('GET', '/api/resource/Employee?fields=["name","employee_name"]&filters=[["status","=","Active"]]&order_by=employee_name');
+},
   upload: async (file: File, options: {
     is_private?: boolean;
     folder?: string;
