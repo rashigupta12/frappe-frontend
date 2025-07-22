@@ -968,7 +968,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
         open={showAddCustomerDialog}
         onOpenChange={setShowAddCustomerDialog}
       >
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[425px] bg-white">
           <DialogHeader>
             <DialogTitle>Add New Customer</DialogTitle>
             <DialogDescription>
