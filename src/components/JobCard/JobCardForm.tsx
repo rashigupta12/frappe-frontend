@@ -2686,45 +2686,49 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
         style={{ transform: isOpen ? "translateX(0)" : "translateX(100%)" }}
       >
         {/* Header */}
-        <div className="bg-gradient-to-r from-emerald-500 to-blue-500 text-white shadow-lg transform scale-105 hover:from-emerald-600 hover:to-blue-600 p-6 ">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center space-x-3">
-              <div className="bg-white/20 p-2 rounded-lg">
+        <div className="bg-gradient-to-r from-emerald-500 to-blue-500 text-white shadow-lg transform scale-105 hover:from-emerald-600 hover:to-blue-600 p-4">
+          <div className="flex justify-between items-start">
+            <div className="flex items-start space-x-4">
+              <div className="bg-white/20 p-2 rounded-lg mt-1">
                 <FileText className="h-6 w-6" />
               </div>
               <div>
-                <h3 className="text-2xl font-bold">
+                <h3 className="text-xl font-bold">
                   {jobCard ? "Edit Job Card" : "New Job Card"}
                 </h3>
-                <p className="text-blue-100 text-sm">Veneer Pressing Details</p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-4">
-              <div className="text-right">
-                <p className="text-sm text-blue-100">Today's Date</p>
-                <p className="font-medium">
-                  {new Date().toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric'
-                  })}
+                <div className="flex items-center space-x-6 mt-1">
+                  {formData.project_id_no && (
+                    <div className="flex items-center space-x-2">
+                      <span className="text-xs text-blue-100">Project ID:</span>
+                      <span className="text-sm font-medium">
+                        {formData.project_id_no}
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm text-white font-medium">Date:</span>
+                    <span className="text-sm font-medium">
+                      {new Date().toLocaleDateString("en-US", {
+                        year: "numeric",
+                        month: "short",
+                        day: "numeric",
+                      })}
+                    </span>
+                  </div>
+                </div>
+                <p className="text-blue-100 text-sm mt-1">
+                  Veneer Pressing Details
                 </p>
               </div>
-              {formData.project_id_no && (
-                <div className="text-right">
-                  <p className="text-sm text-blue-100">Project ID</p>
-                  <p className="font-medium">{formData.project_id_no}</p>
-                </div>
-              )}
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-10 w-10 p-0 rounded-full text-white hover:bg-white/10 transition-colors"
-                onClick={onClose}
-              >
-                <X className="h-5 w-5" />
-              </Button>
             </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 p-0 rounded-full text-white hover:bg-white/10 transition-colors"
+              onClick={onClose}
+            >
+              <X className="h-4 w-4" />
+            </Button>
           </div>
         </div>
 
