@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import React from 'react';
 import {
   DialogContent,
@@ -80,7 +79,7 @@ const JobCardOtherDetails: React.FC<Props> = ({ card, onClose }) => {
               'finish_date',
               'price',
             ]}
-            dateFields={['start_date', 'finish_date', 'price']}
+            dateFields={['start_date', 'finish_date']}
             fmt={fmt}
           />
         )}
