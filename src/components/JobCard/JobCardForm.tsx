@@ -104,6 +104,13 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
     null
   );
 
+    const [currentDate, setCurrentDate] = useState("");
+
+  useEffect(() => {
+    const today = new Date();
+    const formattedDate = today.toISOString().split("T")[0]; // Format: YYYY-MM-DD
+    setCurrentDate(formattedDate);
+  }, []);
   useEffect(() => {
     const fetchItems = async () => {
       setLoadingItems(true);
@@ -508,6 +515,8 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
 
   if (!isOpen) return null;
 
+
+
   return (
     <>
       <div
@@ -751,26 +760,27 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                     </div>
 
                     <div className="flex flex-wrap gap-2">
-                      <div className="w-[48%] space-y-2">
-                        <Label
-                          htmlFor="start_date"
-                          className="flex items-center space-x-1"
-                        >
-                          <Calendar className="h-4 w-4 text-gray-500" />
-                          <span>
-                            Start Date <span className="text-red-500">*</span>
-                          </span>
-                        </Label>
-                        <Input
-                          id="start_date"
-                          name="start_date"
-                          type="date"
-                          value={formData.start_date || ""}
-                          onChange={handleInputChange}
-                          required
-                          className="w-full"
-                        />
-                      </div>
+                      
+      <div className="w-[48%] space-y-2">
+        <Label
+          htmlFor="start_date"
+          className="flex items-center space-x-1"
+        >
+          <Calendar className="h-4 w-4 text-gray-500" />
+          <span>
+            Start Date <span className="text-red-500">*</span>
+          </span>
+        </Label>
+        <Input
+          id="start_date"
+          name="start_date"
+          type="date"
+          value={currentDate}
+          readOnly
+          className="w-full bg-gray-100 cursor-not-allowed"
+        />
+      </div>
+
 
                       <div className="w-[48%] space-y-2">
                         <Label
