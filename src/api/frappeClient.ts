@@ -501,9 +501,24 @@ get: async (url: string, config?: any) => {
   getCustomerById: async (customerId: string) => {
     return await frappeAPI.makeAuthenticatedRequest('GET', `/api/resource/Customer/${customerId}`);
   },
-  getItem:async()=>{
-    return await frappeAPI.makeAuthenticatedRequest('GET', '/api/resource/Item');
-  },
+  // getItem
+  // : async () => {
+  //   return await axios.get("/api/resource/Item", {
+  //     params: {
+  //       filters: JSON.stringify([["item_group", "=", "Veneer Pressing Work"]])
+  //     }
+  //   });
+  // },
+
+  getItem: async () => {
+  return await axios.get("/api/resource/Item", {
+    params: {
+      filters: JSON.stringify([["item_group", "=", "Veneer Pressing Work"]]),
+      // Add the fields parameter to get all required fields
+      fields: JSON.stringify(["name","item_name","valuation_rate","standard_rate","last_purchase_rate"])
+    }
+  });
+},
  getAllJobCardsOther: async (filters: Record<string, unknown> = {}) => {
     const filterArray = Object.entries(filters).map(([key, value]) => [key, "=", value]);
     
@@ -520,6 +535,9 @@ get: async (url: string, config?: any) => {
     const url = `/api/resource/Job Card -Other Services?${params.toString()}`;
     
     return await frappeAPI.makeAuthenticatedRequest('GET', url);
+  },
+  getItemById: async (itemName: string) => {
+    return await axios.get(`/api/resource/Item/${itemName}`);
   },
 
   getJobCardOtherById: async (jobCardId: string) => {

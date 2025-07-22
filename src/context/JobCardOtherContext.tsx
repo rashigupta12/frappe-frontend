@@ -423,7 +423,7 @@ export interface Services {
   work_description: string;
   start_date: string;
   finish_date: string;
-  invoice_date: string;
+  price: string;
   parent?: string;
   parentfield?: string;
   parenttype?: string;

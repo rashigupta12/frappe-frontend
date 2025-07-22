@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useJobCards, type JobCard } from '../../context/JobCardContext';
 import { Button } from '../ui/button';
-import { Edit, Trash2, Plus } from 'lucide-react';
+import { Edit, Trash2 } from 'lucide-react';
 import JobCardDetails from './JobCardDetails';
 import { Dialog } from '../ui/dialog';
 
@@ -40,15 +40,15 @@ const JobCardList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 px-4 sm:px-0">
         <h2 className="text-2xl font-bold text-emerald-800 mb-2 sm:mb-0">
-          Job Cards ({jobCards.length})
+          Job Cards -Veneer Pressing ({jobCards.length})
         </h2>
-        <Button
+        {/* <Button
           onClick={onOpenForm}
           className="flex items-center bg-emerald-600 hover:bg-emerald-700"
         >
           <Plus className="h-4 w-4 mr-2" />
           New Job Card
-        </Button>
+        </Button> */}
       </div>
 
       {/* Empty state */}

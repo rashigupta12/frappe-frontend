@@ -122,7 +122,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
       setFormData({
         ...jobCard,
         party_name: jobCard.party_name || "",
-        prepared_by: jobCard.prepared_by || "",
+        // prepared_by: jobCard.prepared_by || "",
         approved_by: jobCard.approved_by || "",
         project_id_no: jobCard.project_id_no || "",
         ac_v_no_and_date: jobCard.ac_v_no_and_date || "",
@@ -391,7 +391,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
       work_description: "",
       start_date: "",
       finish_date: "",
-      invoice_date: "",
+      price: "",
     };
     setServices((prev) => [...prev, newService]);
   };
@@ -894,16 +894,18 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                             </div>
                             <div className="space-y-1">
                               <Label className="text-sm font-medium text-gray-600">
-                                Invoice Date
+                                Price
                               </Label>
                               <div className="flex gap-2">
                                 <Input
-                                  type="date"
-                                  value={service.invoice_date}
+                                  type="text"
+                                  placeholder="Enter the price"
+
+                                  value={service.price}
                                   onChange={(e) =>
                                     updateService(
                                       index,
-                                      "invoice_date",
+                                      "price",
                                       e.target.value
                                     )
                                   }
