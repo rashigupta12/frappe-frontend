@@ -91,7 +91,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
       setFormData({
         ...jobCard,
         party_name: jobCard.party_name || "",
-        prepared_by: jobCard.prepared_by || "",
+        // prepared_by: jobCard.prepared_by || "",
         approved_by: jobCard.approved_by || "",
         project_id_no: jobCard.project_id_no || "",
         ac_v_no_and_date: jobCard.ac_v_no_and_date || "",
@@ -164,7 +164,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
       work_description: "",
       start_date: "",
       finish_date: "",
-      invoice_date: "",
+      price: "",
     };
     setServices((prev) => [...prev, newService]);
   };
@@ -623,72 +623,6 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                         />
                       </div>
                     </div>
-
-                    {/* <div className='flex gap-2'>
-                      Prepared By Dropdown
-                      <div className="space-y-2">
-                        <Label htmlFor="prepared_by">Prepared By</Label>
-                        <Select
-                          value={formData.prepared_by || 'none'}
-                          onValueChange={(value) => handleSelectChange('prepared_by', value === 'none' ? '' : value)}
-                        >
-                          <SelectTrigger className="focus:ring-blue-500 bg-white focus:border-blue-500">
-                            <SelectValue placeholder="Select preparer">
-                              {formData.prepared_by && formData.prepared_by !== 'none'
-                                ? getEmployeeDisplayName(formData.prepared_by)
-                                : "Select preparer"
-                              }
-                            </SelectValue>
-                          </SelectTrigger>
-                          <SelectContent className="bg-white">
-                            <SelectItem value="none">Select preparer</SelectItem>
-                            {employees.filter(employee => employee.employee_name && employee.name).map((employee) => (
-                              <SelectItem key={employee.name} value={employee.name}>
-                                {employee.employee_name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      Approved By Dropdown
-                      <div className="space-y-2">
-                        <Label htmlFor="approved_by">Approved By</Label>
-                        <Select
-                          value={formData.approved_by || 'none'}
-                          onValueChange={(value) => handleSelectChange('approved_by', value === 'none' ? '' : value)}
-                        >
-                          <SelectTrigger className="focus:ring-blue-500 bg-white focus:border-blue-500">
-                            <SelectValue placeholder="Select approver">
-                              {formData.approved_by && formData.approved_by !== 'none'
-                                ? getEmployeeDisplayName(formData.approved_by)
-                                : "Select approver"
-                              }
-                            </SelectValue>
-                          </SelectTrigger>
-                          <SelectContent className="bg-white">
-                            <SelectItem value="none">Select approver</SelectItem>
-                            {employees.filter(employee => employee.employee_name && employee.name).map((employee) => (
-                              <SelectItem key={employee.name} value={employee.name}>
-                                {employee.employee_name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div> */}
-
-                    {/* <div className="space-y-2">
-                      <Label htmlFor="ac_v_no_and_date">AC V No / Date</Label>
-                      <Input
-                        id="ac_v_no_and_date"
-                        name="ac_v_no_and_date"
-                        value={formData.ac_v_no_and_date || ''}
-                        onChange={handleInputChange}
-                        placeholder="Enter AC V number/date"
-                        className="focus:ring-blue-500 focus:border-blue-500"
-                      />
-                    </div> */}
                   </div>
                 </div>
               </div>
@@ -822,16 +756,18 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                             </div>
                             <div className="space-y-1">
                               <Label className="text-sm font-medium text-gray-600">
-                                Invoice Date
+                                Price
                               </Label>
                               <div className="flex gap-2">
                                 <Input
-                                  type="date"
-                                  value={service.invoice_date}
+                                  type="text"
+                                  placeholder="Enter the price"
+
+                                  value={service.price}
                                   onChange={(e) =>
                                     updateService(
                                       index,
-                                      "invoice_date",
+                                      "price",
                                       e.target.value
                                     )
                                   }

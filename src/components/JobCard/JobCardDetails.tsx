@@ -48,17 +48,10 @@ const JobCardDetails: React.FC<Props> = ({ card, onClose }) => {
         </div>
         
         {/* Prepared By and Approved By side by side */}
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="Prepared By" value={card.prepared_by} />
-          <Field label="Approved By" value={card.approved_by} />
-        </div>
+       
         
         {/* Project ID and A/C V No full width */}
-        <Field label="Project ID" value={card.project_id_no} />
-        <Field
-          label="A/C V No & Date"
-          value={card.ac_v_no_and_date || 'N/A'}
-        />
+        
       </div>
 
       {/* Child tables */}

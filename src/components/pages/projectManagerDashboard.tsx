@@ -11,11 +11,11 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
 import { useAuth } from "../../context/AuthContext";
 import JobCardForm from "../JobCard/JobCardForm";
-import JobCardList from "../JobCard/JobCardList";
 import JobCardOtherForm from "../JobCard/JobCardOtherForm";
 import JobCardOtherList from "../JobCard/JobCardOtherList";
 import { Button } from "../ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
+import JobCardList from "../JobCard/JobCardList";
 
 export default function ProjectManagerDashboard() {
   const [isJobCardFormOpen, setIsJobCardFormOpen] = useState(false);
@@ -50,7 +50,7 @@ export default function ProjectManagerDashboard() {
 
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
-    navigate(`/project-manager?tab=${tab}`, { replace: true });
+    // navigate(`/project-manager?tab=${tab}`, { replace: true });
     setSidebarOpen(false);
   };
 
@@ -130,14 +130,14 @@ export default function ProjectManagerDashboard() {
               Welcome to your Project Manager dashboard. Manage job cards here.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 mt-4">
-              <Button 
+              <Button
                 onClick={openJobCardForm}
                 className="bg-emerald-600 hover:bg-emerald-700"
               >
                 <Plus className="h-4 w-4 mr-2" />
                 New JC - Veneer Pressing
               </Button>
-              <Button 
+              <Button
                 onClick={openJobCardOtherForm}
                 className="bg-blue-600 hover:bg-blue-700"
               >
@@ -248,10 +248,9 @@ export default function ProjectManagerDashboard() {
             fixed lg:relative z-40 w-64 bg-white border-r-2 border-emerald-200 
             h-full p-4 shadow-lg lg:shadow-none overflow-y-auto flex-shrink-0
             transform transition-transform duration-300 ease-in-out lg:transform-none
-            ${
-              sidebarOpen
-                ? "translate-x-0"
-                : "-translate-x-full lg:translate-x-0"
+            ${sidebarOpen
+              ? "translate-x-0"
+              : "-translate-x-full lg:translate-x-0"
             }
           `}
         >
@@ -259,11 +258,10 @@ export default function ProjectManagerDashboard() {
             <Button
               variant={activeTab === "veneer-pressing" ? "default" : "ghost"}
               onClick={() => handleTabChange("veneer-pressing")}
-              className={`w-full justify-start gap-3 rounded-xl p-3 text-left transition-all duration-200 ${
-                activeTab === "veneer-pressing"
+              className={`w-full justify-start gap-3 rounded-xl p-3 text-left transition-all duration-200 ${activeTab === "veneer-pressing"
                   ? "bg-gradient-to-r from-emerald-500 to-green-500 text-white shadow-lg transform scale-105 hover:from-emerald-600 hover:to-green-600"
                   : "text-emerald-700 hover:bg-emerald-50 hover:shadow-md"
-              }`}
+                }`}
             >
               <FileText className="h-5 w-5" />
               <span className="font-medium">Veneer Pressing</span>
@@ -272,11 +270,10 @@ export default function ProjectManagerDashboard() {
             <Button
               variant={activeTab === "other-services" ? "default" : "ghost"}
               onClick={() => handleTabChange("other-services")}
-              className={`w-full justify-start gap-3 rounded-xl p-3 text-left transition-all duration-200 ${
-                activeTab === "other-services"
+              className={`w-full justify-start gap-3 rounded-xl p-3 text-left transition-all duration-200 ${activeTab === "other-services"
                   ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg transform scale-105 hover:from-blue-600 hover:to-purple-600"
                   : "text-blue-700 hover:bg-blue-50 hover:shadow-md"
-              }`}
+                }`}
             >
               <Wrench className="h-5 w-5" />
               <span className="font-medium">Other Services</span>
@@ -291,21 +288,19 @@ export default function ProjectManagerDashboard() {
             <div className="flex space-x-1">
               <button
                 onClick={() => handleTabChange("veneer-pressing")}
-                className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
-                  activeTab === "veneer-pressing"
+                className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${activeTab === "veneer-pressing"
                     ? "bg-emerald-100 text-emerald-700 border border-emerald-200"
                     : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
-                }`}
+                  }`}
               >
                 Veneer Pressing
               </button>
               <button
                 onClick={() => handleTabChange("other-services")}
-                className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
-                  activeTab === "other-services"
+                className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${activeTab === "other-services"
                     ? "bg-blue-100 text-blue-700 border border-blue-200"
                     : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
-                }`}
+                  }`}
               >
                 Other Services
               </button>
@@ -330,15 +325,13 @@ export default function ProjectManagerDashboard() {
                 >
                   <div className="w-10 h-6 flex items-center justify-center group-active:scale-95 transition-transform">
                     <Plus
-                      className={`h-5 w-5 ${
-                        isJobCardFormOpen ? "text-emerald-600" : "text-gray-500"
-                      }`}
+                      className={`h-5 w-5 ${isJobCardFormOpen ? "text-emerald-600" : "text-gray-500"
+                        }`}
                     />
                   </div>
                   <span
-                    className={`text-xs font-medium mt-1 text-center ${
-                      isJobCardFormOpen ? "text-emerald-600" : "text-gray-600"
-                    }`}
+                    className={`text-xs font-medium mt-1 text-center ${isJobCardFormOpen ? "text-emerald-600" : "text-gray-600"
+                      }`}
                   >
                     New JC-Veneer
                   </span>
@@ -353,15 +346,13 @@ export default function ProjectManagerDashboard() {
                 >
                   <div className="w-10 h-6 flex items-center justify-center group-active:scale-95 transition-transform">
                     <Wrench
-                      className={`h-5 w-5 ${
-                        isJobCardOtherFormOpen ? "text-blue-600" : "text-gray-500"
-                      }`}
+                      className={`h-5 w-5 ${isJobCardOtherFormOpen ? "text-blue-600" : "text-gray-500"
+                        }`}
                     />
                   </div>
                   <span
-                    className={`text-xs font-medium mt-1 text-center ${
-                      isJobCardOtherFormOpen ? "text-blue-600" : "text-gray-600"
-                    }`}
+                    className={`text-xs font-medium mt-1 text-center ${isJobCardOtherFormOpen ? "text-blue-600" : "text-gray-600"
+                      }`}
                   >
                     New JC-Other
                   </span>
@@ -376,19 +367,17 @@ export default function ProjectManagerDashboard() {
                 <button className="flex flex-col items-center justify-center w-full py-1 group">
                   <div className="w-10 h-6 flex items-center justify-center group-active:scale-95 transition-transform">
                     <FileText
-                      className={`h-5 w-5 ${
-                        activeTab === "veneer-pressing" || activeTab === "other-services"
+                      className={`h-5 w-5 ${activeTab === "veneer-pressing" || activeTab === "other-services"
                           ? activeTab === "veneer-pressing" ? "text-emerald-600" : "text-blue-600"
                           : "text-gray-500"
-                      }`}
+                        }`}
                     />
                   </div>
                   <span
-                    className={`text-xs font-medium mt-1 ${
-                      activeTab === "veneer-pressing" || activeTab === "other-services"
+                    className={`text-xs font-medium mt-1 ${activeTab === "veneer-pressing" || activeTab === "other-services"
                         ? activeTab === "veneer-pressing" ? "text-emerald-600" : "text-blue-600"
                         : "text-gray-600"
-                    }`}
+                      }`}
                   >
                     View All
                   </span>
@@ -419,3 +408,5 @@ export default function ProjectManagerDashboard() {
     </div>
   );
 }
+
+
