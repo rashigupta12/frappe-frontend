@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
@@ -708,11 +709,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                         )}
                       </div>
 
-                      {searchError && (
-                        <p className="text-xs text-red-500 mt-1">
-                          {searchError}
-                        </p>
-                      )}
+                      
 
                       {showDropdown && (
                         <div className="absolute z-10 mt-1 w-full bg-white shadow-lg rounded-md border border-gray-200 max-h-60 overflow-auto">

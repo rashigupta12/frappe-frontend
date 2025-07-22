@@ -39,7 +39,7 @@ const JobCardOtherList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
     <>
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 px-4 sm:px-0">
-        <div className="flex items-center space-x-3 mb-2 sm:mb-0">
+        <div className="flex items-center space-x-3  sm:mb-0">
           
           <div>
             <h2 className="text-2xl font-bold text-gray-900">

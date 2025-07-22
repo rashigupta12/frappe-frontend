@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import {
   FileText,
   LogOut,
@@ -309,7 +310,7 @@ export default function ProjectManagerDashboard() {
 
           {/* Main Content - Scrollable */}
           <main className="flex-1 overflow-y-auto">
-            <div className="max-w-7xl mx-auto">
+            <div className="max-w-7xl mx-auto pb-12  pt-2">
               <div className="pb-6">{renderContent()}</div>
             </div>
           </main>
@@ -360,7 +361,7 @@ export default function ProjectManagerDashboard() {
               </div>
 
               {/* View All Button */}
-              <Link
+              {/* <Link
                 to={`/project-manager?tab=${activeTab}`}
                 className="flex-1 max-w-xs flex justify-center"
               >
@@ -382,7 +383,7 @@ export default function ProjectManagerDashboard() {
                     View All
                   </span>
                 </button>
-              </Link>
+              </Link> */}
             </div>
           </div>
         </div>
