@@ -88,7 +88,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
   const [showDropdown, setShowDropdown] = useState(false);
   const [fetchingCustomerDetails, setFetchingCustomerDetails] = useState(false);
   const [fetchingLeadDetails, setFetchingLeadDetails] = useState(false);
-  const [searchError, setSearchError] = useState<string | null>(null);
+  
   const [jobTypes, setJobTypes] = useState<
     { name: string; job_type: string }[]
   >([]);
@@ -169,7 +169,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
   }, []);
 
   const handleCustomerSearch = useCallback(async (query: string) => {
-    setSearchError(null);
+    
     if (!query.trim() || !/^\d+$/.test(query)) {
       setSearchResults([]);
       setShowDropdown(false);
@@ -188,7 +188,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
       const customers = response.message.data;
 
       if (customers.length === 0) {
-        setSearchError("No customers found with this phone number");
+        
         setSearchResults([]);
         return;
       }
@@ -220,9 +220,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
       setShowDropdown(true);
     } catch (error) {
       console.error("Search error:", error);
-      setSearchError(
-        error instanceof Error ? error.message : "Failed to search customers"
-      );
+      
     } finally {
       setIsSearching(false);
     }
