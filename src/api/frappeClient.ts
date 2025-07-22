@@ -485,8 +485,13 @@ export const frappeAPI = {
   getCustomerById: async (customerId: string) => {
     return await frappeAPI.makeAuthenticatedRequest('GET', `/api/resource/Customer/${customerId}`);
   },
-  getItem:async()=>{
-    return await frappeAPI.makeAuthenticatedRequest('GET', '/api/resource/Item');
+  getItem
+  : async () => {
+    return await axios.get("/api/resource/Item", {
+      params: {
+        filters: JSON.stringify([["item_group", "=", "Veneer Pressing Work"]])
+      }
+    });
   },
  getAllJobCardsOther: async (filters: Record<string, unknown> = {}) => {
     const filterArray = Object.entries(filters).map(([key, value]) => [key, "=", value]);
@@ -504,6 +509,9 @@ export const frappeAPI = {
     const url = `/api/resource/Job Card -Other Services?${params.toString()}`;
     
     return await frappeAPI.makeAuthenticatedRequest('GET', url);
+  },
+  getItemById: async (itemName: string) => {
+    return await axios.get(`/api/resource/Item/${itemName}`);
   },
 
   getJobCardOtherById: async (jobCardId: string) => {
