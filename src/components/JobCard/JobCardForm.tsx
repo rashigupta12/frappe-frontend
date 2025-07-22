@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   useJobCards,
   type JobCardFormData,
@@ -36,11 +36,24 @@ import {
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { frappeAPI } from "../../api/frappeClient";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "../ui/dialog";
 
 interface JobCardFormProps {
   isOpen: boolean;
   onClose: () => void;
   jobCard?: JobCard | null;
+}
+
+interface NewCustomerData {
+  customer_name: string;
+  mobile_no: string;
+  email_id?: string;
 }
 
 const JobCardForm: React.FC<JobCardFormProps> = ({
@@ -80,6 +93,16 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
   const [searchError, setSearchError] = useState<string | null>(null);
   const [items, setItems] = useState<{ name: string }[]>([]);
   const [loadingItems, setLoadingItems] = useState(false);
+  const [showAddCustomerDialog, setShowAddCustomerDialog] = useState(false);
+  const [newCustomerData, setNewCustomerData] = useState<NewCustomerData>({
+    customer_name: "",
+    mobile_no: "",
+    email_id: "",
+  });
+  const [creatingCustomer, setCreatingCustomer] = useState(false);
+  const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(
+    null
+  );
 
   useEffect(() => {
     const fetchItems = async () => {
@@ -145,79 +168,157 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
     }
   }, [jobCard, isOpen]);
 
-  // Debounce search
+   const handleCustomerSearch = useCallback(async (query: string) => {
+     setSearchError(null);
+     if (!query.trim() || !/^\d+$/.test(query)) {
+       setSearchResults([]);
+       setShowDropdown(false);
+       return;
+     }
+ 
+     setIsSearching(true);
+     try {
+       // Use the phone number search endpoint
+       const response = await frappeAPI.searchCustomersByPhone(query);
+ 
+       if (!response.message || !Array.isArray(response.message.data)) {
+         throw new Error("Invalid response format");
+       }
+ 
+       const customers = response.message.data;
+ 
+       if (customers.length === 0) {
+         setSearchError("No customers found with this phone number");
+         setSearchResults([]);
+         return;
+       }
+ 
+       // For each customer found, fetch their full details
+       const detailedCustomers = await Promise.all(
+         customers.map(async (customer: { name: any }) => {
+           try {
+             const customerDetails = await frappeAPI.getCustomerById(
+               customer.name
+             );
+             return customerDetails.data;
+           } catch (error) {
+             console.error(
+               `Failed to fetch details for customer ${customer.name}:`,
+               error
+             );
+             return null;
+           }
+         })
+       );
+ 
+       // Filter out any failed requests
+       const validCustomers = detailedCustomers.filter(
+         (customer) => customer !== null
+       );
+ 
+       setSearchResults(validCustomers);
+       setShowDropdown(true);
+     } catch (error) {
+       console.error("Search error:", error);
+       setSearchError(
+         error instanceof Error ? error.message : "Failed to search customers"
+       );
+     } finally {
+       setIsSearching(false);
+     }
+   }, []);
+ 
+   // Handle search input changes with debounce
+   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+     const query = e.target.value;
+ 
+     // Always update the search query, even when empty
+     setSearchQuery(query);
+ 
+     // Clear previous timeout if it exists
+     if (searchTimeout) {
+       clearTimeout(searchTimeout);
+     }
+ 
+     // Only allow digits in the search input
+     if (/^\d*$/.test(query)) {
+       // Set a new timeout to trigger the search after 300ms of inactivity
+       if (query.length > 0) {
+         setSearchTimeout(
+           setTimeout(() => {
+             handleCustomerSearch(query);
+           }, 300)
+         );
+       } else {
+         // If query is empty, clear results and show dropdown for new search
+         setSearchResults([]);
+         setShowDropdown(false);
+       }
+     }
+   };
+ 
+   useEffect(() => {
+     if (searchQuery === "") {
+       setFormData((prev) => ({
+         ...prev,
+         customer_id: "",
+         lead_id: "",
+         building_name: "",
+         property_no: "",
+         area: "",
+       }));
+     }
+   }, [searchQuery]);
+
   useEffect(() => {
-    const handler = setTimeout(() => {
-      if (searchQuery.length > 2) {
-        handleCustomerSearch();
-      } else {
-        setSearchResults([]);
-        setShowDropdown(false);
-      }
-    }, 500);
-
     return () => {
-      clearTimeout(handler);
+      if (searchTimeout) {
+        clearTimeout(searchTimeout);
+      }
     };
-  }, [searchQuery]);
+  }, [searchTimeout]);
 
-  const handleCustomerSearch = async () => {
-    setSearchError(null);
-    if (!searchQuery.trim()) {
-      setSearchResults([]);
+  const handleAddNewCustomer = () => {
+    setNewCustomerData({
+      customer_name: searchQuery,
+      mobile_no: "",
+      email_id: "",
+    });
+    setShowAddCustomerDialog(true);
+    setShowDropdown(false);
+  };
+
+  const handleCreateCustomer = async () => {
+    if (!newCustomerData.customer_name || !newCustomerData.mobile_no) {
+      toast.error("Customer name and mobile number are required");
       return;
     }
 
-    setIsSearching(true);
+    setCreatingCustomer(true);
     try {
-      const response = await frappeAPI.getcustomer({
-        mobile_no: searchQuery,
-        email_id: searchQuery,
-        customer_name: searchQuery,
+      const response = await frappeAPI.createCustomer({
+        customer_name: newCustomerData.customer_name,
+        mobile_no: newCustomerData.mobile_no,
+        email_id: newCustomerData.email_id || "",
       });
 
-      if (!response.data || !Array.isArray(response.data)) {
-        throw new Error("Invalid response format");
+      if (response.data) {
+        toast.success("Customer created successfully");
+        // Select the newly created customer
+        handleCustomerSelect(response.data);
+        setShowAddCustomerDialog(false);
+      } else {
+        throw new Error("Failed to create customer");
       }
-
-      if (response.data.length === 0) {
-        setSearchError("No customers found");
-        setSearchResults([]);
-        return;
-      }
-
-      // For each customer found, fetch their full details
-      const detailedCustomers = await Promise.all(
-        response.data.map(async (customer: { name: any }) => {
-          try {
-            const customerDetails = await frappeAPI.getCustomerById(
-              customer.name
-            );
-            return customerDetails.data;
-          } catch (error) {
-            console.error(
-              `Failed to fetch details for customer ${customer.name}:`,
-              error
-            );
-            return null;
-          }
-        })
-      );
-
-      // Filter out any failed requests
-      const validCustomers = detailedCustomers.filter(
-        (customer) => customer !== null
-      );
-
-      setSearchResults(validCustomers);
-      setShowDropdown(true);
     } catch (error) {
-      console.error("Search error:", error);
-      setSearchError(
-        error instanceof Error ? error.message : "Failed to search customers"
+      console.error("Error creating customer:", error);
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to create customer. Please try again."
       );
     } finally {
-      setIsSearching(false);
+      setCreatingCustomer(false);
     }
   };
 
@@ -272,14 +373,12 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // const handleSelectChange = (field: string, value: string) => {
-  //   setFormData((prev) => ({ ...prev, [field]: value }));
-  // };
-
-  // const getEmployeeDisplayName = (employeeId: string) => {
-  //   const employee = employees.find((emp) => emp.name === employeeId);
-  //   return employee ? employee.employee_name : employeeId;
-  // };
+  const handleNewCustomerInputChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const { name, value } = e.target;
+    setNewCustomerData((prev) => ({ ...prev, [name]: value }));
+  };
 
   // Pressing Charges functions
   const addPressingCharge = () => {
@@ -441,7 +540,9 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                     </div>
                   )}
                   <div className="flex items-center space-x-2">
-                    <span className="text-sm text-white font-medium">Date:</span>
+                    <span className="text-sm text-white font-medium">
+                      Date:
+                    </span>
                     <span className="text-sm font-medium">
                       {new Date().toLocaleDateString("en-US", {
                         year: "numeric",
@@ -502,12 +603,24 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                           id="party_name"
                           name="party_name"
                           value={searchQuery}
-                          onChange={(e) => {
-                            setSearchQuery(e.target.value);
-                          }}
-                          placeholder="Search by name, email or phone"
+                          onChange={handleSearchChange}
+                          placeholder="Search by phone number"
                           required
                           className="focus:ring-blue-500 focus:border-blue-500 pr-10"
+                          onFocus={() => {
+                            // When focusing the field, show the phone number again
+                            if (
+                              formData.customer_id &&
+                              searchResults.length > 0
+                            ) {
+                              const customer = searchResults.find(
+                                (c) => c.name === formData.customer_id
+                              );
+                              if (customer) {
+                                setSearchQuery(customer.mobile_no);
+                              }
+                            }
+                          }}
                         />
                         {isSearching && (
                           <Loader2 className="absolute right-3 top-3 h-4 w-4 animate-spin text-gray-500" />
@@ -520,43 +633,62 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                         </p>
                       )}
 
-                      {showDropdown && searchResults.length > 0 && (
+                      {showDropdown && (
                         <div className="absolute z-10 mt-1 w-full bg-white shadow-lg rounded-md border border-gray-200 max-h-60 overflow-auto">
-                          {searchResults.map((customer) => (
+                          {searchResults.length > 0 ? (
+                            searchResults.map((customer) => (
+                              <div
+                                key={customer.name}
+                                className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center justify-between"
+                                onClick={() => handleCustomerSelect(customer)}
+                              >
+                                <div>
+                                  <p className="font-medium">
+                                    {customer.customer_name || customer.name}
+                                  </p>
+                                  <div className="text-xs text-gray-500 flex gap-2 flex-wrap">
+                                    {customer.mobile_no && (
+                                      <span className="flex items-center">
+                                        <Phone className="h-3 w-3 mr-1" />
+                                        {customer.mobile_no}
+                                      </span>
+                                    )}
+                                    {customer.email_id && (
+                                      <span className="flex items-center">
+                                        <Mail className="h-3 w-3 mr-1" />
+                                        {customer.email_id}
+                                      </span>
+                                    )}
+                                    {customer.lead_name && (
+                                      <span className="bg-green-100 text-green-800 px-1.5 py-0.5 rounded text-xs">
+                                        Has Property
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                                <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                                  Select
+                                </span>
+                              </div>
+                            ))
+                          ) : (
                             <div
-                              key={customer.name}
                               className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center justify-between"
-                              onClick={() => handleCustomerSelect(customer)}
+                              onClick={handleAddNewCustomer}
                             >
                               <div>
                                 <p className="font-medium">
-                                  {customer.customer_name || customer.name}
+                                  No customers found
                                 </p>
-                                <div className="text-xs text-gray-500 flex gap-2 flex-wrap">
-                                  {customer.mobile_no && (
-                                    <span className="flex items-center">
-                                      <Phone className="h-3 w-3 mr-1" />
-                                      {customer.mobile_no}
-                                    </span>
-                                  )}
-                                  {customer.email_id && (
-                                    <span className="flex items-center">
-                                      <Mail className="h-3 w-3 mr-1" />
-                                      {customer.email_id}
-                                    </span>
-                                  )}
-                                  {customer.lead_name && (
-                                    <span className="bg-green-100 text-green-800 px-1.5 py-0.5 rounded text-xs">
-                                      Has Property
-                                    </span>
-                                  )}
-                                </div>
+                                <p className="text-xs text-gray-500">
+                                  Click to add a new customer
+                                </p>
                               </div>
-                              <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                                Select
+                              <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
+                                Add New
                               </span>
                             </div>
-                          ))}
+                          )}
                         </div>
                       )}
                     </div>
@@ -661,100 +793,6 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                         />
                       </div>
                     </div>
-
-                    {/* <div className="flex gap-2">
-                      <div className="space-y-2">
-                        <Label htmlFor="prepared_by">Prepared By</Label>
-                        <Select
-                          value={formData.prepared_by || "none"}
-                          onValueChange={(value) =>
-                            handleSelectChange(
-                              "prepared_by",
-                              value === "none" ? "" : value
-                            )
-                          }
-                        >
-                          <SelectTrigger className="focus:ring-blue-500 bg-white focus:border-blue-500">
-                            <SelectValue placeholder="Select preparer">
-                              {formData.prepared_by &&
-                              formData.prepared_by !== "none"
-                                ? getEmployeeDisplayName(formData.prepared_by)
-                                : "Select preparer"}
-                            </SelectValue>
-                          </SelectTrigger>
-                          <SelectContent className="bg-white">
-                            <SelectItem value="none">
-                              Select preparer
-                            </SelectItem>
-                            {employees
-                              .filter(
-                                (employee) =>
-                                  employee.employee_name && employee.name
-                              )
-                              .map((employee) => (
-                                <SelectItem
-                                  key={employee.name}
-                                  value={employee.name}
-                                >
-                                  {employee.employee_name}
-                                </SelectItem>
-                              ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="approved_by">Approved By</Label>
-                        <Select
-                          value={formData.approved_by || "none"}
-                          onValueChange={(value) =>
-                            handleSelectChange(
-                              "approved_by",
-                              value === "none" ? "" : value
-                            )
-                          }
-                        >
-                          <SelectTrigger className="focus:ring-blue-500 bg-white focus:border-blue-500">
-                            <SelectValue placeholder="Select approver">
-                              {formData.approved_by &&
-                              formData.approved_by !== "none"
-                                ? getEmployeeDisplayName(formData.approved_by)
-                                : "Select approver"}
-                            </SelectValue>
-                          </SelectTrigger>
-                          <SelectContent className="bg-white">
-                            <SelectItem value="none">
-                              Select approver
-                            </SelectItem>
-                            {employees
-                              .filter(
-                                (employee) =>
-                                  employee.employee_name && employee.name
-                              )
-                              .map((employee) => (
-                                <SelectItem
-                                  key={employee.name}
-                                  value={employee.name}
-                                >
-                                  {employee.employee_name}
-                                </SelectItem>
-                              ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div> */}
-
-                    {/* <div className="space-y-2">
-                      <Label htmlFor="ac_v_no_and_date">AC V No / Date</Label>
-                      <Input
-                        id="ac_v_no_and_date"
-                        name="ac_v_no_and_date"
-                        value={formData.ac_v_no_and_date || ""}
-                        onChange={handleInputChange}
-                        placeholder="Enter AC V number/date"
-                        className="focus:ring-blue-500 focus:border-blue-500"
-                      />
-                    </div> */}
                   </div>
                 </div>
               </div>
@@ -1169,6 +1207,70 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Add Customer Dialog */}
+      <Dialog
+        open={showAddCustomerDialog}
+        onOpenChange={setShowAddCustomerDialog}
+      >
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Add New Customer</DialogTitle>
+            <DialogDescription>
+              Fill in the details to create a new customer.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="customer_name">Customer Name</Label>
+              <Input
+                id="customer_name"
+                name="customer_name"
+                value={newCustomerData.customer_name}
+                onChange={handleNewCustomerInputChange}
+                placeholder="Enter customer name"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="mobile_no">Mobile Number</Label>
+              <Input
+                id="mobile_no"
+                name="mobile_no"
+                value={newCustomerData.mobile_no}
+                onChange={handleNewCustomerInputChange}
+                placeholder="Enter mobile number"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="email_id">Email (Optional)</Label>
+              <Input
+                id="email_id"
+                name="email_id"
+                value={newCustomerData.email_id || ""}
+                onChange={handleNewCustomerInputChange}
+                placeholder="Enter email address"
+                type="email"
+              />
+            </div>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setShowAddCustomerDialog(false)}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleCreateCustomer} disabled={creatingCustomer}>
+              {creatingCustomer ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : null}
+              {creatingCustomer ? "Creating..." : "Create Customer"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };

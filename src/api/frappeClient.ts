@@ -3,6 +3,7 @@
 import axios from 'axios';
 
 
+
 // Use different base URLs for development and production
 const isDevelopment = import.meta.env.DEV;
 
@@ -133,7 +134,6 @@ frappeClient.interceptors.response.use(
   }
 );
 
-// Rest of your frappeAPI methods remain the same...
 export const frappeAPI = {
   // Test connection first
   testConnection: async () => {
@@ -302,6 +302,22 @@ export const frappeAPI = {
       throw error;
     }
   },
+
+  // Add this to your frappeAPI object
+get: async (url: string, config?: any) => {
+  try {
+    const response = await frappeClient.get(url, config);
+    return response;
+  } catch (error) {
+    if (axios.isAxiosError(error) && (error.response?.status === 403 || error.response?.status === 401)) {
+      localStorage.removeItem('frappe_user');
+      localStorage.removeItem('frappe_session');
+      localStorage.removeItem('frappe_csrf_token');
+      throw new Error('Session expired. Please login again.');
+    }
+    throw error;
+  }
+},
 
   // ... rest of your API methods remain the same
   getJobTypes: async () => {
@@ -521,6 +537,19 @@ export const frappeAPI = {
   deleteJobCardOther: async (jobCardId: string) => {
     return await frappeAPI.makeAuthenticatedRequest('DELETE', `/api/resource/Job Card -Other Services/${jobCardId}`);
   },
+
+  createCustomer: async (customerData: Record<string, unknown>) => {
+    return await frappeAPI.makeAuthenticatedRequest('POST', '/api/resource/Customer', customerData
+    );
+  },
+
+  // Add this to your frappeAPI object
+searchCustomersByPhone: async (mobile_no: string) => {
+  return await frappeAPI.makeAuthenticatedRequest(
+    'GET', 
+    `/api/method/eits_app.customer_search.search_customers?mobile_no=${mobile_no}`
+  );
+},
   upload: async (file: File, options: {
     is_private?: boolean;
     folder?: string;
