@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // import React, {
 //   createContext,
 //   useContext,
@@ -471,6 +472,9 @@ export interface JobCardOtherFormData {
   project_id_no: string;
   ac_v_no_and_date: string;
   services: Services[]; // 🆕 CHANGED from material_sold to services
+  // Add any other fields needed for the form
+  lead_id: string;
+  customer_id: string;
 }
 
 interface JobCardOtherContextState {
