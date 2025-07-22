@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useJobCards, type JobCard } from '../../context/JobCardContext';
 import { Button } from '../ui/button';
-import { Edit, Trash2, Plus } from 'lucide-react';
+import { Edit, Trash2 } from 'lucide-react';
 import JobCardDetails from './JobCardDetails';
 import { Dialog } from '../ui/dialog';
 
