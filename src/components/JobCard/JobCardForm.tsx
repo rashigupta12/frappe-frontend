@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
@@ -69,7 +70,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
     property_no: "",
     area: "",
     party_name: "",
-    start_date: "",
+    start_date: new Date().toISOString().split("T")[0], // Add this line
     finish_date: "",
     prepared_by: "",
     approved_by: "",
@@ -90,9 +91,13 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
   const [fetchingCustomerDetails, setFetchingCustomerDetails] = useState(false);
   const [fetchingLeadDetails, setFetchingLeadDetails] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
-  const [items, setItems] = useState<{
-    item_name: string; name: string; valuation_rate?: number 
-  }[]>([]);
+  const [items, setItems] = useState<
+    {
+      item_name: string;
+      name: string;
+      valuation_rate?: number;
+    }[]
+  >([]);
   const [loadingItems, setLoadingItems] = useState(false);
   const [showAddCustomerDialog, setShowAddCustomerDialog] = useState(false);
   const [newCustomerData, setNewCustomerData] = useState<NewCustomerData>({
@@ -105,13 +110,6 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
     null
   );
 
-    const [currentDate, setCurrentDate] = useState("");
-
-  useEffect(() => {
-    const today = new Date();
-    const formattedDate = today.toISOString().split("T")[0]; // Format: YYYY-MM-DD
-    setCurrentDate(formattedDate);
-  }, []);
   // Fetch items with prices when component mounts
   useEffect(() => {
     const fetchItems = async () => {
@@ -119,13 +117,12 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
       try {
         const response = await frappeAPI.getItem();
         const itemsData = response.data.data || [];
-        
+
         const formattedItems = itemsData.map((item: any) => ({
           name: item.name,
           item_name: item.item_name || item.name,
-          valuation_rate: item.valuation_rate !== undefined 
-            ? Number(item.valuation_rate)
-            : 0
+          valuation_rate:
+            item.valuation_rate !== undefined ? Number(item.valuation_rate) : 0,
         }));
 
         setItems(formattedItems);
@@ -136,7 +133,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
         setLoadingItems(false);
       }
     };
-    
+
     fetchItems();
   }, []);
 
@@ -159,6 +156,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
         material_sold: jobCard.material_sold || [],
         lead_id: (jobCard as any).lead_id || "",
         customer_id: (jobCard as any).customer_id || "",
+        start_date: jobCard.start_date || new Date().toISOString().split("T")[0],
       });
       setSearchQuery(jobCard.party_name || "");
       setPressingCharges(jobCard.pressing_charges || []);
@@ -170,7 +168,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
         property_no: "",
         area: "",
         party_name: "",
-        start_date: "",
+      start_date: new Date().toISOString().split("T")[0], // Set current date for new cards
         finish_date: "",
         prepared_by: "",
         approved_by: "",
@@ -186,113 +184,113 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
       setMaterialsSold([]);
     }
   }, [jobCard, isOpen]);
-const handleNewCustomerInputChange = (
+  const handleNewCustomerInputChange = (
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
     const { name, value } = e.target;
     setNewCustomerData((prev) => ({ ...prev, [name]: value }));
   };
-   const handleCustomerSearch = useCallback(async (query: string) => {
-     setSearchError(null);
-     if (!query.trim() || !/^\d+$/.test(query)) {
-       setSearchResults([]);
-       setShowDropdown(false);
-       return;
-     }
- 
-     setIsSearching(true);
-     try {
-       // Use the phone number search endpoint
-       const response = await frappeAPI.searchCustomersByPhone(query);
- 
-       if (!response.message || !Array.isArray(response.message.data)) {
-         throw new Error("Invalid response format");
-       }
- 
-       const customers = response.message.data;
- 
-       if (customers.length === 0) {
-         setSearchError("No customers found with this phone number");
-         setSearchResults([]);
-         return;
-       }
- 
-       // For each customer found, fetch their full details
-       const detailedCustomers = await Promise.all(
-         customers.map(async (customer: { name: any }) => {
-           try {
-             const customerDetails = await frappeAPI.getCustomerById(
-               customer.name
-             );
-             return customerDetails.data;
-           } catch (error) {
-             console.error(
-               `Failed to fetch details for customer ${customer.name}:`,
-               error
-             );
-             return null;
-           }
-         })
-       );
- 
-       // Filter out any failed requests
-       const validCustomers = detailedCustomers.filter(
-         (customer) => customer !== null
-       );
- 
-       setSearchResults(validCustomers);
-       setShowDropdown(true);
-     } catch (error) {
-       console.error("Search error:", error);
-       setSearchError(
-         error instanceof Error ? error.message : "Failed to search customers"
-       );
-     } finally {
-       setIsSearching(false);
-     }
-   }, []);
- 
-   // Handle search input changes with debounce
-   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-     const query = e.target.value;
- 
-     // Always update the search query, even when empty
-     setSearchQuery(query);
- 
-     // Clear previous timeout if it exists
-     if (searchTimeout) {
-       clearTimeout(searchTimeout);
-     }
- 
-     // Only allow digits in the search input
-     if (/^\d*$/.test(query)) {
-       // Set a new timeout to trigger the search after 300ms of inactivity
-       if (query.length > 0) {
-         setSearchTimeout(
-           setTimeout(() => {
-             handleCustomerSearch(query);
-           }, 300)
-         );
-       } else {
-         // If query is empty, clear results and show dropdown for new search
-         setSearchResults([]);
-         setShowDropdown(false);
-       }
-     }
-   };
- 
-   useEffect(() => {
-     if (searchQuery === "") {
-       setFormData((prev) => ({
-         ...prev,
-         customer_id: "",
-         lead_id: "",
-         building_name: "",
-         property_no: "",
-         area: "",
-       }));
-     }
-   }, [searchQuery]);
+  const handleCustomerSearch = useCallback(async (query: string) => {
+    setSearchError(null);
+    if (!query.trim() || !/^\d+$/.test(query)) {
+      setSearchResults([]);
+      setShowDropdown(false);
+      return;
+    }
+
+    setIsSearching(true);
+    try {
+      // Use the phone number search endpoint
+      const response = await frappeAPI.searchCustomersByPhone(query);
+
+      if (!response.message || !Array.isArray(response.message.data)) {
+        throw new Error("Invalid response format");
+      }
+
+      const customers = response.message.data;
+
+      if (customers.length === 0) {
+        setSearchError("No customers found with this phone number");
+        setSearchResults([]);
+        return;
+      }
+
+      // For each customer found, fetch their full details
+      const detailedCustomers = await Promise.all(
+        customers.map(async (customer: { name: any }) => {
+          try {
+            const customerDetails = await frappeAPI.getCustomerById(
+              customer.name
+            );
+            return customerDetails.data;
+          } catch (error) {
+            console.error(
+              `Failed to fetch details for customer ${customer.name}:`,
+              error
+            );
+            return null;
+          }
+        })
+      );
+
+      // Filter out any failed requests
+      const validCustomers = detailedCustomers.filter(
+        (customer) => customer !== null
+      );
+
+      setSearchResults(validCustomers);
+      setShowDropdown(true);
+    } catch (error) {
+      console.error("Search error:", error);
+      setSearchError(
+        error instanceof Error ? error.message : "Failed to search customers"
+      );
+    } finally {
+      setIsSearching(false);
+    }
+  }, []);
+
+  // Handle search input changes with debounce
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const query = e.target.value;
+
+    // Always update the search query, even when empty
+    setSearchQuery(query);
+
+    // Clear previous timeout if it exists
+    if (searchTimeout) {
+      clearTimeout(searchTimeout);
+    }
+
+    // Only allow digits in the search input
+    if (/^\d*$/.test(query)) {
+      // Set a new timeout to trigger the search after 300ms of inactivity
+      if (query.length > 0) {
+        setSearchTimeout(
+          setTimeout(() => {
+            handleCustomerSearch(query);
+          }, 300)
+        );
+      } else {
+        // If query is empty, clear results and show dropdown for new search
+        setSearchResults([]);
+        setShowDropdown(false);
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (searchQuery === "") {
+      setFormData((prev) => ({
+        ...prev,
+        customer_id: "",
+        lead_id: "",
+        building_name: "",
+        property_no: "",
+        area: "",
+      }));
+    }
+  }, [searchQuery]);
 
   useEffect(() => {
     return () => {
@@ -415,10 +413,14 @@ const handleNewCustomerInputChange = (
     field: keyof PressingCharges,
     value: string | number
   ) => {
-    if (field === 'work_type' && typeof value === 'string' && value !== 'none') {
-      const selectedItem = items.find(item => item.name === value);
+    if (
+      field === "work_type" &&
+      typeof value === "string" &&
+      value !== "none"
+    ) {
+      const selectedItem = items.find((item) => item.name === value);
       const price = selectedItem?.valuation_rate || 0;
-      
+
       setPressingCharges((prev) =>
         prev.map((charge, i) => {
           if (i !== index) return charge;
@@ -427,7 +429,7 @@ const handleNewCustomerInputChange = (
             ...charge,
             work_type: value,
             price: price,
-            amount: price * (Number(charge.no_of_sides) || 1)
+            amount: price * (Number(charge.no_of_sides) || 1),
           };
         })
       );
@@ -439,7 +441,7 @@ const handleNewCustomerInputChange = (
           const updatedCharge = { ...charge, [field]: value };
 
           // Auto-calculate amount when price or no_of_sides changes
-          if (field === 'price' || field === 'no_of_sides') {
+          if (field === "price" || field === "no_of_sides") {
             const price = Number(updatedCharge.price) || 0;
             const sides = Number(updatedCharge.no_of_sides) || 1;
             updatedCharge.amount = price * sides;
@@ -473,10 +475,14 @@ const handleNewCustomerInputChange = (
     field: keyof MaterialSold,
     value: string | number
   ) => {
-    if (field === 'work_type' && typeof value === 'string' && value !== 'none') {
-      const selectedItem = items.find(item => item.name === value);
+    if (
+      field === "work_type" &&
+      typeof value === "string" &&
+      value !== "none"
+    ) {
+      const selectedItem = items.find((item) => item.name === value);
       const price = selectedItem?.valuation_rate || 0;
-      
+
       setMaterialsSold((prev) =>
         prev.map((material, i) => {
           if (i !== index) return material;
@@ -485,7 +491,7 @@ const handleNewCustomerInputChange = (
             ...material,
             work_type: value,
             price: price,
-            amount: price * (Number(material.no_of_sides) || 1)
+            amount: price * (Number(material.no_of_sides) || 1),
           };
         })
       );
@@ -497,7 +503,7 @@ const handleNewCustomerInputChange = (
           const updatedMaterial = { ...material, [field]: value };
 
           // Auto-calculate amount when price or no_of_sides changes
-          if (field === 'price' || field === 'no_of_sides') {
+          if (field === "price" || field === "no_of_sides") {
             const price = Number(updatedMaterial.price) || 0;
             const sides = Number(updatedMaterial.no_of_sides) || 1;
             updatedMaterial.amount = price * sides;
@@ -531,9 +537,9 @@ const handleNewCustomerInputChange = (
       return false;
     }
     if (!formData.start_date) {
-      alert("Start date is required");
-      return false;
-    }
+    alert("Start date is required");
+    return false;
+  }
     if (!formData.finish_date) {
       alert("Finish date is required");
       return false;
@@ -582,8 +588,6 @@ const handleNewCustomerInputChange = (
   };
 
   if (!isOpen) return null;
-
-
 
   return (
     <>
@@ -828,27 +832,25 @@ const handleNewCustomerInputChange = (
                     </div>
 
                     <div className="flex flex-wrap gap-2">
-                      
-      <div className="w-[48%] space-y-2">
-        <Label
-          htmlFor="start_date"
-          className="flex items-center space-x-1"
-        >
-          <Calendar className="h-4 w-4 text-gray-500" />
-          <span>
-            Start Date <span className="text-red-500">*</span>
-          </span>
-        </Label>
-        <Input
-          id="start_date"
-          name="start_date"
-          type="date"
-          value={currentDate}
-          readOnly
-          className="w-full bg-gray-100 cursor-not-allowed"
-        />
-      </div>
-
+                      <div className="w-[48%] space-y-2">
+                        <Label
+                          htmlFor="start_date"
+                          className="flex items-center space-x-1"
+                        >
+                          <Calendar className="h-4 w-4 text-gray-500" />
+                          <span>
+                            Start Date <span className="text-red-500">*</span>
+                          </span>
+                        </Label>
+                        <Input
+  id="start_date"
+  name="start_date"
+  type="date"
+  value={formData.start_date}
+  readOnly
+  className="w-full bg-gray-100 cursor-not-allowed"
+/>
+                      </div>
 
                       <div className="w-[48%] space-y-2">
                         <Label
@@ -928,18 +930,29 @@ const handleNewCustomerInputChange = (
                               <Select
                                 value={charge.work_type}
                                 onValueChange={(value) =>
-                                  updatePressingCharge(index, "work_type", value)
+                                  updatePressingCharge(
+                                    index,
+                                    "work_type",
+                                    value
+                                  )
                                 }
                               >
                                 <SelectTrigger className="h-9 text-sm">
                                   <SelectValue placeholder="Select work type" />
                                 </SelectTrigger>
                                 <SelectContent className="bg-white">
-                                  <SelectItem value="none">Select work type</SelectItem>
+                                  <SelectItem value="none">
+                                    Select work type
+                                  </SelectItem>
                                   {items.map((item) => (
-                                    <SelectItem key={item.name} value={item.name}>
+                                    <SelectItem
+                                      key={item.name}
+                                      value={item.name}
+                                    >
                                       <div className="flex justify-between w-full">
-                                        <span>{item.item_name || item.name}</span>
+                                        <span>
+                                          {item.item_name || item.name}
+                                        </span>
                                         <span className="text-gray-500 ml-2">
                                           ₹{item.valuation_rate || 0}
                                         </span>
@@ -995,7 +1008,7 @@ const handleNewCustomerInputChange = (
                                 placeholder="No of Sides"
                                 type="number"
                                 min="1"
-                                value={charge.no_of_sides || ''}
+                                value={charge.no_of_sides || ""}
                                 onChange={(e) =>
                                   updatePressingCharge(
                                     index,
@@ -1014,7 +1027,7 @@ const handleNewCustomerInputChange = (
                                 placeholder="0.00"
                                 type="number"
                                 step="0.01"
-                                value={charge.price || ''}
+                                value={charge.price || ""}
                                 onChange={(e) =>
                                   updatePressingCharge(
                                     index,
@@ -1114,11 +1127,18 @@ const handleNewCustomerInputChange = (
                                   <SelectValue placeholder="Select work type" />
                                 </SelectTrigger>
                                 <SelectContent className="bg-white">
-                                  <SelectItem value="none">Select work type</SelectItem>
+                                  <SelectItem value="none">
+                                    Select work type
+                                  </SelectItem>
                                   {items.map((item) => (
-                                    <SelectItem key={item.name} value={item.name}>
+                                    <SelectItem
+                                      key={item.name}
+                                      value={item.name}
+                                    >
                                       <div className="flex justify-between w-full">
-                                        <span>{item.item_name || item.name}</span>
+                                        <span>
+                                          {item.item_name || item.name}
+                                        </span>
                                         <span className="text-gray-500 ml-2">
                                           ₹{item.valuation_rate || 0}
                                         </span>
@@ -1174,7 +1194,7 @@ const handleNewCustomerInputChange = (
                                 placeholder="No of Sides"
                                 type="number"
                                 min="1"
-                                value={material.no_of_sides || ''}
+                                value={material.no_of_sides || ""}
                                 onChange={(e) =>
                                   updateMaterialSold(
                                     index,
@@ -1193,7 +1213,7 @@ const handleNewCustomerInputChange = (
                                 placeholder="0.00"
                                 type="number"
                                 step="0.01"
-                                value={material.price || ''}
+                                value={material.price || ""}
                                 onChange={(e) =>
                                   updateMaterialSold(
                                     index,

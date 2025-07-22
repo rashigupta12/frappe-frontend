@@ -69,7 +69,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
     property_no: "",
     area: "",
     party_name: "",
-    start_date: "",
+    start_date: new Date().toISOString().split("T")[0], // Add this line
     finish_date: "",
     prepared_by: "",
     approved_by: "",
@@ -103,13 +103,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
     null
   );
 
-  const [currentDate, setCurrentDate] = useState("");
-
-  useEffect(() => {
-    const today = new Date();
-    const formattedDate = today.toISOString().split("T")[0]; // Format: YYYY-MM-DD
-    setCurrentDate(formattedDate);
-  }, []);
+  
 
   // Fetch employees when component mounts
   useEffect(() => {
@@ -129,6 +123,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
         services: jobCard.services || [],
         lead_id: (jobCard as any).lead_id || "",
         customer_id: (jobCard as any).customer_id || "",
+        start_date: jobCard.start_date || new Date().toISOString().split("T")[0],
       });
       setSearchQuery(jobCard.party_name || "");
       setServices(jobCard.services || []);
@@ -139,7 +134,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
         property_no: "",
         area: "",
         party_name: "",
-        start_date: "",
+        start_date: new Date().toISOString().split("T")[0], // Add this line
         finish_date: "",
         prepared_by: "",
         approved_by: "",
@@ -734,7 +729,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                           id="start_date"
                           name="start_date"
                           type="date"
-                          value={currentDate}
+                          value={formData.start_date}
                           readOnly
                           className="w-full bg-gray-100 cursor-not-allowed"
                         />
