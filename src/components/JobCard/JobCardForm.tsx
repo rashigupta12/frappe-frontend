@@ -71,7 +71,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
     property_no: "",
     area: "",
     party_name: "",
-    start_date: new Date().toISOString().split("T")[0], // Add this line
+    start_date: new Date().toISOString().split("T")[0],
     finish_date: "",
     prepared_by: "",
     approved_by: "",
@@ -91,7 +91,6 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
   const [showDropdown, setShowDropdown] = useState(false);
   const [fetchingCustomerDetails, setFetchingCustomerDetails] = useState(false);
   const [fetchingLeadDetails, setFetchingLeadDetails] = useState(false);
-
   const [items, setItems] = useState<
     {
       item_name: string;
@@ -110,6 +109,19 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
   const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(
     null
   );
+
+  // Helper functions
+  const calculatePressingTotal = (charges: PressingCharges[]) => {
+    return charges.reduce((sum, charge) => sum + (charge.amount || 0), 0);
+  };
+
+  const calculateMaterialsTotal = (materials: MaterialSold[]) => {
+    return materials.reduce((sum, material) => sum + (material.amount || 0), 0);
+  };
+
+  const formatAddress = (building: string, property: string, area: string) => {
+    return [building, property, area].filter(Boolean).join(", ");
+  };
 
   // Fetch items with prices when component mounts
   useEffect(() => {
@@ -170,7 +182,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
         property_no: "",
         area: "",
         party_name: "",
-        start_date: new Date().toISOString().split("T")[0], // Set current date for new cards
+        start_date: new Date().toISOString().split("T")[0],
         finish_date: "",
         prepared_by: "",
         approved_by: "",
@@ -186,12 +198,14 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
       setMaterialsSold([]);
     }
   }, [jobCard, isOpen]);
+
   const handleNewCustomerInputChange = (
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
     const { name, value } = e.target;
     setNewCustomerData((prev) => ({ ...prev, [name]: value }));
   };
+
   const handleCustomerSearch = useCallback(async (query: string) => {
     if (!query.trim()) {
       setSearchResults([]);
@@ -203,21 +217,17 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
     try {
       let response;
 
-      // Determine search type based on input
       if (/^\d+$/.test(query)) {
-        // Search by phone if query is numeric
         response = await frappeAPI.makeAuthenticatedRequest(
           "GET",
           `/api/method/eits_app.customer_search.search_customers?mobile_no=${query}`
         );
       } else if (query.includes("@")) {
-        // Search by email if query contains '@'
         response = await frappeAPI.makeAuthenticatedRequest(
           "GET",
           `/api/method/eits_app.customer_search.search_customers?email_id=${query}`
         );
       } else {
-        // Search by name for all other cases
         response = await frappeAPI.makeAuthenticatedRequest(
           "GET",
           `/api/method/eits_app.customer_search.search_customers?customer_name=${query}`
@@ -236,7 +246,6 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
         return;
       }
 
-      // Get detailed customer info
       const detailedCustomers = await Promise.all(
         customers.map(async (customer: { name: any }) => {
           try {
@@ -268,7 +277,6 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
     }
   }, []);
 
-  // Handle search input changes with debounce
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value;
     setSearchQuery(query);
@@ -277,7 +285,6 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
       clearTimeout(searchTimeout);
     }
 
-    // Remove the digits-only check and allow any input
     if (query.length > 0) {
       setSearchTimeout(
         setTimeout(() => {
@@ -340,7 +347,6 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
 
       if (response.data) {
         toast.success("Customer created successfully");
-        // Select the newly created customer
         handleCustomerSelect(response.data);
         setShowAddCustomerDialog(false);
       } else {
@@ -454,7 +460,6 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
 
           const updatedCharge = { ...charge, [field]: value };
 
-          // Auto-calculate amount when price or no_of_sides changes
           if (field === "price" || field === "no_of_sides") {
             const price = Number(updatedCharge.price) || 0;
             const sides = Number(updatedCharge.no_of_sides) || 1;
@@ -516,7 +521,6 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
 
           const updatedMaterial = { ...material, [field]: value };
 
-          // Auto-calculate amount when price or no_of_sides changes
           if (field === "price" || field === "no_of_sides") {
             const price = Number(updatedMaterial.price) || 0;
             const sides = Number(updatedMaterial.no_of_sides) || 1;
@@ -535,27 +539,31 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
 
   const validateForm = (): boolean => {
     if (!formData.party_name) {
-      alert("Customer name is required");
+      toast.error("Customer name is required");
       return false;
     }
     if (!formData.building_name) {
-      alert("Building name is required");
+      toast.error("Building name is required");
       return false;
     }
     if (!formData.property_no) {
-      alert("Property number is required");
+      toast.error("Property number is required");
       return false;
     }
     if (!formData.area) {
-      alert("Area is required");
+      toast.error("Area is required");
       return false;
     }
     if (!formData.start_date) {
-      alert("Start date is required");
+      toast.error("Start date is required");
       return false;
     }
     if (!formData.finish_date) {
-      alert("Finish date is required");
+      toast.error("Finish date is required");
+      return false;
+    }
+    if (pressingCharges.length === 0 && materialsSold.length === 0) {
+      toast.error("At least one entry in Pressing Charges or Materials Sold is required");
       return false;
     }
     return true;
@@ -686,9 +694,14 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                         className="flex items-center space-x-2"
                       >
                         <User className="h-4 w-4 text-gray-500" />
-                        <span>
-                          Customer <span className="text-red-500">*</span>
-                        </span>
+                        <label className="block text-sm font-medium text-gray-700">
+                          Customer{" "}
+                          <span className="text-gray-500">
+                            (name / email / phone)
+                          </span>
+                          <span className="text-red-500 ml-1">*</span>
+                        </label>
+
                         {(fetchingCustomerDetails || fetchingLeadDetails) && (
                           <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
                         )}
@@ -825,6 +838,20 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                       />
                     </div>
 
+                    {/* <div className="space-y-2">
+                      <Label htmlFor="address" className="flex items-center space-x-2">
+                        <MapPin className="h-4 w-4 text-gray-500" />
+                        <span>Address</span>
+                      </Label>
+                      <div className="bg-gray-50 p-3 rounded-md border border-gray-200 text-sm">
+                        {formatAddress(
+                          formData.building_name,
+                          formData.property_no,
+                          formData.area
+                        ) || <span className="text-gray-400">No address entered</span>}
+                      </div>
+                    </div> */}
+
                     <div className="flex flex-wrap gap-2">
                       <div className="w-[48%] space-y-2">
                         <Label
@@ -948,7 +975,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                                           {item.item_name || item.name}
                                         </span>
                                         <span className="text-gray-500 ml-2">
-                                          ₹{item.valuation_rate || 0}
+                                          {item.valuation_rate || 0} AED
                                         </span>
                                       </div>
                                     </SelectItem>
@@ -1058,6 +1085,17 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                       </div>
                     ))
                   )}
+
+                  {pressingCharges.length > 0 && (
+                    <div className="flex justify-end mt-4">
+                      <div className="bg-blue-50 p-3 rounded-md border border-blue-200 w-64">
+                        <div className="flex justify-between font-medium">
+                          <span>Total Pressing Charges:</span>
+                          <span>{calculatePressingTotal(pressingCharges).toFixed(2)} AED</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -1114,7 +1152,11 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                               <Select
                                 value={material.work_type}
                                 onValueChange={(value) =>
-                                  updateMaterialSold(index, "work_type", value)
+                                  updateMaterialSold(
+                                    index,
+                                    "work_type",
+                                    value
+                                  )
                                 }
                               >
                                 <SelectTrigger className="h-9 text-sm">
@@ -1134,7 +1176,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                                           {item.item_name || item.name}
                                         </span>
                                         <span className="text-gray-500 ml-2">
-                                          ₹{item.valuation_rate || 0}
+                                          {item.valuation_rate || 0} AED
                                         </span>
                                       </div>
                                     </SelectItem>
@@ -1244,38 +1286,60 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                       </div>
                     ))
                   )}
+
+                  {materialsSold.length > 0 && (
+                    <div className="flex justify-end mt-4">
+                      <div className="bg-blue-50 p-3 rounded-md border border-blue-200 w-64">
+                        <div className="flex justify-between font-medium">
+                          <span>Total Materials Sold:</span>
+                          <span>{calculateMaterialsTotal(materialsSold).toFixed(2)}AED</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
-              {/* Action Buttons */}
-              <div className="sticky bottom-0 bg-white border-t border-gray-200 p-6 shadow-lg">
-                <div className="flex flex-col sm:flex-row justify-end gap-3">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={onClose}
-                    className="px-8 py-3 order-2 sm:order-1"
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    type="submit"
-                    disabled={loading}
-                    className="px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg order-1 sm:order-2"
-                  >
-                    {loading ? (
-                      <div className="flex items-center gap-2">
-                        <Loader2 className="animate-spin h-5 w-5" />
-                        Saving...
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <Save className="h-5 w-5" />
-                        {jobCard ? "Update Job Card" : "Create Job Card"}
-                      </div>
-                    )}
-                  </Button>
-                </div>
+            
+<div className="bg-white rounded-lg shadow-sm border border-gray-200 px-4 py-3">
+  <div className="flex justify-between items-center gap-4">
+    <span className="font-semibold text-gray-700">Grand Total:</span>
+    <div className="flex items-center">
+      
+      <span className="text-xl font-bold ">
+        {(calculatePressingTotal(pressingCharges) + calculateMaterialsTotal(materialsSold)).toFixed(2)} AED
+      </span>
+    </div>
+  </div>
+</div>
+
+              {/* Form Actions */}
+              <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={onClose}
+                  className="px-6 py-2"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={loading}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 shadow-sm"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      {jobCard ? "Updating..." : "Creating..."}
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-4 w-4 mr-2" />
+                      {jobCard ? "Update Job Card" : "Create Job Card"}
+                    </>
+                  )}
+                </Button>
               </div>
             </form>
           </div>
@@ -1283,20 +1347,20 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
       </div>
 
       {/* Add Customer Dialog */}
-      <Dialog
-        open={showAddCustomerDialog}
-        onOpenChange={setShowAddCustomerDialog}
-      >
-        <DialogContent className="sm:max-w-[425px] bg-white">
+      <Dialog open={showAddCustomerDialog} onOpenChange={setShowAddCustomerDialog}>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Add New Customer</DialogTitle>
             <DialogDescription>
-              Fill in the details to create a new customer.
+              Create a new customer record with the provided information.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
+
+          <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="customer_name">Customer Name</Label>
+              <Label htmlFor="customer_name">
+                Customer Name <span className="text-red-500">*</span>
+              </Label>
               <Input
                 id="customer_name"
                 name="customer_name"
@@ -1306,8 +1370,11 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                 required
               />
             </div>
+
             <div className="space-y-2">
-              <Label htmlFor="mobile_no">Mobile Number</Label>
+              <Label htmlFor="mobile_no">
+                Mobile Number <span className="text-red-500">*</span>
+              </Label>
               <Input
                 id="mobile_no"
                 name="mobile_no"
@@ -1317,31 +1384,42 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                 required
               />
             </div>
+
             <div className="space-y-2">
-              <Label htmlFor="email_id">Email (Optional)</Label>
+              <Label htmlFor="email_id">Email ID</Label>
               <Input
                 id="email_id"
                 name="email_id"
-                value={newCustomerData.email_id || ""}
+                type="email"
+                value={newCustomerData.email_id}
                 onChange={handleNewCustomerInputChange}
                 placeholder="Enter email address"
-                type="email"
               />
             </div>
-          </div>
-          <div className="flex justify-end gap-2">
-            <Button
-              variant="outline"
-              onClick={() => setShowAddCustomerDialog(false)}
-            >
-              Cancel
-            </Button>
-            <Button onClick={handleCreateCustomer} disabled={creatingCustomer}>
-              {creatingCustomer ? (
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-              ) : null}
-              {creatingCustomer ? "Creating..." : "Create Customer"}
-            </Button>
+
+            <div className="flex justify-end space-x-2 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowAddCustomerDialog(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                onClick={handleCreateCustomer}
+                disabled={creatingCustomer}
+              >
+                {creatingCustomer ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Creating...
+                  </>
+                ) : (
+                  "Create Customer"
+                )}
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

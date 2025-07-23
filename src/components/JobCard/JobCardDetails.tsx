@@ -7,7 +7,7 @@ import {
   DialogFooter,
 } from '../ui/dialog';
 import { Button } from '../ui/button';
-import { format } from 'date-fns';
+// import { format } from 'date-fns';
 import type { JobCard } from '../../context/JobCardContext';
 
 interface Props {
@@ -16,8 +16,17 @@ interface Props {
 }
 
 const JobCardDetails: React.FC<Props> = ({ card, onClose }) => {
-  const fmt = (d?: string) =>
-    d ? format(new Date(d), 'MMM dd, yyyy') : 'N/A';
+  // const fmt = (d?: string) =>
+  //   d ? format(new Date(d), 'MMM dd, yyyy') : 'N/A';
+
+    const formatAddress = () => {
+    const parts = [];
+    if (card.building_name) parts.push(card.building_name);
+    if (card.property_no)
+      parts.push(`Property No: ${card.property_no}`);
+    if (card.area) parts.push(`Area: ${card.area}`);
+    return parts.join(", ");
+  };
 
   return (
     <DialogContent className="max-w-[95vw] sm:max-w-2xl w-full max-h-[90vh] overflow-y-auto bg-white mx-auto overflow-x-hidden">
@@ -32,25 +41,9 @@ const JobCardDetails: React.FC<Props> = ({ card, onClose }) => {
         {/* Customer and Property No side by side */}
         <div className="grid grid-cols-2 gap-3">
           <Field label="Customer" value={card.party_name} />
-          <Field label="Property No." value={card.property_no} />
+          <Field label="Address" value={formatAddress()} />
         </div>
         
-        {/* Building and Area side by side */}
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="Building" value={card.building_name} />
-          <Field label="Area" value={card.area} />
-        </div>
-        
-        {/* Start Date and Finish Date side by side */}
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="Start Date" value={fmt(card.start_date)} />
-          <Field label="Finish Date" value={fmt(card.finish_date)} />
-        </div>
-        
-        {/* Prepared By and Approved By side by side */}
-       
-        
-        {/* Project ID and A/C V No full width */}
         
       </div>
 

@@ -51,7 +51,6 @@ export default function ProjectManagerDashboard() {
 
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
-    // navigate(`/project-manager?tab=${tab}`, { replace: true });
     setSidebarOpen(false);
   };
 
@@ -130,22 +129,6 @@ export default function ProjectManagerDashboard() {
             <p className="text-emerald-600">
               Welcome to your Project Manager dashboard. Manage job cards here.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 mt-4">
-              <Button
-                onClick={openJobCardForm}
-                className="bg-emerald-600 hover:bg-emerald-700"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                New JC - Veneer Pressing
-              </Button>
-              <Button
-                onClick={openJobCardOtherForm}
-                className="bg-blue-600 hover:bg-blue-700"
-              >
-                <Wrench className="h-4 w-4 mr-2" />
-                New JC - Other Service
-              </Button>
-            </div>
           </div>
         );
     }
@@ -185,7 +168,7 @@ export default function ProjectManagerDashboard() {
 
           {/* Title */}
           <h1 className="text-center text-lg sm:text-xl font-bold text-emerald-800">
-            Project Manager
+            Supervisor
           </h1>
 
           {/* User Menu */}
@@ -279,6 +262,25 @@ export default function ProjectManagerDashboard() {
               <Wrench className="h-5 w-5" />
               <span className="font-medium">Other Services</span>
             </Button>
+
+            {/* Desktop Add Buttons in Sidebar */}
+            {/* <div className="hidden lg:block space-y-2 mt-6">
+              <Button
+                onClick={openJobCardForm}
+                className="w-full justify-start gap-3 rounded-xl p-3 bg-emerald-600 hover:bg-emerald-700 text-white"
+              >
+                <Plus className="h-5 w-5" />
+                <span className="font-medium">New JC - Veneer</span>
+              </Button>
+
+              <Button
+                onClick={openJobCardOtherForm}
+                className="w-full justify-start gap-3 rounded-xl p-3 bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                <Wrench className="h-5 w-5" />
+                <span className="font-medium">New JC - Other</span>
+              </Button>
+            </div> */}
           </nav>
         </aside>
 
@@ -310,13 +312,32 @@ export default function ProjectManagerDashboard() {
 
           {/* Main Content - Scrollable */}
           <main className="flex-1 overflow-y-auto">
-            <div className="max-w-7xl mx-auto pb-12  pt-2">
-              <div className="pb-6">{renderContent()}</div>
+            <div className="max-w-7xl mx-auto pb-12 pt-2 px-4">
+              <div className="pb-6">
+                {/* Floating Action Buttons for Desktop */}
+                <div className="hidden lg:flex justify-end gap-4 mb-4">
+                  <Button
+                    onClick={openJobCardForm}
+                    className="bg-emerald-600 hover:bg-emerald-700 shadow-lg"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    New JC - Veneer Pressing
+                  </Button>
+                  <Button
+                    onClick={openJobCardOtherForm}
+                    className="bg-blue-600 hover:bg-blue-700 shadow-lg"
+                  >
+                    <Wrench className="h-4 w-4 mr-2" />
+                    New JC - Other Service
+                  </Button>
+                </div>
+                {renderContent()}
+              </div>
             </div>
           </main>
 
-          {/* Footer - Sticky at bottom */}
-          <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-30 safe-area-pb">
+          {/* Mobile Bottom Navigation */}
+          <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-30 safe-area-pb">
             <div className="flex items-center justify-between px-4 py-2">
               {/* New JC - Veneer Pressing Button */}
               <div className="flex-1 max-w-xs flex justify-center">
@@ -359,31 +380,6 @@ export default function ProjectManagerDashboard() {
                   </span>
                 </button>
               </div>
-
-              {/* View All Button */}
-              {/* <Link
-                to={`/project-manager?tab=${activeTab}`}
-                className="flex-1 max-w-xs flex justify-center"
-              >
-                <button className="flex flex-col items-center justify-center w-full py-1 group">
-                  <div className="w-10 h-6 flex items-center justify-center group-active:scale-95 transition-transform">
-                    <FileText
-                      className={`h-5 w-5 ${activeTab === "veneer-pressing" || activeTab === "other-services"
-                          ? activeTab === "veneer-pressing" ? "text-emerald-600" : "text-blue-600"
-                          : "text-gray-500"
-                        }`}
-                    />
-                  </div>
-                  <span
-                    className={`text-xs font-medium mt-1 ${activeTab === "veneer-pressing" || activeTab === "other-services"
-                        ? activeTab === "veneer-pressing" ? "text-emerald-600" : "text-blue-600"
-                        : "text-gray-600"
-                      }`}
-                  >
-                    View All
-                  </span>
-                </button>
-              </Link> */}
             </div>
           </div>
         </div>
@@ -409,5 +405,3 @@ export default function ProjectManagerDashboard() {
     </div>
   );
 }
-
-

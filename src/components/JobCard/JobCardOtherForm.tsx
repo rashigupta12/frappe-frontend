@@ -2,14 +2,37 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import {
+  Building,
+  Calendar,
+  Loader2,
+  Mail,
+  MapPin,
+  Phone,
+  Plus,
+  Save,
+  Trash2,
+  User,
+  Wrench,
+  X
+} from "lucide-react";
+import React, { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
+import { frappeAPI } from "../../api/frappeClient";
 import {
   useJobCardsOther,
+  type JobCardOther,
   type JobCardOtherFormData,
   type Services,
-  type JobCardOther,
 } from "../../context/JobCardOtherContext";
 import { Button } from "../ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "../ui/dialog";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import {
@@ -20,29 +43,6 @@ import {
   SelectValue,
 } from "../ui/select";
 import { Textarea } from "../ui/textarea";
-import {
-  X,
-  Plus,
-  Trash2,
-  Save,
-  Loader2,
-  Calendar,
-  User,
-  Building,
-  MapPin,
-  Wrench,
-  Phone,
-  Mail,
-} from "lucide-react";
-import { frappeAPI } from "../../api/frappeClient";
-import { toast } from "sonner";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "../ui/dialog";
 
 interface JobCardOtherFormProps {
   isOpen: boolean;
@@ -70,7 +70,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
     property_no: "",
     area: "",
     party_name: "",
-    start_date: new Date().toISOString().split("T")[0], // Add this line
+    start_date: new Date().toISOString().split("T")[0],
     finish_date: "",
     prepared_by: "",
     approved_by: "",
@@ -88,7 +88,6 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
   const [showDropdown, setShowDropdown] = useState(false);
   const [fetchingCustomerDetails, setFetchingCustomerDetails] = useState(false);
   const [fetchingLeadDetails, setFetchingLeadDetails] = useState(false);
-
   const [jobTypes, setJobTypes] = useState<
     { name: string; job_type: string }[]
   >([]);
@@ -104,6 +103,28 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
     null
   );
 
+  // Calculate totals
+  const calculateServiceTotal = () => {
+    return services.reduce((total, service) => {
+      const price = parseFloat(service.price) || 0;
+      return total + price;
+    }, 0);
+  };
+
+  const serviceTotal = calculateServiceTotal();
+
+  // Format address
+  const formatAddress = () => {
+    const parts = [];
+    if (formData.building_name) parts.push(formData.building_name);
+    if (formData.property_no)
+      parts.push(`Property No: ${formData.property_no}`);
+    if (formData.area) parts.push(`Area: ${formData.area}`);
+    return parts.join(", ");
+  };
+
+  const formattedAddress = formatAddress();
+
   // Fetch employees when component mounts
   useEffect(() => {
     fetchEmployees();
@@ -115,7 +136,6 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
       setFormData({
         ...jobCard,
         party_name: jobCard.party_name || "",
-        // prepared_by: jobCard.prepared_by || "",
         approved_by: jobCard.approved_by || "",
         project_id_no: jobCard.project_id_no || "",
         ac_v_no_and_date: jobCard.ac_v_no_and_date || "",
@@ -134,7 +154,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
         property_no: "",
         area: "",
         party_name: "",
-        start_date: new Date().toISOString().split("T")[0], // Add this line
+        start_date: new Date().toISOString().split("T")[0],
         finish_date: "",
         prepared_by: "",
         approved_by: "",
@@ -178,21 +198,17 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
     try {
       let response;
 
-      // Determine search type based on input
       if (/^\d+$/.test(query)) {
-        // Search by phone if query is numeric
         response = await frappeAPI.makeAuthenticatedRequest(
           "GET",
           `/api/method/eits_app.customer_search.search_customers?mobile_no=${query}`
         );
       } else if (query.includes("@")) {
-        // Search by email if query contains '@'
         response = await frappeAPI.makeAuthenticatedRequest(
           "GET",
           `/api/method/eits_app.customer_search.search_customers?email_id=${query}`
         );
       } else {
-        // Search by name for all other cases
         response = await frappeAPI.makeAuthenticatedRequest(
           "GET",
           `/api/method/eits_app.customer_search.search_customers?customer_name=${query}`
@@ -211,7 +227,6 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
         return;
       }
 
-      // Get detailed customer info
       const detailedCustomers = await Promise.all(
         customers.map(async (customer: { name: any }) => {
           try {
@@ -243,7 +258,6 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
     }
   }, []);
 
-  // Handle search input changes with debounce
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value;
     setSearchQuery(query);
@@ -252,7 +266,6 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
       clearTimeout(searchTimeout);
     }
 
-    // Remove the digits-only check and allow any input
     if (query.length > 0) {
       setSearchTimeout(
         setTimeout(() => {
@@ -315,7 +328,6 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
 
       if (response.data) {
         toast.success("Customer created successfully");
-        // Select the newly created customer
         handleCustomerSelect(response.data);
         setShowAddCustomerDialog(false);
       } else {
@@ -391,7 +403,6 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
     setNewCustomerData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Services functions
   const addService = () => {
     const newService: Services = {
       work_type: "",
@@ -421,27 +432,31 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
 
   const validateForm = (): boolean => {
     if (!formData.party_name) {
-      alert("Customer name is required");
+      toast.error("Customer name is required");
       return false;
     }
     if (!formData.building_name) {
-      alert("Building name is required");
+      toast.error("Building name is required");
       return false;
     }
     if (!formData.property_no) {
-      alert("Property number is required");
+      toast.error("Property number is required");
       return false;
     }
     if (!formData.area) {
-      alert("Area is required");
+      toast.error("Area is required");
       return false;
     }
     if (!formData.start_date) {
-      alert("Start date is required");
+      toast.error("Start date is required");
       return false;
     }
     if (!formData.finish_date) {
-      alert("Finish date is required");
+      toast.error("Finish date is required");
+      return false;
+    }
+    if (services.length === 0) {
+      toast.error("At least one service entry is required");
       return false;
     }
     return true;
@@ -567,9 +582,14 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                         className="flex items-center space-x-2"
                       >
                         <User className="h-4 w-4 text-gray-500" />
-                        <span>
-                          Customer  <span className="text-red-500">*</span>
-                        </span>
+                        <label className="block text-sm font-medium text-gray-700">
+                          Customer{" "}
+                          <span className="text-gray-500">
+                            (name / email / phone)
+                          </span>
+                          <span className="text-red-500 ml-1">*</span>
+                        </label>
+
                         {(fetchingCustomerDetails || fetchingLeadDetails) && (
                           <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
                         )}
@@ -705,6 +725,16 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                         className="focus:ring-blue-500 focus:border-blue-500"
                       />
                     </div>
+
+                    {/* <div className="space-y-2 col-span-1 sm:col-span-2">
+                      <Label className="flex items-center space-x-2">
+                        <MapPin className="h-4 w-4 text-gray-500" />
+                        <span>Formatted Address</span>
+                      </Label>
+                      <div className="p-3 bg-gray-50 rounded-md border border-gray-200 text-sm">
+                        {formattedAddress || "Address will appear here"}
+                      </div>
+                    </div> */}
 
                     <div className="flex flex-wrap gap-2">
                       <div className="w-[48%] space-y-2">
@@ -913,6 +943,34 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                       </div>
                     ))
                   )}
+                </div>
+
+                {/* Services Total */}
+                {services.length > 0 && (
+                  <div className="bg-gray-100 px-6 py-3 border-t border-gray-200">
+                    <div className="flex justify-between items-center">
+                      <span className="font-medium">Services Total:</span>
+                      <div className="flex items-center">
+                        
+                        <span className="font-bold text-lg">
+                          {serviceTotal.toFixed(2)} AED
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 px-4 py-3">
+                <div className="flex justify-between items-center gap-4">
+                  <span className="font-semibold text-gray-700">
+                    Grand Total:
+                  </span>
+                  <div className="flex items-center">
+                    <span className="text-xl font-bold text-blue-600">
+                      {serviceTotal.toFixed(2)} AED
+                    </span>
+                  </div>
                 </div>
               </div>
 
