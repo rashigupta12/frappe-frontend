@@ -91,7 +91,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
   const [showDropdown, setShowDropdown] = useState(false);
   const [fetchingCustomerDetails, setFetchingCustomerDetails] = useState(false);
   const [fetchingLeadDetails, setFetchingLeadDetails] = useState(false);
-  
+
   const [items, setItems] = useState<
     {
       item_name: string;
@@ -157,7 +157,8 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
         material_sold: jobCard.material_sold || [],
         lead_id: (jobCard as any).lead_id || "",
         customer_id: (jobCard as any).customer_id || "",
-        start_date: jobCard.start_date || new Date().toISOString().split("T")[0],
+        start_date:
+          jobCard.start_date || new Date().toISOString().split("T")[0],
       });
       setSearchQuery(jobCard.party_name || "");
       setPressingCharges(jobCard.pressing_charges || []);
@@ -169,7 +170,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
         property_no: "",
         area: "",
         party_name: "",
-      start_date: new Date().toISOString().split("T")[0], // Set current date for new cards
+        start_date: new Date().toISOString().split("T")[0], // Set current date for new cards
         finish_date: "",
         prepared_by: "",
         approved_by: "",
@@ -192,8 +193,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
     setNewCustomerData((prev) => ({ ...prev, [name]: value }));
   };
   const handleCustomerSearch = useCallback(async (query: string) => {
- 
-    if (!query.trim() || !/^\d+$/.test(query)) {
+    if (!query.trim()) {
       setSearchResults([]);
       setShowDropdown(false);
       return;
@@ -201,22 +201,42 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
 
     setIsSearching(true);
     try {
-      // Use the phone number search endpoint
-      const response = await frappeAPI.searchCustomersByPhone(query);
+      let response;
+
+      // Determine search type based on input
+      if (/^\d+$/.test(query)) {
+        // Search by phone if query is numeric
+        response = await frappeAPI.makeAuthenticatedRequest(
+          "GET",
+          `/api/method/eits_app.customer_search.search_customers?mobile_no=${query}`
+        );
+      } else if (query.includes("@")) {
+        // Search by email if query contains '@'
+        response = await frappeAPI.makeAuthenticatedRequest(
+          "GET",
+          `/api/method/eits_app.customer_search.search_customers?email_id=${query}`
+        );
+      } else {
+        // Search by name for all other cases
+        response = await frappeAPI.makeAuthenticatedRequest(
+          "GET",
+          `/api/method/eits_app.customer_search.search_customers?customer_name=${query}`
+        );
+      }
 
       if (!response.message || !Array.isArray(response.message.data)) {
         throw new Error("Invalid response format");
       }
 
       const customers = response.message.data;
+      setShowDropdown(true);
 
       if (customers.length === 0) {
-        
         setSearchResults([]);
         return;
       }
 
-      // For each customer found, fetch their full details
+      // Get detailed customer info
       const detailedCustomers = await Promise.all(
         customers.map(async (customer: { name: any }) => {
           try {
@@ -234,16 +254,15 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
         })
       );
 
-      // Filter out any failed requests
       const validCustomers = detailedCustomers.filter(
         (customer) => customer !== null
       );
 
       setSearchResults(validCustomers);
-      setShowDropdown(true);
     } catch (error) {
       console.error("Search error:", error);
-      
+      setSearchResults([]);
+      setShowDropdown(true);
     } finally {
       setIsSearching(false);
     }
@@ -252,29 +271,22 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
   // Handle search input changes with debounce
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value;
-
-    // Always update the search query, even when empty
     setSearchQuery(query);
 
-    // Clear previous timeout if it exists
     if (searchTimeout) {
       clearTimeout(searchTimeout);
     }
 
-    // Only allow digits in the search input
-    if (/^\d*$/.test(query)) {
-      // Set a new timeout to trigger the search after 300ms of inactivity
-      if (query.length > 0) {
-        setSearchTimeout(
-          setTimeout(() => {
-            handleCustomerSearch(query);
-          }, 300)
-        );
-      } else {
-        // If query is empty, clear results and show dropdown for new search
-        setSearchResults([]);
-        setShowDropdown(false);
-      }
+    // Remove the digits-only check and allow any input
+    if (query.length > 0) {
+      setSearchTimeout(
+        setTimeout(() => {
+          handleCustomerSearch(query);
+        }, 300)
+      );
+    } else {
+      setSearchResults([]);
+      setShowDropdown(false);
     }
   };
 
@@ -301,9 +313,12 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
 
   const handleAddNewCustomer = () => {
     setNewCustomerData({
-      customer_name: searchQuery,
-      mobile_no: "",
-      email_id: "",
+      customer_name:
+        /^\d+$/.test(searchQuery) || searchQuery.includes("@")
+          ? ""
+          : searchQuery,
+      mobile_no: /^\d+$/.test(searchQuery) ? searchQuery : "",
+      email_id: searchQuery.includes("@") ? searchQuery : "",
     });
     setShowAddCustomerDialog(true);
     setShowDropdown(false);
@@ -536,9 +551,9 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
       return false;
     }
     if (!formData.start_date) {
-    alert("Start date is required");
-    return false;
-  }
+      alert("Start date is required");
+      return false;
+    }
     if (!formData.finish_date) {
       alert("Finish date is required");
       return false;
@@ -672,7 +687,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                       >
                         <User className="h-4 w-4 text-gray-500" />
                         <span>
-                          Customer Name <span className="text-red-500">*</span>
+                          Customer <span className="text-red-500">*</span>
                         </span>
                         {(fetchingCustomerDetails || fetchingLeadDetails) && (
                           <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
@@ -684,30 +699,14 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                           name="party_name"
                           value={searchQuery}
                           onChange={handleSearchChange}
-                          placeholder="Search by phone number"
+                          placeholder="Search by name, phone, or email"
                           required
                           className="focus:ring-blue-500 focus:border-blue-500 pr-10"
-                          onFocus={() => {
-                            // When focusing the field, show the phone number again
-                            if (
-                              formData.customer_id &&
-                              searchResults.length > 0
-                            ) {
-                              const customer = searchResults.find(
-                                (c) => c.name === formData.customer_id
-                              );
-                              if (customer) {
-                                setSearchQuery(customer.mobile_no);
-                              }
-                            }
-                          }}
                         />
                         {isSearching && (
                           <Loader2 className="absolute right-3 top-3 h-4 w-4 animate-spin text-gray-500" />
                         )}
                       </div>
-
-                      
 
                       {showDropdown && (
                         <div className="absolute z-10 mt-1 w-full bg-white shadow-lg rounded-md border border-gray-200 max-h-60 overflow-auto">
@@ -754,7 +753,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                             >
                               <div>
                                 <p className="font-medium">
-                                  No customers found
+                                  No customers found for "{searchQuery}"
                                 </p>
                                 <p className="text-xs text-gray-500">
                                   Click to add a new customer
@@ -838,13 +837,13 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                           </span>
                         </Label>
                         <Input
-  id="start_date"
-  name="start_date"
-  type="date"
-  value={formData.start_date}
-  readOnly
-  className="w-full bg-gray-100 cursor-not-allowed"
-/>
+                          id="start_date"
+                          name="start_date"
+                          type="date"
+                          value={formData.start_date}
+                          readOnly
+                          className="w-full bg-gray-100 cursor-not-allowed"
+                        />
                       </div>
 
                       <div className="w-[48%] space-y-2">

@@ -14,7 +14,7 @@ export default defineConfig(({ mode }) => {
   const isDev = mode === 'development'
   
   // Get the API base URL from environment variables
-  const apiBaseUrl = env.VITE_API_BASE_URL || (isDev ? 'https://eits.thebigocommunity.org' : 'https://eits.thebigocommunity.org')
+  const apiBaseUrl = env.VITE_API_BASE_URL || (isDev ? 'http://eits.local:8000/' : 'https://eits.thebigocommunity.org')
   
   
   return {

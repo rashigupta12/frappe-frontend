@@ -88,7 +88,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
   const [showDropdown, setShowDropdown] = useState(false);
   const [fetchingCustomerDetails, setFetchingCustomerDetails] = useState(false);
   const [fetchingLeadDetails, setFetchingLeadDetails] = useState(false);
-  
+
   const [jobTypes, setJobTypes] = useState<
     { name: string; job_type: string }[]
   >([]);
@@ -103,8 +103,6 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
   const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(
     null
   );
-
-  
 
   // Fetch employees when component mounts
   useEffect(() => {
@@ -124,7 +122,8 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
         services: jobCard.services || [],
         lead_id: (jobCard as any).lead_id || "",
         customer_id: (jobCard as any).customer_id || "",
-        start_date: jobCard.start_date || new Date().toISOString().split("T")[0],
+        start_date:
+          jobCard.start_date || new Date().toISOString().split("T")[0],
       });
       setSearchQuery(jobCard.party_name || "");
       setServices(jobCard.services || []);
@@ -169,8 +168,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
   }, []);
 
   const handleCustomerSearch = useCallback(async (query: string) => {
-    
-    if (!query.trim() || !/^\d+$/.test(query)) {
+    if (!query.trim()) {
       setSearchResults([]);
       setShowDropdown(false);
       return;
@@ -178,22 +176,42 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
 
     setIsSearching(true);
     try {
-      // Use the phone number search endpoint
-      const response = await frappeAPI.searchCustomersByPhone(query);
+      let response;
+
+      // Determine search type based on input
+      if (/^\d+$/.test(query)) {
+        // Search by phone if query is numeric
+        response = await frappeAPI.makeAuthenticatedRequest(
+          "GET",
+          `/api/method/eits_app.customer_search.search_customers?mobile_no=${query}`
+        );
+      } else if (query.includes("@")) {
+        // Search by email if query contains '@'
+        response = await frappeAPI.makeAuthenticatedRequest(
+          "GET",
+          `/api/method/eits_app.customer_search.search_customers?email_id=${query}`
+        );
+      } else {
+        // Search by name for all other cases
+        response = await frappeAPI.makeAuthenticatedRequest(
+          "GET",
+          `/api/method/eits_app.customer_search.search_customers?customer_name=${query}`
+        );
+      }
 
       if (!response.message || !Array.isArray(response.message.data)) {
         throw new Error("Invalid response format");
       }
 
       const customers = response.message.data;
+      setShowDropdown(true);
 
       if (customers.length === 0) {
-        
         setSearchResults([]);
         return;
       }
 
-      // For each customer found, fetch their full details
+      // Get detailed customer info
       const detailedCustomers = await Promise.all(
         customers.map(async (customer: { name: any }) => {
           try {
@@ -211,16 +229,15 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
         })
       );
 
-      // Filter out any failed requests
       const validCustomers = detailedCustomers.filter(
         (customer) => customer !== null
       );
 
       setSearchResults(validCustomers);
-      setShowDropdown(true);
     } catch (error) {
       console.error("Search error:", error);
-      
+      setSearchResults([]);
+      setShowDropdown(true);
     } finally {
       setIsSearching(false);
     }
@@ -229,29 +246,22 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
   // Handle search input changes with debounce
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value;
-
-    // Always update the search query, even when empty
     setSearchQuery(query);
 
-    // Clear previous timeout if it exists
     if (searchTimeout) {
       clearTimeout(searchTimeout);
     }
 
-    // Only allow digits in the search input
-    if (/^\d*$/.test(query)) {
-      // Set a new timeout to trigger the search after 300ms of inactivity
-      if (query.length > 0) {
-        setSearchTimeout(
-          setTimeout(() => {
-            handleCustomerSearch(query);
-          }, 300)
-        );
-      } else {
-        // If query is empty, clear results and show dropdown for new search
-        setSearchResults([]);
-        setShowDropdown(false);
-      }
+    // Remove the digits-only check and allow any input
+    if (query.length > 0) {
+      setSearchTimeout(
+        setTimeout(() => {
+          handleCustomerSearch(query);
+        }, 300)
+      );
+    } else {
+      setSearchResults([]);
+      setShowDropdown(false);
     }
   };
 
@@ -278,9 +288,12 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
 
   const handleAddNewCustomer = () => {
     setNewCustomerData({
-      customer_name: searchQuery,
-      mobile_no: "",
-      email_id: "",
+      customer_name:
+        /^\d+$/.test(searchQuery) || searchQuery.includes("@")
+          ? ""
+          : searchQuery,
+      mobile_no: /^\d+$/.test(searchQuery) ? searchQuery : "",
+      email_id: searchQuery.includes("@") ? searchQuery : "",
     });
     setShowAddCustomerDialog(true);
     setShowDropdown(false);
@@ -555,7 +568,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                       >
                         <User className="h-4 w-4 text-gray-500" />
                         <span>
-                          Customer Name <span className="text-red-500">*</span>
+                          Customer  <span className="text-red-500">*</span>
                         </span>
                         {(fetchingCustomerDetails || fetchingLeadDetails) && (
                           <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
@@ -567,30 +580,14 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                           name="party_name"
                           value={searchQuery}
                           onChange={handleSearchChange}
-                          placeholder="Search by phone number"
+                          placeholder="Search by name, phone, or email"
                           required
                           className="focus:ring-blue-500 focus:border-blue-500 pr-10"
-                          onFocus={() => {
-                            // When focusing the field, show the phone number again
-                            if (
-                              formData.customer_id &&
-                              searchResults.length > 0
-                            ) {
-                              const customer = searchResults.find(
-                                (c) => c.name === formData.customer_id
-                              );
-                              if (customer) {
-                                setSearchQuery(customer.mobile_no);
-                              }
-                            }
-                          }}
                         />
                         {isSearching && (
                           <Loader2 className="absolute right-3 top-3 h-4 w-4 animate-spin text-gray-500" />
                         )}
                       </div>
-
-                      
 
                       {showDropdown && (
                         <div className="absolute z-10 mt-1 w-full bg-white shadow-lg rounded-md border border-gray-200 max-h-60 overflow-auto">
@@ -637,7 +634,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                             >
                               <div>
                                 <p className="font-medium">
-                                  No customers found
+                                  No customers found for "{searchQuery}"
                                 </p>
                                 <p className="text-xs text-gray-500">
                                   Click to add a new customer
@@ -890,7 +887,6 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                                 <Input
                                   type="text"
                                   placeholder="Enter the price"
-
                                   value={service.price}
                                   onChange={(e) =>
                                     updateService(

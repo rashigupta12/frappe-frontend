@@ -568,6 +568,12 @@ searchCustomersByPhone: async (mobile_no: string) => {
     `/api/method/eits_app.customer_search.search_customers?mobile_no=${mobile_no}`
   );
 },
+searchAllCustomers: async () => {
+  return await frappeAPI.makeAuthenticatedRequest(
+    'GET', 
+    `/api/method/eits_app.customer_search.search_customers`
+  );
+},
   upload: async (file: File, options: {
     is_private?: boolean;
     folder?: string;
