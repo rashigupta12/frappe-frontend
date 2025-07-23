@@ -38,7 +38,7 @@ const JobCardList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
   return (
     <>
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 px-4 sm:px-0">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center pl-5 mb-4 sm:px-0">
         <h2 className="text-2xl font-bold text-emerald-800 mb-2 sm:mb-0">
           Job Cards -Veneer Pressing ({jobCards.length})
         </h2>
