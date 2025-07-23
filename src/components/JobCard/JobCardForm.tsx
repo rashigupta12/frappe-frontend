@@ -89,7 +89,7 @@
 //   //     try {
 //   //       const response = await frappeAPI.getItem();
 //   //       const itemsArray = Array.isArray(response.data) ? response.data : [response.data];
-        
+
 //   //       // Filter for MDF-related items
 //   //       const filteredItems = itemsArray.filter((item: { name: string }) => {
 //   //         const name = item.name?.toLowerCase() || '';
@@ -166,17 +166,17 @@
 // //     try {
 // //       const response = await frappeAPI.getItem();
 // //       console.log("Raw API response:", response.data);
-      
+
 // //       const itemsData = response.data.data || [];
 // //       console.log("Items data:", itemsData);
-      
+
 // //       const formattedItems = itemsData.map((item: any) => {
 // //         console.log("Processing item:", {
 // //           name: item.name,
 // //           item_name: item.item_name,
 // //           valuation_rate: item.valuation_rate
 // //         });
-        
+
 // //         return {
 // //           name: item.name,
 // //           item_name: item.item_name || item.name,
@@ -188,7 +188,7 @@
 
 // //       console.log("Formatted items:", formattedItems);
 // //       setItems(formattedItems);
-      
+
 // //     } catch (error) {
 // //       console.error("Failed to fetch items:", error);
 // //       toast.error("Failed to load items");
@@ -205,13 +205,13 @@
 //     try {
 //       const response = await frappeAPI.getItem();
 //       console.log("API response:", response.data);
-      
+
 //       const itemsData = response.data.data || [];
 //       console.log("Items fetched:", itemsData.length);
-      
+
 //       const formattedItems = itemsData.map((item: { name: any; valuation_rate: undefined; item_name: any; }) => {
 //         console.log(`Item: ${item.name}, Rate: ${item.valuation_rate}`);
-        
+
 //         return {
 //           name: item.name,
 //           item_name: item.item_name || item.name,
@@ -220,10 +220,10 @@
 //             : 0
 //         };
 //       });
-      
+
 //       setItems(formattedItems);
 //       console.log("Items set successfully with rates");
-      
+
 //     } catch (error) {
 //       console.error("Failed to fetch items:", error);
 //       toast.error("Failed to load items");
@@ -231,7 +231,7 @@
 //       setLoadingItems(false);
 //     }
 //   };
-  
+
 //   fetchItems();
 // }, []);
 //   // Fetch employees when component mounts
@@ -539,7 +539,7 @@
 //       // Find the selected item in our local items state
 //       const selectedItem = items.find(item => item.name === value);
 //       const price = selectedItem?.valuation_rate || 0;
-      
+
 //       setMaterialsSold((prev) =>
 //         prev.map((material, i) => {
 //           if (i !== index) return material;
@@ -571,7 +571,7 @@
 //       );
 //     }
 //   };
-  
+
 //   const removeMaterialSold = (index: number) => {
 //     setMaterialsSold((prev) => prev.filter((_, i) => i !== index));
 //   };
@@ -983,7 +983,7 @@
 //     ))}
 //   </SelectContent>
 // </Select>
-                                
+
 //                             )}
 //                           </div>
 //                           <div className="flex gap-2">
@@ -1395,7 +1395,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
   const [fetchingLeadDetails, setFetchingLeadDetails] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [items, setItems] = useState<{
-    item_name: string; name: string; valuation_rate?: number 
+    item_name: string; name: string; valuation_rate?: number
   }[]>([]);
   const [loadingItems, setLoadingItems] = useState(false);
 
@@ -1406,11 +1406,11 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
       try {
         const response = await frappeAPI.getItem();
         const itemsData = response.data.data || [];
-        
+
         const formattedItems = itemsData.map((item: any) => ({
           name: item.name,
           item_name: item.item_name || item.name,
-          valuation_rate: item.valuation_rate !== undefined 
+          valuation_rate: item.valuation_rate !== undefined
             ? Number(item.valuation_rate)
             : 0
         }));
@@ -1423,7 +1423,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
         setLoadingItems(false);
       }
     };
-    
+
     fetchItems();
   }, []);
 
@@ -1622,7 +1622,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
     if (field === 'work_type' && typeof value === 'string' && value !== 'none') {
       const selectedItem = items.find(item => item.name === value);
       const price = selectedItem?.valuation_rate || 0;
-      
+
       setPressingCharges((prev) =>
         prev.map((charge, i) => {
           if (i !== index) return charge;
@@ -1680,7 +1680,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
     if (field === 'work_type' && typeof value === 'string' && value !== 'none') {
       const selectedItem = items.find(item => item.name === value);
       const price = selectedItem?.valuation_rate || 0;
-      
+
       setMaterialsSold((prev) =>
         prev.map((material, i) => {
           if (i !== index) return material;
@@ -2081,7 +2081,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                         className="bg-gray-50 rounded-lg p-4 border border-gray-200"
                       >
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
-                          <div className="space-y-1">
+                          {/* <div className="space-y-1">
                             <Label className="text-xs font-medium text-gray-600">
                               Work Type
                             </Label>
@@ -2108,16 +2108,47 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                                     <SelectItem key={item.name} value={item.name}>
                                       <div className="flex justify-between w-full">
                                         <span>{item.item_name || item.name}</span>
-                                        <span className="text-gray-500 ml-2">
-                                          ₹{item.valuation_rate || 0}
-                                        </span>
+                                       
                                       </div>
                                     </SelectItem>
                                   ))}
                                 </SelectContent>
                               </Select>
                             )}
-                          </div>
+                          </div> */}
+                          <div className="space-y-1">
+  <Label className="text-xs font-medium text-gray-600">
+    Work Type
+  </Label>
+  {loadingItems ? (
+    <div className="flex items-center gap-2">
+      <Loader2 className="animate-spin h-4 w-4" />
+      <span className="text-sm">Loading work types...</span>
+    </div>
+  ) : (
+    <Select
+      value={charge.work_type}
+      onValueChange={(value) =>
+        updateMaterialSold(index, "work_type", value)
+      }
+    >
+      <SelectTrigger className="h-9 text-sm max-w-full sm:max-w-xs truncate">
+        <SelectValue placeholder="Select work type" />
+      </SelectTrigger>
+      <SelectContent className="bg-white">
+        <SelectItem value="none">Select work type</SelectItem>
+        {items.map((item) => (
+          <SelectItem key={item.name} value={item.name}>
+            <div className="flex justify-between w-full">
+              <span>{item.item_name || item.name}</span>
+            </div>
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  )}
+</div>
+
                           <div className="flex gap-2">
                             <div className="space-y-1">
                               <Label className="text-xs font-medium text-gray-600">
@@ -2174,7 +2205,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                                 className="h-9 text-sm"
                               />
                             </div>
-                            <div className="space-y-1">
+                            {/* <div className="space-y-1">
                               <Label className="text-xs font-medium text-gray-600">
                                 Price
                               </Label>
@@ -2192,9 +2223,37 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                                 }
                                 className="h-9 text-sm"
                               />
+                            </div> */}
+                            <div className="space-y-1">
+                              <Label className="text-xs border-none font-medium text-gray-600">
+                                Price
+                              </Label>
+                              <div className="flex rounded-md border border-black overflow-hidden">
+                                <Input
+                                  placeholder="0.00"
+                                  type="number"
+
+                                  value={charge.price || ''}
+                                  onChange={(e) =>
+                                    updatePressingCharge(
+                                      index,
+                                      "price",
+                                      e.target.value
+                                    )
+                                  }
+                                  className="h-9 text-sm   flex-1"
+                                  style={{
+                                    WebkitAppearance: 'none',
+                                    MozAppearance: 'textfield'
+                                  }}
+                                />
+                                <span className="inline-flex items-center px-3 border-gray-950 ">
+                                  AED
+                                </span>
+                              </div>
                             </div>
                           </div>
-                          <div className="space-y-1">
+                          {/* <div className="space-y-1">
                             <Label className="text-xs font-medium text-gray-600">
                               Amount
                             </Label>
@@ -2203,6 +2262,25 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                               value={charge.amount || 0}
                               className="bg-gray-100 h-9 text-sm"
                             />
+                             <span className="inline-flex items-center px-3 border-gray-950 ">
+                                  AED
+                                </span>
+                          </div>
+                           */}
+                          <div className="space-y-1">
+                            <Label className="text-xs font-medium text-gray-600">
+                              Amount
+                            </Label>
+                            <div className="flex rounded-md border border-gray-300 overflow-hidden">
+                              <Input
+                                readOnly
+                                value={charge.amount || 0}
+                                className="bg-gray-100 h-9 text-sm border-none focus:ring-0 rounded-none flex-1"
+                              />
+                              <span className="inline-flex items-center px-3 bg-gray-50 text-gray-500 text-sm border-l">
+                                AED
+                              </span>
+                            </div>
                           </div>
                           <div className="flex items-end">
                             <Button
@@ -2260,7 +2338,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                         className="bg-gray-50 rounded-lg p-4 border border-gray-200"
                       >
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
-                          <div className="space-y-1">
+                          {/* <div className="space-y-1">
                             <Label className="text-xs font-medium text-gray-600">
                               Work Type
                             </Label>
@@ -2287,16 +2365,47 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                                     <SelectItem key={item.name} value={item.name}>
                                       <div className="flex justify-between w-full">
                                         <span>{item.item_name || item.name}</span>
-                                        <span className="text-gray-500 ml-2">
-                                          ₹{item.valuation_rate || 0}
-                                        </span>
+                                        
                                       </div>
                                     </SelectItem>
                                   ))}
                                 </SelectContent>
                               </Select>
                             )}
-                          </div>
+                          </div> */}
+                          <div className="space-y-1">
+  <Label className="text-xs font-medium text-gray-600">
+    Work Type
+  </Label>
+  {loadingItems ? (
+    <div className="flex items-center gap-2">
+      <Loader2 className="animate-spin h-4 w-4" />
+      <span className="text-sm">Loading work types...</span>
+    </div>
+  ) : (
+    <Select
+      value={material.work_type}
+      onValueChange={(value) =>
+        updateMaterialSold(index, "work_type", value)
+      }
+    >
+      <SelectTrigger className="h-9 text-sm max-w-full sm:max-w-xs truncate">
+        <SelectValue placeholder="Select work type" />
+      </SelectTrigger>
+      <SelectContent className="bg-white">
+        <SelectItem value="none">Select work type</SelectItem>
+        {items.map((item) => (
+          <SelectItem key={item.name} value={item.name}>
+            <div className="flex justify-between w-full">
+              <span>{item.item_name || item.name}</span>
+            </div>
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  )}
+</div>
+
                           <div className="flex gap-2">
                             <div className="space-y-1">
                               <Label className="text-xs font-medium text-gray-600">
@@ -2353,14 +2462,17 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                                 className="h-9 text-sm"
                               />
                             </div>
-                            <div className="space-y-1">
-                              <Label className="text-xs font-medium text-gray-600">
-                                Price
-                              </Label>
+
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs border-none font-medium text-gray-600">
+                              Price
+                            </Label>
+                            <div className="flex rounded-md border border-black overflow-hidden">
                               <Input
                                 placeholder="0.00"
                                 type="number"
-                                step="0.01"
+
                                 value={material.price || ''}
                                 onChange={(e) =>
                                   updateMaterialSold(
@@ -2369,11 +2481,19 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                                     e.target.value
                                   )
                                 }
-                                className="h-9 text-sm"
+                                className="h-9 text-sm   flex-1"
+                                style={{
+                                  WebkitAppearance: 'none',
+                                  MozAppearance: 'textfield'
+                                }}
                               />
+                              <span className="inline-flex items-center px-3 border-gray-950 ">
+                                AED
+                              </span>
                             </div>
                           </div>
-                          <div className="space-y-1">
+                        </div>
+                        {/* <div className="space-y-1">
                             <Label className="text-xs font-medium text-gray-600">
                               Amount
                             </Label>
@@ -2382,59 +2502,74 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                               value={material.amount || 0}
                               className="bg-gray-100 h-9 text-sm"
                             />
-                          </div>
-                          <div className="flex items-end">
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              className="text-red-500 hover:text-red-700"
-                              onClick={() => removeMaterialSold(index)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                          </div> */}
+                        <div className="space-y-1">
+                          <Label className="text-xs font-medium text-gray-600">
+                            Amount
+                          </Label>
+                          <div className="flex rounded-md border border-gray-300 overflow-hidden">
+                            <Input
+                              readOnly
+                              value={material.amount || 0}
+                              className="bg-gray-100 h-9 text-sm border-none focus:ring-0 rounded-none flex-1"
+                            />
+                            <span className="inline-flex items-center px-3 bg-gray-50 text-gray-500 text-sm border-l">
+                              AED
+                            </span>
                           </div>
                         </div>
+                        <div className="flex items-end">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="text-red-500 hover:text-red-700"
+                            onClick={() => removeMaterialSold(index)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
-                    ))
+                      
+                ))
                   )}
-                </div>
               </div>
-
-              {/* Action Buttons */}
-              <div className="sticky bottom-0 bg-white border-t border-gray-200 p-6 shadow-lg">
-                <div className="flex flex-col sm:flex-row justify-end gap-3">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={onClose}
-                    className="px-8 py-3 order-2 sm:order-1"
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    type="submit"
-                    disabled={loading}
-                    className="px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg order-1 sm:order-2"
-                  >
-                    {loading ? (
-                      <div className="flex items-center gap-2">
-                        <Loader2 className="animate-spin h-5 w-5" />
-                        Saving...
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <Save className="h-5 w-5" />
-                        {jobCard ? "Update Job Card" : "Create Job Card"}
-                      </div>
-                    )}
-                  </Button>
-                </div>
-              </div>
-            </form>
           </div>
-        </div>
+
+          {/* Action Buttons */}
+          <div className="sticky bottom-0 bg-white border-t border-gray-200 p-6 shadow-lg">
+            <div className="flex flex-col sm:flex-row justify-end gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onClose}
+                className="px-8 py-3 order-2 sm:order-1"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={loading}
+                className="px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg order-1 sm:order-2"
+              >
+                {loading ? (
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="animate-spin h-5 w-5" />
+                    Saving...
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <Save className="h-5 w-5" />
+                    {jobCard ? "Update Job Card" : "Create Job Card"}
+                  </div>
+                )}
+              </Button>
+            </div>
+          </div>
+        </form>
       </div>
+    </div >
+      </div >
     </>
   );
 };
