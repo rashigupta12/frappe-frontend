@@ -127,7 +127,7 @@ function ChildTable({
         <table className="w-full text-xs border-collapse border border-gray-300" style={{ minWidth: '600px' }}>
           <colgroup>
             <col className="w-16 sm:w-20" /> {/* work_type */}
-            <col className="w-32 sm:w-48" /> {/* work_description */}
+            <col className="w-[120px] sm:w-25" /> {/* work_description */}
             <col className="w-20 sm:w-24" /> {/* start_date */}
             <col className="w-20 sm:w-24" /> {/* finish_date */}
             <col className="w-16 sm:w-20" /> {/* price */}

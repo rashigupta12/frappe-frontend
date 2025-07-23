@@ -939,7 +939,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                         className="bg-gray-50 rounded-lg p-4 border border-gray-200"
                       >
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
-                          {/* <div className="space-y-1">
+                          <div className="space-y-1">
                             <Label className="text-xs font-medium text-gray-600">
                               Work Type
                             </Label>
@@ -977,17 +977,15 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                                         <span>
                                           {item.item_name || item.name}
                                         </span>
-                                        <span className="text-gray-500 ml-2">
-                                          ₹{item.valuation_rate || 0}
-                                        </span>
+                                      
                                       </div>
                                     </SelectItem>
                                   ))}
                                 </SelectContent>
                               </Select>
                             )}
-                          </div> */}
-                          <div className="space-y-1">
+                          </div>
+                          {/* <div className="space-y-1">
                             <Label className="text-xs font-medium text-gray-600">
                               Work Type
                             </Label>
@@ -1027,7 +1025,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                                 </SelectContent>
                               </Select>
                             )}
-                          </div>
+                          </div> */}
 
                           <div className="flex gap-2">
                             <div className="space-y-1">
