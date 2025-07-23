@@ -312,7 +312,7 @@ export default function ProjectManagerDashboard() {
 
           {/* Main Content - Scrollable */}
           <main className="flex-1 overflow-y-auto">
-            <div className="max-w-7xl mx-auto pb-12 pt-2 px-4">
+            <div className="max-w-7xl mx-auto pb-4 pt-2 px-4">
               <div className="pb-6">
                 {/* Floating Action Buttons for Desktop */}
                 <div className="hidden lg:flex justify-end gap-4 mb-4">
