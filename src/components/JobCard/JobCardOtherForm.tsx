@@ -114,16 +114,9 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
   const serviceTotal = calculateServiceTotal();
 
   // Format address
-  const formatAddress = () => {
-    const parts = [];
-    if (formData.building_name) parts.push(formData.building_name);
-    if (formData.property_no)
-      parts.push(`Property No: ${formData.property_no}`);
-    if (formData.area) parts.push(`Area: ${formData.area}`);
-    return parts.join(", ");
-  };
+ 
 
-  const formattedAddress = formatAddress();
+  
 
   // Fetch employees when component mounts
   useEffect(() => {

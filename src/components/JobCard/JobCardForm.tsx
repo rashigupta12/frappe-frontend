@@ -119,9 +119,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
     return materials.reduce((sum, material) => sum + (material.amount || 0), 0);
   };
 
-  const formatAddress = (building: string, property: string, area: string) => {
-    return [building, property, area].filter(Boolean).join(", ");
-  };
+
 
   // Fetch items with prices when component mounts
   useEffect(() => {

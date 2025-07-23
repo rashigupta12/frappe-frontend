@@ -19,15 +19,9 @@ const JobCardDetails: React.FC<Props> = ({ card, onClose }) => {
   const fmt = (d?: string) =>
     d ? format(new Date(d), 'MMM dd, yyyy') : 'N/A';
 
-    const formatAddress = () => {
-    const parts = [];
-    if (card.building_name) parts.push(card.building_name);
-    if (card.property_no)
-      parts.push(`Property No: ${card.property_no}`);
-    if (card.area) parts.push(`Area: ${card.area}`);
-    return parts.join(", ");
+     const formatAddress = (building: string, property: string, area: string) => {
+    return [building, property, area].filter(Boolean).join(", ");
   };
-
   return (
     <DialogContent className="max-w-[95vw] sm:max-w-2xl w-full max-h-[90vh] overflow-y-auto bg-white mx-auto overflow-x-hidden">
       <DialogHeader>
@@ -40,12 +34,14 @@ const JobCardDetails: React.FC<Props> = ({ card, onClose }) => {
       <div className="space-y-3 mt-4">
         {/* Customer and Property No side by side */}
         <div className="grid grid-cols-2 gap-3">
+          <Field label="Date" value={fmt(card.date)} />
           <Field label="Customer" value={card.party_name} />
-          <Field label="Address" value={formatAddress()} />
+          
         </div>
-        
-      
-        
+        <Field label="Address" value={formatAddress(card.building_name, card.property_no, card.area)} />
+
+
+
         {/* Start Date and Finish Date side by side */}
         <div className="grid grid-cols-2 gap-3">
           <Field label="Start Date" value={fmt(card.start_date)} />
