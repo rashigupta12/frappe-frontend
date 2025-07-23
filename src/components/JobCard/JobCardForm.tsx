@@ -42,6 +42,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogFooter,
 } from "../ui/dialog";
 
 interface JobCardFormProps {
@@ -109,6 +110,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
   const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(
     null
   );
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
 
   // Helper functions
   const calculatePressingTotal = (charges: PressingCharges[]) => {
@@ -609,6 +611,19 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
 
   if (!isOpen) return null;
 
+  const handleCancelClick = () => {
+    setShowCancelDialog(true);
+  };
+
+  const handleConfirmCancel = () => {
+    setShowCancelDialog(false);
+    onClose();
+  };
+
+  const handleCancelDialogClose = () => {
+    setShowCancelDialog(false);
+  };
+
   return (
     <>
       <div
@@ -662,7 +677,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
               variant="ghost"
               size="sm"
               className="h-8 w-8 p-0 rounded-full text-white hover:bg-white/10 transition-colors"
-              onClick={onClose}
+              onClick={handleCancelClick}
             >
               <X className="h-4 w-4" />
             </Button>
@@ -912,7 +927,6 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                 <div className="p-6 space-y-4">
                   {pressingCharges.length === 0 ? (
                     <div className="text-center  text-gray-500">
-                      
                       <p className="text-sm">
                         No pressing charges added yet. Click "Add Charge" to
                         start.
@@ -1163,13 +1177,13 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                     ))
                   )}
                   <Button
-                      type="button"
-                      onClick={addPressingCharge}
-                      size="sm"
-                      className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Charge
+                    type="button"
+                    onClick={addPressingCharge}
+                    size="sm"
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Charge
                   </Button>
 
                   {pressingCharges.length > 0 && (
@@ -1198,7 +1212,6 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                         Materials Sold
                       </h4>
                     </div>
-                    
                   </div>
                 </div>
 
@@ -1432,14 +1445,14 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                     ))
                   )}
                   <Button
-                      type="button"
-                      onClick={addMaterialSold}
-                      size="sm"
-                      className="bg-purple-600 hover:bg-purple-700 text-white shadow-sm"
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Material
-                    </Button>
+                    type="button"
+                    onClick={addMaterialSold}
+                    size="sm"
+                    className="bg-purple-600 hover:bg-purple-700 text-white shadow-sm"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Material
+                  </Button>
                 </div>
               </div>
 
@@ -1449,7 +1462,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={onClose}
+                    onClick={handleCancelClick}
                     className="px-8 py-3 order-2 sm:order-1"
                   >
                     Cancel
@@ -1479,6 +1492,25 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
       </div>
 
       {/* Add Customer Dialog */}
+
+      <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+        <DialogContent className="sm:max-w-[425px] bg-white">
+          <DialogHeader>
+            <DialogTitle>Are you sure?</DialogTitle>
+            <DialogDescription>
+              Any unsaved changes will be lost. Do you want to continue?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={handleCancelDialogClose}>
+              No, keep editing
+            </Button>
+            <Button className="bg-red-500 hover:bg-red-600 text-white" onClick={handleConfirmCancel}>
+              Yes, cancel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       <Dialog
         open={showAddCustomerDialog}
         onOpenChange={setShowAddCustomerDialog}

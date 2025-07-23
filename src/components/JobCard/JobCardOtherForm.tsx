@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
@@ -30,6 +30,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "../ui/dialog";
@@ -61,6 +62,21 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
   onClose,
   jobCard,
 }) => {
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
+
+  const handleCancelClick = () => {
+    setShowCancelDialog(true);
+  };
+
+  const handleConfirmCancel = () => {
+    setShowCancelDialog(false);
+    onClose();
+  };
+
+  const handleCancelDialogClose = () => {
+    setShowCancelDialog(false);
+  };
+
   const { createJobCardOther, updateJobCardOther, loading, fetchEmployees } =
     useJobCardsOther();
 
@@ -542,7 +558,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
               variant="ghost"
               size="sm"
               className="h-8 w-8 p-0 rounded-full text-white hover:bg-white/10 transition-colors"
-              onClick={onClose}
+              onClick={handleCancelClick}
             >
               <X className="h-4 w-4" />
             </Button>
@@ -965,7 +981,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={onClose}
+                    onClick={handleCancelClick}
                     className="px-8 py-3 order-2 sm:order-1"
                   >
                     Cancel
@@ -993,6 +1009,27 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
           </div>
         </div>
       </div>
+
+
+
+      <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Are you sure?</DialogTitle>
+            <DialogDescription>
+              Any unsaved changes will be lost. Do you want to continue?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={handleCancelDialogClose}>
+              No, keep editing
+            </Button>
+            <Button variant="destructive" onClick={handleConfirmCancel}>
+              Yes, cancel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Add Customer Dialog */}
       <Dialog
