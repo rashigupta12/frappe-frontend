@@ -776,183 +776,168 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
               </div>
 
               {/* Services Section */}
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                <div className="bg-gradient-to-r from-green-50 to-emerald-50 px-6 py-4 border-b border-gray-200">
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center space-x-2">
-                      <Wrench className="h-5 w-5 text-green-600" />
-                      <h4 className="text-lg font-semibold text-gray-900">
-                        Services
-                      </h4>
-                    </div>
-                    <Button
-                      type="button"
-                      onClick={addService}
-                      size="sm"
-                      className="bg-green-600 hover:bg-green-700 text-white shadow-sm"
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Service
-                    </Button>
-                  </div>
+              {/* Services Section */}
+<div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+  <div className="bg-gradient-to-r from-green-50 to-emerald-50 px-6 py-4 border-b border-gray-200">
+    <div className="flex justify-between items-center">
+      <div className="flex items-center space-x-2">
+        <Wrench className="h-5 w-5 text-green-600" />
+        <h4 className="text-lg font-semibold text-gray-900">Services</h4>
+      </div>
+      <Button
+        type="button"
+        onClick={addService}
+        size="sm"
+        className="bg-green-600 hover:bg-green-700 text-white shadow-sm"
+      >
+        <Plus className="h-4 w-4 mr-2" />
+        Add Service
+      </Button>
+    </div>
+  </div>
+
+  <div className="p-6 space-y-4">
+    {services.length === 0 ? (
+      <div className="text-center py-8 text-gray-500">
+        <Wrench className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+        <p>No services added yet</p>
+        <p className="text-sm">Click "Add Service" to get started</p>
+      </div>
+    ) : (
+      services.map((service, index) => (
+        <div
+          key={index}
+          className="bg-gray-50 rounded-lg p-4 border border-gray-200"
+        >
+          {/* Single grid row with 5 columns on md+ screens */}
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-center">
+            {/* Work Type */}
+            <div className="space-y-1">
+              <Label className="text-sm font-medium text-gray-600">
+                Work Type
+              </Label>
+              {loadingJobTypes ? (
+                <div className="flex items-center justify-center h-10 bg-gray-100 rounded-md">
+                  <Loader2 className="h-4 w-4 animate-spin" />
                 </div>
-
-                <div className="p-6 space-y-4">
-                  {services.length === 0 ? (
-                    <div className="text-center py-8 text-gray-500">
-                      <Wrench className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-                      <p>No services added yet</p>
-                      <p className="text-sm">
-                        Click "Add Service" to get started
-                      </p>
-                    </div>
-                  ) : (
-                    services.map((service, index) => (
-                      <div
-                        key={index}
-                        className="bg-gray-50 rounded-lg p-4 border border-gray-200"
-                      >
-                        <div className="grid grid-cols-1 gap-4">
-                          {/* Work Type and Description Row */}
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="space-y-1">
-                              <Label className="text-sm font-medium text-gray-600">
-                                Work Type
-                              </Label>
-                              {loadingJobTypes ? (
-                                <div className="flex items-center justify-center h-10 bg-gray-100 rounded-md">
-                                  <Loader2 className="h-4 w-4 animate-spin" />
-                                </div>
-                              ) : (
-                                <Select
-                                  value={service.work_type}
-                                  onValueChange={(value) =>
-                                    updateService(index, "work_type", value)
-                                  }
-                                >
-                                  <SelectTrigger className="h-10 bg-white">
-                                    <SelectValue placeholder="Select work type" />
-                                  </SelectTrigger>
-                                  <SelectContent className="bg-white">
-                                    {jobTypes.map((jobType) => (
-                                      <SelectItem
-                                        key={jobType.name}
-                                        value={jobType.name}
-                                      >
-                                        {jobType.name}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              )}
-                            </div>
-                            <div className="space-y-1">
-                              <Label className="text-sm font-medium text-gray-600">
-                                Work Description
-                              </Label>
-                              <Textarea
-                                placeholder="Enter detailed work description"
-                                value={service.work_description}
-                                onChange={(e) =>
-                                  updateService(
-                                    index,
-                                    "work_description",
-                                    e.target.value
-                                  )
-                                }
-                                className="min-h-[40px] resize-none"
-                                rows={2}
-                              />
-                            </div>
-                          </div>
-
-                          {/* Dates Row */}
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div className="space-y-1">
-                              <Label className="text-sm font-medium text-gray-600">
-                                Start Date
-                              </Label>
-                              <Input
-                                type="date"
-                                value={service.start_date}
-                                onChange={(e) =>
-                                  updateService(
-                                    index,
-                                    "start_date",
-                                    e.target.value
-                                  )
-                                }
-                                className="h-10"
-                              />
-                            </div>
-                            <div className="space-y-1">
-                              <Label className="text-sm font-medium text-gray-600">
-                                Finish Date
-                              </Label>
-                              <Input
-                                type="date"
-                                value={service.finish_date}
-                                onChange={(e) =>
-                                  updateService(
-                                    index,
-                                    "finish_date",
-                                    e.target.value
-                                  )
-                                }
-                                className="h-10"
-                              />
-                            </div>
-                            <div className="space-y-1">
-                              <Label className="text-sm font-medium text-gray-600">
-                                Price
-                              </Label>
-                              <div className="flex gap-2">
-                                <Input
-                                  type="text"
-                                  placeholder="Enter the price"
-                                  value={service.price}
-                                  onChange={(e) =>
-                                    updateService(
-                                      index,
-                                      "price",
-                                      e.target.value
-                                    )
-                                  }
-                                  className="h-10"
-                                />
-                                <Button
-                                  type="button"
-                                  variant="destructive"
-                                  size="sm"
-                                  onClick={() => removeService(index)}
-                                  className="h-10 w-10 p-0"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-
-                {/* Services Total */}
-                {services.length > 0 && (
-                  <div className="bg-gray-100 px-6 py-3 border-t border-gray-200">
-                    <div className="flex justify-between items-center">
-                      <span className="font-medium">Services Total:</span>
-                      <div className="flex items-center">
-                        
-                        <span className="font-bold text-lg">
-                          {serviceTotal.toFixed(2)} AED
+              ) : (
+                <Select
+                  value={service.work_type}
+                  onValueChange={(value) =>
+                    updateService(index, "work_type", value)
+                  }
+                >
+                  <SelectTrigger className="h-10 bg-white">
+                    <SelectValue placeholder="Select work type">
+                      {service.work_type && (
+                        <span>
+                          {service.work_type.length > 40
+                            ? service.work_type.slice(0, 37) + "..."
+                            : service.work_type}
                         </span>
-                      </div>
-                    </div>
-                  </div>
-                )}
+                      )}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent className="bg-white">
+                    {jobTypes.map((jobType) => (
+                      <SelectItem key={jobType.name} value={jobType.name}>
+                        {jobType.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+
+            {/* Work Description */}
+            <div className="space-y-1">
+              <Label className="text-sm font-medium text-gray-600">
+                Work Description
+              </Label>
+              <Textarea
+                placeholder="Enter detailed work description"
+                value={service.work_description}
+                onChange={(e) =>
+                  updateService(index, "work_description", e.target.value)
+                }
+                className="min-h-[40px] resize-none"
+                rows={2}
+              />
+            </div>
+
+            {/* Start Date */}
+            <div className="space-y-1 flex flex-wrap gap-2">
+              <Label className="text-sm font-medium text-gray-600">
+                Start Date
+              </Label>
+              <Input
+                type="date"
+                value={service.start_date}
+                onChange={(e) =>
+                  updateService(index, "start_date", e.target.value)
+                }
+                className="h-10"
+              />
+            </div>
+
+            {/* Finish Date */}
+            <div className="space-y-1">
+              <Label className="text-sm font-medium text-gray-600">
+                Finish Date
+              </Label>
+              <Input
+                type="date"
+                value={service.finish_date}
+                onChange={(e) =>
+                  updateService(index, "finish_date", e.target.value)
+                }
+                className="h-10"
+              />
+            </div>
+
+            {/* Price + Remove Button */}
+            <div className="space-y-1">
+              <Label className="text-sm font-medium text-gray-600">Price</Label>
+              <div className="flex gap-2">
+                <Input
+                  type="text"
+                  placeholder="Enter the price"
+                  value={service.price}
+                  onChange={(e) =>
+                    updateService(index, "price", e.target.value)
+                  }
+                  className="h-10"
+                />
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => removeService(index)}
+                  className="h-10 w-10 p-0"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
               </div>
+            </div>
+          </div>
+        </div>
+      ))
+    )}
+  </div>
+
+  {/* Services Total */}
+  {services.length > 0 && (
+    <div className="bg-gray-100 px-6 py-3 border-t border-gray-200">
+      <div className="flex justify-between items-center">
+        <span className="font-medium">Services Total:</span>
+        <div className="flex items-center">
+          <span className="font-bold text-lg">{serviceTotal.toFixed(2)} AED</span>
+        </div>
+      </div>
+    </div>
+  )}
+</div>
+
 
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 px-4 py-3">
                 <div className="flex justify-between items-center gap-4">
