@@ -1,4 +1,4 @@
-
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
@@ -558,7 +558,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
               variant="ghost"
               size="sm"
               className="h-8 w-8 p-0 rounded-full text-white hover:bg-white/10 transition-colors"
-              onClick={handleCancelClick}
+              onClick={onClose}
             >
               <X className="h-4 w-4" />
             </Button>
@@ -789,25 +789,6 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
               </div>
 
               {/* Services Section */}
-              {/* Services Section */}
-<div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-  <div className="bg-gradient-to-r from-green-50 to-emerald-50 px-6 py-4 border-b border-gray-200">
-    <div className="flex justify-between items-center">
-      <div className="flex items-center space-x-2">
-        <Wrench className="h-5 w-5 text-green-600" />
-        <h4 className="text-lg font-semibold text-gray-900">Services</h4>
-      </div>
-      <Button
-        type="button"
-        onClick={addService}
-        size="sm"
-        className="bg-green-600 hover:bg-green-700 text-white shadow-sm"
-      >
-        <Plus className="h-4 w-4 mr-2" />
-        Add Service
-      </Button>
-    </div>
-  </div>
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                 <div className="bg-gradient-to-r from-green-50 to-emerald-50 px-6 py-4 border-b border-gray-200">
                   <div className="flex justify-between items-center">
@@ -820,74 +801,6 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                   </div>
                 </div>
 
-  <div className="p-6 space-y-4">
-    {services.length === 0 ? (
-      <div className="text-center py-8 text-gray-500">
-        <Wrench className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-        <p>No services added yet</p>
-        <p className="text-sm">Click "Add Service" to get started</p>
-      </div>
-    ) : (
-      services.map((service, index) => (
-        <div
-          key={index}
-          className="bg-gray-50 rounded-lg p-4 border border-gray-200"
-        >
-          {/* Single grid row with 5 columns on md+ screens */}
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-center">
-            {/* Work Type */}
-            <div className="space-y-1">
-              <Label className="text-sm font-medium text-gray-600">
-                Work Type
-              </Label>
-              {loadingJobTypes ? (
-                <div className="flex items-center justify-center h-10 bg-gray-100 rounded-md">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                </div>
-              ) : (
-                <Select
-                  value={service.work_type}
-                  onValueChange={(value) =>
-                    updateService(index, "work_type", value)
-                  }
-                >
-                  <SelectTrigger className="h-10 bg-white">
-                    <SelectValue placeholder="Select work type">
-                      {service.work_type && (
-                        <span>
-                          {service.work_type.length > 40
-                            ? service.work_type.slice(0, 37) + "..."
-                            : service.work_type}
-                        </span>
-                      )}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent className="bg-white">
-                    {jobTypes.map((jobType) => (
-                      <SelectItem key={jobType.name} value={jobType.name}>
-                        {jobType.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            </div>
-
-            {/* Work Description */}
-            <div className="space-y-1">
-              <Label className="text-sm font-medium text-gray-600">
-                Work Description
-              </Label>
-              <Textarea
-                placeholder="Enter detailed work description"
-                value={service.work_description}
-                onChange={(e) =>
-                  updateService(index, "work_description", e.target.value)
-                }
-                className="min-h-[40px] resize-none"
-                rows={2}
-              />
-            </div>
                 <div className="p-6 space-y-4">
                   {services.length === 0 ? (
                     <div className="text-center  text-gray-500">
@@ -953,78 +866,86 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                             </div>
                           </div>
 
-            {/* Start Date */}
-            <div className="space-y-1 flex flex-wrap gap-2">
-              <Label className="text-sm font-medium text-gray-600">
-                Start Date
-              </Label>
-              <Input
-                type="date"
-                value={service.start_date}
-                onChange={(e) =>
-                  updateService(index, "start_date", e.target.value)
-                }
-                className="h-10"
-              />
-            </div>
-
-            {/* Finish Date */}
-            <div className="space-y-1">
-              <Label className="text-sm font-medium text-gray-600">
-                Finish Date
-              </Label>
-              <Input
-                type="date"
-                value={service.finish_date}
-                onChange={(e) =>
-                  updateService(index, "finish_date", e.target.value)
-                }
-                className="h-10"
-              />
-            </div>
-
-            {/* Price + Remove Button */}
-            <div className="space-y-1">
-              <Label className="text-sm font-medium text-gray-600">Price</Label>
-              <div className="flex gap-2">
-                <Input
-                  type="text"
-                  placeholder="Enter the price"
-                  value={service.price}
-                  onChange={(e) =>
-                    updateService(index, "price", e.target.value)
-                  }
-                  className="h-10"
-                />
-                <Button
-                  type="button"
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => removeService(index)}
-                  className="h-10 w-10 p-0"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      ))
-    )}
-  </div>
-
-  {/* Services Total */}
-  {services.length > 0 && (
-    <div className="bg-gray-100 px-6 py-3 border-t border-gray-200">
-      <div className="flex justify-between items-center">
-        <span className="font-medium">Services Total:</span>
-        <div className="flex items-center">
-          <span className="font-bold text-lg">{serviceTotal.toFixed(2)} AED</span>
-        </div>
-      </div>
-    </div>
-  )}
-</div>
+                          {/* Dates Row */}
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="space-y-1">
+                              <Label className="text-sm font-medium text-gray-600">
+                                Start Date
+                              </Label>
+                              <Input
+                                type="date"
+                                value={service.start_date}
+                                onChange={(e) =>
+                                  updateService(
+                                    index,
+                                    "start_date",
+                                    e.target.value
+                                  )
+                                }
+                                className="h-10"
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-sm font-medium text-gray-600">
+                                Finish Date
+                              </Label>
+                              <Input
+                                type="date"
+                                value={service.finish_date}
+                                onChange={(e) =>
+                                  updateService(
+                                    index,
+                                    "finish_date",
+                                    e.target.value
+                                  )
+                                }
+                                className="h-10"
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-sm font-medium text-gray-600">
+                                Price
+                              </Label>
+                              <div className="flex gap-2">
+                                <Input
+                                  type="text"
+                                  placeholder="Enter the price"
+                                  value={service.price}
+                                  onChange={(e) =>
+                                    updateService(
+                                      index,
+                                      "price",
+                                      e.target.value
+                                    )
+                                  }
+                                  className="h-10"
+                                />
+                                <Button
+                                  type="button"
+                                  variant="destructive"
+                                  size="sm"
+                                  onClick={() => removeService(index)}
+                                  className="h-10 w-10 p-0"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                  <Button
+                    type="button"
+                    onClick={addService}
+                    size="sm"
+                    className="bg-green-600 hover:bg-green-700 text-white shadow-sm"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Service
+                  </Button>
+                </div>
 
                 {/* Services Total */}
                 {services.length > 0 && (
@@ -1089,10 +1010,8 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
         </div>
       </div>
 
-
-
       <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-[425px] bg-white">
           <DialogHeader>
             <DialogTitle>Are you sure?</DialogTitle>
             <DialogDescription>
@@ -1103,7 +1022,10 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
             <Button variant="outline" onClick={handleCancelDialogClose}>
               No, keep editing
             </Button>
-            <Button variant="destructive" onClick={handleConfirmCancel}>
+            <Button
+              className="bg-red-500 hover:bg-red-600 text-white"
+              onClick={handleConfirmCancel}
+            >
               Yes, cancel
             </Button>
           </DialogFooter>

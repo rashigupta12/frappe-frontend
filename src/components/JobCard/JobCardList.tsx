@@ -112,6 +112,8 @@ const JobCardList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
         </div>
       )}
 
+      
+
       {/* Details Modal */}
       <Dialog
         open={!!selectedCard}
