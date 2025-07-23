@@ -7,7 +7,7 @@ import {
   DialogFooter,
 } from '../ui/dialog';
 import { Button } from '../ui/button';
-// import { format } from 'date-fns';
+import { format } from 'date-fns';
 import type { JobCard } from '../../context/JobCardContext';
 
 interface Props {
@@ -16,8 +16,8 @@ interface Props {
 }
 
 const JobCardDetails: React.FC<Props> = ({ card, onClose }) => {
-  // const fmt = (d?: string) =>
-  //   d ? format(new Date(d), 'MMM dd, yyyy') : 'N/A';
+  const fmt = (d?: string) =>
+    d ? format(new Date(d), 'MMM dd, yyyy') : 'N/A';
 
     const formatAddress = () => {
     const parts = [];
@@ -44,6 +44,18 @@ const JobCardDetails: React.FC<Props> = ({ card, onClose }) => {
           <Field label="Address" value={formatAddress()} />
         </div>
         
+      
+        
+        {/* Start Date and Finish Date side by side */}
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Start Date" value={fmt(card.start_date)} />
+          <Field label="Finish Date" value={fmt(card.finish_date)} />
+        </div>
+        
+        {/* Prepared By and Approved By side by side */}
+       
+        
+        {/* Project ID and A/C V No full width */}
         
       </div>
 
