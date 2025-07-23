@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
@@ -14,7 +14,7 @@ import {
   Trash2,
   User,
   Wrench,
-  X
+  X,
 } from "lucide-react";
 import React, { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -30,6 +30,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "../ui/dialog";
@@ -61,6 +62,21 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
   onClose,
   jobCard,
 }) => {
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
+
+  const handleCancelClick = () => {
+    setShowCancelDialog(true);
+  };
+
+  const handleConfirmCancel = () => {
+    setShowCancelDialog(false);
+    onClose();
+  };
+
+  const handleCancelDialogClose = () => {
+    setShowCancelDialog(false);
+  };
+
   const { createJobCardOther, updateJobCardOther, loading, fetchEmployees } =
     useJobCardsOther();
 
@@ -114,9 +130,6 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
   const serviceTotal = calculateServiceTotal();
 
   // Format address
- 
-
-  
 
   // Fetch employees when component mounts
   useEffect(() => {
@@ -545,7 +558,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
               variant="ghost"
               size="sm"
               className="h-8 w-8 p-0 rounded-full text-white hover:bg-white/10 transition-colors"
-              onClick={onClose}
+              onClick={handleCancelClick}
             >
               <X className="h-4 w-4" />
             </Button>
@@ -795,6 +808,17 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
       </Button>
     </div>
   </div>
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div className="bg-gradient-to-r from-green-50 to-emerald-50 px-6 py-4 border-b border-gray-200">
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center space-x-2">
+                      <Wrench className="h-5 w-5 text-green-600" />
+                      <h4 className="text-lg font-semibold text-gray-900">
+                        Services
+                      </h4>
+                    </div>
+                  </div>
+                </div>
 
   <div className="p-6 space-y-4">
     {services.length === 0 ? (
@@ -864,6 +888,70 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                 rows={2}
               />
             </div>
+                <div className="p-6 space-y-4">
+                  {services.length === 0 ? (
+                    <div className="text-center  text-gray-500">
+                      <p className="text-sm">No services added yet.</p>
+                    </div>
+                  ) : (
+                    services.map((service, index) => (
+                      <div
+                        key={index}
+                        className="bg-gray-50 rounded-lg p-4 border border-gray-200"
+                      >
+                        <div className="grid grid-cols-1 gap-4">
+                          {/* Work Type and Description Row */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-1">
+                              <Label className="text-sm font-medium text-gray-600">
+                                Work Type
+                              </Label>
+                              {loadingJobTypes ? (
+                                <div className="flex items-center justify-center h-10 bg-gray-100 rounded-md">
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                </div>
+                              ) : (
+                                <Select
+                                  value={service.work_type}
+                                  onValueChange={(value) =>
+                                    updateService(index, "work_type", value)
+                                  }
+                                >
+                                  <SelectTrigger className="h-10 bg-white">
+                                    <SelectValue placeholder="Select work type" />
+                                  </SelectTrigger>
+                                  <SelectContent className="bg-white">
+                                    {jobTypes.map((jobType) => (
+                                      <SelectItem
+                                        key={jobType.name}
+                                        value={jobType.name}
+                                      >
+                                        {jobType.name}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              )}
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-sm font-medium text-gray-600">
+                                Work Description
+                              </Label>
+                              <Textarea
+                                placeholder="Enter detailed work description"
+                                value={service.work_description}
+                                onChange={(e) =>
+                                  updateService(
+                                    index,
+                                    "work_description",
+                                    e.target.value
+                                  )
+                                }
+                                className="min-h-[40px] resize-none"
+                                rows={2}
+                              />
+                            </div>
+                          </div>
 
             {/* Start Date */}
             <div className="space-y-1 flex flex-wrap gap-2">
@@ -938,6 +1026,20 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
   )}
 </div>
 
+                {/* Services Total */}
+                {services.length > 0 && (
+                  <div className="bg-gray-100 px-6 py-3 border-t border-gray-200">
+                    <div className="flex justify-between items-center">
+                      <span className="font-medium">Services Total:</span>
+                      <div className="flex items-center">
+                        <span className="font-bold text-lg">
+                          {serviceTotal.toFixed(2)} AED
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
 
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 px-4 py-3">
                 <div className="flex justify-between items-center gap-4">
@@ -958,7 +1060,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={onClose}
+                    onClick={handleCancelClick}
                     className="px-8 py-3 order-2 sm:order-1"
                   >
                     Cancel
@@ -986,6 +1088,27 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
           </div>
         </div>
       </div>
+
+
+
+      <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Are you sure?</DialogTitle>
+            <DialogDescription>
+              Any unsaved changes will be lost. Do you want to continue?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={handleCancelDialogClose}>
+              No, keep editing
+            </Button>
+            <Button variant="destructive" onClick={handleConfirmCancel}>
+              Yes, cancel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Add Customer Dialog */}
       <Dialog
