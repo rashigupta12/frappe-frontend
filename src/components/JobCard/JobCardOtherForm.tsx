@@ -14,7 +14,7 @@ import {
   Trash2,
   User,
   Wrench,
-  X
+  X,
 } from "lucide-react";
 import React, { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -114,9 +114,6 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
   const serviceTotal = calculateServiceTotal();
 
   // Format address
- 
-
-  
 
   // Fetch employees when component mounts
   useEffect(() => {
@@ -785,26 +782,13 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                         Services
                       </h4>
                     </div>
-                    <Button
-                      type="button"
-                      onClick={addService}
-                      size="sm"
-                      className="bg-green-600 hover:bg-green-700 text-white shadow-sm"
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Service
-                    </Button>
                   </div>
                 </div>
 
                 <div className="p-6 space-y-4">
                   {services.length === 0 ? (
-                    <div className="text-center py-8 text-gray-500">
-                      <Wrench className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-                      <p>No services added yet</p>
-                      <p className="text-sm">
-                        Click "Add Service" to get started
-                      </p>
+                    <div className="text-center  text-gray-500">
+                      <p className="text-sm">No services added yet.</p>
                     </div>
                   ) : (
                     services.map((service, index) => (
@@ -936,6 +920,15 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                       </div>
                     ))
                   )}
+                  <Button
+                    type="button"
+                    onClick={addService}
+                    size="sm"
+                    className="bg-green-600 hover:bg-green-700 text-white shadow-sm"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Service
+                  </Button>
                 </div>
 
                 {/* Services Total */}
@@ -944,7 +937,6 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                     <div className="flex justify-between items-center">
                       <span className="font-medium">Services Total:</span>
                       <div className="flex items-center">
-                        
                         <span className="font-bold text-lg">
                           {serviceTotal.toFixed(2)} AED
                         </span>

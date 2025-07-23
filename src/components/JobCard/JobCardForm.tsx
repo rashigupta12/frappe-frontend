@@ -119,8 +119,6 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
   //   return materials.reduce((sum, material) => sum + (material.amount || 0), 0);
   // };
 
-
-
   // Fetch items with prices when component mounts
   useEffect(() => {
     const fetchItems = async () => {
@@ -132,9 +130,8 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
         const formattedItems = itemsData.map((item: any) => ({
           name: item.name,
           item_name: item.item_name || item.name,
-          valuation_rate: item.valuation_rate !== undefined
-            ? Number(item.valuation_rate)
-            : 0
+          valuation_rate:
+            item.valuation_rate !== undefined ? Number(item.valuation_rate) : 0,
         }));
 
         setItems(formattedItems);
@@ -562,7 +559,9 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
       return false;
     }
     if (pressingCharges.length === 0 && materialsSold.length === 0) {
-      toast.error("At least one entry in Pressing Charges or Materials Sold is required");
+      toast.error(
+        "At least one entry in Pressing Charges or Materials Sold is required"
+      );
       return false;
     }
     return true;
@@ -907,25 +906,16 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                         Pressing Charges
                       </h4>
                     </div>
-                    <Button
-                      type="button"
-                      onClick={addPressingCharge}
-                      size="sm"
-                      className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Charge
-                    </Button>
                   </div>
                 </div>
 
                 <div className="p-6 space-y-4">
                   {pressingCharges.length === 0 ? (
-                    <div className="text-center py-8 text-gray-500">
-                      <DollarSign className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-                      <p>No pressing charges added yet</p>
+                    <div className="text-center  text-gray-500">
+                      
                       <p className="text-sm">
-                        Click "Add Charge" to get started
+                        No pressing charges added yet. Click "Add Charge" to
+                        start.
                       </p>
                     </div>
                   ) : (
@@ -984,37 +974,46 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                             )}
                           </div> */}
                           <div className="space-y-1">
-  <Label className="text-xs font-medium text-gray-600">
-    Work Type
-  </Label>
-  {loadingItems ? (
-    <div className="flex items-center gap-2">
-      <Loader2 className="animate-spin h-4 w-4" />
-      <span className="text-sm">Loading work types...</span>
-    </div>
-  ) : (
-    <Select
-      value={charge.work_type}
-      onValueChange={(value) =>
-        updateMaterialSold(index, "work_type", value)
-      }
-    >
-      <SelectTrigger className="h-9 text-sm max-w-full sm:max-w-xs truncate">
-        <SelectValue placeholder="Select work type" />
-      </SelectTrigger>
-      <SelectContent className="bg-white">
-        <SelectItem value="none">Select work type</SelectItem>
-        {items.map((item) => (
-          <SelectItem key={item.name} value={item.name}>
-            <div className="flex justify-between w-full">
-              <span>{item.item_name || item.name}</span>
-            </div>
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
-  )}
-</div>
+                            <Label className="text-xs font-medium text-gray-600">
+                              Work Type
+                            </Label>
+                            {loadingItems ? (
+                              <div className="flex items-center gap-2">
+                                <Loader2 className="animate-spin h-4 w-4" />
+                                <span className="text-sm">
+                                  Loading work types...
+                                </span>
+                              </div>
+                            ) : (
+                              <Select
+                                value={charge.work_type}
+                                onValueChange={(value) =>
+                                  updateMaterialSold(index, "work_type", value)
+                                }
+                              >
+                                <SelectTrigger className="h-9 text-sm max-w-full sm:max-w-xs truncate">
+                                  <SelectValue placeholder="Select work type" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-white">
+                                  <SelectItem value="none">
+                                    Select work type
+                                  </SelectItem>
+                                  {items.map((item) => (
+                                    <SelectItem
+                                      key={item.name}
+                                      value={item.name}
+                                    >
+                                      <div className="flex justify-between w-full">
+                                        <span>
+                                          {item.item_name || item.name}
+                                        </span>
+                                      </div>
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            )}
+                          </div>
 
                           <div className="flex gap-2">
                             <div className="space-y-1">
@@ -1099,8 +1098,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                                 <Input
                                   placeholder="0.00"
                                   type="number"
-
-                                  value={charge.price || ''}
+                                  value={charge.price || ""}
                                   onChange={(e) =>
                                     updatePressingCharge(
                                       index,
@@ -1110,8 +1108,8 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                                   }
                                   className="h-9 text-sm   flex-1"
                                   style={{
-                                    WebkitAppearance: 'none',
-                                    MozAppearance: 'textfield'
+                                    WebkitAppearance: "none",
+                                    MozAppearance: "textfield",
                                   }}
                                 />
                                 <span className="inline-flex items-center px-3 border-gray-950 ">
@@ -1164,13 +1162,25 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                       </div>
                     ))
                   )}
+                  <Button
+                      type="button"
+                      onClick={addPressingCharge}
+                      size="sm"
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Charge
+                  </Button>
 
                   {pressingCharges.length > 0 && (
                     <div className="flex justify-end mt-4">
                       <div className="bg-blue-50 p-3 rounded-md border border-blue-200 w-64">
                         <div className="flex justify-between font-medium">
                           <span>Total Pressing Charges:</span>
-                          <span>{calculatePressingTotal(pressingCharges).toFixed(2)} AED</span>
+                          <span>
+                            {calculatePressingTotal(pressingCharges).toFixed(2)}{" "}
+                            AED
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -1188,25 +1198,16 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                         Materials Sold
                       </h4>
                     </div>
-                    <Button
-                      type="button"
-                      onClick={addMaterialSold}
-                      size="sm"
-                      className="bg-purple-600 hover:bg-purple-700 text-white shadow-sm"
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Material
-                    </Button>
+                    
                   </div>
                 </div>
 
                 <div className="p-6 space-y-4">
                   {materialsSold.length === 0 ? (
-                    <div className="text-center py-8 text-gray-500">
-                      <Building className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-                      <p>No materials added yet</p>
+                    <div className="text-center text-gray-500">
                       <p className="text-sm">
-                        Click "Add Material" to get started
+                        No materials sold added yet. Click "Add Material" to
+                        start.
                       </p>
                     </div>
                   ) : (
@@ -1265,37 +1266,46 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                             )}
                           </div> */}
                           <div className="space-y-1">
-  <Label className="text-xs font-medium text-gray-600">
-    Work Type
-  </Label>
-  {loadingItems ? (
-    <div className="flex items-center gap-2">
-      <Loader2 className="animate-spin h-4 w-4" />
-      <span className="text-sm">Loading work types...</span>
-    </div>
-  ) : (
-    <Select
-      value={material.work_type}
-      onValueChange={(value) =>
-        updateMaterialSold(index, "work_type", value)
-      }
-    >
-      <SelectTrigger className="h-9 text-sm max-w-full sm:max-w-xs truncate">
-        <SelectValue placeholder="Select work type" />
-      </SelectTrigger>
-      <SelectContent className="bg-white">
-        <SelectItem value="none">Select work type</SelectItem>
-        {items.map((item) => (
-          <SelectItem key={item.name} value={item.name}>
-            <div className="flex justify-between w-full">
-              <span>{item.item_name || item.name}</span>
-            </div>
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
-  )}
-</div>
+                            <Label className="text-xs font-medium text-gray-600">
+                              Work Type
+                            </Label>
+                            {loadingItems ? (
+                              <div className="flex items-center gap-2">
+                                <Loader2 className="animate-spin h-4 w-4" />
+                                <span className="text-sm">
+                                  Loading work types...
+                                </span>
+                              </div>
+                            ) : (
+                              <Select
+                                value={material.work_type}
+                                onValueChange={(value) =>
+                                  updateMaterialSold(index, "work_type", value)
+                                }
+                              >
+                                <SelectTrigger className="h-9 text-sm max-w-full sm:max-w-xs truncate">
+                                  <SelectValue placeholder="Select work type" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-white">
+                                  <SelectItem value="none">
+                                    Select work type
+                                  </SelectItem>
+                                  {items.map((item) => (
+                                    <SelectItem
+                                      key={item.name}
+                                      value={item.name}
+                                    >
+                                      <div className="flex justify-between w-full">
+                                        <span>
+                                          {item.item_name || item.name}
+                                        </span>
+                                      </div>
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            )}
+                          </div>
 
                           <div className="flex gap-2">
                             <div className="space-y-1">
@@ -1353,7 +1363,6 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                                 className="h-9 text-sm"
                               />
                             </div>
-
                           </div>
                           <div className="space-y-1">
                             <Label className="text-xs border-none font-medium text-gray-600">
@@ -1363,8 +1372,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                               <Input
                                 placeholder="0.00"
                                 type="number"
-
-                                value={material.price || ''}
+                                value={material.price || ""}
                                 onChange={(e) =>
                                   updateMaterialSold(
                                     index,
@@ -1374,8 +1382,8 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                                 }
                                 className="h-9 text-sm   flex-1"
                                 style={{
-                                  WebkitAppearance: 'none',
-                                  MozAppearance: 'textfield'
+                                  WebkitAppearance: "none",
+                                  MozAppearance: "textfield",
                                 }}
                               />
                               <span className="inline-flex items-center px-3 border-gray-950 ">
@@ -1421,9 +1429,17 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                           </Button>
                         </div>
                       </div>
-                      
-                ))
+                    ))
                   )}
+                  <Button
+                      type="button"
+                      onClick={addMaterialSold}
+                      size="sm"
+                      className="bg-purple-600 hover:bg-purple-700 text-white shadow-sm"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Material
+                    </Button>
                 </div>
               </div>
 
