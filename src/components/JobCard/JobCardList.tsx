@@ -165,18 +165,18 @@ const calculateTotalAmount = (card: JobCard) => {
     }
   };
 
-  const getPurposeColor = (purpose: string) => {
-    switch (purpose) {
-      case "pressing":
-        return "bg-blue-50 text-blue-700 border-blue-200";
-      case "material":
-        return "bg-green-50 text-green-700 border-green-200";
-      case "both":
-        return "bg-purple-50 text-purple-700 border-purple-200";
-      default:
-        return "bg-gray-50 text-gray-700 border-gray-200";
-    }
-  };
+  // const getPurposeColor = (purpose: string) => {
+  //   switch (purpose) {
+  //     case "pressing":
+  //       return "bg-blue-50 text-blue-700 border-blue-200";
+  //     case "material":
+  //       return "bg-green-50 text-green-700 border-green-200";
+  //     case "both":
+  //       return "bg-purple-50 text-purple-700 border-purple-200";
+  //     default:
+  //       return "bg-gray-50 text-gray-700 border-gray-200";
+  //   }
+  // };
 
   const applyFilters = () => {
     setShowFilters(false);
@@ -360,33 +360,43 @@ const calculateTotalAmount = (card: JobCard) => {
 
                   {/* Bottom Row - Purpose and Actions */}
                   <div className="flex items-center justify-between pt-2 border-t border-gray-100">
-                    <span
-                      className={`text-xs font-medium px-2 py-0.5 rounded ${getPurposeColor(
-                        purpose
-                      )}`}
-                    >
-                      {getPurposeDisplay(purpose)}
-                    </span>
-
-                    <div className="flex gap-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => handleEdit(card, e)}
-                        className="h-6 w-6 p-0 hover:bg-green-100 text-green-200"
-                      >
-                        <Edit className="h-3 w-3 text-gray-500" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => handleDelete(card.name, e)}
-                        className="h-6 w-6 p-0 hover:bg-gray-100"
-                      >
-                        <Trash2 className="h-3 w-3 text-gray-500 hover:text-red-500" />
-                      </Button>
-                    </div>
+                  <div className="flex gap-1">
+                    {getPurposeDisplay(purpose)
+                      .split(" ")
+                      .map((p) => (
+                        <span
+                          key={p}
+                          className={`text-xs font-medium px-2 py-0.5 rounded ${
+                            p === "P"
+                              ? "bg-blue-50 text-blue-700 border border-blue-200"
+                              : p === "M"
+                              ? "bg-green-50 text-green-700 border border-green-200"
+                              : "bg-gray-50 text-gray-700 border border-gray-200"
+                          }`}
+                        >
+                          {p}
+                        </span>
+                      ))}
                   </div>
+                  <div className="flex gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => handleEdit(card, e)}
+                      className="h-6 w-6 p-0 hover:bg-green-100"
+                    >
+                      <Edit className="h-3 w-3 text-gray-500" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => handleDelete(card.name, e)}
+                      className="h-6 w-6 p-0 hover:bg-gray-100"
+                    >
+                      <Trash2 className="h-3 w-3 text-gray-500 hover:text-red-500" />
+                    </Button>
+                  </div>
+                </div>
                 </div>
               </div>
             );
