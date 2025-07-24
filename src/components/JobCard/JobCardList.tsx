@@ -385,7 +385,7 @@ const calculateTotalAmount = (card: JobCard) => {
                       onClick={(e) => handleEdit(card, e)}
                       className="h-6 w-6 p-0 hover:bg-green-100"
                     >
-                      <Edit className="h-3 w-3 text-gray-500" />
+                      <Edit className="h-3 w-3 text-green-800 hover:text-green-900" />
                     </Button>
                     <Button
                       variant="ghost"
@@ -393,7 +393,7 @@ const calculateTotalAmount = (card: JobCard) => {
                       onClick={(e) => handleDelete(card.name, e)}
                       className="h-6 w-6 p-0 hover:bg-gray-100"
                     >
-                      <Trash2 className="h-3 w-3 text-gray-500 hover:text-red-500" />
+                      <Trash2 className="h-3 w-3 text-red-500 hover:text-red-800" />
                     </Button>
                   </div>
                 </div>
