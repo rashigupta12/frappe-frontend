@@ -924,7 +924,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
 
                 </div>
 
-                <div className="p-6 space-y-4">
+                <div className="p-3 space-y-4">
                   {pressingCharges.length === 0 ? (
                     <div className="text-center  text-gray-500">
                       <p className="text-sm">
@@ -938,7 +938,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                         key={index}
                         className="bg-gray-50 rounded-lg p-4 border border-gray-200"
                       >
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-2">
                           {/* <div className="space-y-1">
                             <Label className="text-xs font-medium text-gray-600">
                               Work Type
