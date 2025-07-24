@@ -17,6 +17,7 @@ import {
   X,
 } from "lucide-react";
 import React, { useCallback, useEffect, useState } from "react";
+import { ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { frappeAPI } from "../../api/frappeClient";
 import {
@@ -104,6 +105,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
   const [showDropdown, setShowDropdown] = useState(false);
   const [fetchingCustomerDetails, setFetchingCustomerDetails] = useState(false);
   const [fetchingLeadDetails, setFetchingLeadDetails] = useState(false);
+  const [isBasicInfoExpanded, setIsBasicInfoExpanded] = useState(true);
   const [jobTypes, setJobTypes] = useState<
     { name: string; job_type: string }[]
   >([]);
@@ -571,17 +573,41 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
             <form onSubmit={handleSubmit} className="space-y-8">
               {/* Basic Information Card */}
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b border-gray-200">
+                {/* <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b border-gray-200">
                   <div className="flex items-center space-x-2">
                     <User className="h-5 w-5 text-blue-600" />
                     <h4 className="text-lg font-semibold text-gray-900">
                       Basic Information
                     </h4>
                   </div>
+                </div> */}
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                  {/* Clickable Header */}
+                  <div
+                    className="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b border-gray-200 cursor-pointer hover:bg-blue-50 transition-colors"
+                    onClick={() => setIsBasicInfoExpanded(!isBasicInfoExpanded)}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <User className="h-5 w-5 text-blue-600" />
+                        <h4 className="text-lg font-semibold text-gray-900">
+                          Basic Information
+                        </h4>
+                        {/* Status badge */}
+                        <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded">
+                          {isBasicInfoExpanded ? "Expanded" : "Collapsed"}
+                        </span>
+                      </div>
+                      <ChevronDown
+                        className={`h-5 w-5 text-gray-500 transition-transform duration-200 ${isBasicInfoExpanded ? "rotate-180" : ""
+                          }`}
+                      />
+                    </div>
+                  </div>
                 </div>
 
-                <div className="p-4
-                ">
+                <div className={`transition-all p-1 duration-300 ease-in-out ${isBasicInfoExpanded ? "opacity-100 max-h-[1500px]" : "opacity-0 max-h-0 overflow-hidden"
+                  }`}>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     <div className="space-y-2 relative">
                       <Label

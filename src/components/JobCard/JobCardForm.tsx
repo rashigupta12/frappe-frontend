@@ -12,6 +12,7 @@ import {
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
+import { ChevronDown, /* other icons */ } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -87,6 +88,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
   const [materialsSold, setMaterialsSold] = useState<MaterialSold[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [isBasicInfoExpanded, setIsBasicInfoExpanded] = useState(true);
   const [isSearching, setIsSearching] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [fetchingCustomerDetails, setFetchingCustomerDetails] = useState(false);
@@ -690,167 +692,187 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
             <form onSubmit={handleSubmit} className="space-y-8">
               {/* Basic Information Card */}
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b border-gray-200">
+                {/* <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b border-gray-200">
                   <div className="flex items-center space-x-2">
                     <User className="h-5 w-5 text-blue-600" />
                     <h4 className="text-lg font-semibold text-gray-900">
                       Basic Information
                     </h4>
                   </div>
-                </div>
-
-                <div className="p-6">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <div className="space-y-2 relative">
-                      <Label
-                        htmlFor="party_name"
-                        className="flex items-center space-x-2"
-                      >
-                        <User className="h-4 w-4 text-gray-500" />
-                        <label className="block text-sm font-medium text-gray-700">
-                          Customer{" "}
-                          <span className="text-gray-500">
-                            (name / email / phone)
-                          </span>
-                          <span className="text-red-500 ml-1">*</span>
-                        </label>
-
-                        {(fetchingCustomerDetails || fetchingLeadDetails) && (
-                          <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
-                        )}
-                      </Label>
-                      <div className="relative">
-                        <Input
-                          id="party_name"
-                          name="party_name"
-                          value={searchQuery}
-                          onChange={handleSearchChange}
-                          placeholder="Search by name, phone, or email"
-                          required
-                          className="focus:ring-blue-500 focus:border-blue-500 pr-10"
-                        />
-                        {isSearching && (
-                          <Loader2 className="absolute right-3 top-3 h-4 w-4 animate-spin text-gray-500" />
-                        )}
+                </div> */}
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                  {/* Clickable Header */}
+                  <div
+                    className="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b border-gray-200 cursor-pointer hover:bg-blue-100 transition-colors"
+                    onClick={() => setIsBasicInfoExpanded(!isBasicInfoExpanded)}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <User className="h-5 w-5 text-blue-600" />
+                        <h4 className="text-lg font-semibold text-gray-900">
+                          Basic Information
+                        </h4>
                       </div>
+                      <ChevronDown
+                        className={`h-5 w-5 text-gray-500 transition-transform duration-200 ${isBasicInfoExpanded ? "rotate-180" : ""
+                          }`}
+                      />
+                    </div>
+                    </div>
+                  </div>
+<div className={`transition-all px-5 duration-300 ease-in-out ${
+    isBasicInfoExpanded ? "opacity-100 max-h-[1500px]" : "opacity-0 max-h-0 overflow-hidden"
+  }`}>                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                      <div className="space-y-2 pt-2 relative">
+                        <Label
+                          htmlFor="party_name"
+                          className="flex items-center space-x-2"
+                        >
+                          <User className="h-4 w-4 text-gray-500" />
+                          <label className="block text-sm font-medium text-gray-700">
+                            Customer{" "}
+                            <span className="text-gray-500">
+                              (name / email / phone)
+                            </span>
+                            <span className="text-red-500 ml-1">*</span>
+                          </label>
 
-                      {showDropdown && (
-                        <div className="absolute z-10 mt-1 w-full bg-white shadow-lg rounded-md border border-gray-200 max-h-60 overflow-auto">
-                          {searchResults.length > 0 ? (
-                            searchResults.map((customer) => (
+                          {(fetchingCustomerDetails || fetchingLeadDetails) && (
+                            <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
+                          )}
+                        </Label>
+                        <div className="relative">
+                          <Input
+                            id="party_name"
+                            name="party_name"
+                            value={searchQuery}
+                            onChange={handleSearchChange}
+                            placeholder="Search by name, phone, or email"
+                            required
+                            className="focus:ring-blue-500 focus:border-blue-500 pr-10"
+                          />
+                          {isSearching && (
+                            <Loader2 className="absolute right-3 top-3 h-4 w-4 animate-spin text-gray-500" />
+                          )}
+                        </div>
+
+                        {showDropdown && (
+                          <div className="absolute z-10 mt-1 w-full bg-white shadow-lg rounded-md border border-gray-200 max-h-60 overflow-auto">
+                            {searchResults.length > 0 ? (
+                              searchResults.map((customer) => (
+                                <div
+                                  key={customer.name}
+                                  className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center justify-between"
+                                  onClick={() => handleCustomerSelect(customer)}
+                                >
+                                  <div>
+                                    <p className="font-medium">
+                                      {customer.customer_name || customer.name}
+                                    </p>
+                                    <div className="text-xs text-gray-500 flex gap-2 flex-wrap">
+                                      {customer.mobile_no && (
+                                        <span className="flex items-center">
+                                          <Phone className="h-3 w-3 mr-1" />
+                                          {customer.mobile_no}
+                                        </span>
+                                      )}
+                                      {customer.email_id && (
+                                        <span className="flex items-center">
+                                          <Mail className="h-3 w-3 mr-1" />
+                                          {customer.email_id}
+                                        </span>
+                                      )}
+                                      {customer.lead_name && (
+                                        <span className="bg-green-100 text-green-800 px-1.5 py-0.5 rounded text-xs">
+                                          Has Property
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                                    Select
+                                  </span>
+                                </div>
+                              ))
+                            ) : (
                               <div
-                                key={customer.name}
                                 className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center justify-between"
-                                onClick={() => handleCustomerSelect(customer)}
+                                onClick={handleAddNewCustomer}
                               >
                                 <div>
                                   <p className="font-medium">
-                                    {customer.customer_name || customer.name}
+                                    No customers found for "{searchQuery}"
                                   </p>
-                                  <div className="text-xs text-gray-500 flex gap-2 flex-wrap">
-                                    {customer.mobile_no && (
-                                      <span className="flex items-center">
-                                        <Phone className="h-3 w-3 mr-1" />
-                                        {customer.mobile_no}
-                                      </span>
-                                    )}
-                                    {customer.email_id && (
-                                      <span className="flex items-center">
-                                        <Mail className="h-3 w-3 mr-1" />
-                                        {customer.email_id}
-                                      </span>
-                                    )}
-                                    {customer.lead_name && (
-                                      <span className="bg-green-100 text-green-800 px-1.5 py-0.5 rounded text-xs">
-                                        Has Property
-                                      </span>
-                                    )}
-                                  </div>
+                                  <p className="text-xs text-gray-500">
+                                    Click to add a new customer
+                                  </p>
                                 </div>
-                                <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                                  Select
+                                <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
+                                  Add New
                                 </span>
                               </div>
-                            ))
-                          ) : (
-                            <div
-                              className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center justify-between"
-                              onClick={handleAddNewCustomer}
-                            >
-                              <div>
-                                <p className="font-medium">
-                                  No customers found for "{searchQuery}"
-                                </p>
-                                <p className="text-xs text-gray-500">
-                                  Click to add a new customer
-                                </p>
-                              </div>
-                              <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
-                                Add New
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
 
-                    <div className="space-y-2">
-                      <Label
-                        htmlFor="building_name"
-                        className="flex items-center space-x-2"
-                      >
-                        <span>
-                          Building Name <span className="text-red-500">*</span>
-                        </span>
-                      </Label>
-                      <Input
-                        id="building_name"
-                        name="building_name"
-                        value={formData.building_name || ""}
-                        onChange={handleInputChange}
-                        placeholder="Enter building name"
-                        required
-                        className="focus:ring-blue-500 focus:border-blue-500"
-                      />
-                    </div>
+                      <div className="space-y-2">
+                        <Label
+                          htmlFor="building_name"
+                          className="flex items-center space-x-2"
+                        >
+                          <span>
+                            Building Name <span className="text-red-500">*</span>
+                          </span>
+                        </Label>
+                        <Input
+                          id="building_name"
+                          name="building_name"
+                          value={formData.building_name || ""}
+                          onChange={handleInputChange}
+                          placeholder="Enter building name"
+                          required
+                          className="focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="property_no">
-                        Property No <span className="text-red-500">*</span>
-                      </Label>
-                      <Input
-                        id="property_no"
-                        name="property_no"
-                        value={formData.property_no || ""}
-                        onChange={handleInputChange}
-                        placeholder="Enter property number"
-                        required
-                        className="focus:ring-blue-500 focus:border-blue-500"
-                      />
-                    </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="property_no">
+                          Property No <span className="text-red-500">*</span>
+                        </Label>
+                        <Input
+                          id="property_no"
+                          name="property_no"
+                          value={formData.property_no || ""}
+                          onChange={handleInputChange}
+                          placeholder="Enter property number"
+                          required
+                          className="focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      </div>
 
-                    <div className="space-y-2">
-                      <Label
-                        htmlFor="area"
-                        className="flex items-center space-x-2"
-                      >
-                        <MapPin className="h-4 w-4 text-gray-500" />
-                        <span>
-                          Area <span className="text-red-500">*</span>
-                        </span>
-                      </Label>
-                      <Input
-                        id="area"
-                        name="area"
-                        value={formData.area || ""}
-                        onChange={handleInputChange}
-                        placeholder="Enter area"
-                        required
-                        className="focus:ring-blue-500 focus:border-blue-500"
-                      />
-                    </div>
+                      <div className="space-y-2">
+                        <Label
+                          htmlFor="area"
+                          className="flex items-center space-x-2"
+                        >
+                          <MapPin className="h-4 w-4 text-gray-500" />
+                          <span>
+                            Area <span className="text-red-500">*</span>
+                          </span>
+                        </Label>
+                        <Input
+                          id="area"
+                          name="area"
+                          value={formData.area || ""}
+                          onChange={handleInputChange}
+                          placeholder="Enter area"
+                          required
+                          className="focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      </div>
 
-                    {/* <div className="space-y-2">
+                      {/* <div className="space-y-2">
                       <Label htmlFor="address" className="flex items-center space-x-2">
                         <MapPin className="h-4 w-4 text-gray-500" />
                         <span>Address</span>
@@ -864,82 +886,82 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                       </div>
                     </div> */}
 
-                    <div className="flex flex-wrap gap-2">
-                      <div className="w-[48%] space-y-2">
-                        <Label
-                          htmlFor="start_date"
-                          className="flex items-center space-x-1"
-                        >
-                          <Calendar className="h-4 w-4 text-gray-500" />
-                          <span>
-                            Start Date <span className="text-red-500">*</span>
-                          </span>
-                        </Label>
-                        <Input
-                          id="start_date"
-                          name="start_date"
-                          type="date"
-                          value={formData.start_date}
-                          readOnly
-                          className="w-full bg-gray-100 cursor-not-allowed"
-                        />
-                      </div>
+                      <div className="flex flex-wrap pb-4 gap-2">
+                        <div className="w-[48%] space-y-2">
+                          <Label
+                            htmlFor="start_date"
+                            className="flex items-center space-x-1"
+                          >
+                            <Calendar className="h-4 w-4 text-gray-500" />
+                            <span>
+                              Start Date <span className="text-red-500">*</span>
+                            </span>
+                          </Label>
+                          <Input
+                            id="start_date"
+                            name="start_date"
+                            type="date"
+                            value={formData.start_date}
+                            readOnly
+                            className="w-full bg-gray-100 cursor-not-allowed"
+                          />
+                        </div>
 
-                      <div className="w-[48%] space-y-2">
-                        <Label
-                          htmlFor="finish_date"
-                          className="flex items-center space-x-1"
-                        >
-                          <Calendar className="h-4 w-4 text-gray-500" />
-                          <span>
-                            Finish Date <span className="text-red-500">*</span>
-                          </span>
-                        </Label>
-                        <Input
-                          id="finish_date"
-                          name="finish_date"
-                          type="date"
-                          value={formData.finish_date || ""}
-                          onChange={handleInputChange}
-                          required
-                          className="w-full"
-                        />
+                        <div className="w-[48%] space-y-2">
+                          <Label
+                            htmlFor="finish_date"
+                            className="flex items-center space-x-1"
+                          >
+                            <Calendar className="h-4 w-4 text-gray-500" />
+                            <span>
+                              Finish Date <span className="text-red-500">*</span>
+                            </span>
+                          </Label>
+                          <Input
+                            id="finish_date"
+                            name="finish_date"
+                            type="date"
+                            value={formData.finish_date || ""}
+                            onChange={handleInputChange}
+                            required
+                            className="w-full"
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Pressing Charges Card */}
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                <div className="bg-gradient-to-r from-emerald-50 to-green-50 px-6 py-4 border-b border-gray-200">
+                {/* Pressing Charges Card */}
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                  <div className="bg-gradient-to-r from-emerald-50 to-green-50 px-6 py-4 border-b border-gray-200">
 
-                  <div className="flex justify-between space-x-2">
-                    <h4 className="text-lg font-semibold text-gray-900">
-                      Pressing Charges
-                    </h4>
-                    <span className="pt-1">{calculatePressingTotal(pressingCharges).toFixed(2)}{" "}
-                      AED</span>
+                    <div className="flex justify-between space-x-2">
+                      <h4 className="text-lg font-semibold text-gray-900">
+                        Pressing Charges
+                      </h4>
+                      <span className="pt-1">{calculatePressingTotal(pressingCharges).toFixed(2)}{" "}
+                        AED</span>
+                    </div>
+
                   </div>
 
-                </div>
-
-                <div className="p-3 space-y-4">
-                  {pressingCharges.length === 0 ? (
-                    <div className="text-center  text-gray-500">
-                      <p className="text-sm">
-                        No pressing charges added yet. Click "Add Charge" to
-                        start.
-                      </p>
-                    </div>
-                  ) : (
-                    pressingCharges.map((charge, index) => (
-                      <div
-                        key={index}
-                        className="bg-gray-50 rounded-lg p-4 border border-gray-200"
-                      >
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-2">
-                          {/* <div className="space-y-1">
+                  <div className="p-3 space-y-4">
+                    {pressingCharges.length === 0 ? (
+                      <div className="text-center  text-gray-500">
+                        <p className="text-sm">
+                          No pressing charges added yet. Click "Add Charge" to
+                          start.
+                        </p>
+                      </div>
+                    ) : (
+                      pressingCharges.map((charge, index) => (
+                        <div
+                          key={index}
+                          className="bg-gray-50 rounded-lg p-4 border border-gray-200"
+                        >
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-2">
+                            {/* <div className="space-y-1">
                             <Label className="text-xs font-medium text-gray-600">
                               Work Type
                             </Label>
@@ -985,73 +1007,73 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                               </Select>
                             )}
                           </div> */}
-                          <div className="space-y-1 w-full">
-                            <Label className="text-xs font-medium text-gray-600">
-                              Work Type
-                            </Label>
-                            {loadingItems ? (
-                              <div className="flex items-center gap-2">
-                                <Loader2 className="animate-spin h-4 w-4" />
-                                <span className="text-sm">Loading work types...</span>
+                            <div className="space-y-1 w-full">
+                              <Label className="text-xs font-medium text-gray-600">
+                                Work Type
+                              </Label>
+                              {loadingItems ? (
+                                <div className="flex items-center gap-2">
+                                  <Loader2 className="animate-spin h-4 w-4" />
+                                  <span className="text-sm">Loading work types...</span>
+                                </div>
+                              ) : (
+                                <Select
+                                  value={charge.work_type}
+                                  onValueChange={(value) =>
+                                    updatePressingCharge(index, "work_type", value)
+                                  }
+                                >
+                                  <SelectTrigger className="h-9 text-sm w-full truncate sm:max-w-xs">
+                                    <SelectValue placeholder="Select work type" />
+                                  </SelectTrigger>
+                                  <SelectContent className="bg-white max-w-full sm:max-w-xs">
+                                    <SelectItem value="none">Select work type</SelectItem>
+                                    {items.map((item) => (
+                                      <SelectItem key={item.name} value={item.name}>
+                                        <div className="flex justify-between w-full truncate">
+                                          <span className="truncate">
+                                            {item.item_name || item.name}
+                                          </span>
+                                        </div>
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              )}
+                            </div>
+
+
+
+                            <div className="flex gap-2 w-full">
+                              {/* Size - 40% */}
+                              <div className="space-y-1 w-[40%]">
+                                <Label className="text-xs font-medium text-gray-600">Size</Label>
+                                <Input
+                                  placeholder="Size"
+                                  value={charge.size}
+                                  onChange={(e) =>
+                                    updatePressingCharge(index, "size", e.target.value)
+                                  }
+                                  className="h-9 text-sm"
+                                />
                               </div>
-                            ) : (
-                              <Select
-                                value={charge.work_type}
-                                onValueChange={(value) =>
-                                  updatePressingCharge(index, "work_type", value)
-                                }
-                              >
-                                <SelectTrigger className="h-9 text-sm w-full truncate sm:max-w-xs">
-                                  <SelectValue placeholder="Select work type" />
-                                </SelectTrigger>
-                                <SelectContent className="bg-white max-w-full sm:max-w-xs">
-                                  <SelectItem value="none">Select work type</SelectItem>
-                                  {items.map((item) => (
-                                    <SelectItem key={item.name} value={item.name}>
-                                      <div className="flex justify-between w-full truncate">
-                                        <span className="truncate">
-                                          {item.item_name || item.name}
-                                        </span>
-                                      </div>
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            )}
-                          </div>
 
-
-
-                          <div className="flex gap-2 w-full">
-                            {/* Size - 40% */}
-                            <div className="space-y-1 w-[40%]">
-                              <Label className="text-xs font-medium text-gray-600">Size</Label>
-                              <Input
-                                placeholder="Size"
-                                value={charge.size}
-                                onChange={(e) =>
-                                  updatePressingCharge(index, "size", e.target.value)
-                                }
-                                className="h-9 text-sm"
-                              />
+                              {/* Thickness - 60% */}
+                              <div className="space-y-1 w-[60%]">
+                                <Label className="text-xs font-medium text-gray-600">Thickness</Label>
+                                <Input
+                                  placeholder="Thickness"
+                                  value={charge.thickness}
+                                  onChange={(e) =>
+                                    updatePressingCharge(index, "thickness", e.target.value)
+                                  }
+                                  className="h-9 text-sm"
+                                />
+                              </div>
                             </div>
 
-                            {/* Thickness - 60% */}
-                            <div className="space-y-1 w-[60%]">
-                              <Label className="text-xs font-medium text-gray-600">Thickness</Label>
-                              <Input
-                                placeholder="Thickness"
-                                value={charge.thickness}
-                                onChange={(e) =>
-                                  updatePressingCharge(index, "thickness", e.target.value)
-                                }
-                                className="h-9 text-sm"
-                              />
-                            </div>
                           </div>
-
-                        </div>
-                        {/* <div className="flex gap-2">
+                          {/* <div className="flex gap-2">
                           <div className="space-y-1">
                             <Label className="text-xs font-medium text-gray-600">
                               No of Sides
@@ -1097,80 +1119,80 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                           </div>
 
                         </div> */}
-                        <div className="flex gap-2 pt-2 w-full">
-                          {/* No of Sides - 40% */}
-                          <div className="space-y-1 w-[40%]">
-                            <Label className="text-xs font-medium text-gray-600">
-                              No of Sides
-                            </Label>
-                            <Input
-                              placeholder="No of Sides"
-                              type="number"
-                              min="1"
-                              value={charge.no_of_sides || ""}
-                              onChange={(e) =>
-                                updatePressingCharge(index, "no_of_sides", e.target.value)
-                              }
-                              className="h-9 text-sm"
-                            />
-                          </div>
-
-                          {/* Price - 60% */}
-                          <div className="space-y-1 w-[60%]">
-                            <Label className="text-xs font-medium text-gray-600">Price</Label>
-                            <div className="flex rounded-md border border-gray-300 overflow-hidden">
+                          <div className="flex gap-2 pt-2 w-full">
+                            {/* No of Sides - 40% */}
+                            <div className="space-y-1 w-[40%]">
+                              <Label className="text-xs font-medium text-gray-600">
+                                No of Sides
+                              </Label>
                               <Input
-                                placeholder="0.00"
+                                placeholder="No of Sides"
                                 type="number"
-                                value={charge.price || ""}
+                                min="1"
+                                value={charge.no_of_sides || ""}
                                 onChange={(e) =>
-                                  updatePressingCharge(index, "price", e.target.value)
+                                  updatePressingCharge(index, "no_of_sides", e.target.value)
                                 }
-                                className="h-9 text-sm border-none focus:ring-0 rounded-none flex-1"
-                                style={{
-                                  WebkitAppearance: "none",
-                                  MozAppearance: "textfield",
-                                }}
+                                className="h-9 text-sm"
                               />
-                              <span className="inline-flex items-center px-3 bg-gray-50 text-gray-500 text-sm border-l">
-                                AED
-                              </span>
+                            </div>
+
+                            {/* Price - 60% */}
+                            <div className="space-y-1 w-[60%]">
+                              <Label className="text-xs font-medium text-gray-600">Price</Label>
+                              <div className="flex rounded-md border border-gray-300 overflow-hidden">
+                                <Input
+                                  placeholder="0.00"
+                                  type="number"
+                                  value={charge.price || ""}
+                                  onChange={(e) =>
+                                    updatePressingCharge(index, "price", e.target.value)
+                                  }
+                                  className="h-9 text-sm border-none focus:ring-0 rounded-none flex-1"
+                                  style={{
+                                    WebkitAppearance: "none",
+                                    MozAppearance: "textfield",
+                                  }}
+                                />
+                                <span className="inline-flex items-center px-3 bg-gray-50 text-gray-500 text-sm border-l">
+                                  AED
+                                </span>
+                              </div>
                             </div>
                           </div>
-                        </div>
 
 
-                        <div className="flex justify-between space-y-1 pt-2">
-                          <Label className="text-xs items-end font-medium text-gray-600">
-                            Total Amount : {charge.amount} AED
-                          </Label>
-<div className="flex items-end">
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="text-red-500 hover:text-red-700"
-                            onClick={() => removePressingCharge(index)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                        </div>
-                        
-                      </div>
-                    ))
-                  )}
-                  <Button
-                    type="button"
-                    onClick={addPressingCharge}
-                    size="sm"
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Charge
-                  </Button>
+                          <div className="flex justify-between space-y-1 pt-2">
+                            <Label className="text-xs items-end font-medium text-gray-600">
+                              Total Amount : {charge.amount} AED
+                            </Label>
+                            <div className="flex items-end">
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="text-red-500 hover:text-red-700"
+                                onClick={() => removePressingCharge(index)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
 
-                  {/* {pressingCharges.length > 0 && (
+                        </div>
+                      ))
+                    )}
+                    <Button
+                      type="button"
+                      onClick={addPressingCharge}
+                      size="sm"
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Charge
+                    </Button>
+
+                    {/* {pressingCharges.length > 0 && (
                   <div className="flex justify-end mt-4">
                     <div className="bg-blue-50 p-3 rounded-md border border-blue-200 w-64">
                       <div className="flex justify-between font-medium">
@@ -1183,12 +1205,12 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                     </div>
                   </div>
                 )} */}
+                  </div>
                 </div>
-              </div>
 
-              {/* Materials Sold Card */}
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                {/* <div className="bg-gradient-to-r from-purple-50 to-pink-50 px-6 py-4 border-b border-gray-200">
+                {/* Materials Sold Card */}
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                  {/* <div className="bg-gradient-to-r from-purple-50 to-pink-50 px-6 py-4 border-b border-gray-200">
                   <div className="flex justify-between items-center">
                     <div className="flex items-center space-x-2">
                       <h4 className="text-lg font-semibold text-gray-900">
@@ -1198,35 +1220,35 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                     </div>
                   </div>
                 </div> */}
-                <div className="bg-gradient-to-r from-emerald-50 to-green-50 px-6 py-4 border-b border-gray-200">
+                  <div className="bg-gradient-to-r from-emerald-50 to-green-50 px-6 py-4 border-b border-gray-200">
 
-                  <div className="flex justify-between space-x-2">
-                    <h4 className="text-lg font-semibold text-gray-900">
-                      Materials Sold
-                    </h4>
-                    <span className="pt-1">{calculatePressingTotal(materialsSold).toFixed(2)}{" "}
-                      AED</span>
+                    <div className="flex justify-between space-x-2">
+                      <h4 className="text-lg font-semibold text-gray-900">
+                        Materials Sold
+                      </h4>
+                      <span className="pt-1">{calculatePressingTotal(materialsSold).toFixed(2)}{" "}
+                        AED</span>
+                    </div>
+
                   </div>
 
-                </div>
+                  <div className="p-3 space-y-4">
+                    {materialsSold.length === 0 ? (
+                      <div className="text-center text-gray-500">
+                        <p className="text-sm">
+                          No materials sold added yet. Click "Add Material" to
+                          start.
+                        </p>
+                      </div>
+                    ) : (
+                      materialsSold.map((material, index) => (
+                        <div
+                          key={index}
+                          className="bg-gray-50 rounded-lg p-4 border border-gray-200"
+                        >
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-2">
 
-                <div className="p-3 space-y-4">
-                  {materialsSold.length === 0 ? (
-                    <div className="text-center text-gray-500">
-                      <p className="text-sm">
-                        No materials sold added yet. Click "Add Material" to
-                        start.
-                      </p>
-                    </div>
-                  ) : (
-                    materialsSold.map((material, index) => (
-                      <div
-                        key={index}
-                        className="bg-gray-50 rounded-lg p-4 border border-gray-200"
-                      >
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-2">
-
-                          {/* <div className="space-y-1 w-full">
+                            {/* <div className="space-y-1 w-full">
                             <Label className="text-xs w-full font-medium text-gray-600">
                               Work Type
                             </Label>
@@ -1267,42 +1289,42 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                               </Select>
                             )}
                           </div> */}
-                          <div className="space-y-1 w-full">
-                            <Label className="text-xs font-medium text-gray-600">
-                              Work Type
-                            </Label>
-                            {loadingItems ? (
-                              <div className="flex items-center gap-2">
-                                <Loader2 className="animate-spin h-4 w-4" />
-                                <span className="text-sm">Loading work types...</span>
-                              </div>
-                            ) : (
-                              <Select
-                                value={material.work_type}
-                                onValueChange={(value) =>
-                                  updateMaterialSold(index, "work_type", value)
-                                }
-                              >
-                                <SelectTrigger className="h-9 text-sm w-full truncate sm:max-w-xs">
-                                  <SelectValue placeholder="Select work type" />
-                                </SelectTrigger>
-                                <SelectContent className="bg-white max-w-full sm:max-w-xs">
-                                  <SelectItem value="none">Select work type</SelectItem>
-                                  {items.map((item) => (
-                                    <SelectItem key={item.name} value={item.name}>
-                                      <div className="flex justify-between w-full truncate">
-                                        <span className="truncate">
-                                          {item.item_name || item.name}
-                                        </span>
-                                      </div>
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            )}
-                          </div>
+                            <div className="space-y-1 w-full">
+                              <Label className="text-xs font-medium text-gray-600">
+                                Work Type
+                              </Label>
+                              {loadingItems ? (
+                                <div className="flex items-center gap-2">
+                                  <Loader2 className="animate-spin h-4 w-4" />
+                                  <span className="text-sm">Loading work types...</span>
+                                </div>
+                              ) : (
+                                <Select
+                                  value={material.work_type}
+                                  onValueChange={(value) =>
+                                    updateMaterialSold(index, "work_type", value)
+                                  }
+                                >
+                                  <SelectTrigger className="h-9 text-sm w-full truncate sm:max-w-xs">
+                                    <SelectValue placeholder="Select work type" />
+                                  </SelectTrigger>
+                                  <SelectContent className="bg-white max-w-full sm:max-w-xs">
+                                    <SelectItem value="none">Select work type</SelectItem>
+                                    {items.map((item) => (
+                                      <SelectItem key={item.name} value={item.name}>
+                                        <div className="flex justify-between w-full truncate">
+                                          <span className="truncate">
+                                            {item.item_name || item.name}
+                                          </span>
+                                        </div>
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              )}
+                            </div>
 
-                          {/* <div className="flex gap-2">
+                            {/* <div className="flex gap-2">
                             <div className="space-y-1">
                               <Label className="text-xs font-medium text-gray-600">
                                 Size
@@ -1340,34 +1362,34 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                           </div> */}
 
 
-                          <div className="flex gap-2 w-full">
-                            {/* Size - 40% */}
-                            <div className="space-y-1 w-[40%]">
-                              <Label className="text-xs font-medium text-gray-600">Size</Label>
-                              <Input
-                                placeholder="Size"
-                                value={material.size}
-                                onChange={(e) =>
-                                  updatePressingCharge(index, "size", e.target.value)
-                                }
-                                className="h-9 text-sm"
-                              />
-                            </div>
+                            <div className="flex gap-2 w-full">
+                              {/* Size - 40% */}
+                              <div className="space-y-1 w-[40%]">
+                                <Label className="text-xs font-medium text-gray-600">Size</Label>
+                                <Input
+                                  placeholder="Size"
+                                  value={material.size}
+                                  onChange={(e) =>
+                                    updatePressingCharge(index, "size", e.target.value)
+                                  }
+                                  className="h-9 text-sm"
+                                />
+                              </div>
 
-                            {/* Thickness - 60% */}
-                            <div className="space-y-1 w-[60%]">
-                              <Label className="text-xs font-medium text-gray-600">Thickness</Label>
-                              <Input
-                                placeholder="Thickness"
-                                value={material.thickness}
-                                onChange={(e) =>
-                                  updatePressingCharge(index, "thickness", e.target.value)
-                                }
-                                className="h-9 text-sm"
-                              />
+                              {/* Thickness - 60% */}
+                              <div className="space-y-1 w-[60%]">
+                                <Label className="text-xs font-medium text-gray-600">Thickness</Label>
+                                <Input
+                                  placeholder="Thickness"
+                                  value={material.thickness}
+                                  onChange={(e) =>
+                                    updatePressingCharge(index, "thickness", e.target.value)
+                                  }
+                                  className="h-9 text-sm"
+                                />
+                              </div>
                             </div>
-                          </div>
-                          {/* <div className="flex gap-2">
+                            {/* <div className="flex gap-2">
                             <div className="space-y-1">
                               <Label className="text-xs font-medium text-gray-600">
                                 No of Sides
@@ -1415,50 +1437,50 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                               </span>
                             </div>
                           </div> */}
-                          <div className="flex gap-2  w-full">
-                            {/* No of Sides - 40% */}
-                            <div className="space-y-1 w-[40%]">
-                              <Label className="text-xs font-medium text-gray-600">
-                                No of Sides
-                              </Label>
-                              <Input
-                                placeholder="No of Sides"
-                                type="number"
-                                min="1"
-                                value={material.no_of_sides || ""}
-                                onChange={(e) =>
-                                  updatePressingCharge(index, "no_of_sides", e.target.value)
-                                }
-                                className="h-9 text-sm"
-                              />
-                            </div>
-
-                            {/* Price - 60% */}
-                            <div className="space-y-1 w-[60%]">
-                              <Label className="text-xs font-medium text-gray-600">Price</Label>
-                              <div className="flex rounded-md border border-gray-300 overflow-hidden">
+                            <div className="flex gap-2  w-full">
+                              {/* No of Sides - 40% */}
+                              <div className="space-y-1 w-[40%]">
+                                <Label className="text-xs font-medium text-gray-600">
+                                  No of Sides
+                                </Label>
                                 <Input
-                                  placeholder="0.00"
+                                  placeholder="No of Sides"
                                   type="number"
-                                  value={material.price || ""}
+                                  min="1"
+                                  value={material.no_of_sides || ""}
                                   onChange={(e) =>
-                                    updatePressingCharge(index, "price", e.target.value)
+                                    updatePressingCharge(index, "no_of_sides", e.target.value)
                                   }
-                                  className="h-9 text-sm border-none focus:ring-0 rounded-none flex-1"
-                                  style={{
-                                    WebkitAppearance: "none",
-                                    MozAppearance: "textfield",
-                                  }}
+                                  className="h-9 text-sm"
                                 />
-                                <span className="inline-flex items-center px-3 bg-gray-50 text-gray-500 text-sm border-l">
-                                  AED
-                                </span>
+                              </div>
+
+                              {/* Price - 60% */}
+                              <div className="space-y-1 w-[60%]">
+                                <Label className="text-xs font-medium text-gray-600">Price</Label>
+                                <div className="flex rounded-md border border-gray-300 overflow-hidden">
+                                  <Input
+                                    placeholder="0.00"
+                                    type="number"
+                                    value={material.price || ""}
+                                    onChange={(e) =>
+                                      updatePressingCharge(index, "price", e.target.value)
+                                    }
+                                    className="h-9 text-sm border-none focus:ring-0 rounded-none flex-1"
+                                    style={{
+                                      WebkitAppearance: "none",
+                                      MozAppearance: "textfield",
+                                    }}
+                                  />
+                                  <span className="inline-flex items-center px-3 bg-gray-50 text-gray-500 text-sm border-l">
+                                    AED
+                                  </span>
+                                </div>
                               </div>
                             </div>
-                          </div>
 
-                        </div>
-                        {/* <div className="space-y-1">
+                          </div>
+                          {/* <div className="space-y-1">
                             <Label className="text-xs font-medium text-gray-600">
                               Amount
                             </Label>
@@ -1468,69 +1490,69 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                               className="bg-gray-100 h-9 text-sm"
                             />
                           </div> */}
-                          
-                        <div className=" flex justify-between ">
-                          <Label className="text-xs pt-2 font-medium text-gray-600">
-                           Total Amount : {material.amount || 0} AED
-                          </Label>
-                           <div className="flex items-end">
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="text-red-500 hover:text-red-700"
-                            onClick={() => removeMaterialSold(index)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                        </div>
-                       
-                      </div>
-                    ))
-                  )}
-                  <Button
-                    type="button"
-                    onClick={addMaterialSold}
-                    size="sm"
-                    className="bg-purple-600 hover:bg-purple-700 text-white shadow-sm"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Material
-                  </Button>
-                </div>
-              </div>
 
-              {/* Action Buttons */}
-              <div className="sticky bottom-0 bg-white border-t border-gray-200 p-6 shadow-lg">
-                <div className="flex flex-col sm:flex-row justify-end gap-3">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={handleCancelClick}
-                    className="px-8 py-3 order-2 sm:order-1"
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    type="submit"
-                    disabled={loading}
-                    className="px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg order-1 sm:order-2"
-                  >
-                    {loading ? (
-                      <div className="flex items-center gap-2">
-                        <Loader2 className="animate-spin h-5 w-5" />
-                        Saving...
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <Save className="h-5 w-5" />
-                        {jobCard ? "Update Job Card" : "Create Job Card"}
-                      </div>
+                          <div className=" flex justify-between ">
+                            <Label className="text-xs pt-2 font-medium text-gray-600">
+                              Total Amount : {material.amount || 0} AED
+                            </Label>
+                            <div className="flex items-end">
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="text-red-500 hover:text-red-700"
+                                onClick={() => removeMaterialSold(index)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+
+                        </div>
+                      ))
                     )}
-                  </Button>
+                    <Button
+                      type="button"
+                      onClick={addMaterialSold}
+                      size="sm"
+                      className="bg-purple-600 hover:bg-purple-700 text-white shadow-sm"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Material
+                    </Button>
+                  </div>
                 </div>
-              </div>
+
+                {/* Action Buttons */}
+                <div className="sticky bottom-0 bg-white border-t border-gray-200 p-6 shadow-lg">
+                  <div className="flex flex-col sm:flex-row justify-end gap-3">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleCancelClick}
+                      className="px-8 py-3 order-2 sm:order-1"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="submit"
+                      disabled={loading}
+                      className="px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg order-1 sm:order-2"
+                    >
+                      {loading ? (
+                        <div className="flex items-center gap-2">
+                          <Loader2 className="animate-spin h-5 w-5" />
+                          Saving...
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <Save className="h-5 w-5" />
+                          {jobCard ? "Update Job Card" : "Create Job Card"}
+                        </div>
+                      )}
+                    </Button>
+                  </div>
+                </div>
             </form>
           </div>
         </div >
