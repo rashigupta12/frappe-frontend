@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
@@ -143,6 +142,10 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
     if (jobCard) {
       setFormData({
         ...jobCard,
+        date: jobCard.date || new Date().toISOString().split("T")[0],
+        building_name: jobCard.building_name || "",
+        property_no: jobCard.property_no || "",
+        area: jobCard.area || "",
         party_name: jobCard.party_name || "",
         approved_by: jobCard.approved_by || "",
         project_id_no: jobCard.project_id_no || "",
@@ -292,9 +295,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
         ...prev,
         customer_id: "",
         lead_id: "",
-        building_name: "",
-        property_no: "",
-        area: "",
+       
       }));
     }
   }, [searchQuery]);
