@@ -904,7 +904,7 @@ useEffect(() => {
   className="focus:ring-blue-500 focus:border-blue-500"
 />
                     </div>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex pb-4 flex-wrap gap-2">
                       <div className="w-[48%] space-y-2">
                         <Label
                           htmlFor="start_date"
