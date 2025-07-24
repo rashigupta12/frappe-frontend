@@ -1297,7 +1297,7 @@ useEffect(() => {
                                 placeholder="Size"
                                 value={material.size}
                                 onChange={(e) =>
-                                  updatePressingCharge(index, "size", e.target.value)
+                                  updateMaterialSold(index, "size", e.target.value)
                                 }
                                 className="h-9 text-sm"
                               />
@@ -1310,7 +1310,7 @@ useEffect(() => {
                                 placeholder="Thickness"
                                 value={material.thickness}
                                 onChange={(e) =>
-                                  updatePressingCharge(index, "thickness", e.target.value)
+                                  updateMaterialSold(index, "thickness", e.target.value)
                                 }
                                 className="h-9 text-sm"
                               />
@@ -1328,7 +1328,7 @@ useEffect(() => {
                                 min="1"
                                 value={material.no_of_sides || ""}
                                 onChange={(e) =>
-                                  updatePressingCharge(index, "no_of_sides", e.target.value)
+                                  updateMaterialSold(index, "no_of_sides", e.target.value)
                                 }
                                 className="h-9 text-sm"
                               />
@@ -1343,7 +1343,7 @@ useEffect(() => {
                                     type="number"
                                     value={material.price || ""}
                                     onChange={(e) =>
-                                      updatePressingCharge(index, "price", e.target.value)
+                                      updateMaterialSold(index, "price", e.target.value)
                                     }
                                     className="h-9 text-sm border-none focus:ring-0 rounded-none flex-1"
                                     style={{
