@@ -59,6 +59,8 @@ export interface Employee {
 }
 
 export interface JobCard {
+  lead_id: string;
+  customer_id: string;
   name: string;
   owner: string;
   creation: string;
@@ -151,6 +153,8 @@ const transformJobCardData = (apiResponse: any): JobCard => {
   console.log("📋 Actual data being processed:", actualData);
   
   const transformed = {
+    lead_id: actualData.lead_id || '',
+    customer_id: actualData.customer_id || '',
     name: actualData.name || '',
     owner: actualData.owner || '',
     creation: actualData.creation || '',
