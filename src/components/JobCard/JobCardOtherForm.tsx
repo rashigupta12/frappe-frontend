@@ -567,7 +567,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
 
         {/* Form Content */}
         <div className="flex-1 overflow-y-auto bg-gray-50">
-          <div className="max-w-5xl mx-auto p-6 space-y-8">
+          <div className="max-w-5xl mx-auto p-3 space-y-2">
             <form onSubmit={handleSubmit} className="space-y-8">
               {/* Basic Information Card */}
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
@@ -580,7 +580,8 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                   </div>
                 </div>
 
-                <div className="p-6">
+                <div className="p-4
+                ">
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     <div className="space-y-2 relative">
                       <Label
@@ -743,7 +744,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                     </div> */}
 
                     <div className="flex flex-wrap gap-2">
-                      <div className="w-[48%] space-y-2">
+                      <div className="w-[48%] space-y-1">
                         <Label
                           htmlFor="start_date"
                           className="flex items-center space-x-1"
@@ -763,7 +764,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                         />
                       </div>
 
-                      <div className="w-[48%] space-y-2">
+                      <div className="w-[48%] space-y-1">
                         <Label
                           htmlFor="finish_date"
                           className="flex items-center space-x-1"
@@ -791,17 +792,23 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
               {/* Services Section */}
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                 <div className="bg-gradient-to-r from-green-50 to-emerald-50 px-6 py-4 border-b border-gray-200">
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center space-x-2">
-                      <Wrench className="h-5 w-5 text-green-600" />
+                  {/* <div className="flex justify-between items-center">
+                    <div className="flex justify-between space-x-2">
+
                       <h4 className="text-lg font-semibold text-gray-900">
                         Services
                       </h4>
+                     
                     </div>
+                  </div> */}
+                  <div className="flex justify-between space-x-2">
+                    <h4 className="text-lg font-semibold text-gray-900">
+                      Services                    </h4>
+                    <span className="pt-1">{serviceTotal.toFixed(2)} AED</span>
                   </div>
                 </div>
 
-                <div className="p-6 space-y-4">
+                <div className="p-4 space-y-4">
                   {services.length === 0 ? (
                     <div className="text-center  text-gray-500">
                       <p className="text-sm">No services added yet.</p>
@@ -815,7 +822,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                         <div className="grid grid-cols-1 gap-4">
                           {/* Work Type and Description Row */}
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="space-y-1">
+                            {/* <div className="space-y-1">
                               <Label className="text-sm font-medium text-gray-600">
                                 Work Type
                               </Label>
@@ -845,8 +852,41 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                                   </SelectContent>
                                 </Select>
                               )}
+                            </div> */}
+                            <div className="space-y-1 w-full">
+                              <Label className="text-xs font-medium text-gray-600">
+                                Work Type
+                              </Label>
+                              {loadingJobTypes ? (
+                                <div className="flex items-center gap-2">
+                                  <Loader2 className="animate-spin h-4 w-4" />
+                                  <span className="text-sm">Loading work types...</span>
+                                </div>
+                              ) : (
+                                <Select
+                                  value={service.work_type}
+                                  onValueChange={(value) =>
+                                    updateService(index, "work_type", value)
+                                  }
+                                >
+                                  <SelectTrigger className="h-9 text-sm w-full truncate sm:max-w-xs">
+                                    <SelectValue placeholder="Select work type" />
+                                  </SelectTrigger>
+                                  <SelectContent className="bg-white max-w-full sm:max-w-xs">
+                                    <SelectItem value="none">Select work type</SelectItem>
+                                    {jobTypes.map((jobType) => (
+                                      <SelectItem
+                                        key={jobType.name}
+                                        value={jobType.name}
+                                      >
+                                        {jobType.name}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              )}
                             </div>
-                            <div className="space-y-1">
+                            {/* <div className="space-y-1">
                               <Label className="text-sm font-medium text-gray-600">
                                 Work Description
                               </Label>
@@ -863,10 +903,13 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                                 className="min-h-[40px] resize-none"
                                 rows={2}
                               />
-                            </div>
+                            </div> */}
+
+
                           </div>
 
                           {/* Dates Row */}
+                          {/* <div className="flex flex-wrap gap-2">
                           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div className="space-y-1">
                               <Label className="text-sm font-medium text-gray-600">
@@ -902,36 +945,119 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                                 className="h-10"
                               />
                             </div>
-                            <div className="space-y-1">
+                            </div>
+                            
+                          </div> */}
+
+                          <div className="flex w-full gap-2">
+                            {/* Start Date */}
+                            <div className="space-y-1 w-1/2">
                               <Label className="text-sm font-medium text-gray-600">
-                                Price
+                                Start Date
                               </Label>
-                              <div className="flex gap-2">
-                                <Input
-                                  type="text"
-                                  placeholder="Enter the price"
-                                  value={service.price}
-                                  onChange={(e) =>
-                                    updateService(
-                                      index,
-                                      "price",
-                                      e.target.value
-                                    )
-                                  }
-                                  className="h-10"
-                                />
-                                <Button
-                                  type="button"
-                                  variant="destructive"
-                                  size="sm"
-                                  onClick={() => removeService(index)}
-                                  className="h-10 w-10 p-0"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </div>
+                              <Input
+                                type="date"
+                                value={service.start_date}
+                                onChange={(e) =>
+                                  updateService(index, "start_date", e.target.value)
+                                }
+                                className="h-10"
+                              />
+                            </div>
+
+                            {/* Finish Date */}
+                            <div className="space-y-1 w-1/2">
+                              <Label className="text-sm font-medium text-gray-600">
+                                Finish Date
+                              </Label>
+                              <Input
+                                type="date"
+                                value={service.finish_date}
+                                onChange={(e) =>
+                                  updateService(index, "finish_date", e.target.value)
+                                }
+                                className="h-10"
+                              />
                             </div>
                           </div>
+
+
+                          {/* <div className="space-y-1">
+                            <Label className="text-sm font-medium text-gray-600">
+                              Price
+                            </Label>
+                            <div className="flex ">
+                              <Input
+                                type="text"
+                                placeholder="Enter the price"
+                                value={service.price}
+                                onChange={(e) =>
+                                  updateService(
+                                    index,
+                                    "price",
+                                    e.target.value
+                                  )
+                                }
+                                className="h-10"
+                              />
+                             
+                            </div>
+                          </div> */}
+                          <div className=" w-[100%]">
+                            <Label className="text-sm font-medium text-gray-600">Price</Label>
+                            <div className="flex rounded-md border border-gray-300 overflow-hidden">
+                              <Input
+                                placeholder="0.00"
+                                type="number"
+                                value={service.price || ""}
+                                onChange={(e) =>
+                                  updateService(
+                                    index,
+                                    "price",
+                                    e.target.value
+                                  )
+                                }
+                                className="h-9 text-sm border-none focus:ring-0 rounded-none flex-1"
+                                style={{
+                                  WebkitAppearance: "none",
+                                  MozAppearance: "textfield",
+                                }}
+                              />
+                              <span className="inline-flex items-center px-2 bg-gray-50 text-gray-500 text-sm border-l">
+                                AED
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="space-y-1 w-full">
+                            <Label className="text-sm font-medium text-gray-600">
+                              Work Description
+                            </Label>
+                            <Textarea
+                              placeholder="Enter detailed work description"
+                              value={service.work_description}
+                              onChange={(e) => {
+                                updateService(index, "work_description", e.target.value);
+
+                                // Auto-resize the textarea
+                                const target = e.target as HTMLTextAreaElement;
+                                target.style.height = "auto";
+                                target.style.height = `${target.scrollHeight}px`;
+                              }}
+                              className="min-h-[40px] text-md resize-none overflow-hidden"
+                              rows={1}
+                            />
+                          </div>
+                          <div className=" flex justify-end">
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => removeService(index)}
+                              className="h-10 w-10 p-0 text-red-500 hover:text-red-700"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button></div>
                         </div>
                       </div>
                     ))
@@ -948,7 +1074,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                 </div>
 
                 {/* Services Total */}
-                {services.length > 0 && (
+                {/* {services.length > 0 && (
                   <div className="bg-gray-100 px-6 py-3 border-t border-gray-200">
                     <div className="flex justify-between items-center">
                       <span className="font-medium">Services Total:</span>
@@ -959,10 +1085,10 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                       </div>
                     </div>
                   </div>
-                )}
+                )} */}
               </div>
 
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 px-4 py-3">
+              {/* <div className="bg-white rounded-lg shadow-sm border border-gray-200 px-4 py-3">
                 <div className="flex justify-between items-center gap-4">
                   <span className="font-semibold text-gray-700">
                     Grand Total:
@@ -973,10 +1099,10 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                     </span>
                   </div>
                 </div>
-              </div>
+              </div> */}
 
               {/* Action Buttons */}
-              <div className="sticky bottom-0 bg-white border-t border-gray-200 p-6 shadow-lg">
+              <div className="sticky bottom-0 bg-white border-t border-gray-200 p-4 shadow-lg">
                 <div className="flex flex-col sm:flex-row justify-end gap-3">
                   <Button
                     type="button"

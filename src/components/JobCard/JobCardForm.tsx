@@ -1142,7 +1142,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
 
                         <div className="flex justify-between space-y-1 pt-2">
                           <Label className="text-xs items-end font-medium text-gray-600">
-                            Total Amount:{charge.amount} AED
+                            Total Amount : {charge.amount} AED
                           </Label>
 <div className="flex items-end">
                           <Button
