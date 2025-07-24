@@ -606,10 +606,10 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                   </div>
                 </div>
 
-                <div className={`transition-all p-1 duration-300 ease-in-out ${isBasicInfoExpanded ? "opacity-100 max-h-[1500px]" : "opacity-0 max-h-0 overflow-hidden"
+                <div className={`transition-all px-6 duration-300 ease-in-out ${isBasicInfoExpanded ? "opacity-100 max-h-[1500px]" : "opacity-0 max-h-0 overflow-hidden"
                   }`}>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <div className="space-y-2 relative">
+                    <div className="space-y-2 pt-2 relative">
                       <Label
                         htmlFor="party_name"
                         className="flex items-center space-x-2"
@@ -769,7 +769,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                       </div>
                     </div> */}
 
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex pb-4 flex-wrap gap-2">
                       <div className="w-[48%] space-y-1">
                         <Label
                           htmlFor="start_date"
