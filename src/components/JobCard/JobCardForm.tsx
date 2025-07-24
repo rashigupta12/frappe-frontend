@@ -65,6 +65,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
 }) => {
   const { createJobCard, updateJobCard, loading, fetchEmployees } =
     useJobCards();
+    console.log("job card edit form", jobCard); 
 
   const [formData, setFormData] = useState<JobCardFormData>({
     date: new Date().toISOString().split("T")[0],
@@ -150,54 +151,88 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
     fetchItems();
   }, []);
 
+  useEffect(() => {
+  const fetchCustomerData = async () => {
+    if (jobCard?.customer_id) {
+      try {
+        const customer = await frappeAPI.getCustomerById(jobCard.customer_id);
+        setFormData(prev => ({
+          ...prev,
+          party_name: customer.data.customer_name || ""
+        }));
+        setSearchQuery(customer.data.customer_name || "");
+      } catch (error) {
+        console.error("Failed to fetch customer data:", error);
+      }
+    }
+  };
+
+  fetchCustomerData();
+}, [jobCard?.customer_id]);
+
   // Fetch employees when component mounts
   useEffect(() => {
     fetchEmployees();
   }, [fetchEmployees]);
 
   // Load existing job card data when editing
-  useEffect(() => {
-    if (jobCard) {
-      setFormData({
-        ...jobCard,
-        party_name: jobCard.party_name || "",
-        prepared_by: jobCard.prepared_by || "",
-        approved_by: jobCard.approved_by || "",
-        project_id_no: jobCard.project_id_no || "",
-        ac_v_no_and_date: jobCard.ac_v_no_and_date || "",
-        pressing_charges: jobCard.pressing_charges || [],
-        material_sold: jobCard.material_sold || [],
-        lead_id: (jobCard as any).lead_id || "",
-        customer_id: (jobCard as any).customer_id || "",
-        start_date:
-          jobCard.start_date || new Date().toISOString().split("T")[0],
-      });
-      setSearchQuery(jobCard.party_name || "");
-      setPressingCharges(jobCard.pressing_charges || []);
-      setMaterialsSold(jobCard.material_sold || []);
-    } else {
-      setFormData({
-        date: new Date().toISOString().split("T")[0],
-        building_name: "",
-        property_no: "",
-        area: "",
-        party_name: "",
-        start_date: new Date().toISOString().split("T")[0],
-        finish_date: "",
-        prepared_by: "",
-        approved_by: "",
-        project_id_no: "",
-        ac_v_no_and_date: "",
-        pressing_charges: [],
-        material_sold: [],
-        lead_id: "",
-        customer_id: "",
-      });
-      setSearchQuery("");
-      setPressingCharges([]);
-      setMaterialsSold([]);
+useEffect(() => {
+  if (jobCard) {
+    console.log("Loading job card data:", jobCard); // Debug log
+    setFormData({
+      date: jobCard.date || new Date().toISOString().split('T')[0],
+      building_name: jobCard.building_name || "",
+      property_no: jobCard.property_no || "",
+      area: jobCard.area || "",
+      party_name: jobCard.party_name || "",
+      start_date: jobCard.start_date || new Date().toISOString().split('T')[0],
+      finish_date: jobCard.finish_date || "",
+      prepared_by: jobCard.prepared_by || "",
+      approved_by: jobCard.approved_by || "",
+      project_id_no: jobCard.project_id_no || "",
+      ac_v_no_and_date: jobCard.ac_v_no_and_date || "",
+      pressing_charges: jobCard.pressing_charges || [],
+      material_sold: jobCard.material_sold || [],
+      lead_id: jobCard.lead_id || "",
+      customer_id: jobCard.customer_id || ""
+    });
+    setSearchQuery(jobCard.party_name || "");
+    setPressingCharges(jobCard.pressing_charges || []);
+    setMaterialsSold(jobCard.material_sold || []);
+    
+    // If customer_id exists but no lead_id, preserve the property data
+    if (jobCard.customer_id && !jobCard.lead_id) {
+      setFormData(prev => ({
+        ...prev,
+        building_name: jobCard.building_name || "",
+        property_no: jobCard.property_no || "",
+        area: jobCard.area || ""
+      }));
     }
-  }, [jobCard, isOpen]);
+  } else {
+    // Reset form for new job card
+    setFormData({
+      date: new Date().toISOString().split('T')[0],
+      building_name: "",
+      property_no: "",
+      area: "",
+      party_name: "",
+      start_date: new Date().toISOString().split('T')[0],
+      finish_date: "",
+      prepared_by: "",
+      approved_by: "",
+      project_id_no: "",
+      ac_v_no_and_date: "",
+      pressing_charges: [],
+      material_sold: [],
+      lead_id: "",
+      customer_id: ""
+    });
+    setSearchQuery("");
+    setPressingCharges([]);
+    setMaterialsSold([]);
+  }
+}, [jobCard]); // Removed isOpen from dependencies
 
   const handleNewCustomerInputChange = (
     e: React.ChangeEvent<HTMLInputElement>
@@ -303,9 +338,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
         ...prev,
         customer_id: "",
         lead_id: "",
-        building_name: "",
-        property_no: "",
-        area: "",
+        
       }));
     }
   }, [searchQuery]);
@@ -816,96 +849,81 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                         )}
                       </div>
 
-                      <div className="space-y-2">
-                        <Label
-                          htmlFor="building_name"
-                          className="flex items-center space-x-2"
-                        >
-                          <span>
-                            Building Name <span className="text-red-500">*</span>
-                          </span>
-                        </Label>
-                        <Input
-                          id="building_name"
-                          name="building_name"
-                          value={formData.building_name || ""}
-                          onChange={handleInputChange}
-                          placeholder="Enter building name"
-                          required
-                          className="focus:ring-blue-500 focus:border-blue-500"
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="property_no">
-                          Property No <span className="text-red-500">*</span>
-                        </Label>
-                        <Input
-                          id="property_no"
-                          name="property_no"
-                          value={formData.property_no || ""}
-                          onChange={handleInputChange}
-                          placeholder="Enter property number"
-                          required
-                          className="focus:ring-blue-500 focus:border-blue-500"
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label
-                          htmlFor="area"
-                          className="flex items-center space-x-2"
-                        >
-                          <MapPin className="h-4 w-4 text-gray-500" />
-                          <span>
-                            Area <span className="text-red-500">*</span>
-                          </span>
-                        </Label>
-                        <Input
-                          id="area"
-                          name="area"
-                          value={formData.area || ""}
-                          onChange={handleInputChange}
-                          placeholder="Enter area"
-                          required
-                          className="focus:ring-blue-500 focus:border-blue-500"
-                        />
-                      </div>
-
-                      {/* <div className="space-y-2">
-                      <Label htmlFor="address" className="flex items-center space-x-2">
-                        <MapPin className="h-4 w-4 text-gray-500" />
-                        <span>Address</span>
+                    <div className="space-y-2">
+                      <Label
+                        htmlFor="building_name"
+                        className="flex items-center space-x-2"
+                      >
+                        <span>
+                          Building Name <span className="text-red-500">*</span>
+                        </span>
                       </Label>
-                      <div className="bg-gray-50 p-3 rounded-md border border-gray-200 text-sm">
-                        {formatAddress(
-                          formData.building_name,
-                          formData.property_no,
-                          formData.area
-                        ) || <span className="text-gray-400">No address entered</span>}
-                      </div>
-                    </div> */}
+                      <Input
+  id="building_name"
+  name="building_name"
+  value={formData.building_name}
+  onChange={handleInputChange}
+  placeholder="Enter building name"
+  required
+  className="focus:ring-blue-500 focus:border-blue-500"
+/>
+                    </div>
 
-                      <div className="flex flex-wrap pb-4 gap-2">
-                        <div className="w-[48%] space-y-2">
-                          <Label
-                            htmlFor="start_date"
-                            className="flex items-center space-x-1"
-                          >
-                            <Calendar className="h-4 w-4 text-gray-500" />
-                            <span>
-                              Start Date <span className="text-red-500">*</span>
-                            </span>
-                          </Label>
-                          <Input
-                            id="start_date"
-                            name="start_date"
-                            type="date"
-                            value={formData.start_date}
-                            readOnly
-                            className="w-full bg-gray-100 cursor-not-allowed"
-                          />
-                        </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="property_no">
+                        Property No <span className="text-red-500">*</span>
+                      </Label>
+                      <Input
+  id="property_no"
+  name="property_no"
+  value={formData.property_no}
+  onChange={handleInputChange}
+  placeholder="Enter property number"
+  required
+  className="focus:ring-blue-500 focus:border-blue-500"
+/>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label
+                        htmlFor="area"
+                        className="flex items-center space-x-2"
+                      >
+                        <MapPin className="h-4 w-4 text-gray-500" />
+                        <span>
+                          Area <span className="text-red-500">*</span>
+                        </span>
+                      </Label>
+                      <Input
+  id="area"
+  name="area"
+  value={formData.area}
+  onChange={handleInputChange}
+  placeholder="Enter area"
+  required
+  className="focus:ring-blue-500 focus:border-blue-500"
+/>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <div className="w-[48%] space-y-2">
+                        <Label
+                          htmlFor="start_date"
+                          className="flex items-center space-x-1"
+                        >
+                          <Calendar className="h-4 w-4 text-gray-500" />
+                          <span>
+                            Start Date <span className="text-red-500">*</span>
+                          </span>
+                        </Label>
+                        <Input
+                          id="start_date"
+                          name="start_date"
+                          type="date"
+                          value={formData.start_date}
+                          readOnly
+                          className="w-full bg-gray-100 cursor-not-allowed"
+                        />
+                      </div>
 
                         <div className="w-[48%] space-y-2">
                           <Label
@@ -1208,19 +1226,9 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                   </div>
                 </div>
 
-                {/* Materials Sold Card */}
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                  {/* <div className="bg-gradient-to-r from-purple-50 to-pink-50 px-6 py-4 border-b border-gray-200">
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center space-x-2">
-                      <h4 className="text-lg font-semibold text-gray-900">
-                        Materials Sold
-                      </h4>
-                      <span> {calculatePressingTotal(materialsSold).toFixed(2)}</span>
-                    </div>
-                  </div>
-                </div> */}
-                  <div className="bg-gradient-to-r from-emerald-50 to-green-50 px-6 py-4 border-b border-gray-200">
+              {/* Materials Sold Card */}
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div className="bg-gradient-to-r from-emerald-50 to-green-50 px-6 py-4 border-b border-gray-200">
 
                     <div className="flex justify-between space-x-2">
                       <h4 className="text-lg font-semibold text-gray-900">
@@ -1232,32 +1240,29 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
 
                   </div>
 
-                  <div className="p-3 space-y-4">
-                    {materialsSold.length === 0 ? (
-                      <div className="text-center text-gray-500">
-                        <p className="text-sm">
-                          No materials sold added yet. Click "Add Material" to
-                          start.
-                        </p>
-                      </div>
-                    ) : (
-                      materialsSold.map((material, index) => (
-                        <div
-                          key={index}
-                          className="bg-gray-50 rounded-lg p-4 border border-gray-200"
-                        >
-                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-2">
-
-                            {/* <div className="space-y-1 w-full">
-                            <Label className="text-xs w-full font-medium text-gray-600">
+                <div className="p-3 space-y-4">
+                  {materialsSold.length === 0 ? (
+                    <div className="text-center text-gray-500">
+                      <p className="text-sm">
+                        No materials sold added yet. Click "Add Material" to
+                        start.
+                      </p>
+                    </div>
+                  ) : (
+                    materialsSold.map((material, index) => (
+                      <div
+                        key={index}
+                        className="bg-gray-50 rounded-lg p-4 border border-gray-200"
+                      >
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-2">
+                          <div className="space-y-1 w-full">
+                            <Label className="text-xs font-medium text-gray-600">
                               Work Type
                             </Label>
                             {loadingItems ? (
                               <div className="flex items-center gap-2">
                                 <Loader2 className="animate-spin h-4 w-4" />
-                                <span className="text-sm">
-                                  Loading work types...
-                                </span>
+                                <span className="text-sm">Loading work types...</span>
                               </div>
                             ) : (
                               <Select
@@ -1266,20 +1271,15 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                                   updateMaterialSold(index, "work_type", value)
                                 }
                               >
-                                <SelectTrigger className="h-9 text-sm max-w-full sm:max-w-xs truncate">
+                                <SelectTrigger className="h-9 text-sm w-full truncate sm:max-w-xs">
                                   <SelectValue placeholder="Select work type" />
                                 </SelectTrigger>
-                                <SelectContent className="bg-white">
-                                  <SelectItem value="none">
-                                    Select work type
-                                  </SelectItem>
+                                <SelectContent className="bg-white max-w-full sm:max-w-xs">
+                                  <SelectItem value="none">Select work type</SelectItem>
                                   {items.map((item) => (
-                                    <SelectItem
-                                      key={item.name}
-                                      value={item.name}
-                                    >
-                                      <div className="flex justify-between w-full">
-                                        <span>
+                                    <SelectItem key={item.name} value={item.name}>
+                                      <div className="flex justify-between w-full truncate">
+                                        <span className="truncate">
                                           {item.item_name || item.name}
                                         </span>
                                       </div>
@@ -1288,109 +1288,37 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                                 </SelectContent>
                               </Select>
                             )}
-                          </div> */}
-                            <div className="space-y-1 w-full">
-                              <Label className="text-xs font-medium text-gray-600">
-                                Work Type
-                              </Label>
-                              {loadingItems ? (
-                                <div className="flex items-center gap-2">
-                                  <Loader2 className="animate-spin h-4 w-4" />
-                                  <span className="text-sm">Loading work types...</span>
-                                </div>
-                              ) : (
-                                <Select
-                                  value={material.work_type}
-                                  onValueChange={(value) =>
-                                    updateMaterialSold(index, "work_type", value)
-                                  }
-                                >
-                                  <SelectTrigger className="h-9 text-sm w-full truncate sm:max-w-xs">
-                                    <SelectValue placeholder="Select work type" />
-                                  </SelectTrigger>
-                                  <SelectContent className="bg-white max-w-full sm:max-w-xs">
-                                    <SelectItem value="none">Select work type</SelectItem>
-                                    {items.map((item) => (
-                                      <SelectItem key={item.name} value={item.name}>
-                                        <div className="flex justify-between w-full truncate">
-                                          <span className="truncate">
-                                            {item.item_name || item.name}
-                                          </span>
-                                        </div>
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              )}
-                            </div>
-
-                            {/* <div className="flex gap-2">
-                            <div className="space-y-1">
-                              <Label className="text-xs font-medium text-gray-600">
-                                Size
-                              </Label>
+                          </div>
+                          <div className="flex gap-2 w-full">
+                            {/* Size - 40% */}
+                            <div className="space-y-1 w-[40%]">
+                              <Label className="text-xs font-medium text-gray-600">Size</Label>
                               <Input
                                 placeholder="Size"
                                 value={material.size}
                                 onChange={(e) =>
-                                  updateMaterialSold(
-                                    index,
-                                    "size",
-                                    e.target.value
-                                  )
+                                  updatePressingCharge(index, "size", e.target.value)
                                 }
                                 className="h-9 text-sm"
                               />
                             </div>
-                            <div className="space-y-1">
-                              <Label className="text-xs font-medium text-gray-600">
-                                Thickness
-                              </Label>
+
+                            {/* Thickness - 60% */}
+                            <div className="space-y-1 w-[60%]">
+                              <Label className="text-xs font-medium text-gray-600">Thickness</Label>
                               <Input
                                 placeholder="Thickness"
                                 value={material.thickness}
                                 onChange={(e) =>
-                                  updateMaterialSold(
-                                    index,
-                                    "thickness",
-                                    e.target.value
-                                  )
+                                  updatePressingCharge(index, "thickness", e.target.value)
                                 }
                                 className="h-9 text-sm"
                               />
                             </div>
-                          </div> */}
-
-
-                            <div className="flex gap-2 w-full">
-                              {/* Size - 40% */}
-                              <div className="space-y-1 w-[40%]">
-                                <Label className="text-xs font-medium text-gray-600">Size</Label>
-                                <Input
-                                  placeholder="Size"
-                                  value={material.size}
-                                  onChange={(e) =>
-                                    updatePressingCharge(index, "size", e.target.value)
-                                  }
-                                  className="h-9 text-sm"
-                                />
-                              </div>
-
-                              {/* Thickness - 60% */}
-                              <div className="space-y-1 w-[60%]">
-                                <Label className="text-xs font-medium text-gray-600">Thickness</Label>
-                                <Input
-                                  placeholder="Thickness"
-                                  value={material.thickness}
-                                  onChange={(e) =>
-                                    updatePressingCharge(index, "thickness", e.target.value)
-                                  }
-                                  className="h-9 text-sm"
-                                />
-                              </div>
-                            </div>
-                            {/* <div className="flex gap-2">
-                            <div className="space-y-1">
+                          </div>
+                          <div className="flex gap-2  w-full">
+                            {/* No of Sides - 40% */}
+                            <div className="space-y-1 w-[40%]">
                               <Label className="text-xs font-medium text-gray-600">
                                 No of Sides
                               </Label>
@@ -1400,60 +1328,11 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                                 min="1"
                                 value={material.no_of_sides || ""}
                                 onChange={(e) =>
-                                  updateMaterialSold(
-                                    index,
-                                    "no_of_sides",
-                                    e.target.value
-                                  )
+                                  updatePressingCharge(index, "no_of_sides", e.target.value)
                                 }
                                 className="h-9 text-sm"
                               />
                             </div>
-                          </div>
-                          <div className="space-y-1">
-                            <Label className="text-xs border-none font-medium text-gray-600">
-                              Price
-                            </Label>
-                            <div className="flex rounded-md border border-black overflow-hidden">
-                              <Input
-                                placeholder="0.00"
-                                type="number"
-                                value={material.price || ""}
-                                onChange={(e) =>
-                                  updateMaterialSold(
-                                    index,
-                                    "price",
-                                    e.target.value
-                                  )
-                                }
-                                className="h-9 text-sm   flex-1"
-                                style={{
-                                  WebkitAppearance: "none",
-                                  MozAppearance: "textfield",
-                                }}
-                              />
-                              <span className="inline-flex items-center px-3 border-gray-950 ">
-                                AED
-                              </span>
-                            </div>
-                          </div> */}
-                            <div className="flex gap-2  w-full">
-                              {/* No of Sides - 40% */}
-                              <div className="space-y-1 w-[40%]">
-                                <Label className="text-xs font-medium text-gray-600">
-                                  No of Sides
-                                </Label>
-                                <Input
-                                  placeholder="No of Sides"
-                                  type="number"
-                                  min="1"
-                                  value={material.no_of_sides || ""}
-                                  onChange={(e) =>
-                                    updatePressingCharge(index, "no_of_sides", e.target.value)
-                                  }
-                                  className="h-9 text-sm"
-                                />
-                              </div>
 
                               {/* Price - 60% */}
                               <div className="space-y-1 w-[60%]">
@@ -1479,49 +1358,40 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                               </div>
                             </div>
 
-                          </div>
-                          {/* <div className="space-y-1">
-                            <Label className="text-xs font-medium text-gray-600">
-                              Amount
-                            </Label>
-                            <Input
-                              readOnly
-                              value={material.amount || 0}
-                              className="bg-gray-100 h-9 text-sm"
-                            />
-                          </div> */}
-
-                          <div className=" flex justify-between ">
-                            <Label className="text-xs pt-2 font-medium text-gray-600">
-                              Total Amount : {material.amount || 0} AED
-                            </Label>
-                            <div className="flex items-end">
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                className="text-red-500 hover:text-red-700"
-                                onClick={() => removeMaterialSold(index)}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </div>
-
                         </div>
-                      ))
-                    )}
-                    <Button
-                      type="button"
-                      onClick={addMaterialSold}
-                      size="sm"
-                      className="bg-purple-600 hover:bg-purple-700 text-white shadow-sm"
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Material
-                    </Button>
-                  </div>
+                        
+  
+                        <div className=" flex justify-between ">
+                          <Label className="text-xs pt-2 font-medium text-gray-600">
+                           Total Amount : {material.amount || 0} AED
+                          </Label>
+                           <div className="flex items-end">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="text-red-500 hover:text-red-700"
+                            onClick={() => removeMaterialSold(index)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        </div>
+                       
+                      </div>
+                    ))
+                  )}
+                  <Button
+                    type="button"
+                    onClick={addMaterialSold}
+                    size="sm"
+                    className="bg-purple-600 hover:bg-purple-700 text-white shadow-sm"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Material
+                  </Button>
                 </div>
+              </div>
 
                 {/* Action Buttons */}
                 <div className="sticky bottom-0 bg-white border-t border-gray-200 p-6 shadow-lg">
