@@ -315,7 +315,7 @@ export default function ProjectManagerDashboard() {
             <div className="max-w-7xl mx-auto pb-4 pt-2 px-4">
               <div className="pb-6">
                 {/* Floating Action Buttons for Desktop */}
-                <div className="hidden lg:flex justify-end gap-4 mb-4">
+                {/* <div className="hidden lg:flex justify-end gap-4 mb-4">
                   <Button
                     onClick={openJobCardForm}
                     className="bg-emerald-600 hover:bg-emerald-700 shadow-lg"
@@ -330,7 +330,7 @@ export default function ProjectManagerDashboard() {
                     <Wrench className="h-4 w-4 mr-2" />
                     New JC - Other Service
                   </Button>
-                </div>
+                </div> */}
                 {renderContent()}
               </div>
             </div>
