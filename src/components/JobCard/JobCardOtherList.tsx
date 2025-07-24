@@ -1,7 +1,10 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { useJobCardsOther, type JobCardOther } from '../../context/JobCardOtherContext';
-import { Button } from '../ui/button';
-import { Dialog } from '../ui/dialog';
+import React, { useEffect, useMemo, useState } from "react";
+import {
+  useJobCardsOther,
+  type JobCardOther,
+} from "../../context/JobCardOtherContext";
+import { Button } from "../ui/button";
+import { Dialog } from "../ui/dialog";
 import {
   Calendar,
   Check,
@@ -12,7 +15,7 @@ import {
   Trash2,
   Wrench,
 } from "lucide-react";
-import JobCardOtherDetails from './JobCardOtherDetails';
+import JobCardOtherDetails from "./JobCardOtherDetails";
 import DeleteConfirmation from "../../common/DeleteComfirmation";
 
 interface Props {
@@ -21,7 +24,8 @@ interface Props {
 }
 
 const JobCardOtherList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
-  const { jobCardsOther, loading, fetchJobCardsOther, deleteJobCardOther } = useJobCardsOther();
+  const { jobCardsOther, loading, fetchJobCardsOther, deleteJobCardOther } =
+    useJobCardsOther();
   const [selectedCard, setSelectedCard] = useState<JobCardOther | null>(null);
   const [showFilters, setShowFilters] = useState(false);
 
@@ -48,7 +52,7 @@ const JobCardOtherList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
   // Helper function to calculate total amount from services
   const calculateTotalAmount = (card: JobCardOther) => {
     if (!card.services || card.services.length === 0) return 0;
-    
+
     return card.services.reduce(
       (sum, service) => sum + parseFloat(service.price?.toString() || "0"),
       0
@@ -58,9 +62,9 @@ const JobCardOtherList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
   // Helper function to get all unique service types for filter
   const getUniqueServiceTypes = useMemo(() => {
     const types = new Set<string>();
-    jobCardsOther.forEach(card => {
+    jobCardsOther.forEach((card) => {
       if (card.services && card.services.length > 0) {
-        card.services.forEach(service => {
+        card.services.forEach((service) => {
           if (service.work_type) {
             types.add(service.work_type);
           }
@@ -71,7 +75,12 @@ const JobCardOtherList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
   }, [jobCardsOther]);
 
   // Helper function to check if date is within range
-  const isDateInRange = (cardStartDate: Date, cardFinishDate: Date, fromDate: Date, toDate: Date) => {
+  const isDateInRange = (
+    cardStartDate: Date,
+    cardFinishDate: Date,
+    fromDate: Date,
+    toDate: Date
+  ) => {
     const normalizeDate = (date: Date) => {
       const normalized = new Date(date);
       normalized.setHours(0, 0, 0, 0);
@@ -83,7 +92,10 @@ const JobCardOtherList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
     const normalizedFrom = normalizeDate(fromDate);
     const normalizedTo = normalizeDate(toDate);
 
-    return normalizedCardStart <= normalizedTo && normalizedCardFinish >= normalizedFrom;
+    return (
+      normalizedCardStart <= normalizedTo &&
+      normalizedCardFinish >= normalizedFrom
+    );
   };
 
   // Filter job cards based on all criteria
@@ -102,7 +114,7 @@ const JobCardOtherList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
 
       // Date filter logic
       let isInDateRange = false;
-      
+
       if (isDefaultFilter) {
         // Default behavior: show only cards that start today
         const today = new Date();
@@ -112,28 +124,45 @@ const JobCardOtherList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
         isInDateRange = cardStart.getTime() === today.getTime();
       } else {
         // Custom date range: show cards that overlap with the selected date range
-        isInDateRange = isDateInRange(cardStartDate, cardFinishDate, filterFromDate, filterToDate);
+        isInDateRange = isDateInRange(
+          cardStartDate,
+          cardFinishDate,
+          filterFromDate,
+          filterToDate
+        );
       }
 
       // Search filter
       const matchesSearch =
         searchQuery === "" ||
         card.party_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (card.services || []).some((service) =>
-          service.work_type?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          service.work_description?.toLowerCase().includes(searchQuery.toLowerCase())
+        (card.services || []).some(
+          (service) =>
+            service.work_type
+              ?.toLowerCase()
+              .includes(searchQuery.toLowerCase()) ||
+            service.work_description
+              ?.toLowerCase()
+              .includes(searchQuery.toLowerCase())
         );
 
       // Service type filter
       const matchesServiceType =
         serviceTypeFilter === "all" ||
-        (card.services || []).some((service) =>
-          service.work_type === serviceTypeFilter
+        (card.services || []).some(
+          (service) => service.work_type === serviceTypeFilter
         );
 
       return isInDateRange && matchesSearch && matchesServiceType;
     });
-  }, [jobCardsOther, fromDate, toDate, searchQuery, serviceTypeFilter, isDefaultFilter]);
+  }, [
+    jobCardsOther,
+    fromDate,
+    toDate,
+    searchQuery,
+    serviceTypeFilter,
+    isDefaultFilter,
+  ]);
 
   const formatDate = (dateString: string) => {
     if (!dateString) return "N/A";
@@ -147,11 +176,11 @@ const JobCardOtherList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
 
   const getServicesSummary = (card: JobCardOther) => {
     if (!card.services || card.services.length === 0) return "No services";
-    
+
     if (card.services.length === 1) {
       return card.services[0].work_type || "Service";
     }
-    
+
     return `${card.services.length} Services`;
   };
 
@@ -159,12 +188,12 @@ const JobCardOtherList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
     setShowFilters(false);
     // Mark as custom filter if dates are different from today or other filters are applied
     const today = new Date().toISOString().split("T")[0];
-    const hasCustomFilters = 
+    const hasCustomFilters =
       searchQuery !== "" ||
       serviceTypeFilter !== "all" ||
       fromDate !== today ||
       toDate !== today;
-    
+
     setIsDefaultFilter(!hasCustomFilters);
   };
 
@@ -230,7 +259,7 @@ const JobCardOtherList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
       {/* Compact Header */}
       <div className="flex items-center justify-between mb-3">
         <h2 className="text-xl font-bold text-blue-800 flex items-center gap-2">
-           Job Cards
+          Job Cards
           <span className="bg-blue-50 text-blue-700 text-sm font-medium px-2 py-0.5 rounded-full border border-blue-200">
             {filteredJobCards.length}
           </span>
@@ -261,7 +290,12 @@ const JobCardOtherList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
               value={searchQuery}
               onChange={(e) => {
                 setSearchQuery(e.target.value);
-                setIsDefaultFilter(e.target.value === "" && serviceTypeFilter === "all" && fromDate === todayString && toDate === todayString);
+                setIsDefaultFilter(
+                  e.target.value === "" &&
+                    serviceTypeFilter === "all" &&
+                    fromDate === todayString &&
+                    toDate === todayString
+                );
               }}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
@@ -333,11 +367,11 @@ const JobCardOtherList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
 
             <div className="flex justify-between items-center">
               <div className="text-xs text-gray-500">
-                {isDefaultFilter ? (
-                  "Showing today's job cards by default"
-                ) : (
-                  `Custom filter: ${formatDate(fromDate)} to ${formatDate(toDate)}`
-                )}
+                {isDefaultFilter
+                  ? "Showing today's job cards by default"
+                  : `Custom filter: ${formatDate(fromDate)} to ${formatDate(
+                      toDate
+                    )}`}
               </div>
               <div className="flex gap-2">
                 <Button
@@ -370,10 +404,9 @@ const JobCardOtherList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
             No service job cards found
           </h3>
           <p className="text-sm text-gray-500 mb-3">
-            {isDefaultFilter 
+            {isDefaultFilter
               ? "No service job cards scheduled for today. Try adjusting the date range or create a new job card."
-              : "No service job cards match your current filters. Try adjusting your search criteria."
-            }
+              : "No service job cards match your current filters. Try adjusting your search criteria."}
           </p>
           <div className="flex gap-2 justify-center">
             {!isDefaultFilter && (
@@ -397,82 +430,81 @@ const JobCardOtherList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
-  {filteredJobCards.map((card) => {
-    const totalAmount = calculateTotalAmount(card);
-    const servicesSummary = getServicesSummary(card);
+          {filteredJobCards.map((card) => {
+            const totalAmount = calculateTotalAmount(card);
+            const servicesSummary = getServicesSummary(card);
 
-    return (
-      <div
-        key={card.name}
-        onClick={() => setSelectedCard(card)}
-        className="relative bg-white border border-gray-200 rounded-lg hover:shadow-sm transition-all duration-150 cursor-pointer group overflow-hidden"
-      >
-        <div className="p-2 space-y-1.5">
-          {/* Top Row - Compact Header */}
-          <div className="flex justify-between items-start gap-2">
-            <div>
-               <div className="flex items-center gap-1 text-xs text-gray-500 mt-0.5">
-                <Calendar className="h-3 w-3 flex-shrink-0" />
-                <span className="truncate">
-                  {formatDate(card.start_date)} - {formatDate(card.finish_date)}
-                </span>
+            return (
+              <div
+                key={card.name}
+                onClick={() => setSelectedCard(card)}
+                className="relative bg-white border border-gray-200 rounded-lg hover:shadow-sm transition-all duration-150 cursor-pointer group overflow-hidden"
+              >
+                <div className="p-2 space-y-1.5">
+                  {/* Top Row - Compact Header */}
+                  <div className="flex justify-between items-start gap-2">
+                    <div>
+                      <div className="flex items-center gap-1 text-xs text-gray-500 mt-0.5">
+                        <Calendar className="h-3 w-3 flex-shrink-0" />
+                        <span className="truncate">
+                          {formatDate(card.start_date)} -{" "}
+                          {formatDate(card.finish_date)}
+                        </span>
+                      </div>
+                      <p className="font-semibold text-gray-900 text-sm truncate">
+                        {card.party_name || "No Customer Name"}
+                      </p>
+                    </div>
+                    {totalAmount > 0 && (
+                      <span className="font-medium text-blue-700 text-sm whitespace-nowrap">
+                        {totalAmount} AED
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Address - More compact */}
+                  <p className="text-xs text-gray-600 leading-tight line-clamp-2">
+                    {[card.property_no, card.building_name, card.area]
+                      .filter(Boolean)
+                      .join(", ") || "No Address"}
+                  </p>
+
+                  {/* Services and Project ID in one row */}
+                  <div className="flex items-center justify-between gap-1">
+                    <div className="flex items-center gap-1 text-xs">
+                      <Wrench className="h-3 w-3 text-blue-500 flex-shrink-0" />
+                      <span className="text-blue-700 font-medium truncate">
+                        {servicesSummary}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-end pt-1">
+                      <div className="flex gap-0.5">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => handleEdit(card, e)}
+                          className="h-5 w-5 p-0 hover:bg-blue-50"
+                        >
+                          <Edit className="h-3 w-3 text-blue-700" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => handleDeleteClick(card.name, e)}
+                          className="h-5 w-5 p-0 hover:bg-red-50"
+                        >
+                          <Trash2 className="h-3 w-3 text-red-500" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Bottom Row - Actions - More compact */}
+                </div>
               </div>
-              <p className="font-semibold text-gray-900 text-sm truncate">
-                {card.party_name || "No Customer Name"}
-              </p>
-             
-            </div>
-            {totalAmount > 0 && (
-              <span className="font-medium text-blue-700 text-sm whitespace-nowrap">
-                {totalAmount} AED
-              </span>
-            )}
-          </div>
-
-          {/* Address - More compact */}
-          <p className="text-xs text-gray-600 leading-tight line-clamp-2">
-            {[card.property_no, card.building_name, card.area]
-              .filter(Boolean)
-              .join(", ") || "No Address"}
-          </p>
-
-          {/* Services and Project ID in one row */}
-          <div className="flex items-center justify-between gap-1">
-            <div className="flex items-center gap-1 text-xs">
-              <Wrench className="h-3 w-3 text-blue-500 flex-shrink-0" />
-              <span className="text-blue-700 font-medium truncate">
-                {servicesSummary}
-              </span>
-            </div>
-            <div className="flex items-center justify-end pt-1">
-            <div className="flex gap-0.5">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={(e) => handleEdit(card, e)}
-                className="h-5 w-5 p-0 hover:bg-blue-50"
-              >
-                <Edit className="h-3 w-3 text-blue-700" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={(e) => handleDeleteClick(card.name, e)}
-                className="h-5 w-5 p-0 hover:bg-red-50"
-              >
-                <Trash2 className="h-3 w-3 text-red-500" />
-              </Button>
-            </div>
-          </div>
-          </div>
-
-          {/* Bottom Row - Actions - More compact */}
-          
+            );
+          })}
         </div>
-      </div>
-    );
-  })}
-</div>
       )}
 
       {/* Details Modal */}

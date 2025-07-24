@@ -432,7 +432,6 @@ const JobCardList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
                   {/* Top Row - Compact Header */}
                   <div className="flex justify-between items-start gap-2">
                     <div>
-                      
                       <div className="flex items-center gap-1 text-xs text-gray-500 mt-0.5">
                         <Calendar className="h-3 w-3 flex-shrink-0" />
                         <span className="truncate">
