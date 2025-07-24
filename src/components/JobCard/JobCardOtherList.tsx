@@ -1,193 +1,19 @@
-// import React, { useEffect, useState } from 'react';
-// import { useJobCardsOther, type JobCardOther } from '../../context/JobCardOtherContext';
-// import { Button } from '../ui/button';
-// import { Edit, Trash2, Plus, Calendar} from 'lucide-react';
-// import JobCardOtherDetails from './JobCardOtherDetails';
-// import { Dialog } from '../ui/dialog';
-
-// interface Props {
-//   onEdit: (jobCard: JobCardOther) => void;
-//   onOpenForm: () => void;
-// }
-
-// const JobCardOtherList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
-//   const { jobCardsOther, loading, fetchJobCardsOther, deleteJobCardOther } = useJobCardsOther();
-//   const [selectedCard, setSelectedCard] = useState<JobCardOther | null>(null);
-
-//   useEffect(() => {
-//     fetchJobCardsOther();
-//   }, [fetchJobCardsOther]);
-
-//   const handleDelete = async (id: string) => {
-//     if (!window.confirm('Are you sure you want to delete this job card?')) return;
-//     try {
-//       await deleteJobCardOther(id);
-//     } catch (err) {
-//       console.error(err);
-//     }
-//   };
-
-//   if (loading) {
-//     return (
-//       <div className="flex items-center justify-center p-8">
-//         <div className="animate-spin h-8 w-8 border-4 border-blue-600 border-t-transparent rounded-full" />
-//       </div>
-//     );
-//   }
-
-//   return (
-//     <>
-//       {/* Header */}
-//       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 px-4 sm:px-0">
-//         <div className="flex items-center space-x-3 mb-2 sm:mb-0">
-          
-//           <div>
-//             <h2 className="text-2xl font-bold text-gray-900">
-//               Other Services Job Cards ({jobCardsOther.length})
-//             </h2>
-            
-//           </div>
-//         </div>
-        
-//       </div>
-
-//       {/* Empty state */}
-//       {jobCardsOther.length === 0 ? (
-//         <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
-//           {/* <div className="bg-gray-100 p-4 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-//             <Wrench className="h-8 w-8 text-gray-400" />
-//           </div> */}
-//           <p className="text-gray-500 text-lg mb-2">No job cards found</p>
-//           <p className="text-gray-400 text-sm mb-4">Get started by creating your first job card</p>
-//           <Button 
-//             onClick={onOpenForm} 
-//             className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-//           >
-//             <Plus className="h-4 w-4 mr-2" />
-//             Create Your First Job Card
-//           </Button>
-//         </div>
-//       ) : (
-//         /* Grid of cards */
-//         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 px-4 sm:px-0">
-//           {jobCardsOther.map((card) => (
-//             <div
-//               key={card.name}
-//               onClick={() => setSelectedCard(card)}
-//               className="cursor-pointer bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-lg transition-all duration-300 hover:border-blue-300 group"
-//             >
-//               {/* Header */}
-//               <div className="flex items-start justify-between mb-4">
-//                 {/* <div className="bg-blue-50 p-2 rounded-lg group-hover:bg-blue-100 transition-colors">
-//                   <Wrench className="h-5 w-5 text-blue-600" />
-//                 </div> */}
-//                 {/* <div className="text-xs text-gray-500">
-//                   {new Date(card.creation).toLocaleDateString()}
-//                 </div> */}
-//               </div>
-
-//               {/* Customer Info */}
-//               <div className="mb-4">
-//                 <h3 className="text-lg font-semibold text-gray-900 mb-1 group-hover:text-blue-700 transition-colors">
-//                   {card.party_name || 'No Customer Name'}
-//                 </h3>
-//                 {/* <div className="flex items-center text-sm text-gray-600 mb-2">
-//                   <MapPin className="h-4 w-4 mr-1 text-gray-400" />
-//                   <span>{card.building_name || 'No Building'}</span>
-//                 </div> */}
-//                 <div className="text-sm text-gray-600">
-//                   <span className="font-medium">Area:</span> {card.area || 'N/A'}
-//                 </div>
-//                 <div className="text-sm text-gray-600">
-//                   <span className="font-medium">Property:</span> {card.property_no || 'N/A'}
-//                 </div>
-//               </div>
-
-//               {/* Dates */}
-//               <div className="mb-2 p-2 rounded-lg">
-//                 <div className="flex gap-4 text-sm">
-//                   <div className="flex items-center text-gray-700">
-//                     <Calendar className="h-4 w-4 mr-2 text-gray-400" />
-//                     <span className="font-medium">Start:</span>
-//                     <span className="ml-1">{card.start_date || 'N/A'}</span>
-//                   </div>
-//                   <div className="flex items-center text-gray-700">
-//                     <Calendar className="h-4 w-4 mr-2 text-gray-400" />
-//                     <span className="font-medium">Finish:</span>
-//                     <span className="ml-1">{card.finish_date || 'N/A'}</span>
-//                   </div>
-//                 </div>
-//               </div>
-
-//               {/* Services Count */}
-//               {/* <div className="mb-4 flex items-center text-sm text-blue-600">
-//                 <Wrench className="h-4 w-4 mr-1" />
-//                 <span>
-//                   {card.services?.length || 0} service{(card.services?.length || 0) !== 1 ? 's' : ''}
-//                 </span>
-//               </div> */}
-
-//               {/* Project Info */}
-//               {card.project_id_no && (
-//                 <div className="mb-4 text-sm text-gray-600">
-//                   <span className="font-medium">Project ID:</span> {card.project_id_no}
-//                 </div>
-//               )}
-
-//               {/* Edit/Delete buttons */}
-//               <div
-//                 className="flex justify-end space-x-2 pt-4 border-t border-gray-100"
-//                 onClick={(e) => e.stopPropagation()}
-//               >
-//                 <Button
-//                   variant="outline"
-//                   size="sm"
-//                   onClick={() => onEdit(card)}
-//                   className="hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700"
-//                 >
-//                   <Edit className="h-4 w-4" />
-//                 </Button>
-//                 <Button
-//                   variant="outline"
-//                   size="sm"
-//                   className="text-red-600 hover:text-red-700 hover:bg-red-50 hover:border-red-300"
-//                   onClick={() => handleDelete(card.name)}
-//                 >
-//                   <Trash2 className="h-4 w-4" />
-//                 </Button>
-//               </div>
-//             </div>
-//           ))}
-//         </div>
-//       )}
-
-//       {/* Details Modal */}
-//       <Dialog
-//         open={!!selectedCard}
-//         onOpenChange={() => setSelectedCard(null)}
-//       >
-//         {selectedCard && (
-//           <JobCardOtherDetails
-//             card={selectedCard}
-//             onClose={() => setSelectedCard(null)}
-//           />
-//         )}
-//       </Dialog>
-//     </>
-//   );
-// };
-
-// export default JobCardOtherList;
-
-
-
-
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useJobCardsOther, type JobCardOther } from '../../context/JobCardOtherContext';
 import { Button } from '../ui/button';
-import { Edit, Trash2, Plus, Calendar, MapPin, User } from 'lucide-react';
-import JobCardOtherDetails from './JobCardOtherDetails';
 import { Dialog } from '../ui/dialog';
+import {
+  Calendar,
+  Check,
+  Edit,
+  Filter,
+  Plus,
+  Search,
+  Trash2,
+  Wrench,
+} from "lucide-react";
+import JobCardOtherDetails from './JobCardOtherDetails';
+import DeleteConfirmation from "../../common/DeleteComfirmation";
 
 interface Props {
   onEdit: (jobCard: JobCardOther) => void;
@@ -197,158 +23,460 @@ interface Props {
 const JobCardOtherList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
   const { jobCardsOther, loading, fetchJobCardsOther, deleteJobCardOther } = useJobCardsOther();
   const [selectedCard, setSelectedCard] = useState<JobCardOther | null>(null);
+  const [showFilters, setShowFilters] = useState(false);
+
+  // Filter states - Initialize with today's date
+  const todayString = new Date().toISOString().split("T")[0];
+  const [fromDate, setFromDate] = useState(todayString);
+  const [toDate, setToDate] = useState(todayString);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [serviceTypeFilter, setServiceTypeFilter] = useState<string>("all");
+  const [isDefaultFilter, setIsDefaultFilter] = useState(true);
+
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [cardToDelete, setCardToDelete] = useState<string | null>(null);
 
   useEffect(() => {
     fetchJobCardsOther();
   }, [fetchJobCardsOther]);
 
-  const handleDelete = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this job card?')) return;
-    try {
-      await deleteJobCardOther(id);
-    } catch (err) {
-      console.error(err);
+  const handleEdit = (card: JobCardOther, e: React.MouseEvent) => {
+    e.stopPropagation();
+    onEdit(card);
+  };
+
+  // Helper function to calculate total amount from services
+  const calculateTotalAmount = (card: JobCardOther) => {
+    if (!card.services || card.services.length === 0) return 0;
+    
+    return card.services.reduce(
+      (sum, service) => sum + parseFloat(service.price?.toString() || "0"),
+      0
+    );
+  };
+
+  // Helper function to get all unique service types for filter
+  const getUniqueServiceTypes = useMemo(() => {
+    const types = new Set<string>();
+    jobCardsOther.forEach(card => {
+      if (card.services && card.services.length > 0) {
+        card.services.forEach(service => {
+          if (service.work_type) {
+            types.add(service.work_type);
+          }
+        });
+      }
+    });
+    return Array.from(types).sort();
+  }, [jobCardsOther]);
+
+  // Helper function to check if date is within range
+  const isDateInRange = (cardStartDate: Date, cardFinishDate: Date, fromDate: Date, toDate: Date) => {
+    const normalizeDate = (date: Date) => {
+      const normalized = new Date(date);
+      normalized.setHours(0, 0, 0, 0);
+      return normalized;
+    };
+
+    const normalizedCardStart = normalizeDate(cardStartDate);
+    const normalizedCardFinish = normalizeDate(cardFinishDate);
+    const normalizedFrom = normalizeDate(fromDate);
+    const normalizedTo = normalizeDate(toDate);
+
+    return normalizedCardStart <= normalizedTo && normalizedCardFinish >= normalizedFrom;
+  };
+
+  // Filter job cards based on all criteria
+  const filteredJobCards = useMemo(() => {
+    return jobCardsOther.filter((card) => {
+      // Parse card dates
+      const cardStartDate = new Date(card.start_date || "");
+      const cardFinishDate = new Date(card.finish_date || "");
+      const filterFromDate = new Date(fromDate);
+      const filterToDate = new Date(toDate);
+
+      // Skip invalid dates
+      if (isNaN(cardStartDate.getTime()) || isNaN(cardFinishDate.getTime())) {
+        return false;
+      }
+
+      // Date filter logic
+      let isInDateRange = false;
+      
+      if (isDefaultFilter) {
+        // Default behavior: show only cards that start today
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const cardStart = new Date(cardStartDate);
+        cardStart.setHours(0, 0, 0, 0);
+        isInDateRange = cardStart.getTime() === today.getTime();
+      } else {
+        // Custom date range: show cards that overlap with the selected date range
+        isInDateRange = isDateInRange(cardStartDate, cardFinishDate, filterFromDate, filterToDate);
+      }
+
+      // Search filter
+      const matchesSearch =
+        searchQuery === "" ||
+        card.party_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (card.services || []).some((service) =>
+          service.work_type?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          service.work_description?.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+
+      // Service type filter
+      const matchesServiceType =
+        serviceTypeFilter === "all" ||
+        (card.services || []).some((service) =>
+          service.work_type === serviceTypeFilter
+        );
+
+      return isInDateRange && matchesSearch && matchesServiceType;
+    });
+  }, [jobCardsOther, fromDate, toDate, searchQuery, serviceTypeFilter, isDefaultFilter]);
+
+  const formatDate = (dateString: string) => {
+    if (!dateString) return "N/A";
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "2-digit",
+    });
+  };
+
+  const getServicesSummary = (card: JobCardOther) => {
+    if (!card.services || card.services.length === 0) return "No services";
+    
+    if (card.services.length === 1) {
+      return card.services[0].work_type || "Service";
+    }
+    
+    return `${card.services.length} Services`;
+  };
+
+  const applyFilters = () => {
+    setShowFilters(false);
+    // Mark as custom filter if dates are different from today or other filters are applied
+    const today = new Date().toISOString().split("T")[0];
+    const hasCustomFilters = 
+      searchQuery !== "" ||
+      serviceTypeFilter !== "all" ||
+      fromDate !== today ||
+      toDate !== today;
+    
+    setIsDefaultFilter(!hasCustomFilters);
+  };
+
+  const clearFilters = () => {
+    const today = new Date().toISOString().split("T")[0];
+    setFromDate(today);
+    setToDate(today);
+    setServiceTypeFilter("all");
+    setSearchQuery("");
+    setIsDefaultFilter(true);
+  };
+
+  // Handle date changes
+  const handleFromDateChange = (value: string) => {
+    setFromDate(value);
+    if (value > toDate) {
+      setToDate(value);
     }
   };
 
-  const truncateText = (text: string, maxLength: number) => {
-    if (!text) return 'N/A';
-    return text.length > maxLength ? `${text.substring(0, maxLength)}...` : text;
+  const handleToDateChange = (value: string) => {
+    setToDate(value);
+    if (value < fromDate) {
+      setFromDate(value);
+    }
+  };
+
+  const handleDeleteClick = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCardToDelete(id);
+    setDeleteModalOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!cardToDelete) return;
+
+    try {
+      await deleteJobCardOther(cardToDelete);
+      setDeleteModalOpen(false);
+      setCardToDelete(null);
+    } catch (err) {
+      console.error(err);
+      setDeleteModalOpen(false);
+      setCardToDelete(null);
+    }
+  };
+
+  const handleCancelDelete = () => {
+    setDeleteModalOpen(false);
+    setCardToDelete(null);
   };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
-        <div className="animate-spin h-8 w-8 border-4 border-blue-600 border-t-transparent rounded-full" />
+        <div className="animate-spin h-6 w-6 border-2 border-blue-600 border-t-transparent rounded-full" />
       </div>
     );
   }
 
   return (
-    <>
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 px-4 sm:px-0">
-        <div className="flex items-center space-x-3 mb-2 sm:mb-0">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">
-              Other Services Job Cards ({jobCardsOther.length})
-            </h2>
-          </div>
-        </div>
+    <div className="pb-10 max-w-7xl mx-auto">
+      {/* Compact Header */}
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-xl font-bold text-blue-800 flex items-center gap-2">
+           Job Cards
+          <span className="bg-blue-50 text-blue-700 text-sm font-medium px-2 py-0.5 rounded-full border border-blue-200">
+            {filteredJobCards.length}
+          </span>
+          {isDefaultFilter && (
+            <span className="text-xs bg-purple-50 text-purple-700 px-2 py-0.5 rounded-full border border-purple-200">
+              Today's Jobs
+            </span>
+          )}
+        </h2>
+        <Button
+          onClick={onOpenForm}
+          size="sm"
+          className="bg-blue-600 hover:bg-blue-700 text-white rounded-md px-3 py-2"
+        >
+          <Plus className="h-4 w-4 mr-1" />
+          Add
+        </Button>
       </div>
 
-      {/* Empty state */}
-      {jobCardsOther.length === 0 ? (
-        <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
-          <p className="text-gray-500 text-lg mb-2">No job cards found</p>
-          <p className="text-gray-400 text-sm mb-4">Get started by creating your first job card</p>
-          <Button 
-            onClick={onOpenForm} 
-            className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+      {/* Compact Search and Filter Bar */}
+      <div className="bg-white mb-4">
+        <div className="flex gap-2">
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search customer name, service type or description..."
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setIsDefaultFilter(e.target.value === "" && serviceTypeFilter === "all" && fromDate === todayString && toDate === todayString);
+              }}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowFilters(!showFilters)}
+            className={`px-3 py-2 border rounded-md ${
+              showFilters
+                ? "bg-blue-50 border-blue-300 text-blue-700"
+                : "border-gray-300"
+            }`}
           >
-            <Plus className="h-4 w-4 mr-2" />
-            Create Your First Job Card
+            <Filter className="h-4 w-4" />
           </Button>
         </div>
-      ) : (
-        /* Grid of cards */
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 px-4 sm:px-0">
-          {jobCardsOther.map((card) => (
-            <div
-              key={card.name}
-              onClick={() => setSelectedCard(card)}
-              className="cursor-pointer bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-300 hover:border-blue-300 group h-fit"
-            >
-              {/* Header with Status Badge */}
-             
 
-              {/* Customer Info */}
-              <div className="mb-4">
-                <div className="flex items-start space-x-2 mb-2">
-                  <User className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
-                  <h3 className="text-base font-semibold text-gray-900 group-hover:text-blue-700 transition-colors leading-tight">
-                    {truncateText(card.party_name || 'No Customer Name', 25)}
-                  </h3>
+        {/* Collapsible Filters */}
+        {showFilters && (
+          <div className="mt-3 pt-3 border-t border-gray-200">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+              {/* Date Range */}
+              <div className="col-span-1 md:col-span-2 grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-medium text-gray-600 mb-1 block">
+                    From Date
+                  </label>
+                  <input
+                    type="date"
+                    value={fromDate}
+                    onChange={(e) => handleFromDateChange(e.target.value)}
+                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
                 </div>
-                
-                <div className="space-y-1.5 ml-6">
-                  <div className="flex items-center text-sm text-gray-600">
-                    <MapPin className="h-3 w-3 mr-2 text-gray-400 flex-shrink-0" />
-                    <span className="font-medium mr-1">Area:</span>
-                    <span className="truncate">{truncateText(card.area || 'N/A', 15)}</span>
-                  </div>
-                  
-                  <div className="flex items-center text-sm text-gray-600">
-                    <div className="h-3 w-3 mr-2 flex-shrink-0"></div>
-                    <span className="font-medium mr-1">Property:</span>
-                    <span className="truncate">{truncateText(card.property_no || 'N/A', 15)}</span>
-                  </div>
+
+                <div>
+                  <label className="text-xs font-medium text-gray-600 mb-1 block">
+                    To Date
+                  </label>
+                  <input
+                    type="date"
+                    value={toDate}
+                    onChange={(e) => handleToDateChange(e.target.value)}
+                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
                 </div>
               </div>
 
-              {/* Dates Section */}
-              <div className="mb-4 bg-gray-50 rounded-lg p-3">
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-xs">
-                    <div className="flex items-center text-gray-600">
-                      <Calendar className="h-3 w-3 mr-1 text-gray-400" />
-                      <span className="font-medium">Start:</span>
-                    </div>
-                    <span className="text-gray-700">{card.start_date || 'N/A'}</span>
-                  </div>
-                  
-                  <div className="flex items-center justify-between text-xs">
-                    <div className="flex items-center text-gray-600">
-                      <Calendar className="h-3 w-3 mr-1 text-gray-400" />
-                      <span className="font-medium">Finish:</span>
-                    </div>
-                    <span className="text-gray-700">{card.finish_date || 'N/A'}</span>
-                  </div>
-                </div>
+              {/* Service Type Filter */}
+              <div>
+                <label className="text-xs font-medium text-gray-600 mb-1 block">
+                  Service Type
+                </label>
+                <select
+                  value={serviceTypeFilter}
+                  onChange={(e) => setServiceTypeFilter(e.target.value)}
+                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                >
+                  <option value="all">All Services</option>
+                  {getUniqueServiceTypes.map((type) => (
+                    <option key={type} value={type}>
+                      {type}
+                    </option>
+                  ))}
+                </select>
               </div>
+            </div>
 
-              {/* Project Info */}
-              {card.project_id_no && (
-                <div className="mb-4 p-2 bg-blue-50 rounded-lg">
-                  <div className="text-xs text-blue-700">
-                    <span className="font-medium">Project ID:</span>
-                    <span className="ml-1 break-all">{truncateText(card.project_id_no, 20)}</span>
-                  </div>
-                </div>
-              )}
-
-              {/* Action Buttons */}
-              <div
-                className="flex justify-end space-x-2 pt-3 border-t border-gray-100"
-                onClick={(e) => e.stopPropagation()}
-              >
+            <div className="flex justify-between items-center">
+              <div className="text-xs text-gray-500">
+                {isDefaultFilter ? (
+                  "Showing today's job cards by default"
+                ) : (
+                  `Custom filter: ${formatDate(fromDate)} to ${formatDate(toDate)}`
+                )}
+              </div>
+              <div className="flex gap-2">
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => onEdit(card)}
-                  className="hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 h-8 px-3"
+                  onClick={clearFilters}
+                  className="px-3 py-1.5 text-xs"
                 >
-                  <Edit className="h-3.5 w-3.5" />
+                  Reset to Today
                 </Button>
                 <Button
-                  variant="outline"
                   size="sm"
-                  className="text-red-600 hover:text-red-700 hover:bg-red-50 hover:border-red-300 h-8 px-3"
-                  onClick={() => handleDelete(card.name)}
+                  onClick={applyFilters}
+                  className="bg-blue-600 hover:bg-blue-700 px-3 py-1.5 text-xs"
                 >
-                  <Trash2 className="h-3.5 w-3.5" />
+                  <Check className="h-3 w-3 mr-1" />
+                  Apply
                 </Button>
               </div>
             </div>
-          ))}
+          </div>
+        )}
+      </div>
+
+      {/* Job Cards Grid */}
+      {filteredJobCards.length === 0 ? (
+        <div className="text-center py-8 bg-white rounded-lg border border-gray-200">
+          <Wrench className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+          <h3 className="text-base font-medium text-gray-900 mb-1">
+            No service job cards found
+          </h3>
+          <p className="text-sm text-gray-500 mb-3">
+            {isDefaultFilter 
+              ? "No service job cards scheduled for today. Try adjusting the date range or create a new job card."
+              : "No service job cards match your current filters. Try adjusting your search criteria."
+            }
+          </p>
+          <div className="flex gap-2 justify-center">
+            {!isDefaultFilter && (
+              <Button
+                onClick={clearFilters}
+                variant="outline"
+                size="sm"
+                className="text-xs"
+              >
+                Show Today's Jobs
+              </Button>
+            )}
+            <Button
+              onClick={onOpenForm}
+              size="sm"
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              Create Service Job Card
+            </Button>
+          </div>
         </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
+  {filteredJobCards.map((card) => {
+    const totalAmount = calculateTotalAmount(card);
+    const servicesSummary = getServicesSummary(card);
+
+    return (
+      <div
+        key={card.name}
+        onClick={() => setSelectedCard(card)}
+        className="relative bg-white border border-gray-200 rounded-lg hover:shadow-sm transition-all duration-150 cursor-pointer group overflow-hidden"
+      >
+        <div className="p-2 space-y-1.5">
+          {/* Top Row - Compact Header */}
+          <div className="flex justify-between items-start gap-2">
+            <div>
+               <div className="flex items-center gap-1 text-xs text-gray-500 mt-0.5">
+                <Calendar className="h-3 w-3 flex-shrink-0" />
+                <span className="truncate">
+                  {formatDate(card.start_date)} - {formatDate(card.finish_date)}
+                </span>
+              </div>
+              <p className="font-semibold text-gray-900 text-sm truncate">
+                {card.party_name || "No Customer Name"}
+              </p>
+             
+            </div>
+            {totalAmount > 0 && (
+              <span className="font-medium text-blue-700 text-sm whitespace-nowrap">
+                {totalAmount} AED
+              </span>
+            )}
+          </div>
+
+          {/* Address - More compact */}
+          <p className="text-xs text-gray-600 leading-tight line-clamp-2">
+            {[card.property_no, card.building_name, card.area]
+              .filter(Boolean)
+              .join(", ") || "No Address"}
+          </p>
+
+          {/* Services and Project ID in one row */}
+          <div className="flex items-center justify-between gap-1">
+            <div className="flex items-center gap-1 text-xs">
+              <Wrench className="h-3 w-3 text-blue-500 flex-shrink-0" />
+              <span className="text-blue-700 font-medium truncate">
+                {servicesSummary}
+              </span>
+            </div>
+            <div className="flex items-center justify-end pt-1">
+            <div className="flex gap-0.5">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={(e) => handleEdit(card, e)}
+                className="h-5 w-5 p-0 hover:bg-blue-50"
+              >
+                <Edit className="h-3 w-3 text-blue-700" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={(e) => handleDeleteClick(card.name, e)}
+                className="h-5 w-5 p-0 hover:bg-red-50"
+              >
+                <Trash2 className="h-3 w-3 text-red-500" />
+              </Button>
+            </div>
+          </div>
+          </div>
+
+          {/* Bottom Row - Actions - More compact */}
+          
+        </div>
+      </div>
+    );
+  })}
+</div>
       )}
 
       {/* Details Modal */}
-      <Dialog
-        open={!!selectedCard}
-        onOpenChange={() => setSelectedCard(null)}
-      >
+      <Dialog open={!!selectedCard} onOpenChange={() => setSelectedCard(null)}>
         {selectedCard && (
           <JobCardOtherDetails
             card={selectedCard}
@@ -356,7 +484,15 @@ const JobCardOtherList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
           />
         )}
       </Dialog>
-    </>
+
+      <DeleteConfirmation
+        isOpen={deleteModalOpen}
+        setIsOpen={setDeleteModalOpen}
+        text="Are you sure you want to delete this service job card? This action cannot be undone."
+        onConfirm={handleConfirmDelete}
+        onCancel={handleCancelDelete}
+      />
+    </div>
   );
 };
 
