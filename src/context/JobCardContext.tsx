@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, {
   createContext,
   useContext,
@@ -31,6 +32,7 @@ export interface PressingCharges {
 }
 
 export interface MaterialSold {
+  
   name?: string;
   owner?: string;
   creation?: string;
