@@ -100,6 +100,7 @@ export interface JobCardFormData {
   ac_v_no_and_date: string;
   material_sold: MaterialSold[];
   pressing_charges: PressingCharges[];
+  docstatus?: number;
 }
 
 interface JobCardContextState {

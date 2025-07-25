@@ -322,8 +322,8 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
   };
 
   const handleCreateCustomer = async () => {
-    if (!newCustomerData.customer_name || !newCustomerData.mobile_no) {
-      toast.error("Customer name and mobile number are required");
+    if (!newCustomerData.customer_name) {
+      toast.error("Customer name is required");
       return;
     }
 
@@ -444,18 +444,18 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
       toast.error("Customer name is required");
       return false;
     }
-    if (!formData.building_name) {
-      toast.error("Building name is required");
-      return false;
-    }
-    if (!formData.property_no) {
-      toast.error("Property number is required");
-      return false;
-    }
-    if (!formData.area) {
-      toast.error("Area is required");
-      return false;
-    }
+    // if (!formData.building_name) {
+    //   toast.error("Building name is required");
+    //   return false;
+    // }
+    // if (!formData.property_no) {
+    //   toast.error("Property number is required");
+    //   return false;
+    // }
+    // if (!formData.area) {
+    //   toast.error("Area is required");
+    //   return false;
+    // }
     if (!formData.start_date) {
       toast.error("Start date is required");
       return false;
@@ -710,7 +710,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                       >
                         <Building className="h-4 w-4 text-gray-500" />
                         <span>
-                          Building Name <span className="text-red-500">*</span>
+                          Building Name
                         </span>
                       </Label>
                       <Input
@@ -726,7 +726,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
 
                     <div className="space-y-2">
                       <Label htmlFor="property_no">
-                        Property No <span className="text-red-500">*</span>
+                        Property No 
                       </Label>
                       <Input
                         id="property_no"
@@ -746,7 +746,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                       >
                         <MapPin className="h-4 w-4 text-gray-500" />
                         <span>
-                          Area <span className="text-red-500">*</span>
+                          Area 
                         </span>
                       </Label>
                       <Input
@@ -1199,7 +1199,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="customer_name">Customer Name</Label>
+              <Label htmlFor="customer_name">Customer Name <span className="text-red-500">*</span></Label>
               <Input
                 id="customer_name"
                 name="customer_name"
@@ -1217,7 +1217,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                 value={newCustomerData.mobile_no}
                 onChange={handleNewCustomerInputChange}
                 placeholder="Enter mobile number"
-                required
+                
               />
             </div>
             <div className="space-y-2">

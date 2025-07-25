@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // /* eslint-disable @typescript-eslint/no-explicit-any */
 import {
   Calendar,
@@ -31,7 +32,7 @@ const JobCardList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
   const [toDate, setToDate] = useState(todayString);
   const [searchQuery, setSearchQuery] = useState("");
   const [purposeFilter, setPurposeFilter] = useState<
-    "all" | "pressing" | "material" | "both"
+    "all" | "pressing" | "material" | "both" | "submitted"
   >("all");
   const [isDefaultFilter, setIsDefaultFilter] = useState(true);
 
@@ -156,7 +157,8 @@ const JobCardList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
         purposeFilter === "all" ||
         (purposeFilter === "both" && cardPurpose === "both") ||
         (purposeFilter === "pressing" && cardPurpose === "pressing") ||
-        (purposeFilter === "material" && cardPurpose === "material");
+        (purposeFilter === "material" && cardPurpose === "material") ||
+        (purposeFilter === "submitted" && card.docstatus === 1);
 
       return isInDateRange && matchesSearch && matchesPurpose;
     });
@@ -318,6 +320,66 @@ const JobCardList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
           </Button>
         </div>
 
+        {/* Quick Filter Buttons */}
+        <div className="flex gap-2 mt-2">
+          <Button
+            variant={purposeFilter === 'pressing' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setPurposeFilter(purposeFilter === 'pressing' ? 'all' : 'pressing')}
+            className="h-8 px-3 text-xs"
+          >
+            P
+          </Button>
+          <Button
+            variant={purposeFilter === 'material' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setPurposeFilter(purposeFilter === 'material' ? 'all' : 'material')}
+            className="h-8 px-3 text-xs"
+          >
+            M
+          </Button>
+          <Button
+            variant={purposeFilter === 'both' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setPurposeFilter(purposeFilter === 'both' ? 'all' : 'both')}
+            className="h-8 px-3 text-xs"
+          >
+            P M
+          </Button>
+          <Button
+            variant={purposeFilter === 'submitted' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setPurposeFilter(purposeFilter === 'submitted' ? 'all' : 'submitted')}
+            className="h-8 px-3 text-xs"
+          >
+            Submitted
+          </Button>
+        </div>
+
+        {/* Active filters indicator */}
+        {(purposeFilter !== 'all' || !isDefaultFilter) && (
+          <div className="text-xs text-gray-500 mt-2 flex items-center gap-2">
+            <span>Filters:</span>
+            {!isDefaultFilter && (
+              <span className="bg-gray-100 text-gray-800 px-1.5 py-0.5 rounded">
+                {formatDate(fromDate)} to {formatDate(toDate)}
+              </span>
+            )}
+            {purposeFilter === 'pressing' && (
+              <span className="bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded">P</span>
+            )}
+            {purposeFilter === 'material' && (
+              <span className="bg-purple-100 text-purple-800 px-1.5 py-0.5 rounded">M</span>
+            )}
+            {purposeFilter === 'both' && (
+              <span className="bg-indigo-100 text-indigo-800 px-1.5 py-0.5 rounded">P M</span>
+            )}
+            {purposeFilter === 'submitted' && (
+              <span className="bg-green-100 text-green-800 px-1.5 py-0.5 rounded">Submitted</span>
+            )}
+          </div>
+        )}
+
         {/* Collapsible Filters */}
         {showFilters && (
           <div className="mt-3 pt-3 border-t border-gray-200">
@@ -350,6 +412,22 @@ const JobCardList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
               </div>
 
               {/* Purpose Filter */}
+              <div>
+                <label className="text-xs font-medium text-gray-600 mb-1 block">
+                  Job Type
+                </label>
+                <select
+                  value={purposeFilter}
+                  onChange={(e) => setPurposeFilter(e.target.value as any)}
+                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                >
+                  <option value="all">All Types</option>
+                  <option value="pressing">Pressing Only</option>
+                  <option value="material">Material Only</option>
+                  <option value="both">Both</option>
+                  <option value="submitted">Submitted</option>
+                </select>
+              </div>
             </div>
 
             <div className="flex justify-between items-center">
@@ -474,6 +552,11 @@ const JobCardList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
                           {p}
                         </span>
                       ))}
+                      {card.docstatus === 1 && (
+                        <span className="text-[0.65rem] font-medium px-1.5 py-0.5 rounded bg-green-50 text-green-700 border border-green-200">
+                          Submitted
+                        </span>
+                      )}
                     </div>
                     <div className="flex gap-0.5">
                       <Button

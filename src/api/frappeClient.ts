@@ -510,16 +510,38 @@ get: async (url: string, config?: any) => {
   //   });
   // },
 
-  getItem: async () => {
-  return await axios.get("/api/resource/Item", {
-    params: {
-      filters: JSON.stringify([["item_group", "=", "Veneer Pressing Work"]]),
-      // Add the fields parameter to get all required fields
-      fields: JSON.stringify(["name","item_name","valuation_rate","standard_rate","last_purchase_rate"])
-    }
+  getpressingItem: async () => {
+  return await axios.get("/api/resource/Pressing Item/", {
+    // params: {
+    //   filters: JSON.stringify([["item_group", "=", "Veneer Pressing Work"]]),
+    //   // Add the fields parameter to get all required fields
+    //   fields: JSON.stringify(["name","item_name","valuation_rate","standard_rate","last_purchase_rate"])
+    // }
   });
 },
- getAllJobCardsOther: async (filters: Record<string, unknown> = {}) => {
+
+getMaterialSoldItems: async () => {
+  return await axios.get("/api/resource/other items/", {
+    // Add any specific filters or fields if needed
+    // params: {
+    //   filters: JSON.stringify([["item_group", "=", "Material Sold"]]),
+    //   fields: JSON.stringify(["name","item_name","valuation_rate","standard_rate"])
+    // }
+  });
+},
+
+// Add separate detail methods if needed:
+getMaterialSoldItemDetails: async (itemName: string) => {
+  return await axios.get(`/api/resource/other items/${itemName}`);
+},
+
+getPressingItemDetails: async (itemName: string) => {
+  return await axios.get(`/api/resource/Pressing Item/${itemName}`, {
+  
+  });
+},
+
+getAllJobCardsOther: async (filters: Record<string, unknown> = {}) => {
     const filterArray = Object.entries(filters).map(([key, value]) => [key, "=", value]);
     
     const params = new URLSearchParams();

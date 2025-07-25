@@ -1,18 +1,40 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
-
-import React, { useState, useEffect, useCallback } from "react";
+import {
+  Calendar,
+  ChevronDown,
+  FileText,
+  Loader2,
+  Mail,
+  MapPin,
+  Phone,
+  Plus,
+  Save,
+  Trash2,
+  User,
+  X,
+} from "lucide-react";
+import React, { useCallback, useEffect, useState } from "react";
+import { toast } from "react-hot-toast";
+import { frappeAPI } from "../../api/frappeClient";
 import {
   useJobCards,
-  type JobCardFormData,
-  type PressingCharges,
-  type MaterialSold,
   type JobCard,
+  type JobCardFormData,
+  type MaterialSold,
+  type PressingCharges,
 } from "../../context/JobCardContext";
 import { Button } from "../ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "../ui/dialog";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
-import { ChevronDown, /* other icons */ } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -20,31 +42,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
-import {
-  X,
-  Plus,
-  Trash2,
-  Save,
-  Loader2,
-  Calendar,
-  User,
-  MapPin,
-  FileText,
-
-
-  Phone,
-  Mail,
-} from "lucide-react";
-import { toast } from "react-hot-toast";
-import { frappeAPI } from "../../api/frappeClient";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "../ui/dialog";
 
 interface JobCardFormProps {
   isOpen: boolean;
@@ -65,7 +62,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
 }) => {
   const { createJobCard, updateJobCard, loading, fetchEmployees } =
     useJobCards();
-    console.log("job card edit form", jobCard); 
+  console.log("job card edit form", jobCard);
 
   const [formData, setFormData] = useState<JobCardFormData>({
     date: new Date().toISOString().split("T")[0],
@@ -94,15 +91,6 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
   const [showDropdown, setShowDropdown] = useState(false);
   const [fetchingCustomerDetails, setFetchingCustomerDetails] = useState(false);
   const [fetchingLeadDetails, setFetchingLeadDetails] = useState(false);
-
-  const [items, setItems] = useState<
-    {
-      item_name: string;
-      name: string;
-      valuation_rate?: number;
-    }[]
-  >([]);
-  const [loadingItems, setLoadingItems] = useState(false);
   const [showAddCustomerDialog, setShowAddCustomerDialog] = useState(false);
   const [newCustomerData, setNewCustomerData] = useState<NewCustomerData>({
     customer_name: "",
@@ -115,21 +103,44 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
   );
   const [showCancelDialog, setShowCancelDialog] = useState(false);
 
+  const [isPressingChargesExpanded, setIsPressingChargesExpanded] =
+    useState(false);
+  const [isMaterialsSoldExpanded, setIsMaterialsSoldExpanded] = useState(false);
+
+  const [materialSoldItems, setMaterialSoldItems] = useState<
+    {
+      item_name: string;
+      name: string;
+      valuation_rate?: number;
+      size?: string;
+      price?: number;
+    }[]
+  >([]);
+  const [loadingMaterialSoldItems, setLoadingMaterialSoldItems] =
+    useState(false);
+
+  const [pressingItems, setPressingItems] = useState<
+    {
+      item_name: string;
+      name: string;
+      valuation_rate?: number;
+      size?: string;
+      price?: number;
+    }[]
+  >([]);
+  const [loadingPressingItems, setLoadingPressingItems] = useState(false);
+
   // Helper functions
   const calculatePressingTotal = (charges: PressingCharges[]) => {
     return charges.reduce((sum, charge) => sum + (charge.amount || 0), 0);
   };
 
-  // const calculateMaterialsTotal = (materials: MaterialSold[]) => {
-  //   return materials.reduce((sum, material) => sum + (material.amount || 0), 0);
-  // };
-
-  // Fetch items with prices when component mounts
   useEffect(() => {
     const fetchItems = async () => {
-      setLoadingItems(true);
+      // Fetch pressing items
+      setLoadingPressingItems(true);
       try {
-        const response = await frappeAPI.getItem();
+        const response = await frappeAPI.getpressingItem();
         const itemsData = response.data.data || [];
 
         const formattedItems = itemsData.map((item: any) => ({
@@ -139,12 +150,33 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
             item.valuation_rate !== undefined ? Number(item.valuation_rate) : 0,
         }));
 
-        setItems(formattedItems);
+        setPressingItems(formattedItems);
       } catch (error) {
-        console.error("Failed to fetch items:", error);
-        toast.error("Failed to load items");
+        console.error("Failed to fetch pressing items:", error);
+        toast.error("Failed to load pressing items");
       } finally {
-        setLoadingItems(false);
+        setLoadingPressingItems(false);
+      }
+
+      // Fetch material sold items
+      setLoadingMaterialSoldItems(true);
+      try {
+        const response = await frappeAPI.getMaterialSoldItems();
+        const itemsData = response.data.data || [];
+
+        const formattedItems = itemsData.map((item: any) => ({
+          name: item.name,
+          item_name: item.item_name || item.name,
+          valuation_rate:
+            item.valuation_rate !== undefined ? Number(item.valuation_rate) : 0,
+        }));
+
+        setMaterialSoldItems(formattedItems);
+      } catch (error) {
+        console.error("Failed to fetch material sold items:", error);
+        toast.error("Failed to load material sold items");
+      } finally {
+        setLoadingMaterialSoldItems(false);
       }
     };
 
@@ -152,23 +184,23 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
   }, []);
 
   useEffect(() => {
-  const fetchCustomerData = async () => {
-    if (jobCard?.customer_id) {
-      try {
-        const customer = await frappeAPI.getCustomerById(jobCard.customer_id);
-        setFormData(prev => ({
-          ...prev,
-          party_name: customer.data.customer_name || ""
-        }));
-        setSearchQuery(customer.data.customer_name || "");
-      } catch (error) {
-        console.error("Failed to fetch customer data:", error);
+    const fetchCustomerData = async () => {
+      if (jobCard?.customer_id) {
+        try {
+          const customer = await frappeAPI.getCustomerById(jobCard.customer_id);
+          setFormData((prev) => ({
+            ...prev,
+            party_name: customer.data.customer_name || "",
+          }));
+          setSearchQuery(customer.data.customer_name || "");
+        } catch (error) {
+          console.error("Failed to fetch customer data:", error);
+        }
       }
-    }
-  };
+    };
 
-  fetchCustomerData();
-}, [jobCard?.customer_id]);
+    fetchCustomerData();
+  }, [jobCard?.customer_id]);
 
   // Fetch employees when component mounts
   useEffect(() => {
@@ -176,63 +208,64 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
   }, [fetchEmployees]);
 
   // Load existing job card data when editing
-useEffect(() => {
-  if (jobCard) {
-    console.log("Loading job card data:", jobCard); // Debug log
-    setFormData({
-      date: jobCard.date || new Date().toISOString().split('T')[0],
-      building_name: jobCard.building_name || "",
-      property_no: jobCard.property_no || "",
-      area: jobCard.area || "",
-      party_name: jobCard.party_name || "",
-      start_date: jobCard.start_date || new Date().toISOString().split('T')[0],
-      finish_date: jobCard.finish_date || "",
-      prepared_by: jobCard.prepared_by || "",
-      approved_by: jobCard.approved_by || "",
-      project_id_no: jobCard.project_id_no || "",
-      ac_v_no_and_date: jobCard.ac_v_no_and_date || "",
-      pressing_charges: jobCard.pressing_charges || [],
-      material_sold: jobCard.material_sold || [],
-      lead_id: jobCard.lead_id || "",
-      customer_id: jobCard.customer_id || ""
-    });
-    setSearchQuery(jobCard.party_name || "");
-    setPressingCharges(jobCard.pressing_charges || []);
-    setMaterialsSold(jobCard.material_sold || []);
-    
-    // If customer_id exists but no lead_id, preserve the property data
-    if (jobCard.customer_id && !jobCard.lead_id) {
-      setFormData(prev => ({
-        ...prev,
+  useEffect(() => {
+    if (jobCard) {
+      console.log("Loading job card data:", jobCard); // Debug log
+      setFormData({
+        date: jobCard.date || new Date().toISOString().split("T")[0],
         building_name: jobCard.building_name || "",
         property_no: jobCard.property_no || "",
-        area: jobCard.area || ""
-      }));
+        area: jobCard.area || "",
+        party_name: jobCard.party_name || "",
+        start_date:
+          jobCard.start_date || new Date().toISOString().split("T")[0],
+        finish_date: jobCard.finish_date || "",
+        prepared_by: jobCard.prepared_by || "",
+        approved_by: jobCard.approved_by || "",
+        project_id_no: jobCard.project_id_no || "",
+        ac_v_no_and_date: jobCard.ac_v_no_and_date || "",
+        pressing_charges: jobCard.pressing_charges || [],
+        material_sold: jobCard.material_sold || [],
+        lead_id: jobCard.lead_id || "",
+        customer_id: jobCard.customer_id || "",
+      });
+      setSearchQuery(jobCard.party_name || "");
+      setPressingCharges(jobCard.pressing_charges || []);
+      setMaterialsSold(jobCard.material_sold || []);
+
+      // If customer_id exists but no lead_id, preserve the property data
+      if (jobCard.customer_id && !jobCard.lead_id) {
+        setFormData((prev) => ({
+          ...prev,
+          building_name: jobCard.building_name || "",
+          property_no: jobCard.property_no || "",
+          area: jobCard.area || "",
+        }));
+      }
+    } else {
+      // Reset form for new job card
+      setFormData({
+        date: new Date().toISOString().split("T")[0],
+        building_name: "",
+        property_no: "",
+        area: "",
+        party_name: "",
+        start_date: new Date().toISOString().split("T")[0],
+        finish_date: "",
+        prepared_by: "",
+        approved_by: "",
+        project_id_no: "",
+        ac_v_no_and_date: "",
+        pressing_charges: [],
+        material_sold: [],
+        lead_id: "",
+        customer_id: "",
+      });
+      setSearchQuery("");
+      setPressingCharges([]);
+      setMaterialsSold([]);
     }
-  } else {
-    // Reset form for new job card
-    setFormData({
-      date: new Date().toISOString().split('T')[0],
-      building_name: "",
-      property_no: "",
-      area: "",
-      party_name: "",
-      start_date: new Date().toISOString().split('T')[0],
-      finish_date: "",
-      prepared_by: "",
-      approved_by: "",
-      project_id_no: "",
-      ac_v_no_and_date: "",
-      pressing_charges: [],
-      material_sold: [],
-      lead_id: "",
-      customer_id: ""
-    });
-    setSearchQuery("");
-    setPressingCharges([]);
-    setMaterialsSold([]);
-  }
-}, [jobCard]); // Removed isOpen from dependencies
+  }, [jobCard]); // Removed isOpen from dependencies
 
   const handleNewCustomerInputChange = (
     e: React.ChangeEvent<HTMLInputElement>
@@ -338,7 +371,6 @@ useEffect(() => {
         ...prev,
         customer_id: "",
         lead_id: "",
-        
       }));
     }
   }, [searchQuery]);
@@ -365,8 +397,8 @@ useEffect(() => {
   };
 
   const handleCreateCustomer = async () => {
-    if (!newCustomerData.customer_name || !newCustomerData.mobile_no) {
-      toast.error("Customer name and mobile number are required");
+    if (!newCustomerData.customer_name) {
+      toast.error("Customer name is required");
       return;
     }
 
@@ -471,21 +503,45 @@ useEffect(() => {
       typeof value === "string" &&
       value !== "none"
     ) {
-      const selectedItem = items.find((item) => item.name === value);
-      const price = selectedItem?.valuation_rate || 0;
+      try {
+        // Fetch item details from API
+        const response = await frappeAPI.getPressingItemDetails(value);
+        const itemDetails = response.data.data;
 
-      setPressingCharges((prev) =>
-        prev.map((charge, i) => {
-          if (i !== index) return charge;
+        setPressingCharges((prev) =>
+          prev.map((charge, i) => {
+            if (i !== index) return charge;
 
-          return {
-            ...charge,
-            work_type: value,
-            price: price,
-            amount: price * (Number(charge.no_of_sides) || 1),
-          };
-        })
-      );
+            return {
+              ...charge,
+              work_type: value,
+              size: itemDetails?.size || "",
+              price: itemDetails?.price || 0,
+              amount:
+                (itemDetails?.price || 0) * (Number(charge.no_of_sides) || 0),
+            };
+          })
+        );
+      } catch (error) {
+        console.error("Failed to fetch item details:", error);
+        toast.error("Failed to load item details");
+        // Fallback to basic item data if API fails
+        const selectedItem = pressingItems.find((item) => item.name === value);
+        setPressingCharges((prev) =>
+          prev.map((charge, i) => {
+            if (i !== index) return charge;
+
+            return {
+              ...charge,
+              work_type: value,
+              size: selectedItem?.size || "",
+              price: selectedItem?.price || 0,
+              amount:
+                (selectedItem?.price || 0) * (Number(charge.no_of_sides) || 0),
+            };
+          })
+        );
+      }
     } else {
       setPressingCharges((prev) =>
         prev.map((charge, i) => {
@@ -532,21 +588,48 @@ useEffect(() => {
       typeof value === "string" &&
       value !== "none"
     ) {
-      const selectedItem = items.find((item) => item.name === value);
-      const price = selectedItem?.valuation_rate || 0;
+      try {
+        // Fetch item details from API for material sold
+        const response = await frappeAPI.getMaterialSoldItemDetails(value);
+        const itemDetails = response.data.data;
 
-      setMaterialsSold((prev) =>
-        prev.map((material, i) => {
-          if (i !== index) return material;
+        setMaterialsSold((prev) =>
+          prev.map((material, i) => {
+            if (i !== index) return material;
 
-          return {
-            ...material,
-            work_type: value,
-            price: price,
-            amount: price * (Number(material.no_of_sides) || 1),
-          };
-        })
-      );
+            return {
+              ...material,
+              work_type: value,
+              size: itemDetails?.size || "",
+              price: itemDetails?.price || 0,
+              amount:
+                (itemDetails?.price || 0) * (Number(material.no_of_sides) || 0),
+            };
+          })
+        );
+      } catch (error) {
+        console.error("Failed to fetch material sold item details:", error);
+        toast.error("Failed to load material sold item details");
+        // Fallback to basic item data if API fails
+        const selectedItem = materialSoldItems.find(
+          (item) => item.name === value
+        );
+        setMaterialsSold((prev) =>
+          prev.map((material, i) => {
+            if (i !== index) return material;
+
+            return {
+              ...material,
+              work_type: value,
+              size: selectedItem?.size || "",
+              price: selectedItem?.price || 0,
+              amount:
+                (selectedItem?.price || 0) *
+                (Number(material.no_of_sides) || 0),
+            };
+          })
+        );
+      }
     } else {
       setMaterialsSold((prev) =>
         prev.map((material, i) => {
@@ -575,18 +658,18 @@ useEffect(() => {
       toast.error("Customer name is required");
       return false;
     }
-    if (!formData.building_name) {
-      toast.error("Building name is required");
-      return false;
-    }
-    if (!formData.property_no) {
-      toast.error("Property number is required");
-      return false;
-    }
-    if (!formData.area) {
-      toast.error("Area is required");
-      return false;
-    }
+    // if (!formData.building_name) {
+    //   toast.error("Building name is required");
+    //   return false;
+    // }
+    // if (!formData.property_no) {
+    //   toast.error("Property number is required");
+    //   return false;
+    // }
+    // if (!formData.area) {
+    //   toast.error("Area is required");
+    //   return false;
+    // }
     if (!formData.start_date) {
       toast.error("Start date is required");
       return false;
@@ -725,14 +808,6 @@ useEffect(() => {
             <form onSubmit={handleSubmit} className="space-y-8">
               {/* Basic Information Card */}
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                {/* <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b border-gray-200">
-                  <div className="flex items-center space-x-2">
-                    <User className="h-5 w-5 text-blue-600" />
-                    <h4 className="text-lg font-semibold text-gray-900">
-                      Basic Information
-                    </h4>
-                  </div>
-                </div> */}
                 <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                   {/* Clickable Header */}
                   <div
@@ -747,141 +822,144 @@ useEffect(() => {
                         </h4>
                       </div>
                       <ChevronDown
-                        className={`h-5 w-5 text-gray-500 transition-transform duration-200 ${isBasicInfoExpanded ? "rotate-180" : ""
-                          }`}
+                        className={`h-5 w-5 text-gray-500 transition-transform duration-200 ${
+                          isBasicInfoExpanded ? "rotate-180" : ""
+                        }`}
                       />
                     </div>
-                    </div>
                   </div>
-<div className={`transition-all px-5 duration-300 ease-in-out ${
-    isBasicInfoExpanded ? "opacity-100 max-h-[1500px]" : "opacity-0 max-h-0 overflow-hidden"
-  }`}>                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                      <div className="space-y-2 pt-2 relative">
-                        <Label
-                          htmlFor="party_name"
-                          className="flex items-center space-x-2"
-                        >
-                          <User className="h-4 w-4 text-gray-500" />
-                          <label className="block text-sm font-medium text-gray-700">
-                            Customer{" "}
-                            <span className="text-gray-500">
-                              (name / email / phone)
-                            </span>
-                            <span className="text-red-500 ml-1">*</span>
-                          </label>
+                </div>
+                <div
+                  className={`transition-all px-5 duration-300 ease-in-out ${
+                    isBasicInfoExpanded
+                      ? "opacity-100 max-h-[1500px]"
+                      : "opacity-0 max-h-0 overflow-hidden"
+                  }`}
+                >
+                  {" "}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="space-y-2 pt-2 relative">
+                      <Label
+                        htmlFor="party_name"
+                        className="flex items-center space-x-2"
+                      >
+                        <User className="h-4 w-4 text-gray-500" />
+                        <label className="block text-sm font-medium text-gray-700">
+                          Customer{" "}
+                          <span className="text-gray-500">
+                            (name / email / phone)
+                          </span>
+                          <span className="text-red-500 ml-1">*</span>
+                        </label>
 
-                          {(fetchingCustomerDetails || fetchingLeadDetails) && (
-                            <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
-                          )}
-                        </Label>
-                        <div className="relative">
-                          <Input
-                            id="party_name"
-                            name="party_name"
-                            value={searchQuery}
-                            onChange={handleSearchChange}
-                            placeholder="Search by name, phone, or email"
-                            required
-                            className="focus:ring-blue-500 focus:border-blue-500 pr-10"
-                          />
-                          {isSearching && (
-                            <Loader2 className="absolute right-3 top-3 h-4 w-4 animate-spin text-gray-500" />
-                          )}
-                        </div>
+                        {(fetchingCustomerDetails || fetchingLeadDetails) && (
+                          <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
+                        )}
+                      </Label>
+                      <div className="relative">
+                        <Input
+                          id="party_name"
+                          name="party_name"
+                          value={searchQuery}
+                          onChange={handleSearchChange}
+                          placeholder="Search by name, phone, or email"
+                          required
+                          className="focus:ring-blue-500 focus:border-blue-500 pr-10"
+                        />
+                        {isSearching && (
+                          <Loader2 className="absolute right-3 top-3 h-4 w-4 animate-spin text-gray-500" />
+                        )}
+                      </div>
 
-                        {showDropdown && (
-                          <div className="absolute z-10 mt-1 w-full bg-white shadow-lg rounded-md border border-gray-200 max-h-60 overflow-auto">
-                            {searchResults.length > 0 ? (
-                              searchResults.map((customer) => (
-                                <div
-                                  key={customer.name}
-                                  className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center justify-between"
-                                  onClick={() => handleCustomerSelect(customer)}
-                                >
-                                  <div>
-                                    <p className="font-medium">
-                                      {customer.customer_name || customer.name}
-                                    </p>
-                                    <div className="text-xs text-gray-500 flex gap-2 flex-wrap">
-                                      {customer.mobile_no && (
-                                        <span className="flex items-center">
-                                          <Phone className="h-3 w-3 mr-1" />
-                                          {customer.mobile_no}
-                                        </span>
-                                      )}
-                                      {customer.email_id && (
-                                        <span className="flex items-center">
-                                          <Mail className="h-3 w-3 mr-1" />
-                                          {customer.email_id}
-                                        </span>
-                                      )}
-                                      {customer.lead_name && (
-                                        <span className="bg-green-100 text-green-800 px-1.5 py-0.5 rounded text-xs">
-                                          Has Property
-                                        </span>
-                                      )}
-                                    </div>
-                                  </div>
-                                  <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                                    Select
-                                  </span>
-                                </div>
-                              ))
-                            ) : (
+                      {showDropdown && (
+                        <div className="absolute z-10 mt-1 w-full bg-white shadow-lg rounded-md border border-gray-200 max-h-60 overflow-auto">
+                          {searchResults.length > 0 ? (
+                            searchResults.map((customer) => (
                               <div
+                                key={customer.name}
                                 className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center justify-between"
-                                onClick={handleAddNewCustomer}
+                                onClick={() => handleCustomerSelect(customer)}
                               >
                                 <div>
                                   <p className="font-medium">
-                                    No customers found for "{searchQuery}"
+                                    {customer.customer_name || customer.name}
                                   </p>
-                                  <p className="text-xs text-gray-500">
-                                    Click to add a new customer
-                                  </p>
+                                  <div className="text-xs text-gray-500 flex gap-2 flex-wrap">
+                                    {customer.mobile_no && (
+                                      <span className="flex items-center">
+                                        <Phone className="h-3 w-3 mr-1" />
+                                        {customer.mobile_no}
+                                      </span>
+                                    )}
+                                    {customer.email_id && (
+                                      <span className="flex items-center">
+                                        <Mail className="h-3 w-3 mr-1" />
+                                        {customer.email_id}
+                                      </span>
+                                    )}
+                                    {customer.lead_name && (
+                                      <span className="bg-green-100 text-green-800 px-1.5 py-0.5 rounded text-xs">
+                                        Has Property
+                                      </span>
+                                    )}
+                                  </div>
                                 </div>
-                                <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
-                                  Add New
+                                <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                                  Select
                                 </span>
                               </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
+                            ))
+                          ) : (
+                            <div
+                              className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center justify-between"
+                              onClick={handleAddNewCustomer}
+                            >
+                              <div>
+                                <p className="font-medium">
+                                  No customers found for "{searchQuery}"
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                  Click to add a new customer
+                                </p>
+                              </div>
+                              <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
+                                Add New
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
 
                     <div className="space-y-2">
                       <Label
                         htmlFor="building_name"
                         className="flex items-center space-x-2"
                       >
-                        <span>
-                          Building Name <span className="text-red-500">*</span>
-                        </span>
+                        <span>Building Name</span>
                       </Label>
                       <Input
-  id="building_name"
-  name="building_name"
-  value={formData.building_name}
-  onChange={handleInputChange}
-  placeholder="Enter building name"
-  required
-  className="focus:ring-blue-500 focus:border-blue-500"
-/>
+                        id="building_name"
+                        name="building_name"
+                        value={formData.building_name}
+                        onChange={handleInputChange}
+                        placeholder="Enter building name"
+                        required
+                        className="focus:ring-blue-500 focus:border-blue-500"
+                      />
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="property_no">
-                        Property No <span className="text-red-500">*</span>
-                      </Label>
+                      <Label htmlFor="property_no">Property No</Label>
                       <Input
-  id="property_no"
-  name="property_no"
-  value={formData.property_no}
-  onChange={handleInputChange}
-  placeholder="Enter property number"
-  required
-  className="focus:ring-blue-500 focus:border-blue-500"
-/>
+                        id="property_no"
+                        name="property_no"
+                        value={formData.property_no}
+                        onChange={handleInputChange}
+                        placeholder="Enter property number"
+                        required
+                        className="focus:ring-blue-500 focus:border-blue-500"
+                      />
                     </div>
 
                     <div className="space-y-2">
@@ -890,19 +968,17 @@ useEffect(() => {
                         className="flex items-center space-x-2"
                       >
                         <MapPin className="h-4 w-4 text-gray-500" />
-                        <span>
-                          Area <span className="text-red-500">*</span>
-                        </span>
+                        <span>Area</span>
                       </Label>
                       <Input
-  id="area"
-  name="area"
-  value={formData.area}
-  onChange={handleInputChange}
-  placeholder="Enter area"
-  required
-  className="focus:ring-blue-500 focus:border-blue-500"
-/>
+                        id="area"
+                        name="area"
+                        value={formData.area}
+                        onChange={handleInputChange}
+                        placeholder="Enter area"
+                        required
+                        className="focus:ring-blue-500 focus:border-blue-500"
+                      />
                     </div>
                     <div className="flex pb-4 flex-wrap gap-2">
                       <div className="w-[48%] space-y-2">
@@ -925,48 +1001,68 @@ useEffect(() => {
                         />
                       </div>
 
-                        <div className="w-[48%] space-y-2">
-                          <Label
-                            htmlFor="finish_date"
-                            className="flex items-center space-x-1"
-                          >
-                            <Calendar className="h-4 w-4 text-gray-500" />
-                            <span>
-                              Finish Date <span className="text-red-500">*</span>
-                            </span>
-                          </Label>
-                          <Input
-                            id="finish_date"
-                            name="finish_date"
-                            type="date"
-                            value={formData.finish_date || ""}
-                            onChange={handleInputChange}
-                            required
-                            className="w-full"
-                          />
-                        </div>
+                      <div className="w-[48%] space-y-2">
+                        <Label
+                          htmlFor="finish_date"
+                          className="flex items-center space-x-1"
+                        >
+                          <Calendar className="h-4 w-4 text-gray-500" />
+                          <span>
+                            Finish Date <span className="text-red-500">*</span>
+                          </span>
+                        </Label>
+                        <Input
+                          id="finish_date"
+                          name="finish_date"
+                          type="date"
+                          value={formData.finish_date || ""}
+                          onChange={handleInputChange}
+                          required
+                          className="w-full"
+                        />
                       </div>
                     </div>
                   </div>
                 </div>
+              </div>
 
-                {/* Pressing Charges Card */}
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                  <div className="bg-gradient-to-r from-emerald-50 to-green-50 px-6 py-4 border-b border-gray-200">
-
-                    <div className="flex justify-between space-x-2">
+              {/* Pressing Charges Card */}
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div
+                  className="bg-gradient-to-r from-emerald-50 to-green-50 px-6 py-4 border-b border-gray-200 cursor-pointer hover:bg-emerald-100 transition-colors"
+                  onClick={() =>
+                    setIsPressingChargesExpanded(!isPressingChargesExpanded)
+                  }
+                >
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center space-x-2">
                       <h4 className="text-lg font-semibold text-gray-900">
                         Pressing Charges
                       </h4>
-                      <span className="pt-1">{calculatePressingTotal(pressingCharges).toFixed(2)}{" "}
-                        AED</span>
                     </div>
-
+                    <div className="flex items-center space-x-2">
+                      <span className="font-medium">
+                        {calculatePressingTotal(pressingCharges).toFixed(2)} AED
+                      </span>
+                      <ChevronDown
+                        className={`h-5 w-5 text-gray-500 transition-transform duration-200 ${
+                          isPressingChargesExpanded ? "rotate-180" : ""
+                        }`}
+                      />
+                    </div>
                   </div>
+                </div>
 
+                <div
+                  className={`transition-all duration-300 ease-in-out ${
+                    isPressingChargesExpanded
+                      ? "opacity-100 max-h-[1500px] overflow-auto"
+                      : "opacity-0 max-h-0 overflow-hidden"
+                  }`}
+                >
                   <div className="p-3 space-y-4">
                     {pressingCharges.length === 0 ? (
-                      <div className="text-center  text-gray-500">
+                      <div className="text-center py-2 text-gray-500">
                         <p className="text-sm">
                           No pressing charges added yet. Click "Add Charge" to
                           start.
@@ -979,75 +1075,41 @@ useEffect(() => {
                           className="bg-gray-50 rounded-lg p-4 border border-gray-200"
                         >
                           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-2">
-                            {/* <div className="space-y-1">
-                            <Label className="text-xs font-medium text-gray-600">
-                              Work Type
-                            </Label>
-                            {loadingItems ? (
-                              <div className="flex items-center gap-2">
-                                <Loader2 className="animate-spin h-4 w-4" />
-                                <span className="text-sm">
-                                  Loading work types...
-                                </span>
-                              </div>
-                            ) : (
-                              <Select
-                                value={charge.work_type}
-                                onValueChange={(value) =>
-                                  updatePressingCharge(
-                                    index,
-                                    "work_type",
-                                    value
-                                  )
-                                }
-                              >
-                                <SelectTrigger className="h-9 text-sm">
-                                  <SelectValue placeholder="Select work type" />
-                                </SelectTrigger>
-                                <SelectContent className="bg-white">
-                                  <SelectItem value="none">
-                                    Select work type
-                                  </SelectItem>
-                                  {items.map((item) => (
-                                    <SelectItem
-                                      key={item.name}
-                                      value={item.name}
-                                    >
-                                      <div className="flex justify-between w-full">
-                                        <span>
-                                          {item.item_name || item.name}
-                                        </span>
-
-                                      </div>
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            )}
-                          </div> */}
+                            {/* Work Type - 100% */}
                             <div className="space-y-1 w-full">
                               <Label className="text-xs font-medium text-gray-600">
                                 Work Type
                               </Label>
-                              {loadingItems ? (
+                              {loadingPressingItems ? (
                                 <div className="flex items-center gap-2">
                                   <Loader2 className="animate-spin h-4 w-4" />
-                                  <span className="text-sm">Loading work types...</span>
+                                  <span className="text-sm">
+                                    Loading work types...
+                                  </span>
                                 </div>
                               ) : (
                                 <Select
                                   value={charge.work_type}
                                   onValueChange={(value) =>
-                                    updatePressingCharge(index, "work_type", value)
+                                    updatePressingCharge(
+                                      index,
+                                      "work_type",
+                                      value
+                                    )
                                   }
                                 >
                                   <SelectTrigger className="h-9 text-sm w-full truncate sm:max-w-xs">
                                     <SelectValue placeholder="Select work type" />
                                   </SelectTrigger>
                                   <SelectContent className="bg-white max-w-full sm:max-w-xs">
-                                    <SelectItem value="none">Select work type</SelectItem>
-                                    {items.map((item) => (
-                                      <SelectItem key={item.name} value={item.name}>
+                                    <SelectItem value="none">
+                                      Select work type
+                                    </SelectItem>
+                                    {pressingItems.map((item) => (
+                                      <SelectItem
+                                        key={item.name}
+                                        value={item.name}
+                                      >
                                         <div className="flex justify-between w-full truncate">
                                           <span className="truncate">
                                             {item.item_name || item.name}
@@ -1060,17 +1122,21 @@ useEffect(() => {
                               )}
                             </div>
 
-
-
                             <div className="flex gap-2 w-full">
                               {/* Size - 40% */}
                               <div className="space-y-1 w-[40%]">
-                                <Label className="text-xs font-medium text-gray-600">Size</Label>
+                                <Label className="text-xs font-medium text-gray-600">
+                                  Size
+                                </Label>
                                 <Input
                                   placeholder="Size"
                                   value={charge.size}
                                   onChange={(e) =>
-                                    updatePressingCharge(index, "size", e.target.value)
+                                    updatePressingCharge(
+                                      index,
+                                      "size",
+                                      e.target.value
+                                    )
                                   }
                                   className="h-9 text-sm"
                                 />
@@ -1078,65 +1144,25 @@ useEffect(() => {
 
                               {/* Thickness - 60% */}
                               <div className="space-y-1 w-[60%]">
-                                <Label className="text-xs font-medium text-gray-600">Thickness</Label>
+                                <Label className="text-xs font-medium text-gray-600">
+                                  Thickness
+                                </Label>
                                 <Input
                                   placeholder="Thickness"
                                   value={charge.thickness}
                                   onChange={(e) =>
-                                    updatePressingCharge(index, "thickness", e.target.value)
+                                    updatePressingCharge(
+                                      index,
+                                      "thickness",
+                                      e.target.value
+                                    )
                                   }
                                   className="h-9 text-sm"
                                 />
                               </div>
                             </div>
-
-                          </div>
-                          {/* <div className="flex gap-2">
-                          <div className="space-y-1">
-                            <Label className="text-xs font-medium text-gray-600">
-                              No of Sides
-                            </Label>
-                            <Input
-                              placeholder="No of Sides"
-                              type="number"
-                              min="1"
-                              value={charge.no_of_sides || ""}
-                              onChange={(e) =>
-                                updatePressingCharge(
-                                  index,
-                                  "no_of_sides",
-                                  e.target.value
-                                )
-                              }
-                              className="h-9 text-sm"
-                            />
                           </div>
 
-                          <div className="space-y-1">
-                            <Label className="text-xs font-medium text-gray-600">
-                              Price
-                            </Label>
-                            <div className="flex rounded-md border border-gray-300 overflow-hidden">
-                              <Input
-                                placeholder="0.00"
-                                type="number"
-                                value={charge.price || ""}
-                                onChange={(e) =>
-                                  updatePressingCharge(index, "price", e.target.value)
-                                }
-                                className="h-9 text-sm border-none focus:ring-0 rounded-none flex-1"
-                                style={{
-                                  WebkitAppearance: "none",
-                                  MozAppearance: "textfield",
-                                }}
-                              />
-                              <span className="inline-flex items-center px-3 bg-gray-50 text-gray-500 text-sm border-l">
-                                AED
-                              </span>
-                            </div>
-                          </div>
-
-                        </div> */}
                           <div className="flex gap-2 pt-2 w-full">
                             {/* No of Sides - 40% */}
                             <div className="space-y-1 w-[40%]">
@@ -1149,7 +1175,11 @@ useEffect(() => {
                                 min="1"
                                 value={charge.no_of_sides || ""}
                                 onChange={(e) =>
-                                  updatePressingCharge(index, "no_of_sides", e.target.value)
+                                  updatePressingCharge(
+                                    index,
+                                    "no_of_sides",
+                                    e.target.value
+                                  )
                                 }
                                 className="h-9 text-sm"
                               />
@@ -1157,14 +1187,20 @@ useEffect(() => {
 
                             {/* Price - 60% */}
                             <div className="space-y-1 w-[60%]">
-                              <Label className="text-xs font-medium text-gray-600">Price</Label>
+                              <Label className="text-xs font-medium text-gray-600">
+                                Price
+                              </Label>
                               <div className="flex rounded-md border border-gray-300 overflow-hidden">
                                 <Input
                                   placeholder="0.00"
                                   type="number"
                                   value={charge.price || ""}
                                   onChange={(e) =>
-                                    updatePressingCharge(index, "price", e.target.value)
+                                    updatePressingCharge(
+                                      index,
+                                      "price",
+                                      e.target.value
+                                    )
                                   }
                                   className="h-9 text-sm border-none focus:ring-0 rounded-none flex-1"
                                   style={{
@@ -1178,7 +1214,6 @@ useEffect(() => {
                               </div>
                             </div>
                           </div>
-
 
                           <div className="flex justify-between space-y-1 pt-2">
                             <Label className="text-xs items-end font-medium text-gray-600">
@@ -1196,154 +1231,194 @@ useEffect(() => {
                               </Button>
                             </div>
                           </div>
-
                         </div>
                       ))
                     )}
+
                     <Button
                       type="button"
                       onClick={addPressingCharge}
                       size="sm"
-                      className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm mt-4"
                     >
                       <Plus className="h-4 w-4 mr-2" />
                       Add Charge
                     </Button>
-
-                    {/* {pressingCharges.length > 0 && (
-                  <div className="flex justify-end mt-4">
-                    <div className="bg-blue-50 p-3 rounded-md border border-blue-200 w-64">
-                      <div className="flex justify-between font-medium">
-                        <span>Total Pressing Charges:</span>
-                        <span>
-                          {calculatePressingTotal(pressingCharges).toFixed(2)}{" "}
-                          AED
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                )} */}
                   </div>
                 </div>
+              </div>
 
-              {/* Materials Sold Card */}
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                <div className="bg-gradient-to-r from-emerald-50 to-green-50 px-6 py-4 border-b border-gray-200">
-
-                    <div className="flex justify-between space-x-2">
+              {/* Materials Sold Card - Complete Implementation */}
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mt-6">
+                <div
+                  className="bg-gradient-to-r from-purple-50 to-indigo-50 px-6 py-4 border-b border-gray-200 cursor-pointer hover:bg-purple-100 transition-colors"
+                  onClick={() =>
+                    setIsMaterialsSoldExpanded(!isMaterialsSoldExpanded)
+                  }
+                >
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center space-x-2">
                       <h4 className="text-lg font-semibold text-gray-900">
                         Materials Sold
                       </h4>
-                      <span className="pt-1">{calculatePressingTotal(materialsSold).toFixed(2)}{" "}
-                        AED</span>
                     </div>
-
+                    <div className="flex items-center space-x-2">
+                      <span className="font-medium">
+                        {calculatePressingTotal(materialsSold).toFixed(2)} AED
+                      </span>
+                      <ChevronDown
+                        className={`h-5 w-5 text-gray-500 transition-transform duration-200 ${
+                          isMaterialsSoldExpanded ? "rotate-180" : ""
+                        }`}
+                      />
+                    </div>
                   </div>
+                </div>
 
-                <div className="p-3 space-y-4">
-                  {materialsSold.length === 0 ? (
-                    <div className="text-center text-gray-500">
-                      <p className="text-sm">
-                        No materials sold added yet. Click "Add Material" to
-                        start.
-                      </p>
-                    </div>
-                  ) : (
-                    materialsSold.map((material, index) => (
-                      <div
-                        key={index}
-                        className="bg-gray-50 rounded-lg p-4 border border-gray-200"
-                      >
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-2">
-                          <div className="space-y-1 w-full">
-                            <Label className="text-xs font-medium text-gray-600">
-                              Work Type
-                            </Label>
-                            {loadingItems ? (
-                              <div className="flex items-center gap-2">
-                                <Loader2 className="animate-spin h-4 w-4" />
-                                <span className="text-sm">Loading work types...</span>
-                              </div>
-                            ) : (
-                              <Select
-                                value={material.work_type}
-                                onValueChange={(value) =>
-                                  updateMaterialSold(index, "work_type", value)
-                                }
-                              >
-                                <SelectTrigger className="h-9 text-sm w-full truncate sm:max-w-xs">
-                                  <SelectValue placeholder="Select work type" />
-                                </SelectTrigger>
-                                <SelectContent className="bg-white max-w-full sm:max-w-xs">
-                                  <SelectItem value="none">Select work type</SelectItem>
-                                  {items.map((item) => (
-                                    <SelectItem key={item.name} value={item.name}>
-                                      <div className="flex justify-between w-full truncate">
-                                        <span className="truncate">
-                                          {item.item_name || item.name}
-                                        </span>
-                                      </div>
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            )}
-                          </div>
-                          <div className="flex gap-2 w-full">
-                            {/* Size - 40% */}
-                            <div className="space-y-1 w-[40%]">
-                              <Label className="text-xs font-medium text-gray-600">Size</Label>
-                              <Input
-                                placeholder="Size"
-                                value={material.size}
-                                onChange={(e) =>
-                                  updateMaterialSold(index, "size", e.target.value)
-                                }
-                                className="h-9 text-sm"
-                              />
-                            </div>
-
-                            {/* Thickness - 60% */}
-                            <div className="space-y-1 w-[60%]">
-                              <Label className="text-xs font-medium text-gray-600">Thickness</Label>
-                              <Input
-                                placeholder="Thickness"
-                                value={material.thickness}
-                                onChange={(e) =>
-                                  updateMaterialSold(index, "thickness", e.target.value)
-                                }
-                                className="h-9 text-sm"
-                              />
-                            </div>
-                          </div>
-                          <div className="flex gap-2  w-full">
-                            {/* No of Sides - 40% */}
-                            <div className="space-y-1 w-[40%]">
+                <div
+                  className={`transition-all duration-300 ease-in-out ${
+                    isMaterialsSoldExpanded
+                      ? "opacity-100 max-h-[1500px] overflow-auto"
+                      : "opacity-0 max-h-0 overflow-hidden"
+                  }`}
+                >
+                  <div className="p-3 space-y-4">
+                    {materialsSold.length === 0 ? (
+                      <div className="text-center text-gray-500">
+                        <p className="text-sm">
+                          No materials sold added yet. Click "Add Material" to
+                          start.
+                        </p>
+                      </div>
+                    ) : (
+                      materialsSold.map((material, index) => (
+                        <div
+                          key={index}
+                          className="bg-gray-50 rounded-lg p-4 border border-gray-200"
+                        >
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-2">
+                            <div className="space-y-1 w-full">
                               <Label className="text-xs font-medium text-gray-600">
-                                No of Sides
+                                Work Type
                               </Label>
-                              <Input
-                                placeholder="No of Sides"
-                                type="number"
-                                min="1"
-                                value={material.no_of_sides || ""}
-                                onChange={(e) =>
-                                  updateMaterialSold(index, "no_of_sides", e.target.value)
-                                }
-                                className="h-9 text-sm"
-                              />
+                              {loadingMaterialSoldItems ? (
+                                <div className="flex items-center gap-2">
+                                  <Loader2 className="animate-spin h-4 w-4" />
+                                  <span className="text-sm">
+                                    Loading work types...
+                                  </span>
+                                </div>
+                              ) : (
+                                <Select
+                                  value={material.work_type}
+                                  onValueChange={(value) =>
+                                    updateMaterialSold(
+                                      index,
+                                      "work_type",
+                                      value
+                                    )
+                                  }
+                                >
+                                  <SelectTrigger className="h-9 text-sm w-full truncate sm:max-w-xs">
+                                    <SelectValue placeholder="Select work type" />
+                                  </SelectTrigger>
+                                  <SelectContent className="bg-white max-w-full sm:max-w-xs">
+                                    <SelectItem value="none">
+                                      Select work type
+                                    </SelectItem>
+                                    {materialSoldItems.map((item) => (
+                                      <SelectItem
+                                        key={item.name}
+                                        value={item.name}
+                                      >
+                                        <div className="flex justify-between w-full truncate">
+                                          <span className="truncate">
+                                            {item.item_name || item.name}
+                                          </span>
+                                        </div>
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              )}
                             </div>
+                            <div className="flex gap-2 w-full">
+                              {/* Size - 40% */}
+                              <div className="space-y-1 w-[40%]">
+                                <Label className="text-xs font-medium text-gray-600">
+                                  Size
+                                </Label>
+                                <Input
+                                  placeholder="Size"
+                                  value={material.size}
+                                  onChange={(e) =>
+                                    updateMaterialSold(
+                                      index,
+                                      "size",
+                                      e.target.value
+                                    )
+                                  }
+                                  className="h-9 text-sm"
+                                />
+                              </div>
+
+                              {/* Thickness - 60% */}
+                              <div className="space-y-1 w-[60%]">
+                                <Label className="text-xs font-medium text-gray-600">
+                                  Thickness
+                                </Label>
+                                <Input
+                                  placeholder="Thickness"
+                                  value={material.thickness}
+                                  onChange={(e) =>
+                                    updateMaterialSold(
+                                      index,
+                                      "thickness",
+                                      e.target.value
+                                    )
+                                  }
+                                  className="h-9 text-sm"
+                                />
+                              </div>
+                            </div>
+                            <div className="flex gap-2 w-full">
+                              {/* No of Sides - 40% */}
+                              <div className="space-y-1 w-[40%]">
+                                <Label className="text-xs font-medium text-gray-600">
+                                  No of Sides
+                                </Label>
+                                <Input
+                                  placeholder="No of Sides"
+                                  type="number"
+                                  min="1"
+                                  value={material.no_of_sides || ""}
+                                  onChange={(e) =>
+                                    updateMaterialSold(
+                                      index,
+                                      "no_of_sides",
+                                      e.target.value
+                                    )
+                                  }
+                                  className="h-9 text-sm"
+                                />
+                              </div>
 
                               {/* Price - 60% */}
                               <div className="space-y-1 w-[60%]">
-                                <Label className="text-xs font-medium text-gray-600">Price</Label>
+                                <Label className="text-xs font-medium text-gray-600">
+                                  Price
+                                </Label>
                                 <div className="flex rounded-md border border-gray-300 overflow-hidden">
                                   <Input
                                     placeholder="0.00"
                                     type="number"
                                     value={material.price || ""}
                                     onChange={(e) =>
-                                      updateMaterialSold(index, "price", e.target.value)
+                                      updateMaterialSold(
+                                        index,
+                                        "price",
+                                        e.target.value
+                                      )
                                     }
                                     className="h-9 text-sm border-none focus:ring-0 rounded-none flex-1"
                                     style={{
@@ -1357,80 +1432,78 @@ useEffect(() => {
                                 </div>
                               </div>
                             </div>
+                          </div>
 
+                          <div className="flex justify-between">
+                            <Label className="text-xs pt-2 font-medium text-gray-600">
+                              Total Amount : {material.amount || 0} AED
+                            </Label>
+                            <div className="flex items-end">
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="text-red-500 hover:text-red-700"
+                                onClick={() => removeMaterialSold(index)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
                         </div>
-                        
-  
-                        <div className=" flex justify-between ">
-                          <Label className="text-xs pt-2 font-medium text-gray-600">
-                           Total Amount : {material.amount || 0} AED
-                          </Label>
-                           <div className="flex items-end">
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="text-red-500 hover:text-red-700"
-                            onClick={() => removeMaterialSold(index)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                        </div>
-                       
-                      </div>
-                    ))
-                  )}
-                  <Button
-                    type="button"
-                    onClick={addMaterialSold}
-                    size="sm"
-                    className="bg-purple-600 hover:bg-purple-700 text-white shadow-sm"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Material
-                  </Button>
-                </div>
-              </div>
+                      ))
+                    )}
 
-                {/* Action Buttons */}
-                <div className="sticky bottom-0 bg-white border-t border-gray-200 p-6 shadow-lg">
-                  <div className="flex flex-col sm:flex-row justify-end gap-3">
                     <Button
                       type="button"
-                      variant="outline"
-                      onClick={handleCancelClick}
-                      className="px-8 py-3 order-2 sm:order-1"
+                      onClick={addMaterialSold}
+                      size="sm"
+                      className="bg-purple-600 hover:bg-purple-700 text-white shadow-sm mt-4"
                     >
-                      Cancel
-                    </Button>
-                    <Button
-                      type="submit"
-                      disabled={loading}
-                      className="px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg order-1 sm:order-2"
-                    >
-                      {loading ? (
-                        <div className="flex items-center gap-2">
-                          <Loader2 className="animate-spin h-5 w-5" />
-                          Saving...
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-2">
-                          <Save className="h-5 w-5" />
-                          {jobCard ? "Update Job Card" : "Create Job Card"}
-                        </div>
-                      )}
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Material
                     </Button>
                   </div>
                 </div>
+              </div>
+              {/* Action Buttons */}
+              <div className="sticky bottom-0 bg-white border-t border-gray-200 p-6 shadow-lg">
+                <div className="flex flex-col sm:flex-row justify-end gap-3">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleCancelClick}
+                    className="px-8 py-3 order-2 sm:order-1"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={loading}
+                    className="px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg order-1 sm:order-2"
+                  >
+                    {loading ? (
+                      <div className="flex items-center gap-2">
+                        <Loader2 className="animate-spin h-5 w-5" />
+                        Saving...
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <Save className="h-5 w-5" />
+                        {jobCard ? "Update Job Card" : "Create Job Card"}
+                      </div>
+                    )}
+                  </Button>
+                </div>
+              </div>
             </form>
           </div>
-        </div >
-      </div >
+        </div>
+      </div>
 
       {/* Add Customer Dialog */}
 
-      < Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog} >
+      <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
         <DialogContent className="sm:max-w-[425px] bg-white">
           <DialogHeader>
             <DialogTitle>Are you sure?</DialogTitle>
@@ -1442,12 +1515,15 @@ useEffect(() => {
             <Button variant="outline" onClick={handleCancelDialogClose}>
               No, keep editing
             </Button>
-            <Button className="bg-red-500 hover:bg-red-600 text-white" onClick={handleConfirmCancel}>
+            <Button
+              className="bg-red-500 hover:bg-red-600 text-white"
+              onClick={handleConfirmCancel}
+            >
               Yes, cancel
             </Button>
           </DialogFooter>
         </DialogContent>
-      </Dialog >
+      </Dialog>
       <Dialog
         open={showAddCustomerDialog}
         onOpenChange={setShowAddCustomerDialog}
@@ -1461,7 +1537,9 @@ useEffect(() => {
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="customer_name">Customer Name</Label>
+              <Label htmlFor="customer_name">
+                Customer Name <span className="text-red-500">*</span>
+              </Label>
               <Input
                 id="customer_name"
                 name="customer_name"
@@ -1479,7 +1557,6 @@ useEffect(() => {
                 value={newCustomerData.mobile_no}
                 onChange={handleNewCustomerInputChange}
                 placeholder="Enter mobile number"
-                required
               />
             </div>
             <div className="space-y-2">
