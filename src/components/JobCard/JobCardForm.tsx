@@ -944,7 +944,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                         value={formData.building_name}
                         onChange={handleInputChange}
                         placeholder="Enter building name"
-                        required
+                        
                         className="focus:ring-blue-500 focus:border-blue-500"
                       />
                     </div>
@@ -957,7 +957,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                         value={formData.property_no}
                         onChange={handleInputChange}
                         placeholder="Enter property number"
-                        required
+                        
                         className="focus:ring-blue-500 focus:border-blue-500"
                       />
                     </div>
@@ -976,7 +976,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                         value={formData.area}
                         onChange={handleInputChange}
                         placeholder="Enter area"
-                        required
+                     
                         className="focus:ring-blue-500 focus:border-blue-500"
                       />
                     </div>
