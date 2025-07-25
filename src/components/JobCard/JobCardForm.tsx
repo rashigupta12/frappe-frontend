@@ -138,7 +138,17 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
   const calculatePressingTotal = (charges: PressingCharges[]) => {
     return charges.reduce((sum, charge) => sum + (charge.amount || 0), 0);
   };
-
+const calculateCombinedTotal = () => {
+  const pressingTotal = pressingCharges.reduce(
+    (sum, charge) => sum + (charge.amount || 0),
+    0
+  );
+  const materialsTotal = materialsSold.reduce(
+    (sum, material) => sum + (material.amount || 0),
+    0
+  );
+  return pressingTotal + materialsTotal;
+};
   useEffect(() => {
     const fetchItems = async () => {
       // Fetch pressing items
@@ -724,6 +734,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
         material_sold: materialsSold,
         customer_id: formData.customer_id || "",
         lead_id: formData.lead_id || "",
+        total_amount: calculateCombinedTotal(),
       };
 
       if (jobCard?.name) {
