@@ -29,6 +29,7 @@ export interface PressingCharges {
   parenttype?: string;
   doctype?: string;
   __unsaved?: number;
+  remarks?: string; // Added remarks field
 }
 
 export interface MaterialSold {
@@ -51,6 +52,7 @@ export interface MaterialSold {
   parenttype?: string;
   doctype?: string;
   __unsaved?: number;
+  remarks?: string; // Added remarks field
 }
 
 export interface Employee {

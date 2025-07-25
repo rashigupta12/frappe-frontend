@@ -114,6 +114,8 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
       valuation_rate?: number;
       size?: string;
       price?: number;
+      remarks?: string;
+      thickness?: string;
     }[]
   >([]);
   const [loadingMaterialSoldItems, setLoadingMaterialSoldItems] =
@@ -126,6 +128,8 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
       valuation_rate?: number;
       size?: string;
       price?: number;
+      remarks?: string;
+      thickness?: string;
     }[]
   >([]);
   const [loadingPressingItems, setLoadingPressingItems] = useState(false);
@@ -489,6 +493,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
       no_of_sides: "",
       price: 0,
       amount: 0,
+      remarks: "",
     };
     setPressingCharges((prev) => [...prev, newCharge]);
   };
@@ -519,6 +524,8 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
               price: itemDetails?.price || 0,
               amount:
                 (itemDetails?.price || 0) * (Number(charge.no_of_sides) || 0),
+              thickness: itemDetails?.thickness || "",
+              remarks: itemDetails?.remarks || "",
             };
           })
         );
@@ -538,6 +545,8 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
               price: selectedItem?.price || 0,
               amount:
                 (selectedItem?.price || 0) * (Number(charge.no_of_sides) || 0),
+              thickness: selectedItem?.thickness || "",
+              remarks: selectedItem?.remarks || "",
             };
           })
         );
@@ -574,6 +583,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
       no_of_sides: "",
       price: 0,
       amount: 0,
+      remarks: "",
     };
     setMaterialsSold((prev) => [...prev, newMaterial]);
   };
@@ -604,6 +614,8 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
               price: itemDetails?.price || 0,
               amount:
                 (itemDetails?.price || 0) * (Number(material.no_of_sides) || 0),
+              thickness: itemDetails?.thickness || "",
+              remarks: itemDetails?.remarks || "",
             };
           })
         );
@@ -626,6 +638,8 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
               amount:
                 (selectedItem?.price || 0) *
                 (Number(material.no_of_sides) || 0),
+              thickness: selectedItem?.thickness || "",
+              remarks: selectedItem?.remarks || "",
             };
           })
         );
@@ -1213,6 +1227,24 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                                 </span>
                               </div>
                             </div>
+
+                          </div>
+                          <div className="space-y-1 pt-2">
+                            <Label className="text-xs font-medium text-gray-600">
+                              Remarks
+                            </Label>
+                            <Input
+                              placeholder="Enter remarks"
+                              value={charge.remarks}
+                              onChange={(e) =>
+                                updatePressingCharge(
+                                  index,
+                                  "remarks",
+                                  e.target.value
+                                )
+                              }
+                              className="h-9 text-sm"
+                            />
                           </div>
 
                           <div className="flex justify-between space-y-1 pt-2">
@@ -1431,6 +1463,23 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                                   </span>
                                 </div>
                               </div>
+                            </div>
+                            <div className="space-y-1 pt-2">
+                              <Label className="text-xs font-medium text-gray-600">
+                                Remarks
+                              </Label>
+                              <Input
+                                placeholder="Enter remarks"
+                                value={material.remarks}
+                                onChange={(e) =>
+                                  updateMaterialSold(
+                                    index,
+                                    "remarks",
+                                    e.target.value
+                                  )
+                                }
+                                className="h-9 text-sm"
+                              />
                             </div>
                           </div>
 
