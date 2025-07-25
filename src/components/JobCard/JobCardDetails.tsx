@@ -69,6 +69,7 @@ const JobCardDetails: React.FC<Props> = ({ card, onClose }) => {
               'no_of_sides',
               'price',
               'amount',
+              
             ]}
           />
         )}
@@ -87,6 +88,7 @@ const JobCardDetails: React.FC<Props> = ({ card, onClose }) => {
               'no_of_sides',
               'price',
               'amount',
+              
             ]}
           />
         )}
