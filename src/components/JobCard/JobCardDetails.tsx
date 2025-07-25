@@ -17,7 +17,7 @@ interface Props {
 
 const JobCardDetails: React.FC<Props> = ({ card, onClose }) => {
   const fmt = (d?: string) =>
-    d ? format(new Date(d), 'MMM dd, yyyy') : 'N/A';
+    d ? format(new Date(d), 'dd/MM/yyyy') : 'N/A';
 
      const formatAddress = (building: string, property: string, area: string) => {
     return [building, property, area].filter(Boolean).join(", ");
