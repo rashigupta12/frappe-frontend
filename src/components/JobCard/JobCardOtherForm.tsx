@@ -63,22 +63,10 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
   jobCard,
 }) => {
   const [showCancelDialog, setShowCancelDialog] = useState(false);
-
-  const handleCancelClick = () => {
-    setShowCancelDialog(true);
-  };
-
-  const handleConfirmCancel = () => {
-    setShowCancelDialog(false);
-    onClose();
-  };
-
-  const handleCancelDialogClose = () => {
-    setShowCancelDialog(false);
-  };
-
   const { createJobCardOther, updateJobCardOther, loading, fetchEmployees } =
     useJobCardsOther();
+
+  const [serviceToDelete, setServiceToDelete] = useState<number | null>(null);
 
   const [formData, setFormData] = useState<JobCardOtherFormData>({
     date: new Date().toISOString().split("T")[0],
@@ -120,6 +108,8 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
     null
   );
 
+  
+
   // Calculate totals
   const calculateServiceTotal = () => {
     return services.reduce((total, service) => {
@@ -130,7 +120,40 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
 
   const serviceTotal = calculateServiceTotal();
 
-  // Format address
+  // Date validation functions
+  const validateServiceDates = React.useCallback(
+    (service: Services) => {
+      if (!formData.start_date || !formData.finish_date) return true;
+
+      const jobStart = new Date(formData.start_date);
+      const jobFinish = new Date(formData.finish_date);
+      const serviceStart = service.start_date
+        ? new Date(service.start_date)
+        : null;
+      const serviceFinish = service.finish_date
+        ? new Date(service.finish_date)
+        : null;
+
+      if (!serviceStart || !serviceFinish) return true;
+
+      return (
+        serviceStart >= jobStart &&
+        serviceFinish <= jobFinish &&
+        serviceStart <= serviceFinish
+      );
+    },
+    [formData.start_date, formData.finish_date]
+  );
+
+  const isDateInRange = (date: string) => {
+    if (!formData.start_date || !formData.finish_date) return true;
+
+    const jobStart = new Date(formData.start_date);
+    const jobFinish = new Date(formData.finish_date);
+    const checkDate = new Date(date);
+
+    return checkDate >= jobStart && checkDate <= jobFinish;
+  };
 
   // Fetch employees when component mounts
   useEffect(() => {
@@ -197,6 +220,29 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
 
     fetchJobTypes();
   }, []);
+
+  // Validate services when job card dates change
+  useEffect(() => {
+    if (formData.start_date && formData.finish_date) {
+      const invalidServices = services.filter(
+        (service) =>
+          service.start_date &&
+          service.finish_date &&
+          !validateServiceDates(service)
+      );
+
+      if (invalidServices.length > 0) {
+        toast.warning(
+          "Some service dates are now outside the job card date range"
+        );
+      }
+    }
+  }, [
+    formData.start_date,
+    formData.finish_date,
+    services,
+    validateServiceDates,
+  ]);
 
   const handleCustomerSearch = useCallback(async (query: string) => {
     if (!query.trim()) {
@@ -288,25 +334,6 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
       setShowDropdown(false);
     }
   };
-
-  useEffect(() => {
-    if (searchQuery === "") {
-      setFormData((prev) => ({
-        ...prev,
-        customer_id: "",
-        lead_id: "",
-       
-      }));
-    }
-  }, [searchQuery]);
-
-  useEffect(() => {
-    return () => {
-      if (searchTimeout) {
-        clearTimeout(searchTimeout);
-      }
-    };
-  }, [searchTimeout]);
 
   const handleAddNewCustomer = () => {
     setNewCustomerData({
@@ -416,8 +443,8 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
     const newService: Services = {
       work_type: "",
       work_description: "",
-      start_date: "",
-      finish_date: "",
+      start_date: formData.start_date || "",
+      finish_date: formData.finish_date || "",
       price: "",
     };
     setServices((prev) => [...prev, newService]);
@@ -444,18 +471,6 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
       toast.error("Customer name is required");
       return false;
     }
-    // if (!formData.building_name) {
-    //   toast.error("Building name is required");
-    //   return false;
-    // }
-    // if (!formData.property_no) {
-    //   toast.error("Property number is required");
-    //   return false;
-    // }
-    // if (!formData.area) {
-    //   toast.error("Area is required");
-    //   return false;
-    // }
     if (!formData.start_date) {
       toast.error("Start date is required");
       return false;
@@ -468,6 +483,16 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
       toast.error("At least one service entry is required");
       return false;
     }
+
+    // Validate service dates
+    const invalidServices = services.filter(
+      (service) => !validateServiceDates(service)
+    );
+    if (invalidServices.length > 0) {
+      toast.error("Some service dates are outside the job card date range");
+      return false;
+    }
+
     return true;
   };
 
@@ -508,6 +533,17 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
       }
     }
   };
+
+  const handleCancelClick = () => {
+    setShowCancelDialog(true);
+  };
+
+  const handleConfirmCancel = () => {
+    setShowCancelDialog(false);
+    onClose();
+  };
+
+
 
   if (!isOpen) return null;
 
@@ -574,41 +610,35 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
             <form onSubmit={handleSubmit} className="space-y-8">
               {/* Basic Information Card */}
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                {/* <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b border-gray-200">
-                  <div className="flex items-center space-x-2">
-                    <User className="h-5 w-5 text-blue-600" />
-                    <h4 className="text-lg font-semibold text-gray-900">
-                      Basic Information
-                    </h4>
-                  </div>
-                </div> */}
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                  {/* Clickable Header */}
-                  <div
-                    className="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b border-gray-200 cursor-pointer hover:bg-blue-50 transition-colors"
-                    onClick={() => setIsBasicInfoExpanded(!isBasicInfoExpanded)}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        <User className="h-5 w-5 text-blue-600" />
-                        <h4 className="text-lg font-semibold text-gray-900">
-                          Basic Information
-                        </h4>
-                        {/* Status badge */}
-                        <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded">
-                          {isBasicInfoExpanded ? "Expanded" : "Collapsed"}
-                        </span>
-                      </div>
-                      <ChevronDown
-                        className={`h-5 w-5 text-gray-500 transition-transform duration-200 ${isBasicInfoExpanded ? "rotate-180" : ""
-                          }`}
-                      />
+                <div
+                  className="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b border-gray-200 cursor-pointer hover:bg-blue-50 transition-colors"
+                  onClick={() => setIsBasicInfoExpanded(!isBasicInfoExpanded)}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <User className="h-5 w-5 text-blue-600" />
+                      <h4 className="text-lg font-semibold text-gray-900">
+                        Basic Information
+                      </h4>
+                      <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded">
+                        {isBasicInfoExpanded ? "Expanded" : "Collapsed"}
+                      </span>
                     </div>
+                    <ChevronDown
+                      className={`h-5 w-5 text-gray-500 transition-transform duration-200 ${
+                        isBasicInfoExpanded ? "rotate-180" : ""
+                      }`}
+                    />
                   </div>
                 </div>
 
-                <div className={`transition-all px-6 duration-300 ease-in-out ${isBasicInfoExpanded ? "opacity-100 max-h-[1500px]" : "opacity-0 max-h-0 overflow-hidden"
-                  }`}>
+                <div
+                  className={`transition-all px-6 duration-300 ease-in-out ${
+                    isBasicInfoExpanded
+                      ? "opacity-100 max-h-[1500px]"
+                      : "opacity-0 max-h-0 overflow-hidden"
+                  }`}
+                >
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     <div className="space-y-2 pt-2 relative">
                       <Label
@@ -709,9 +739,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                         className="flex items-center space-x-2"
                       >
                         <Building className="h-4 w-4 text-gray-500" />
-                        <span>
-                          Building Name
-                        </span>
+                        <span>Building Name</span>
                       </Label>
                       <Input
                         id="building_name"
@@ -719,22 +747,18 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                         value={formData.building_name || ""}
                         onChange={handleInputChange}
                         placeholder="Enter building name"
-                        
                         className="focus:ring-blue-500 focus:border-blue-500"
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="property_no">
-                        Property No 
-                      </Label>
+                      <Label htmlFor="property_no">Property No</Label>
                       <Input
                         id="property_no"
                         name="property_no"
                         value={formData.property_no || ""}
                         onChange={handleInputChange}
                         placeholder="Enter property number"
-                        
                         className="focus:ring-blue-500 focus:border-blue-500"
                       />
                     </div>
@@ -745,9 +769,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                         className="flex items-center space-x-2"
                       >
                         <MapPin className="h-4 w-4 text-gray-500" />
-                        <span>
-                          Area 
-                        </span>
+                        <span>Area</span>
                       </Label>
                       <Input
                         id="area"
@@ -755,20 +777,9 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                         value={formData.area || ""}
                         onChange={handleInputChange}
                         placeholder="Enter area"
-                        
                         className="focus:ring-blue-500 focus:border-blue-500"
                       />
                     </div>
-
-                    {/* <div className="space-y-2 col-span-1 sm:col-span-2">
-                      <Label className="flex items-center space-x-2">
-                        <MapPin className="h-4 w-4 text-gray-500" />
-                        <span>Formatted Address</span>
-                      </Label>
-                      <div className="p-3 bg-gray-50 rounded-md border border-gray-200 text-sm">
-                        {formattedAddress || "Address will appear here"}
-                      </div>
-                    </div> */}
 
                     <div className="flex pb-4 flex-wrap gap-2">
                       <div className="w-[48%] space-y-1">
@@ -786,8 +797,9 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                           name="start_date"
                           type="date"
                           value={formData.start_date}
-                          readOnly
-                          className="w-full bg-gray-100 cursor-not-allowed"
+                          onChange={handleInputChange}
+                          required
+                          className="w-full"
                         />
                       </div>
 
@@ -806,7 +818,20 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                           name="finish_date"
                           type="date"
                           value={formData.finish_date || ""}
-                          onChange={handleInputChange}
+                          onChange={(e) => {
+                            if (
+                              formData.start_date &&
+                              new Date(e.target.value) <
+                                new Date(formData.start_date)
+                            ) {
+                              toast.error(
+                                "Finish date cannot be before start date"
+                              );
+                              return;
+                            }
+                            handleInputChange(e);
+                          }}
+                          min={formData.start_date}
                           required
                           className="w-full"
                         />
@@ -819,25 +844,17 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
               {/* Services Section */}
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                 <div className="bg-gradient-to-r from-green-50 to-emerald-50 px-6 py-4 border-b border-gray-200">
-                  {/* <div className="flex justify-between items-center">
-                    <div className="flex justify-between space-x-2">
-
-                      <h4 className="text-lg font-semibold text-gray-900">
-                        Services
-                      </h4>
-                     
-                    </div>
-                  </div> */}
                   <div className="flex justify-between space-x-2">
                     <h4 className="text-lg font-semibold text-gray-900">
-                      Services                    </h4>
+                      Services
+                    </h4>
                     <span className="pt-1">{serviceTotal.toFixed(2)} AED</span>
                   </div>
                 </div>
 
                 <div className="p-4 space-y-4">
                   {services.length === 0 ? (
-                    <div className="text-center  text-gray-500">
+                    <div className="text-center text-gray-500">
                       <p className="text-sm">No services added yet.</p>
                     </div>
                   ) : (
@@ -847,39 +864,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                         className="bg-gray-50 rounded-lg p-4 border border-gray-200"
                       >
                         <div className="grid grid-cols-1 gap-4">
-                          {/* Work Type and Description Row */}
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {/* <div className="space-y-1">
-                              <Label className="text-sm font-medium text-gray-600">
-                                Work Type
-                              </Label>
-                              {loadingJobTypes ? (
-                                <div className="flex items-center justify-center h-10 bg-gray-100 rounded-md">
-                                  <Loader2 className="h-4 w-4 animate-spin" />
-                                </div>
-                              ) : (
-                                <Select
-                                  value={service.work_type}
-                                  onValueChange={(value) =>
-                                    updateService(index, "work_type", value)
-                                  }
-                                >
-                                  <SelectTrigger className="h-10 bg-white">
-                                    <SelectValue placeholder="Select work type" />
-                                  </SelectTrigger>
-                                  <SelectContent className="bg-white">
-                                    {jobTypes.map((jobType) => (
-                                      <SelectItem
-                                        key={jobType.name}
-                                        value={jobType.name}
-                                      >
-                                        {jobType.name}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              )}
-                            </div> */}
                             <div className="space-y-1 w-full">
                               <Label className="text-xs font-medium text-gray-600">
                                 Work Type
@@ -887,7 +872,9 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                               {loadingJobTypes ? (
                                 <div className="flex items-center gap-2">
                                   <Loader2 className="animate-spin h-4 w-4" />
-                                  <span className="text-sm">Loading work types...</span>
+                                  <span className="text-sm">
+                                    Loading work types...
+                                  </span>
                                 </div>
                               ) : (
                                 <Select
@@ -900,7 +887,6 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                                     <SelectValue placeholder="Select work type" />
                                   </SelectTrigger>
                                   <SelectContent className="bg-white max-w-full sm:max-w-xs">
-                                    <SelectItem value="none">Select work type</SelectItem>
                                     {jobTypes.map((jobType) => (
                                       <SelectItem
                                         key={jobType.name}
@@ -913,136 +899,103 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                                 </Select>
                               )}
                             </div>
-                            {/* <div className="space-y-1">
-                              <Label className="text-sm font-medium text-gray-600">
-                                Work Description
-                              </Label>
-                              <Textarea
-                                placeholder="Enter detailed work description"
-                                value={service.work_description}
-                                onChange={(e) =>
-                                  updateService(
-                                    index,
-                                    "work_description",
-                                    e.target.value
-                                  )
-                                }
-                                className="min-h-[40px] resize-none"
-                                rows={2}
-                              />
-                            </div> */}
-
-
                           </div>
 
-                          {/* Dates Row */}
-                          {/* <div className="flex flex-wrap gap-2">
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div className="space-y-1">
+                          <div className="flex w-full gap-2">
+                            <div className="space-y-1 w-1/2">
                               <Label className="text-sm font-medium text-gray-600">
                                 Start Date
                               </Label>
                               <Input
                                 type="date"
                                 value={service.start_date}
-                                onChange={(e) =>
+                                onChange={(e) => {
+                                  if (
+                                    formData.finish_date &&
+                                    new Date(e.target.value) >
+                                      new Date(formData.finish_date)
+                                  ) {
+                                    toast.error(
+                                      "Service start date cannot be after job finish date"
+                                    );
+                                    return;
+                                  }
                                   updateService(
                                     index,
                                     "start_date",
                                     e.target.value
-                                  )
-                                }
+                                  );
+                                }}
+                                min={formData.start_date}
+                                max={formData.finish_date}
                                 className="h-10"
                               />
+                              {service.start_date &&
+                                !isDateInRange(service.start_date) && (
+                                  <p className="text-xs text-red-500">
+                                    Date must be within job card range
+                                  </p>
+                                )}
                             </div>
-                            <div className="space-y-1">
+
+                            <div className="space-y-1 w-1/2">
                               <Label className="text-sm font-medium text-gray-600">
                                 Finish Date
                               </Label>
                               <Input
                                 type="date"
                                 value={service.finish_date}
-                                onChange={(e) =>
+                                onChange={(e) => {
+                                  if (
+                                    formData.start_date &&
+                                    new Date(e.target.value) <
+                                      new Date(formData.start_date)
+                                  ) {
+                                    toast.error(
+                                      "Service finish date cannot be before job start date"
+                                    );
+                                    return;
+                                  }
+                                  if (
+                                    service.start_date &&
+                                    new Date(e.target.value) <
+                                      new Date(service.start_date)
+                                  ) {
+                                    toast.error(
+                                      "Finish date cannot be before start date"
+                                    );
+                                    return;
+                                  }
                                   updateService(
                                     index,
                                     "finish_date",
                                     e.target.value
-                                  )
-                                }
+                                  );
+                                }}
+                                min={formData.start_date || service.start_date}
+                                max={formData.finish_date}
                                 className="h-10"
                               />
-                            </div>
-                            </div>
-                            
-                          </div> */}
-
-                          <div className="flex w-full gap-2">
-                            {/* Start Date */}
-                            <div className="space-y-1 w-1/2">
-                              <Label className="text-sm font-medium text-gray-600">
-                                Start Date
-                              </Label>
-                              <Input
-                                type="date"
-                                value={service.start_date}
-                                onChange={(e) =>
-                                  updateService(index, "start_date", e.target.value)
-                                }
-                                className="h-10"
-                              />
-                            </div>
-
-                            {/* Finish Date */}
-                            <div className="space-y-1 w-1/2">
-                              <Label className="text-sm font-medium text-gray-600">
-                                Finish Date
-                              </Label>
-                              <Input
-                                type="date"
-                                value={service.finish_date}
-                                onChange={(e) =>
-                                  updateService(index, "finish_date", e.target.value)
-                                }
-                                className="h-10"
-                              />
+                              {service.finish_date &&
+                                !isDateInRange(service.finish_date) && (
+                                  <p className="text-xs text-red-500">
+                                    Date must be within job card range
+                                  </p>
+                                )}
                             </div>
                           </div>
 
-
-                          {/* <div className="space-y-1">
+                          <div className="w-[100%]">
                             <Label className="text-sm font-medium text-gray-600">
                               Price
                             </Label>
-                            <div className="flex ">
-                              <Input
-                                type="text"
-                                placeholder="Enter the price"
-                                value={service.price}
-                                onChange={(e) =>
-                                  updateService(
-                                    index,
-                                    "price",
-                                    e.target.value
-                                  )
-                                }
-                                className="h-10"
-                              />
-                             
-                            </div>
-                          </div> */}
-                          <div className=" w-[100%]">
-                            <Label className="text-sm font-medium text-gray-600">Price</Label>
                             <div className="flex rounded-md border border-gray-300 overflow-hidden">
                               <Input
                                 placeholder="0.00"
                                 type="number"
                                 value={service.price || ""}
                                 onChange={(e) =>
-                                  updateService(
-                                    index,
-                                    "price",
-                                    e.target.value
-                                  )
+                                  updateService(index, "price", e.target.value)
                                 }
                                 className="h-9 text-sm border-none focus:ring-0 rounded-none flex-1"
                                 style={{
@@ -1064,9 +1017,11 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                               placeholder="Enter detailed work description"
                               value={service.work_description}
                               onChange={(e) => {
-                                updateService(index, "work_description", e.target.value);
-
-                                // Auto-resize the textarea
+                                updateService(
+                                  index,
+                                  "work_description",
+                                  e.target.value
+                                );
                                 const target = e.target as HTMLTextAreaElement;
                                 target.style.height = "auto";
                                 target.style.height = `${target.scrollHeight}px`;
@@ -1075,16 +1030,20 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                               rows={1}
                             />
                           </div>
-                          <div className=" flex justify-end">
+                          <div className="flex justify-end">
                             <Button
-                              type="button"
-                              variant="destructive"
-                              size="sm"
-                              onClick={() => removeService(index)}
-                              className="h-10 w-10 p-0 text-red-500 hover:text-red-700"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button></div>
+  type="button"
+  variant="destructive"
+  size="sm"
+  onClick={() => {
+    setServiceToDelete(index); // Set the index of service to delete
+    setShowCancelDialog(true); // Show confirmation dialog
+  }}
+  className="h-10 w-10 p-0 text-red-500 hover:text-red-700"
+>
+  <Trash2 className="h-4 w-4" />
+</Button>
+                          </div>
                         </div>
                       </div>
                     ))
@@ -1099,34 +1058,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                     Add Service
                   </Button>
                 </div>
-
-                {/* Services Total */}
-                {/* {services.length > 0 && (
-                  <div className="bg-gray-100 px-6 py-3 border-t border-gray-200">
-                    <div className="flex justify-between items-center">
-                      <span className="font-medium">Services Total:</span>
-                      <div className="flex items-center">
-                        <span className="font-bold text-lg">
-                          {serviceTotal.toFixed(2)} AED
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                )} */}
               </div>
-
-              {/* <div className="bg-white rounded-lg shadow-sm border border-gray-200 px-4 py-3">
-                <div className="flex justify-between items-center gap-4">
-                  <span className="font-semibold text-gray-700">
-                    Grand Total:
-                  </span>
-                  <div className="flex items-center">
-                    <span className="text-xl font-bold text-blue-600">
-                      {serviceTotal.toFixed(2)} AED
-                    </span>
-                  </div>
-                </div>
-              </div> */}
 
               {/* Action Buttons */}
               <div className="sticky bottom-0 bg-white border-t border-gray-200 p-4 shadow-lg">
@@ -1164,26 +1096,41 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
       </div>
 
       <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
-        <DialogContent className="sm:max-w-[425px] bg-white">
-          <DialogHeader>
-            <DialogTitle>Are you sure?</DialogTitle>
-            <DialogDescription>
-              Any unsaved changes will be lost. Do you want to continue?
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={handleCancelDialogClose}>
-              No, keep editing
-            </Button>
-            <Button
-              className="bg-red-500 hover:bg-red-600 text-white"
-              onClick={handleConfirmCancel}
-            >
-              Yes, cancel
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+  <DialogContent className="sm:max-w-[425px] bg-white">
+    <DialogHeader>
+      <DialogTitle>
+        {serviceToDelete !== null ? "Delete Service?" : "Are you sure?"}
+      </DialogTitle>
+      <DialogDescription>
+        {serviceToDelete !== null
+          ? "This service will be permanently deleted."
+          : "Any unsaved changes will be lost. Do you want to continue?"}
+      </DialogDescription>
+    </DialogHeader>
+    <DialogFooter>
+      <Button variant="outline" onClick={() => {
+        setShowCancelDialog(false);
+        setServiceToDelete(null);
+      }}>
+        Cancel
+      </Button>
+      <Button
+        className="bg-red-500 hover:bg-red-600 text-white"
+        onClick={() => {
+          if (serviceToDelete !== null) {
+            removeService(serviceToDelete);
+            setServiceToDelete(null);
+          } else {
+            handleConfirmCancel();
+          }
+          setShowCancelDialog(false);
+        }}
+      >
+        Confirm
+      </Button>
+    </DialogFooter>
+  </DialogContent>
+</Dialog>
 
       {/* Add Customer Dialog */}
       <Dialog
@@ -1199,7 +1146,9 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="customer_name">Customer Name <span className="text-red-500">*</span></Label>
+              <Label htmlFor="customer_name">
+                Customer Name <span className="text-red-500">*</span>
+              </Label>
               <Input
                 id="customer_name"
                 name="customer_name"
@@ -1217,7 +1166,6 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                 value={newCustomerData.mobile_no}
                 onChange={handleNewCustomerInputChange}
                 placeholder="Enter mobile number"
-                
               />
             </div>
             <div className="space-y-2">
@@ -1253,5 +1201,3 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
 };
 
 export default JobCardOtherForm;
-
-

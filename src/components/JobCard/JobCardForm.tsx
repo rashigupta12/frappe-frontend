@@ -958,7 +958,6 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                         value={formData.building_name}
                         onChange={handleInputChange}
                         placeholder="Enter building name"
-                        
                         className="focus:ring-blue-500 focus:border-blue-500"
                       />
                     </div>
@@ -971,7 +970,6 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                         value={formData.property_no}
                         onChange={handleInputChange}
                         placeholder="Enter property number"
-                        
                         className="focus:ring-blue-500 focus:border-blue-500"
                       />
                     </div>
@@ -990,7 +988,6 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                         value={formData.area}
                         onChange={handleInputChange}
                         placeholder="Enter area"
-                     
                         className="focus:ring-blue-500 focus:border-blue-500"
                       />
                     </div>
@@ -1116,9 +1113,6 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                                     <SelectValue placeholder="Select work type" />
                                   </SelectTrigger>
                                   <SelectContent className="bg-white max-w-full sm:max-w-xs">
-                                    <SelectItem value="none">
-                                      Select work type
-                                    </SelectItem>
                                     {pressingItems.map((item) => (
                                       <SelectItem
                                         key={item.name}
@@ -1227,7 +1221,6 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                                 </span>
                               </div>
                             </div>
-
                           </div>
                           <div className="space-y-1 pt-2">
                             <Label className="text-xs font-medium text-gray-600">
@@ -1355,9 +1348,6 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                                     <SelectValue placeholder="Select work type" />
                                   </SelectTrigger>
                                   <SelectContent className="bg-white max-w-full sm:max-w-xs">
-                                    <SelectItem value="none">
-                                      Select work type
-                                    </SelectItem>
                                     {materialSoldItems.map((item) => (
                                       <SelectItem
                                         key={item.name}
