@@ -20,13 +20,13 @@ interface Props {
 
 const JobCardOtherDetails: React.FC<Props> = ({ card, onClose }) => {
   const fmt = (d?: string) =>
-    d ? format(new Date(d), 'MMM dd, yyyy') : 'N/A';
+    d ? format(new Date(d), 'dd/MM/yyyy') : 'N/A';
   const formatAddress = (building?: string, property?: string, area?: string) => {
     return [building, property, area].filter(Boolean).join(", ");
   };
 
   return (
-    <DialogContent className="max-w-[95vw] sm:max-w-4xl w-full max-h-[90vh] overflow-y-auto bg-white mx-auto">
+    <DialogContent className="max-w-[99vw] sm:max-w-4xl w-full max-h-[90vh] overflow-y-auto bg-white mx-auto">
       <DialogHeader>
         <DialogTitle className="text-lg sm:text-xl leading-tight">
           Job Card – Other Services – {card.party_name || card.name}
@@ -45,7 +45,7 @@ const JobCardOtherDetails: React.FC<Props> = ({ card, onClose }) => {
         <Field label="Address" value={formatAddress(card.building_name, card.property_no, card.area)} />
 
         {/* Start Date and Finish Date side by side */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-3 ">
           <Field label="Start Date" value={fmt(card.start_date)} />
           <Field label="Finish Date" value={fmt(card.finish_date)} />
         </div>
@@ -130,8 +130,8 @@ function ChildTable({
         <colgroup>
           <col className="w-[15%]" /> {/* work_type */}
           <col className="w-[35%]" /> {/* work_description - wider for mobile */}
-          <col className="w-[20%]" /> {/* start_date */}
-          <col className="w-[20%]" /> {/* finish_date */}
+          <col className="w-[15%]" /> {/* start_date */}
+          <col className="w-[15%]" /> {/* finish_date */}
           <col className="w-[10%]" /> {/* price */}
         </colgroup>
         <thead className="bg-gray-50">
@@ -139,7 +139,7 @@ function ChildTable({
             {cols.map((c) => (
               <th
                 key={c}
-                className="px-2 py-1 text-left font-medium text-gray-700 border border-gray-300 text-xs"
+                className="px-1 py-1 text-left font-medium text-gray-700 border border-gray-300 text-xs"
               >
                 {c === 'price' 
                   ? 'Price (AED)'
