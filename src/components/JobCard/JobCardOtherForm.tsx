@@ -108,8 +108,6 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
     null
   );
 
-  
-
   // Calculate totals
   const calculateServiceTotal = () => {
     return services.reduce((total, service) => {
@@ -468,6 +466,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
   };
 
   const validateForm = (): boolean => {
+    // Basic validation
     if (!formData.party_name) {
       toast.error("Customer name is required");
       return false;
@@ -480,8 +479,20 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
       toast.error("Finish date is required");
       return false;
     }
+
+    // Services validation
     if (services.length === 0) {
       toast.error("At least one service entry is required");
+      return false;
+    }
+
+    // Check if all services have required fields
+    const hasValidServices = services.some(
+      (service) => service.work_type && service.price
+    );
+
+    if (!hasValidServices) {
+      toast.error("Each service must have at least a work type and price");
       return false;
     }
 
@@ -545,8 +556,6 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
     setShowCancelDialog(false);
     onClose();
   };
-
-
 
   if (!isOpen) return null;
 
@@ -802,7 +811,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                           value={formData.start_date}
                           onChange={handleInputChange}
                           required
-                          className="w-full"
+                          className="w-full pl-1"
                         />
                       </div>
 
@@ -836,7 +845,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                           }}
                           min={formData.start_date}
                           required
-                          className="w-full"
+                          className="w-full pl-1"
                         />
                       </div>
                     </div>
@@ -890,14 +899,19 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                                     <SelectValue placeholder="Select work type" />
                                   </SelectTrigger>
                                   <SelectContent className="bg-white max-w-full sm:max-w-xs">
-                                    {jobTypes.map((jobType) => (
-                                      <SelectItem
-                                        key={jobType.name}
-                                        value={jobType.name}
-                                      >
-                                        {jobType.name}
-                                      </SelectItem>
-                                    ))}
+                                    {jobTypes
+                                      .filter(
+                                        (jobType) =>
+                                          jobType.name !== "8. Veneer Pressing"
+                                      )
+                                      .map((jobType) => (
+                                        <SelectItem
+                                          key={jobType.name}
+                                          value={jobType.name}
+                                        >
+                                          {jobType.name}
+                                        </SelectItem>
+                                      ))}
                                   </SelectContent>
                                 </Select>
                               )}
@@ -931,7 +945,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                                 }}
                                 min={formData.start_date}
                                 max={formData.finish_date}
-                                className="h-10"
+                                className="h-10 pl-1"
                               />
                               {service.start_date &&
                                 !isDateInRange(service.start_date) && (
@@ -977,7 +991,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                                 }}
                                 min={formData.start_date || service.start_date}
                                 max={formData.finish_date}
-                                className="h-10"
+                                className="h-10 pl-1"
                               />
                               {service.finish_date &&
                                 !isDateInRange(service.finish_date) && (
@@ -1035,17 +1049,17 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                           </div>
                           <div className="flex justify-end">
                             <Button
-  type="button"
-  variant="destructive"
-  size="sm"
-  onClick={() => {
-    setServiceToDelete(index); // Set the index of service to delete
-    setShowCancelDialog(true); // Show confirmation dialog
-  }}
-  className="h-10 w-10 p-0 text-red-500 hover:text-red-700"
->
-  <Trash2 className="h-4 w-4" />
-</Button>
+                              type="button"
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => {
+                                setServiceToDelete(index); // Set the index of service to delete
+                                setShowCancelDialog(true); // Show confirmation dialog
+                              }}
+                              className="h-10 w-10 p-0 text-red-500 hover:text-red-700"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
                           </div>
                         </div>
                       </div>
@@ -1099,41 +1113,44 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
       </div>
 
       <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
-  <DialogContent className="sm:max-w-[425px] bg-white">
-    <DialogHeader>
-      <DialogTitle>
-        {serviceToDelete !== null ? "Delete Service?" : "Are you sure?"}
-      </DialogTitle>
-      <DialogDescription>
-        {serviceToDelete !== null
-          ? "This service will be permanently deleted."
-          : "Any unsaved changes will be lost. Do you want to continue?"}
-      </DialogDescription>
-    </DialogHeader>
-    <DialogFooter>
-      <Button variant="outline" onClick={() => {
-        setShowCancelDialog(false);
-        setServiceToDelete(null);
-      }}>
-        Cancel
-      </Button>
-      <Button
-        className="bg-red-500 hover:bg-red-600 text-white"
-        onClick={() => {
-          if (serviceToDelete !== null) {
-            removeService(serviceToDelete);
-            setServiceToDelete(null);
-          } else {
-            handleConfirmCancel();
-          }
-          setShowCancelDialog(false);
-        }}
-      >
-        Confirm
-      </Button>
-    </DialogFooter>
-  </DialogContent>
-</Dialog>
+        <DialogContent className="sm:max-w-[425px] bg-white">
+          <DialogHeader>
+            <DialogTitle>
+              {serviceToDelete !== null ? "Delete Service?" : "Are you sure?"}
+            </DialogTitle>
+            <DialogDescription>
+              {serviceToDelete !== null
+                ? "This service will be permanently deleted."
+                : "Any unsaved changes will be lost. Do you want to continue?"}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowCancelDialog(false);
+                setServiceToDelete(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              className="bg-red-500 hover:bg-red-600 text-white"
+              onClick={() => {
+                if (serviceToDelete !== null) {
+                  removeService(serviceToDelete);
+                  setServiceToDelete(null);
+                } else {
+                  handleConfirmCancel();
+                }
+                setShowCancelDialog(false);
+              }}
+            >
+              Confirm
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Add Customer Dialog */}
       <Dialog

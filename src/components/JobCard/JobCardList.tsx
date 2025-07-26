@@ -39,6 +39,7 @@ const JobCardList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [cardToDelete, setCardToDelete] = useState<string | null>(null);
 
+
   useEffect(() => {
     fetchJobCards();
   }, [fetchJobCards]);
@@ -326,7 +327,7 @@ const JobCardList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
             variant={purposeFilter === 'pressing' ? 'default' : 'outline'}
             size="sm"
             onClick={() => setPurposeFilter(purposeFilter === 'pressing' ? 'all' : 'pressing')}
-            className="h-8 px-3 text-xs"
+            className="h-8 px-3 text-xs bg-amber-50 text-amber-700 *:hover:bg-amber-100 *:hover:text-amber-800"
           >
             P
           </Button>
@@ -334,7 +335,7 @@ const JobCardList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
             variant={purposeFilter === 'material' ? 'default' : 'outline'}
             size="sm"
             onClick={() => setPurposeFilter(purposeFilter === 'material' ? 'all' : 'material')}
-            className="h-8 px-3 text-xs"
+            className="h-8 px-3 text-xs bg-purple-50 text-purple-700 hover:bg-purple-100 hover:text-purple-800"
           >
             M
           </Button>
@@ -342,17 +343,18 @@ const JobCardList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
             variant={purposeFilter === 'both' ? 'default' : 'outline'}
             size="sm"
             onClick={() => setPurposeFilter(purposeFilter === 'both' ? 'all' : 'both')}
-            className="h-8 px-3 text-xs"
+            className="h-8 px-3 text-xs bg-indigo-50 text-indigo-700  hover:bg-indigo-100 hover:text-indigo-800"
           >
             P M
+            
           </Button>
           <Button
             variant={purposeFilter === 'submitted' ? 'default' : 'outline'}
             size="sm"
             onClick={() => setPurposeFilter(purposeFilter === 'submitted' ? 'all' : 'submitted')}
-            className="h-8 px-3 text-xs"
+            className="h-8 px-3 text-xs bg-emerald-50 text-emerald-700 *:hover:bg-emerald-100 *:hover:text-emerald-800"
           >
-            Submitted
+            Paid
           </Button>
         </div>
 
@@ -375,7 +377,7 @@ const JobCardList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
               <span className="bg-indigo-100 text-indigo-800 px-1.5 py-0.5 rounded">P M</span>
             )}
             {purposeFilter === 'submitted' && (
-              <span className="bg-green-100 text-green-800 px-1.5 py-0.5 rounded">Submitted</span>
+              <span className="bg-green-100 text-green-800 px-1.5 py-0.5 rounded">Paid</span>
             )}
           </div>
         )}
@@ -412,7 +414,7 @@ const JobCardList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
               </div>
 
               {/* Purpose Filter */}
-              <div>
+              {/* <div>
                 <label className="text-xs font-medium text-gray-600 mb-1 block">
                   Job Type
                 </label>
@@ -427,7 +429,7 @@ const JobCardList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
                   <option value="both">Both</option>
                   <option value="submitted">Submitted</option>
                 </select>
-              </div>
+              </div> */}
             </div>
 
             <div className="flex justify-between items-center">
@@ -499,6 +501,8 @@ const JobCardList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
             const purpose = getJobCardPurpose(card);
             const totalAmount = calculateTotalAmount(card);
             const purposeDisplay = getPurposeDisplay(purpose);
+            const isReadOnly = card.docstatus === 1;
+
 
             return (
               <div
@@ -558,24 +562,26 @@ const JobCardList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
                         </span>
                       )}
                     </div>
-                    <div className="flex gap-0.5">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => handleEdit(card, e)}
-                        className="h-5 w-5 p-0 hover:bg-green-50"
-                      >
-                        <Edit className="h-3 w-3 text-green-700" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => handleDeleteClick(card.name, e)}
-                        className="h-5 w-5 p-0 hover:bg-red-50"
-                      >
-                        <Trash2 className="h-3 w-3 text-red-500" />
-                      </Button>
-                    </div>
+                    {!isReadOnly && (
+                      <div className="flex gap-0.5">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => handleEdit(card, e)}
+                          className="h-5 w-5 p-0 hover:bg-green-50"
+                        >
+                          <Edit className="h-3 w-3 text-green-700" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => handleDeleteClick(card.name, e)}
+                          className="h-5 w-5 p-0 hover:bg-red-50"
+                        >
+                          <Trash2 className="h-3 w-3 text-red-500" />
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
