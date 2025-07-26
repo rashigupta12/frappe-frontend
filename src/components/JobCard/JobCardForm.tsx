@@ -668,22 +668,11 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
   };
 
   const validateForm = (): boolean => {
+    // Basic validation
     if (!formData.party_name) {
       toast.error("Customer name is required");
       return false;
     }
-    // if (!formData.building_name) {
-    //   toast.error("Building name is required");
-    //   return false;
-    // }
-    // if (!formData.property_no) {
-    //   toast.error("Property number is required");
-    //   return false;
-    // }
-    // if (!formData.area) {
-    //   toast.error("Area is required");
-    //   return false;
-    // }
     if (!formData.start_date) {
       toast.error("Start date is required");
       return false;
@@ -692,12 +681,58 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
       toast.error("Finish date is required");
       return false;
     }
+
+    // Check if at least one section has entries
     if (pressingCharges.length === 0 && materialsSold.length === 0) {
       toast.error(
         "At least one entry in Pressing Charges or Materials Sold is required"
       );
       return false;
     }
+
+    // Validate pressing charges
+    const hasValidPressingCharges =
+      pressingCharges.length > 0
+        ? pressingCharges.every(
+            (charge) =>
+              charge.work_type && charge.price !== undefined && charge.price > 0
+          )
+        : true;
+
+    if (!hasValidPressingCharges && pressingCharges.length > 0) {
+      toast.error("All pressing charges must have a work type and valid price");
+      return false;
+    }
+
+    // Validate materials sold
+    const hasValidMaterialsSold =
+      materialsSold.length > 0
+        ? materialsSold.every(
+            (material) =>
+              material.work_type &&
+              material.price !== undefined &&
+              material.price > 0
+          )
+        : true;
+
+    if (!hasValidMaterialsSold && materialsSold.length > 0) {
+      toast.error("All materials sold must have a work type and valid price");
+      return false;
+    }
+
+    // If both sections have entries but none are valid
+    if (
+      pressingCharges.length > 0 &&
+      materialsSold.length > 0 &&
+      !hasValidPressingCharges &&
+      !hasValidMaterialsSold
+    ) {
+      toast.error(
+        "Please add valid entries to either Pressing Charges or Materials Sold"
+      );
+      return false;
+    }
+
     return true;
   };
 
@@ -992,7 +1027,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                       />
                     </div>
                     <div className="flex pb-4 flex-wrap gap-2">
-                      <div className="w-[48%] space-y-2">
+                      <div className="w-[40%] space-y-2">
                         <Label
                           htmlFor="start_date"
                           className="flex items-center space-x-1"
@@ -1012,7 +1047,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                         />
                       </div>
 
-                      <div className="w-[48%] space-y-2">
+                      <div className="w-[52%] space-y-2">
                         <Label
                           htmlFor="finish_date"
                           className="flex items-center space-x-1"
@@ -1029,7 +1064,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                           value={formData.finish_date || ""}
                           onChange={handleInputChange}
                           required
-                          className="w-full"
+                          className="w-full pl-1"
                         />
                       </div>
                     </div>
