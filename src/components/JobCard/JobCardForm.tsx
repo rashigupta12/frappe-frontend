@@ -63,6 +63,8 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
   const { createJobCard, updateJobCard, loading, fetchEmployees } =
     useJobCards();
   console.log("job card edit form", jobCard);
+  const isReadOnly = jobCard?.docstatus === 1;
+  const projectidname = jobCard?.name || jobCard?.project_id_no || "";
 
   const [formData, setFormData] = useState<JobCardFormData>({
     date: new Date().toISOString().split("T")[0],
@@ -138,17 +140,17 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
   const calculatePressingTotal = (charges: PressingCharges[]) => {
     return charges.reduce((sum, charge) => sum + (charge.amount || 0), 0);
   };
-const calculateCombinedTotal = () => {
-  const pressingTotal = pressingCharges.reduce(
-    (sum, charge) => sum + (charge.amount || 0),
-    0
-  );
-  const materialsTotal = materialsSold.reduce(
-    (sum, material) => sum + (material.amount || 0),
-    0
-  );
-  return pressingTotal + materialsTotal;
-};
+  const calculateCombinedTotal = () => {
+    const pressingTotal = pressingCharges.reduce(
+      (sum, charge) => sum + (charge.amount || 0),
+      0
+    );
+    const materialsTotal = materialsSold.reduce(
+      (sum, material) => sum + (material.amount || 0),
+      0
+    );
+    return pressingTotal + materialsTotal;
+  };
   useEffect(() => {
     const fetchItems = async () => {
       // Fetch pressing items
@@ -822,14 +824,18 @@ const calculateCombinedTotal = () => {
               </div>
               <div>
                 <h3 className="text-xl font-bold">
-                  {jobCard ? "Edit Job Card" : "New Job Card"}
+                  {jobCard
+                    ? isReadOnly
+                      ? "View Job Card"
+                      : "Edit Job Card"
+                    : "New Job Card"}
                 </h3>
                 <div className="flex items-center space-x-6 mt-1">
-                  {formData.project_id_no && (
+                  {projectidname && (
                     <div className="flex items-center space-x-2">
                       <span className="text-xs text-blue-100">Project ID:</span>
                       <span className="text-sm font-medium">
-                        {formData.project_id_no}
+                        {projectidname}
                       </span>
                     </div>
                   )}
@@ -851,6 +857,11 @@ const calculateCombinedTotal = () => {
                 </p>
               </div>
             </div>
+            {isReadOnly && (
+              <span className="inline-block mt-1 px-2 py-1 text-xs font-medium bg-white/20 rounded-full">
+                Paid
+              </span>
+            )}
             <Button
               variant="ghost"
               size="sm"
@@ -923,8 +934,9 @@ const calculateCombinedTotal = () => {
                           value={searchQuery}
                           onChange={handleSearchChange}
                           placeholder="Search by name, phone, or email"
+                          disabled={isReadOnly}
                           required
-                          className="focus:ring-blue-500 focus:border-blue-500 pr-10"
+                          className="focus:ring-blue-500 focus:border-blue-500 pr-10 text-black"
                         />
                         {isSearching && (
                           <Loader2 className="absolute right-3 top-3 h-4 w-4 animate-spin text-gray-500" />
@@ -1004,6 +1016,7 @@ const calculateCombinedTotal = () => {
                         value={formData.building_name}
                         onChange={handleInputChange}
                         placeholder="Enter building name"
+                        disabled={isReadOnly}
                         className="focus:ring-blue-500 focus:border-blue-500"
                       />
                     </div>
@@ -1016,6 +1029,7 @@ const calculateCombinedTotal = () => {
                         value={formData.property_no}
                         onChange={handleInputChange}
                         placeholder="Enter property number"
+                        disabled={isReadOnly}
                         className="focus:ring-blue-500 focus:border-blue-500"
                       />
                     </div>
@@ -1034,6 +1048,7 @@ const calculateCombinedTotal = () => {
                         value={formData.area}
                         onChange={handleInputChange}
                         placeholder="Enter area"
+                        disabled={isReadOnly}
                         className="focus:ring-blue-500 focus:border-blue-500"
                       />
                     </div>
@@ -1054,6 +1069,7 @@ const calculateCombinedTotal = () => {
                           type="date"
                           value={formData.start_date}
                           readOnly
+                          disabled={isReadOnly}
                           className="w-full bg-gray-100 cursor-not-allowed"
                         />
                       </div>
@@ -1075,6 +1091,7 @@ const calculateCombinedTotal = () => {
                           value={formData.finish_date || ""}
                           onChange={handleInputChange}
                           required
+                          disabled={isReadOnly}
                           className="w-full pl-1"
                         />
                       </div>
@@ -1154,6 +1171,7 @@ const calculateCombinedTotal = () => {
                                       value
                                     )
                                   }
+                                  disabled={isReadOnly}
                                 >
                                   <SelectTrigger className="h-9 text-sm w-full truncate sm:max-w-xs">
                                     <SelectValue placeholder="Select work type" />
@@ -1192,6 +1210,7 @@ const calculateCombinedTotal = () => {
                                       e.target.value
                                     )
                                   }
+                                  disabled={isReadOnly}
                                   className="h-9 text-sm"
                                 />
                               </div>
@@ -1211,6 +1230,7 @@ const calculateCombinedTotal = () => {
                                       e.target.value
                                     )
                                   }
+                                  disabled={isReadOnly}
                                   className="h-9 text-sm"
                                 />
                               </div>
@@ -1235,6 +1255,7 @@ const calculateCombinedTotal = () => {
                                     e.target.value
                                   )
                                 }
+                                disabled={isReadOnly}
                                 className="h-9 text-sm"
                               />
                             </div>
@@ -1256,6 +1277,7 @@ const calculateCombinedTotal = () => {
                                       e.target.value
                                     )
                                   }
+                                  disabled={isReadOnly}
                                   className="h-9 text-sm border-none focus:ring-0 rounded-none flex-1"
                                   style={{
                                     WebkitAppearance: "none",
@@ -1282,6 +1304,7 @@ const calculateCombinedTotal = () => {
                                   e.target.value
                                 )
                               }
+                              disabled={isReadOnly}
                               className="h-9 text-sm"
                             />
                           </div>
@@ -1291,30 +1314,34 @@ const calculateCombinedTotal = () => {
                               Total Amount : {charge.amount} AED
                             </Label>
                             <div className="flex items-end">
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                className="text-red-500 hover:text-red-700"
-                                onClick={() => removePressingCharge(index)}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
+                              {!isReadOnly && (
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-red-500 hover:text-red-700"
+                                  onClick={() => removePressingCharge(index)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              )}
                             </div>
                           </div>
                         </div>
                       ))
                     )}
 
-                    <Button
-                      type="button"
-                      onClick={addPressingCharge}
-                      size="sm"
-                      className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm mt-4"
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Charge
-                    </Button>
+                    {!isReadOnly && (
+                      <Button
+                        type="button"
+                        onClick={addPressingCharge}
+                        size="sm"
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm mt-4"
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Charge
+                      </Button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1389,6 +1416,7 @@ const calculateCombinedTotal = () => {
                                       value
                                     )
                                   }
+                                  disabled={isReadOnly}
                                 >
                                   <SelectTrigger className="h-9 text-sm w-full truncate sm:max-w-xs">
                                     <SelectValue placeholder="Select work type" />
@@ -1414,10 +1442,10 @@ const calculateCombinedTotal = () => {
                               {/* Size - 40% */}
                               <div className="space-y-1 w-[40%]">
                                 <Label className="text-xs font-medium text-gray-600">
-                                  Size
+                                  Unit
                                 </Label>
                                 <Input
-                                  placeholder="Size"
+                                  placeholder="Unit"
                                   value={material.size}
                                   onChange={(e) =>
                                     updateMaterialSold(
@@ -1426,12 +1454,13 @@ const calculateCombinedTotal = () => {
                                       e.target.value
                                     )
                                   }
+                                  disabled={isReadOnly}
                                   className="h-9 text-sm"
                                 />
                               </div>
 
                               {/* Thickness - 60% */}
-                              <div className="space-y-1 w-[60%]">
+                              {/* <div className="space-y-1 w-[60%]">
                                 <Label className="text-xs font-medium text-gray-600">
                                   Thickness
                                 </Label>
@@ -1445,18 +1474,17 @@ const calculateCombinedTotal = () => {
                                       e.target.value
                                     )
                                   }
+                                  disabled={isReadOnly}
                                   className="h-9 text-sm"
                                 />
-                              </div>
-                            </div>
-                            <div className="flex gap-2 w-full">
-                              {/* No of Sides - 40% */}
-                              <div className="space-y-1 w-[40%]">
+                              </div> */}
+
+                              <div className="space-y-1 w-[60%]">
                                 <Label className="text-xs font-medium text-gray-600">
-                                  No of Sides
+                                  Qty
                                 </Label>
                                 <Input
-                                  placeholder="No of Sides"
+                                  placeholder="Qty"
                                   type="number"
                                   min="1"
                                   value={material.no_of_sides || ""}
@@ -1467,12 +1495,17 @@ const calculateCombinedTotal = () => {
                                       e.target.value
                                     )
                                   }
+                                  disabled={isReadOnly}
                                   className="h-9 text-sm"
                                 />
                               </div>
+                            </div>
+                            <div className="flex gap-2 w-full">
+                              {/* No of Sides - 40% */}
+                              
 
                               {/* Price - 60% */}
-                              <div className="space-y-1 w-[60%]">
+                              <div className="space-y-1 w-[100%]">
                                 <Label className="text-xs font-medium text-gray-600">
                                   Price
                                 </Label>
@@ -1488,6 +1521,7 @@ const calculateCombinedTotal = () => {
                                         e.target.value
                                       )
                                     }
+                                    disabled={isReadOnly}
                                     className="h-9 text-sm border-none focus:ring-0 rounded-none flex-1"
                                     style={{
                                       WebkitAppearance: "none",
@@ -1500,7 +1534,7 @@ const calculateCombinedTotal = () => {
                                 </div>
                               </div>
                             </div>
-                            <div className="space-y-1 pt-2">
+                            {/* <div className="space-y-1 pt-2">
                               <Label className="text-xs font-medium text-gray-600">
                                 Remarks
                               </Label>
@@ -1514,9 +1548,10 @@ const calculateCombinedTotal = () => {
                                     e.target.value
                                   )
                                 }
+                                disabled={isReadOnly}
                                 className="h-9 text-sm"
                               />
-                            </div>
+                            </div> */}
                           </div>
 
                           <div className="flex justify-between">
@@ -1524,63 +1559,69 @@ const calculateCombinedTotal = () => {
                               Total Amount : {material.amount || 0} AED
                             </Label>
                             <div className="flex items-end">
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                className="text-red-500 hover:text-red-700"
-                                onClick={() => removeMaterialSold(index)}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
+                              {!isReadOnly && (
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-red-500 hover:text-red-700"
+                                  onClick={() => removeMaterialSold(index)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              )}
                             </div>
                           </div>
                         </div>
                       ))
                     )}
 
-                    <Button
-                      type="button"
-                      onClick={addMaterialSold}
-                      size="sm"
-                      className="bg-purple-600 hover:bg-purple-700 text-white shadow-sm mt-4"
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Material
-                    </Button>
+                    {!isReadOnly && (
+                      <Button
+                        type="button"
+                        onClick={addMaterialSold}
+                        size="sm"
+                        className="bg-purple-600 hover:bg-purple-700 text-white shadow-sm mt-4"
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Material
+                      </Button>
+                    )}
                   </div>
                 </div>
               </div>
               {/* Action Buttons */}
-              <div className="sticky bottom-0 bg-white border-t border-gray-200 p-6 shadow-lg">
-                <div className="flex flex-col sm:flex-row justify-end gap-3">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={handleCancelClick}
-                    className="px-8 py-3 order-2 sm:order-1"
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    type="submit"
-                    disabled={loading}
-                    className="px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg order-1 sm:order-2"
-                  >
-                    {loading ? (
-                      <div className="flex items-center gap-2">
-                        <Loader2 className="animate-spin h-5 w-5" />
-                        Saving...
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <Save className="h-5 w-5" />
-                        {jobCard ? "Update Job Card" : "Create Job Card"}
-                      </div>
-                    )}
-                  </Button>
+              {!isReadOnly && (
+                <div className="sticky bottom-0 bg-white border-t border-gray-200 p-6 shadow-lg">
+                  <div className="flex flex-col sm:flex-row justify-end gap-3">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleCancelClick}
+                      className="px-8 py-3 order-2 sm:order-1"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="submit"
+                      disabled={loading}
+                      className="px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg order-1 sm:order-2"
+                    >
+                      {loading ? (
+                        <div className="flex items-center gap-2">
+                          <Loader2 className="animate-spin h-5 w-5" />
+                          Saving...
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <Save className="h-5 w-5" />
+                          {jobCard ? "Update Job Card" : "Create Job Card"}
+                        </div>
+                      )}
+                    </Button>
+                  </div>
                 </div>
-              </div>
+              )}
             </form>
           </div>
         </div>

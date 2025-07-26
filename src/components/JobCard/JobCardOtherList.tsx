@@ -29,12 +29,13 @@ const JobCardOtherList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
   const [selectedCard, setSelectedCard] = useState<JobCardOther | null>(null);
   const [showFilters, setShowFilters] = useState(false);
 
-  // Filter states - Initialize with today's date
+  // Filter states
   const todayString = new Date().toISOString().split("T")[0];
   const [fromDate, setFromDate] = useState(todayString);
   const [toDate, setToDate] = useState(todayString);
   const [searchQuery, setSearchQuery] = useState("");
   const [serviceTypeFilter, setServiceTypeFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "submitted" | "draft">("all");
   const [isDefaultFilter, setIsDefaultFilter] = useState(true);
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -49,17 +50,14 @@ const JobCardOtherList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
     onEdit(card);
   };
 
-  // Helper function to calculate total amount from services
   const calculateTotalAmount = (card: JobCardOther) => {
     if (!card.services || card.services.length === 0) return 0;
-
     return card.services.reduce(
       (sum, service) => sum + parseFloat(service.price?.toString() || "0"),
       0
     );
   };
 
-  // Helper function to get all unique service types for filter
   const getUniqueServiceTypes = useMemo(() => {
     const types = new Set<string>();
     jobCardsOther.forEach((card) => {
@@ -74,7 +72,6 @@ const JobCardOtherList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
     return Array.from(types).sort();
   }, [jobCardsOther]);
 
-  // Helper function to check if date is within range
   const isDateInRange = (
     cardStartDate: Date,
     cardFinishDate: Date,
@@ -98,32 +95,25 @@ const JobCardOtherList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
     );
   };
 
-  // Filter job cards based on all criteria
   const filteredJobCards = useMemo(() => {
     return jobCardsOther.filter((card) => {
-      // Parse card dates
       const cardStartDate = new Date(card.start_date || "");
       const cardFinishDate = new Date(card.finish_date || "");
       const filterFromDate = new Date(fromDate);
       const filterToDate = new Date(toDate);
 
-      // Skip invalid dates
       if (isNaN(cardStartDate.getTime()) || isNaN(cardFinishDate.getTime())) {
         return false;
       }
 
-      // Date filter logic
       let isInDateRange = false;
-
       if (isDefaultFilter) {
-        // Default behavior: show only cards that start today
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         const cardStart = new Date(cardStartDate);
         cardStart.setHours(0, 0, 0, 0);
         isInDateRange = cardStart.getTime() === today.getTime();
       } else {
-        // Custom date range: show cards that overlap with the selected date range
         isInDateRange = isDateInRange(
           cardStartDate,
           cardFinishDate,
@@ -132,28 +122,27 @@ const JobCardOtherList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
         );
       }
 
-      // Search filter
       const matchesSearch =
         searchQuery === "" ||
         card.party_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (card.services || []).some(
           (service) =>
-            service.work_type
-              ?.toLowerCase()
-              .includes(searchQuery.toLowerCase()) ||
-            service.work_description
-              ?.toLowerCase()
-              .includes(searchQuery.toLowerCase())
+            service.work_type?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            service.work_description?.toLowerCase().includes(searchQuery.toLowerCase())
         );
 
-      // Service type filter
       const matchesServiceType =
         serviceTypeFilter === "all" ||
         (card.services || []).some(
           (service) => service.work_type === serviceTypeFilter
         );
 
-      return isInDateRange && matchesSearch && matchesServiceType;
+      const matchesStatus =
+        statusFilter === "all" ||
+        (statusFilter === "submitted" && card.docstatus === 1) ||
+        (statusFilter === "draft" && card.docstatus !== 1);
+
+      return isInDateRange && matchesSearch && matchesServiceType && matchesStatus;
     });
   }, [
     jobCardsOther,
@@ -161,6 +150,7 @@ const JobCardOtherList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
     toDate,
     searchQuery,
     serviceTypeFilter,
+    statusFilter,
     isDefaultFilter,
   ]);
 
@@ -176,24 +166,19 @@ const JobCardOtherList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
 
   const getServicesSummary = (card: JobCardOther) => {
     if (!card.services || card.services.length === 0) return "No services";
-
-    if (card.services.length === 1) {
-      return card.services[0].work_type || "Service";
-    }
-
+    if (card.services.length === 1) return card.services[0].work_type || "Service";
     return `${card.services.length} Services`;
   };
 
   const applyFilters = () => {
     setShowFilters(false);
-    // Mark as custom filter if dates are different from today or other filters are applied
     const today = new Date().toISOString().split("T")[0];
     const hasCustomFilters =
       searchQuery !== "" ||
       serviceTypeFilter !== "all" ||
+      statusFilter !== "all" ||
       fromDate !== today ||
       toDate !== today;
-
     setIsDefaultFilter(!hasCustomFilters);
   };
 
@@ -202,23 +187,19 @@ const JobCardOtherList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
     setFromDate(today);
     setToDate(today);
     setServiceTypeFilter("all");
+    setStatusFilter("all");
     setSearchQuery("");
     setIsDefaultFilter(true);
   };
 
-  // Handle date changes
   const handleFromDateChange = (value: string) => {
     setFromDate(value);
-    if (value > toDate) {
-      setToDate(value);
-    }
+    if (value > toDate) setToDate(value);
   };
 
   const handleToDateChange = (value: string) => {
     setToDate(value);
-    if (value < fromDate) {
-      setFromDate(value);
-    }
+    if (value < fromDate) setFromDate(value);
   };
 
   const handleDeleteClick = (id: string, e: React.MouseEvent) => {
@@ -229,7 +210,6 @@ const JobCardOtherList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
 
   const handleConfirmDelete = async () => {
     if (!cardToDelete) return;
-
     try {
       await deleteJobCardOther(cardToDelete);
       setDeleteModalOpen(false);
@@ -256,7 +236,7 @@ const JobCardOtherList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
 
   return (
     <div className="pb-10 max-w-7xl mx-auto">
-      {/* Compact Header */}
+      {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <h2 className="text-xl font-bold text-blue-800 flex items-center gap-2">
           Job Cards
@@ -279,7 +259,7 @@ const JobCardOtherList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
         </Button>
       </div>
 
-      {/* Compact Search and Filter Bar */}
+      {/* Search and Filter Bar */}
       <div className="bg-white mb-4">
         <div className="flex gap-2">
           <div className="flex-1 relative">
@@ -293,6 +273,7 @@ const JobCardOtherList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
                 setIsDefaultFilter(
                   e.target.value === "" &&
                     serviceTypeFilter === "all" &&
+                    statusFilter === "all" &&
                     fromDate === todayString &&
                     toDate === todayString
                 );
@@ -314,11 +295,51 @@ const JobCardOtherList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
           </Button>
         </div>
 
-        {/* Collapsible Filters */}
+        {/* Quick Filter Buttons */}
+        <div className="flex gap-2 mt-2">
+         
+          <Button
+            variant={statusFilter === "submitted" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setStatusFilter(statusFilter === "submitted" ? "all" : "submitted")}
+            className="h-8 px-3 text-xs bg-green-50 hover:bg-green-100 text-green-700 data-[state=on]:bg-green-100"
+          >
+            Paid
+          </Button>
+          
+        </div>
+
+        {/* Active Filters Indicator */}
+        {(serviceTypeFilter !== "all" || statusFilter !== "all" || !isDefaultFilter) && (
+          <div className="text-xs text-gray-500  flex items-center gap-2">
+            <span>Filters:</span>
+            {!isDefaultFilter && (
+              <span className="bg-gray-100 text-gray-800 px-1.5 py-0.5 rounded">
+                {formatDate(fromDate)} to {formatDate(toDate)}
+              </span>
+            )}
+            {serviceTypeFilter !== "all" && (
+              <span className="bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded">
+                {serviceTypeFilter}
+              </span>
+            )}
+            {statusFilter === "submitted" && (
+              <span className="bg-green-100 text-green-800 px-1.5 py-0.5 rounded">
+                Submitted
+              </span>
+            )}
+            {statusFilter === "draft" && (
+              <span className="bg-yellow-100 text-yellow-800 px-1.5 py-0.5 rounded">
+                Draft
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* Detailed Filters Panel */}
         {showFilters && (
           <div className="mt-3 pt-3 border-t border-gray-200">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
-              {/* Date Range */}
               <div className="col-span-1 md:col-span-2 grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs font-medium text-gray-600 mb-1 block">
@@ -331,7 +352,6 @@ const JobCardOtherList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
                     className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
                   />
                 </div>
-
                 <div>
                   <label className="text-xs font-medium text-gray-600 mb-1 block">
                     To Date
@@ -344,8 +364,6 @@ const JobCardOtherList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
                   />
                 </div>
               </div>
-
-              {/* Service Type Filter */}
               <div>
                 <label className="text-xs font-medium text-gray-600 mb-1 block">
                   Service Type
@@ -363,15 +381,13 @@ const JobCardOtherList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
                   ))}
                 </select>
               </div>
+              
             </div>
-
             <div className="flex justify-between items-center">
               <div className="text-xs text-gray-500">
                 {isDefaultFilter
                   ? "Showing today's job cards by default"
-                  : `Custom filter: ${formatDate(fromDate)} to ${formatDate(
-                      toDate
-                    )}`}
+                  : `Custom filter: ${formatDate(fromDate)} to ${formatDate(toDate)}`}
               </div>
               <div className="flex gap-2">
                 <Button
@@ -433,6 +449,7 @@ const JobCardOtherList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
           {filteredJobCards.map((card) => {
             const totalAmount = calculateTotalAmount(card);
             const servicesSummary = getServicesSummary(card);
+            const isReadonly = card.docstatus === 1;
 
             return (
               <div
@@ -441,7 +458,6 @@ const JobCardOtherList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
                 className="relative bg-white border border-gray-200 rounded-lg hover:shadow-sm transition-all duration-150 cursor-pointer group overflow-hidden"
               >
                 <div className="p-2 space-y-1.5">
-                  {/* Top Row - Compact Header */}
                   <div className="flex justify-between items-start gap-2">
                     <div>
                       <div className="flex items-center gap-1 text-xs text-gray-500 mt-0.5">
@@ -462,14 +478,12 @@ const JobCardOtherList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
                     )}
                   </div>
 
-                  {/* Address - More compact */}
                   <p className="text-xs text-gray-600 leading-tight line-clamp-2">
                     {[card.property_no, card.building_name, card.area]
                       .filter(Boolean)
                       .join(", ") || "No Address"}
                   </p>
 
-                  {/* Services and Project ID in one row */}
                   <div className="flex items-center justify-between gap-1">
                     <div className="flex items-center gap-1 text-xs">
                       <Wrench className="h-3 w-3 text-blue-500 flex-shrink-0" />
@@ -478,28 +492,33 @@ const JobCardOtherList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
                       </span>
                     </div>
                     <div className="flex items-center justify-end pt-1">
-                      <div className="flex gap-0.5">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={(e) => handleEdit(card, e)}
-                          className="h-5 w-5 p-0 hover:bg-blue-50"
-                        >
-                          <Edit className="h-3 w-3 text-blue-700" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={(e) => handleDeleteClick(card.name, e)}
-                          className="h-5 w-5 p-0 hover:bg-red-50"
-                        >
-                          <Trash2 className="h-3 w-3 text-red-500" />
-                        </Button>
-                      </div>
+                      {!isReadonly && (
+                        <div className="flex gap-0.5">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => handleEdit(card, e)}
+                            className="h-5 w-5 p-0 hover:bg-blue-50"
+                          >
+                            <Edit className="h-3 w-3 text-blue-700" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => handleDeleteClick(card.name, e)}
+                            className="h-5 w-5 p-0 hover:bg-red-50"
+                          >
+                            <Trash2 className="h-3 w-3 text-red-500" />
+                          </Button>
+                        </div>
+                      )}
+                      {isReadonly && (
+                        <span className="text-xs bg-green-100 text-green-800 px-1.5 py-0.5 rounded">
+                          Paid
+                        </span>
+                      )}
                     </div>
                   </div>
-
-                  {/* Bottom Row - Actions - More compact */}
                 </div>
               </div>
             );

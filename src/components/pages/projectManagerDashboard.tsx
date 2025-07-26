@@ -3,7 +3,7 @@ import {
   FileText,
   LogOut,
   Menu,
-  Plus,
+  // Plus,
   Wrench,
   X
 } from "lucide-react";
@@ -337,9 +337,9 @@ export default function ProjectManagerDashboard() {
           </main>
 
           {/* Mobile Bottom Navigation */}
-          <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-30 safe-area-pb">
+          {/* <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-30 safe-area-pb">
             <div className="flex items-center justify-between px-4 py-2">
-              {/* New JC - Veneer Pressing Button */}
+            
               <div className="flex-1 max-w-xs flex justify-center">
                 <button
                   onClick={openJobCardForm}
@@ -360,7 +360,7 @@ export default function ProjectManagerDashboard() {
                 </button>
               </div>
 
-              {/* New JC - Other Service Button */}
+              
               <div className="flex-1 max-w-xs flex justify-center">
                 <button
                   onClick={openJobCardOtherForm}
@@ -381,7 +381,7 @@ export default function ProjectManagerDashboard() {
                 </button>
               </div>
             </div>
-          </div>
+          </div> */}
         </div>
       </div>
 
