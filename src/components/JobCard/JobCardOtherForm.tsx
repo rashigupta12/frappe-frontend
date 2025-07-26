@@ -197,6 +197,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
         services: [],
         lead_id: "",
         customer_id: "",
+        custom_total_amount: "",
       });
       setSearchQuery("");
       setServices([]);
@@ -517,6 +518,8 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
         services: services,
         lead_id: formData.lead_id || "",
         customer_id: formData.customer_id || "",
+        custom_total_amount: calculateServiceTotal().toString(), // Add this line
+
       };
 
       if (jobCard?.name) {

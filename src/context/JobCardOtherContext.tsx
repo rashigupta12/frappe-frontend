@@ -475,6 +475,7 @@ export interface JobCardOtherFormData {
   // Add any other fields needed for the form
   lead_id: string;
   customer_id: string;
+   custom_total_amount?: string;
 }
 
 interface JobCardOtherContextState {
