@@ -4,7 +4,7 @@ import {
   ListTodo,
   LogOut,
   Menu,
-  X
+  X,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
@@ -16,14 +16,10 @@ import CreateInspection from "../inspection/IspectionDetail";
 import { Button } from "../ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 
-
-
 export default function InspectorDashboard() {
- 
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { user, logout } = useAuth();
-
 
   const initialTab = searchParams.get("tab") || "todos";
   const [activeTab, setActiveTab] = useState(initialTab);
@@ -160,15 +156,11 @@ export default function InspectorDashboard() {
         {/* Sidebar - Fixed on desktop, overlay on mobile */}
         <aside
           className={`
-            fixed lg:relative z-40 w-64 bg-white border-r-2 border-emerald-200 
-            h-full p-4 shadow-lg lg:shadow-none overflow-y-auto flex-shrink-0
-            transform transition-transform duration-300 ease-in-out lg:transform-none
-            ${
-              sidebarOpen
-                ? "translate-x-0"
-                : "-translate-x-full lg:translate-x-0"
-            }
-          `}
+    fixed lg:relative z-40 w-64 bg-white border-r-2 border-emerald-200 
+    h-full p-4 shadow-lg lg:shadow-none overflow-y-auto flex-shrink-0
+    transform transition-transform duration-300 ease-in-out lg:transform-none
+    ${sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
+  `}
         >
           <nav className="space-y-2 mt-2">
             <Button
@@ -195,21 +187,9 @@ export default function InspectorDashboard() {
               <ClipboardList className="h-5 w-5" />
               <span className="font-medium">Inspections</span>
             </Button>
-            <Button
-              variant={activeTab === "details" ? "default" : "ghost"}
-              onClick={() => handleTabChange("details")}
-              className={`w-full justify-start gap-3 rounded-xl p-3 text-left transition-all duration-200 ${
-                activeTab === "details"
-                  ? "bg-gradient-to-r from-emerald-500 to-blue-500 text-white shadow-lg transform scale-105 hover:from-emerald-600 hover:to-blue-600"
-                  : "text-emerald-700 hover:bg-emerald-50 hover:shadow-md"
-              }`}
-            >
-              <FileText className="h-5 w-5" />
-              <span className="font-medium">Details</span>
-            </Button>
+            {/* Removed Details button from sidebar but kept in mobile navigation */}
           </nav>
         </aside>
-
         {/* Main Content Container */}
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Main Content - Scrollable */}
@@ -221,7 +201,7 @@ export default function InspectorDashboard() {
           </main>
 
           {/* Footer - Sticky at bottom */}
-          <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-30 safe-area-pb">
+          <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-30 safe-area-pb lg:hidden">
             <div className="flex items-center justify-center px-4 py-2">
               {/* Todos Button */}
               <Link

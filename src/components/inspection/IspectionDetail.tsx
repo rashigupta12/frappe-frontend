@@ -521,7 +521,7 @@ const CreateInspection = () => {
   }
 
   return (
-    <div className="w-full bg-gradient-to-b from-gray-50 to-white min-h-screen m-0 p-0">
+    <div className="w-full bg-gradient-to-b from-gray-50 to-white min-h-screen m-0 lg:p-4">
       <Card className="border-none shadow-sm max-w-7xl mx-auto p-0 m-0 gap-0">
         <InspectionHeader
           isUpdateMode={isUpdateMode}

@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Edit, Home, Info, Phone, User } from "lucide-react";
+import { Edit, Home, Info, Phone, User, X } from "lucide-react";
 import { CardHeader, CardTitle } from "../../ui/card";
 
 interface InspectionHeaderProps {
@@ -52,7 +52,7 @@ const InspectionHeader = ({
   }
 
   return (
-    <CardHeader className="bg-gradient-to-r from-emerald-500 to-blue-500 text-white px-4 py-1">
+    <CardHeader className="bg-gradient-to-r from-emerald-500 to-blue-500 text-white px-4 pt-4">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
         <div className="flex flex-col w-full">
           <CardTitle className="flex flex-col sm:flex-row sm:items-center gap-1 text-lg m-0 p-0">
@@ -66,6 +66,7 @@ const InspectionHeader = ({
                 <span>Create Inspection</span>
               )}
             </div>
+            
             <span className="text-sm text-gray-200 truncate max-w-[280px] sm:max-w-[400px] md:max-w-[500px]">
               {displayData.inspectionName ||
                 displayData.leadDetails?.name ||
@@ -76,6 +77,13 @@ const InspectionHeader = ({
                 Submitted
               </span>
             )}
+            <button
+              className="ml-auto text-gray-200 hover:text-white"
+              onClick={() => window.history.back()}
+              aria-label="Close"
+            >
+              <X className="h-5 w-5" />
+            </button>
           </CardTitle>
 
           <div className="flex flex-wrap items-center gap-x-4 mt-1 text-sm">

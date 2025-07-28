@@ -36,18 +36,13 @@ const priorityFilters = [
 ];
 
 const MobileInspectionList = ({ userEmail }: InspectionListProps) => {
-  const {
-    todos,
-    loading,
-    error,
-    fetchTodos,
-  } = useInspectionStore() as {
+  const { todos, loading, error, fetchTodos } = useInspectionStore() as {
     todos: Todo[];
     loading: boolean;
     error: string | null;
     fetchTodos: (email: string) => void;
   };
-  
+
   const navigate = useNavigate();
   const [selectedPriority, setSelectedPriority] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
@@ -87,12 +82,18 @@ const MobileInspectionList = ({ userEmail }: InspectionListProps) => {
   // Filter to show only open todos and apply other filters
   const filteredTodos = todos.filter((todo) => {
     const isOpen = todo.status === "Open";
-    const matchesPriority = selectedPriority === "all" || todo.priority === selectedPriority;
-    const matchesSearch = searchTerm === "" || 
-      (todo.inquiry_data?.lead_name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-       todo.inquiry_data?.custom_job_type?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-       todo.description?.toLowerCase().includes(searchTerm.toLowerCase()));
-    
+    const matchesPriority =
+      selectedPriority === "all" || todo.priority === selectedPriority;
+    const matchesSearch =
+      searchTerm === "" ||
+      todo.inquiry_data?.lead_name
+        ?.toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+      todo.inquiry_data?.custom_job_type
+        ?.toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+      todo.description?.toLowerCase().includes(searchTerm.toLowerCase());
+
     return isOpen && matchesPriority && matchesSearch;
   });
 
@@ -132,10 +133,12 @@ const MobileInspectionList = ({ userEmail }: InspectionListProps) => {
     <div className="min-h-screen bg-gray-50">
       {/* Sticky Header */}
       <div className="sticky top-0 bg-white border-b border-gray-200 z-10">
-        <div className="px-3 py-3">
+        <div className="px-3 py-3   w-full lg:mx-auto">
           <div className="flex items-center justify-between mb-3">
-            <h1 className="text-lg font-bold text-gray-900">Open Inspections</h1>
-            <div className="flex items-center space-x-2 text-xs">
+            <h1 className="text-lg lg:text-xl font-bold text-gray-900">
+              Open Inspections
+            </h1>
+            <div className="flex items-center space-x-2 text-xs lg:text-sm">
               <span className="px-2 py-1 bg-orange-100 text-orange-800 rounded-full font-medium">
                 {openTodosCount} Open
               </span>
@@ -144,69 +147,75 @@ const MobileInspectionList = ({ userEmail }: InspectionListProps) => {
               </span>
             </div>
           </div>
-          
-          {/* Compact Search */}
-          <div className="mb-3">
-            <input
-              type="text"
-              placeholder="Search inspections..."
-              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-          
-          {/* Priority Filter Pills */}
-          <div className="flex space-x-2 overflow-x-auto scrollbar-hide">
-            {priorityFilters.map((filter) => (
-              <button
-                key={filter.id}
-                onClick={() => setSelectedPriority(filter.id)}
-                className={`px-3 py-1 text-xs rounded-full whitespace-nowrap transition-colors ${
-                  selectedPriority === filter.id
-                    ? "bg-blue-600 text-white"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                }`}
-              >
-                {filter.label}
-              </button>
-            ))}
+
+          {/* Search and Filters */}
+          <div className="flex flex-col lg:flex-row lg:items-center lg:space-x-4">
+            {/* Search Bar */}
+            <div className="lg:flex-1 mb-3 lg:mb-0">
+              <input
+                type="text"
+                placeholder="Search inspections..."
+                className="w-full px-3 py-2 text-sm lg:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+
+            {/* Priority Filter Pills */}
+            <div className="flex space-x-2 overflow-x-auto scrollbar-hide lg:flex-wrap lg:overflow-x-visible lg:space-x-2 lg:space-y-2">
+              {priorityFilters.map((filter) => (
+                <button
+                  key={filter.id}
+                  onClick={() => setSelectedPriority(filter.id)}
+                  className={`px-3 py-1 text-xs lg:text-sm rounded-full whitespace-nowrap transition-colors ${
+                    selectedPriority === filter.id
+                      ? "bg-blue-600 text-white"
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  }`}
+                >
+                  {filter.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </div>
 
       {/* Content */}
-      <div className="px-3 py-2">
+      <div className="px-3  py-2 w-full lg:mx-auto">
         {filteredTodos.length === 0 ? (
-          <div className="text-center py-12">
-            <div className="text-4xl mb-2">📋</div>
-            <h3 className="text-sm font-medium text-gray-900 mb-1">No open inspections</h3>
-            <p className="text-xs text-gray-500">Try adjusting your search or priority filter</p>
+          <div className="text-center py-12 lg:py-16">
+            <div className="text-4xl lg:text-5xl mb-2">📋</div>
+            <h3 className="text-sm lg:text-base font-medium text-gray-900 mb-1">
+              No open inspections
+            </h3>
+           
           </div>
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-2 lg:grid lg:grid-cols-3 lg:gap-2 lg:space-y-0">
             {filteredTodos.map((todo) => (
               <div
                 key={todo.name}
-                className="bg-white rounded-lg border border-gray-200 p-3 shadow-sm"
+                className="bg-white rounded-lg border border-gray-200 p-3 shadow-sm  hover:shadow-md transition-shadow"
               >
                 {/* Header Row */}
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center space-x-2 mb-1">
-                      <span className="text-lg">
+                      <span className="text-lg lg:text-lg">
                         {getPriorityIcon(todo.priority || "")}
                       </span>
-                      <h3 className="text-xs font-semibold text-gray-900 truncate">
+                      <h3 className="text-xs lg:text-sm font-semibold text-gray-900 truncate">
                         {todo.inquiry_data?.custom_job_type || "Inspection"}
                       </h3>
                     </div>
-                    <div className="flex items-center space-x-2 text-xs text-gray-500">
+                    <div className="flex items-center space-x-2 text-xs lg:text-sm text-gray-500">
                       <span>
-                        {todo.date && new Date(todo.date).toLocaleDateString('en-US', { 
-                          month: 'short', 
-                          day: 'numeric' 
-                        })}
+                        {todo.date &&
+                          new Date(todo.date).toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                          })}
                       </span>
                       <span>•</span>
                       <span className="truncate">
@@ -217,7 +226,7 @@ const MobileInspectionList = ({ userEmail }: InspectionListProps) => {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="text-xs px-2 py-1 h-7 ml-2 bg-blue-600 text-white hover:bg-blue-700"
+                    className="text-xs lg:text-xs px-2 py-1 h-7 lg:h-8 ml-2 bg-blue-600 text-white hover:bg-blue-700"
                     onClick={() => {
                       navigate(`/inspector?tab=details`, { state: { todo } });
                     }}
@@ -227,7 +236,7 @@ const MobileInspectionList = ({ userEmail }: InspectionListProps) => {
                 </div>
 
                 {/* Info Grid */}
-                <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="grid grid-cols-2 gap-2 text-xs lg:text-xs">
                   <div className="flex items-center space-x-1">
                     <span className="text-gray-400">👤</span>
                     <span className="text-gray-600 truncate">
@@ -243,7 +252,9 @@ const MobileInspectionList = ({ userEmail }: InspectionListProps) => {
                   <div className="flex items-center space-x-1">
                     <span className="text-gray-400">📞</span>
                     <span className="text-gray-600 truncate">
-                      {todo.inquiry_data?.mobile_no || todo.inquiry_data?.phone || "N/A"}
+                      {todo.inquiry_data?.mobile_no ||
+                        todo.inquiry_data?.phone ||
+                        "N/A"}
                     </span>
                   </div>
                   <div className="flex items-center space-x-1">
@@ -252,43 +263,27 @@ const MobileInspectionList = ({ userEmail }: InspectionListProps) => {
                       {todo.inquiry_data?.custom_budget_range || "N/A"}
                     </span>
                   </div>
-                 
                 </div>
 
-                {
-                  todo.inquiry_data?.custom_property_area && (
-                  <div className="mt-2 pt-2 border-t border-gray-100">
+                {todo.inquiry_data?.custom_property_area && (
+                  <div className="pt-1 border-t border-gray-100">
                     <div className="flex items-center space-x-1">
                       <span className="text-gray-400">📍</span>
-                      <span className="text-gray-600 truncate text-sm">
+                      <span className="text-gray-600 truncate text-sm lg:text-base">
                         {todo.inquiry_data.custom_property_area}
                       </span>
                     </div>
                   </div>
-                  )
-                }
+                )}
 
                 {/* Description */}
                 {todo.description && (
-                  <div className="mt-2 pt-2 border-t border-gray-100">
-                    <p className="text-md text-gray-600 line-clamp-2">
+                  <div className=" border-t border-gray-100">
+                    <p className="text-md text-gray-600 line-clamp-2 lg:line-clamp-3">
                       {todo.description.replace(/<[^>]*>/g, "")}
                     </p>
                   </div>
                 )}
-
-                {/* Assigned By
-                <div className="mt-2 pt-2 border-t border-gray-100 flex items-center justify-between">
-                  <span className="text-xs text-gray-500 truncate">
-                    {todo.assigned_by_full_name 
-                      ? `By ${todo.assigned_by_full_name}`
-                      : "No assignment info"
-                    }
-                  </span>
-                  <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${getPriorityColor(todo.priority || "")}`}>
-                    {todo.priority || "N/A"}
-                  </span>
-                </div> */}
               </div>
             ))}
           </div>
