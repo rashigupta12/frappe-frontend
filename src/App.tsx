@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 // src/App.tsx
 import type { ReactNode } from 'react';
 import { Toaster } from "react-hot-toast";
@@ -99,6 +98,35 @@ const UserDashboard = () => (
   </div>
 );
 
+// New AccountUser Dashboard Component
+const AccountUserDashboard = () => (
+  <div style={{ padding: '20px' }}>
+    <h1>Account User Dashboard</h1>
+    <p>Welcome to your financial management dashboard!</p>
+    <div>
+      <h3>Available Actions:</h3>
+      <ul>
+        <li>View Profile</li>
+        <li>View Orders & Customers</li>
+        <li>Manage Invoices</li>
+        <li>Process Payments</li>
+        <li>Generate Financial Reports</li>
+        <li>Handle Billing</li>
+        <li>View Projects & Tasks</li>
+      </ul>
+    </div>
+    <div style={{ marginTop: '20px' }}>
+      <h3>Financial Management Features:</h3>
+      <ul>
+        <li>Create and update invoices</li>
+        <li>Track payment status</li>
+        <li>Generate billing reports</li>
+        <li>Monitor accounts receivable</li>
+        <li>Financial analytics dashboard</li>
+      </ul>
+    </div>
+  </div>
+);
 
 const AdminDashboard = () => (
   <div style={{ padding: '20px' }}>
@@ -112,6 +140,7 @@ const AdminDashboard = () => (
         <li>Manage All Customers</li>
         <li>Create & View Reports</li>
         <li>Manage Projects & Tasks</li>
+        <li>Financial Management</li>
         <li>System Administration</li>
       </ul>
     </div>
@@ -196,24 +225,23 @@ function AppRoutes() {
             </ProtectedRoute>
           }
         />
-        {/* <Route
-          path="/project_manager"
+        <Route
+          path="/accountUser"
           element={
-            <ProtectedRoute allowedRoles={['project_manager']}>
-              <ProjectManagerDashboard/>   
+            <ProtectedRoute allowedRoles={['accountUser']}>
+              <AccountUserDashboard />
             </ProtectedRoute>
           }
-        /> */}
-
+        />
         <Route
           path="/project_manager"
           element={
             <ProtectedRoute allowedRoles={['project_manager']}>
-              <JobCardProvider> {/* 🆕 ADDED THIS WRAPPER */}
-                <JobCardOtherProvider>  {/* 🆕 For Other Services */}
+              <JobCardProvider>
+                <JobCardOtherProvider>
                   <ProjectManagerDashboard />
                 </JobCardOtherProvider>
-              </JobCardProvider> {/* 🆕 ADDED CLOSING TAG */}
+              </JobCardProvider>
             </ProtectedRoute>
           }
         />

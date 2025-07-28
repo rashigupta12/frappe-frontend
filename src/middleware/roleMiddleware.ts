@@ -15,7 +15,7 @@ export const roleMiddleware = (userRole: string, allowedRoles: string | string[]
 };
 
 // Enhanced middleware with permission checking
-type Role = 'user' | 'sales' | 'inspector' | 'project_manager' | 'admin';
+type Role = 'user' | 'sales' | 'inspector' | 'project_manager' | 'accountUser' | 'admin';
 type Resource =
   | 'dashboard'
   | 'profile'
@@ -26,7 +26,11 @@ type Resource =
   | 'settings'
   | 'projects'
   | 'tasks'
-  | 'timeline';
+  | 'timeline'
+  | 'invoices'
+  | 'payments'
+  | 'financial_reports'
+  | 'billing';
 type Action = 'read' | 'create' | 'update' | 'delete';
 
 const permissions: Record<Role, Record<Resource, Action[]>> = {
@@ -40,7 +44,11 @@ const permissions: Record<Role, Record<Resource, Action[]>> = {
     settings: [],
     projects: [],
     tasks: [],
-    timeline: []
+    timeline: [],
+    invoices: [],
+    payments: [],
+    financial_reports: [],
+    billing: []
   },
   sales: {
     dashboard: ['read'],
@@ -52,7 +60,11 @@ const permissions: Record<Role, Record<Resource, Action[]>> = {
     settings: ['read'],
     projects: ['read'],
     tasks: ['read'],
-    timeline: ['read']
+    timeline: ['read'],
+    invoices: ['read'],
+    payments: ['read'],
+    financial_reports: ['read'],
+    billing: ['read']
   },
   inspector: {
     dashboard: ['read'],
@@ -64,7 +76,27 @@ const permissions: Record<Role, Record<Resource, Action[]>> = {
     settings: ['read'],
     projects: ['read'],
     tasks: ['read', 'update'],
-    timeline: ['read']
+    timeline: ['read'],
+    invoices: [],
+    payments: [],
+    financial_reports: [],
+    billing: []
+  },
+  accountUser: {
+    dashboard: ['read'],
+    profile: ['read', 'update'],
+    orders: ['read'],
+    customers: ['read'],
+    reports: ['read'],
+    users: [],
+    settings: ['read'],
+    projects: ['read'],
+    tasks: ['read'],
+    timeline: ['read'],
+    invoices: ['read', 'create', 'update'],
+    payments: ['read', 'create', 'update'],
+    financial_reports: ['read', 'create'],
+    billing: ['read', 'create', 'update']
   },
   project_manager: {
     dashboard: ['read'],
@@ -76,7 +108,11 @@ const permissions: Record<Role, Record<Resource, Action[]>> = {
     settings: ['read'],
     projects: ['read', 'create', 'update', 'delete'],
     tasks: ['read', 'create', 'update', 'delete'],
-    timeline: ['read', 'create', 'update']
+    timeline: ['read', 'create', 'update'],
+    invoices: ['read'],
+    payments: ['read'],
+    financial_reports: ['read'],
+    billing: ['read']
   },
   admin: {
     dashboard: ['read'],
@@ -88,7 +124,11 @@ const permissions: Record<Role, Record<Resource, Action[]>> = {
     settings: ['read', 'create', 'update', 'delete'],
     projects: ['read', 'create', 'update', 'delete'],
     tasks: ['read', 'create', 'update', 'delete'],
-    timeline: ['read', 'create', 'update', 'delete']
+    timeline: ['read', 'create', 'update', 'delete'],
+    invoices: ['read', 'create', 'update', 'delete'],
+    payments: ['read', 'create', 'update', 'delete'],
+    financial_reports: ['read', 'create', 'update', 'delete'],
+    billing: ['read', 'create', 'update', 'delete']
   }
 };
 
@@ -110,6 +150,7 @@ const roleHierarchy: Record<Role, number> = {
   user: 1,
   sales: 2,
   inspector: 2, // Same level as sales but with different permissions
+  accountUser: 2, // Same level as sales and inspector but with financial permissions
   project_manager: 3, // Higher level with project management capabilities
   admin: 4
 };
@@ -128,12 +169,12 @@ export const canAccessRoute = (userRole: string, requiredRoles: string[]): boole
     if (role === userRole) return true;
     
     // Check hierarchy for admin access (highest level)
-    if (userRole === 'admin' && ['user', 'sales', 'inspector', 'project_manager'].includes(role)) {
+    if (userRole === 'admin' && ['user', 'sales', 'inspector', 'accountUser', 'project_manager'].includes(role)) {
       return true;
     }
     
     // Check hierarchy for project_manager access
-    if (userRole === 'project_manager' && ['user', 'sales', 'inspector'].includes(role)) {
+    if (userRole === 'project_manager' && ['user', 'sales', 'inspector', 'accountUser'].includes(role)) {
       return true;
     }
     
@@ -144,6 +185,11 @@ export const canAccessRoute = (userRole: string, requiredRoles: string[]): boole
     
     // Check hierarchy for inspector access to user routes
     if (userRole === 'inspector' && role === 'user') {
+      return true;
+    }
+    
+    // Check hierarchy for accountUser access to user routes
+    if (userRole === 'accountUser' && role === 'user') {
       return true;
     }
     
@@ -162,4 +208,21 @@ export const canManageTasks = (userRole: Role): boolean => {
 
 export const canViewTimeline = (userRole: Role): boolean => {
   return hasPermission(userRole, 'timeline', 'read');
+};
+
+// Utility functions for accountUser specific permissions
+export const canManageInvoices = (userRole: Role): boolean => {
+  return hasPermission(userRole, 'invoices', 'create') || hasPermission(userRole, 'invoices', 'update');
+};
+
+export const canManagePayments = (userRole: Role): boolean => {
+  return hasPermission(userRole, 'payments', 'create') || hasPermission(userRole, 'payments', 'update');
+};
+
+export const canViewFinancialReports = (userRole: Role): boolean => {
+  return hasPermission(userRole, 'financial_reports', 'read');
+};
+
+export const canManageBilling = (userRole: Role): boolean => {
+  return hasPermission(userRole, 'billing', 'create') || hasPermission(userRole, 'billing', 'update');
 };

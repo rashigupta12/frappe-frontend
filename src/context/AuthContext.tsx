@@ -52,6 +52,11 @@ const mapUserToRole = (username: string, fullName: string): string => {
       'Project': 'project_manager',
       'Project Manager': 'project_manager',
       'PM': 'project_manager',
+      'Account User': 'accountUser',
+      'Account': 'accountUser',
+      'Accountant': 'accountUser',
+      'Finance': 'accountUser',
+      'Finance User': 'accountUser',
     };
     
     if (roleMap[fullName]) {
@@ -71,6 +76,7 @@ const mapUserToRole = (username: string, fullName: string): string => {
     if (normalizedName.includes('admin')) return 'admin';
     if (normalizedName.includes('inspector')) return 'inspector';
     if (normalizedName.includes('project')) return 'project_manager';
+    if (normalizedName.includes('account') || normalizedName.includes('finance')) return 'accountUser';
   }
   
   // Fallback to username-based mapping when full_name is empty
@@ -85,12 +91,20 @@ const mapUserToRole = (username: string, fullName: string): string => {
     'inspector@eits.com': 'inspector',
     'project_manager@eits.com': 'project_manager',
     'pm@eits.com': 'project_manager',
+    'account@eits.com': 'accountUser',
+    'accountant@eits.com': 'accountUser',
+    'finance@eits.com': 'accountUser',
+    'account_user@eits.com': 'accountUser',
     
     // Pattern-based matches
     'inspection_': 'inspector',
     '_inspector': 'inspector',
     'project_': 'project_manager',
-    '_project': 'project_manager'
+    '_project': 'project_manager',
+    'account_': 'accountUser',
+    '_account': 'accountUser',
+    'finance_': 'accountUser',
+    '_finance': 'accountUser'
   };
   
   // Try exact username match first
@@ -115,6 +129,10 @@ const mapUserToRole = (username: string, fullName: string): string => {
   
   if (lowerUsername.includes('project') || lowerUsername.includes('pm')) {
     return 'project_manager';
+  }
+  
+  if (lowerUsername.includes('account') || lowerUsername.includes('finance')) {
+    return 'accountUser';
   }
   
   return 'user';
