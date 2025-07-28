@@ -32,7 +32,7 @@ export default function SalesDashboard() {
   const closeInquiryForm = () => {
     setIsFormOpen(false);
   };
-  
+
   const navigate = useNavigate();
   // const location = useLocation();
   const [searchParams] = useSearchParams();
@@ -225,13 +225,13 @@ export default function SalesDashboard() {
               variant={activeTab === "assign" ? "default" : "ghost"}
               onClick={() => handleTabChange("assign")}
               className={`w-full justify-start gap-3 rounded-xl p-3 text-left transition-all duration-200 ${
-                activeTab === "inquiry-form"
+                activeTab === "assign" // Changed from "inquiry-form" to "assign"
                   ? "bg-gradient-to-r from-emerald-500 to-blue-500 text-white shadow-lg transform scale-105 hover:from-emerald-600 hover:to-blue-600"
                   : "text-emerald-700 hover:bg-emerald-50 hover:shadow-md"
               }`}
             >
               <Users className="h-5 w-5" />
-              <span className="font-medium">Assign </span>
+              <span className="font-medium">Assign</span>
             </Button>
           </nav>
         </aside>
@@ -247,7 +247,7 @@ export default function SalesDashboard() {
           </main>
 
           {/* Footer - Sticky at bottom */}
-          <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-30 safe-area-pb">
+          <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-30 safe-area-pb lg:hidden">
             <div className="flex items-center justify-center px-4 py-2">
               {/* Home Button */}
               <Link

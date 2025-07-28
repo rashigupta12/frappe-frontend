@@ -256,7 +256,7 @@ export default function TodoPage() {
             </Button>
           </div>
         ) : (
-          <div className="space-y-3 md:space-y-4 px-2">
+          <div className="space-y-3 p-2 lg:grid lg:grid-cols-3 lg:gap-4 lg:space-y-0">
             {filteredTodos.map((todo) => (
               <div
                 key={todo.name}
