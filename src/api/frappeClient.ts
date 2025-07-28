@@ -454,7 +454,7 @@ get: async (url: string, config?: any) => {
     return await frappeAPI.makeAuthenticatedRequest('POST', '/api/resource/Job Card -Veneer Pressing', jobCardData);
   },
 
-
+  
   updateJobCard: async (jobCardId: string, jobCardData: Record<string, unknown>) => {
     return await frappeAPI.makeAuthenticatedRequest('PUT', `/api/resource/Job Card -Veneer Pressing/${jobCardId}`, jobCardData);
   },
@@ -465,6 +465,23 @@ get: async (url: string, config?: any) => {
   getEmployees: async () => {
     return await frappeAPI.makeAuthenticatedRequest('GET', '/api/resource/Employee?fields=["name","employee_name"]&filters=[["status","=","Active"]]&order_by=employee_name');
   },
+  createPayment: async (paymentData: Record<string, unknown>) => {
+    return await frappeAPI.makeAuthenticatedRequest('POST', '/api/resource/EITS Payment',paymentData);
+  },
+   updatePayment: async (paymentId: string, paymentData: Record<string, unknown>) => {
+    return await frappeAPI.makeAuthenticatedRequest('PUT', `/api/resource/EITS Payment/${paymentId}`, paymentData);
+  },
+  deletePayment: async (paymentId: string) => {
+    return await frappeAPI.makeAuthenticatedRequest('DELETE', `/api/resource/EITS Payment/${paymentId}`);
+  },
+
+  
+  // getPaymentbyId: async () => {
+  //   return await frappeAPI.makeAuthenticatedRequest('GET', '/api/resource/Employee?fields=["name","employee_name"]&filters=[["status","=","Active"]]&order_by=employee_name');
+  // },
+
+
+
   getcustomer: async (searchParams: {
     mobile_no?: string;
     email_id?: string;
