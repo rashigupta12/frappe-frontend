@@ -812,11 +812,11 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
       />
 
       <div
-        className="fixed inset-0 sm:inset-y-0 sm:right-0 w-full sm:max-w-6xl bg-white shadow-2xl sm:border-l border-gray-200 transform transition-transform duration-300 ease-in-out z-50 flex flex-col"
+        className="fixed inset-0 sm:inset-4 sm:rounded-xl lg:inset-y-4 lg:right-0 w-full lg:max-w-6xl bg-white shadow-2xl sm:border border-gray-200 transform transition-transform duration-300 ease-in-out z-50 flex flex-col"
         style={{ transform: isOpen ? "translateX(0)" : "translateX(100%)" }}
       >
         {/* Header */}
-        <div className="bg-gradient-to-r from-emerald-500 to-blue-500 text-white shadow-lg transform scale-105 hover:from-emerald-600 hover:to-blue-600 p-4">
+        <div className="bg-gradient-to-r from-emerald-500 to-blue-500 text-white shadow-lg transform scale-105 hover:from-emerald-600 hover:to-blue-600 p-4 sm:rounded-t-xl">
           <div className="flex justify-between items-start">
             <div className="flex items-start space-x-4">
               <div className="bg-white/20 p-2 rounded-lg mt-1">
@@ -830,7 +830,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                       : "Edit Job Card"
                     : "New Job Card"}
                 </h3>
-                <div className="flex items-center space-x-6 mt-1">
+                <div className="flex flex-wrap items-center gap-x-6 gap-y-2 mt-1">
                   {projectidname && (
                     <div className="flex items-center space-x-2">
                       <span className="text-xs text-blue-100">Project ID:</span>
@@ -875,31 +875,29 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
 
         {/* Form Content */}
         <div className="flex-1 overflow-y-auto bg-gray-50">
-          <div className="max-w-5xl mx-auto p-6 space-y-8">
-            <form onSubmit={handleSubmit} className="space-y-8">
+          <div className="max-w-5xl mx-auto p-4 sm:p-6 space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-6">
               {/* Basic Information Card */}
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                  {/* Clickable Header */}
-                  <div
-                    className="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b border-gray-200 cursor-pointer hover:bg-blue-100 transition-colors"
-                    onClick={() => setIsBasicInfoExpanded(!isBasicInfoExpanded)}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        <User className="h-5 w-5 text-blue-600" />
-                        <h4 className="text-lg font-semibold text-gray-900">
-                          Basic Information
-                        </h4>
-                      </div>
-                      <ChevronDown
-                        className={`h-5 w-5 text-gray-500 transition-transform duration-200 ${
-                          isBasicInfoExpanded ? "rotate-180" : ""
-                        }`}
-                      />
+                <div
+                  className="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b border-gray-200 cursor-pointer hover:bg-blue-100 transition-colors"
+                  onClick={() => setIsBasicInfoExpanded(!isBasicInfoExpanded)}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <User className="h-5 w-5 text-blue-600" />
+                      <h4 className="text-lg font-semibold text-gray-900">
+                        Basic Information
+                      </h4>
                     </div>
+                    <ChevronDown
+                      className={`h-5 w-5 text-gray-500 transition-transform duration-200 ${
+                        isBasicInfoExpanded ? "rotate-180" : ""
+                      }`}
+                    />
                   </div>
                 </div>
+
                 <div
                   className={`transition-all px-5 duration-300 ease-in-out ${
                     isBasicInfoExpanded
@@ -907,9 +905,8 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                       : "opacity-0 max-h-0 overflow-hidden"
                   }`}
                 >
-                  {" "}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <div className="space-y-2 pt-2 relative">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 py-4">
+                    <div className="space-y-2 col-span-1 md:col-span-2 lg:col-span-1">
                       <Label
                         htmlFor="party_name"
                         className="flex items-center space-x-2"
@@ -918,11 +915,10 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                         <label className="block text-sm font-medium text-gray-700">
                           Customer{" "}
                           <span className="text-gray-500">
-                            (name / email / phone)
+                            (name/email/phone)
                           </span>
                           <span className="text-red-500 ml-1">*</span>
                         </label>
-
                         {(fetchingCustomerDetails || fetchingLeadDetails) && (
                           <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
                         )}
@@ -942,7 +938,6 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                           <Loader2 className="absolute right-3 top-3 h-4 w-4 animate-spin text-gray-500" />
                         )}
                       </div>
-
                       {showDropdown && (
                         <div className="absolute z-10 mt-1 w-full bg-white shadow-lg rounded-md border border-gray-200 max-h-60 overflow-auto">
                           {searchResults.length > 0 ? (
@@ -1017,7 +1012,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                         onChange={handleInputChange}
                         placeholder="Enter building name"
                         disabled={isReadOnly}
-                        className="focus:ring-blue-500 focus:border-blue-500"
+                        className="focus:ring-blue-500 focus:border-blue-500 w-full"
                       />
                     </div>
 
@@ -1030,7 +1025,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                         onChange={handleInputChange}
                         placeholder="Enter property number"
                         disabled={isReadOnly}
-                        className="focus:ring-blue-500 focus:border-blue-500"
+                        className="focus:ring-blue-500 focus:border-blue-500 w-full"
                       />
                     </div>
 
@@ -1049,11 +1044,12 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                         onChange={handleInputChange}
                         placeholder="Enter area"
                         disabled={isReadOnly}
-                        className="focus:ring-blue-500 focus:border-blue-500"
+                        className="focus:ring-blue-500 focus:border-blue-500 w-full"
                       />
                     </div>
-                    <div className="flex pb-4 flex-wrap gap-2">
-                      <div className="w-[40%] space-y-2">
+
+                    <div className="flex flex-col sm:flex-row gap-4 col-span-1 md:col-span-2 lg:col-span-1">
+                      <div className="space-y-2 flex-1">
                         <Label
                           htmlFor="start_date"
                           className="flex items-center space-x-1"
@@ -1074,7 +1070,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                         />
                       </div>
 
-                      <div className="w-[52%] space-y-2">
+                      <div className="space-y-2 flex-1">
                         <Label
                           htmlFor="finish_date"
                           className="flex items-center space-x-1"
@@ -1092,7 +1088,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                           onChange={handleInputChange}
                           required
                           disabled={isReadOnly}
-                          className="w-full pl-1"
+                          className="w-full"
                         />
                       </div>
                     </div>
@@ -1100,416 +1096,391 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                 </div>
               </div>
 
-              {/* Pressing Charges Card */}
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                <div
-                  className="bg-gradient-to-r from-emerald-50 to-green-50 px-6 py-4 border-b border-gray-200 cursor-pointer hover:bg-emerald-100 transition-colors"
-                  onClick={() =>
-                    setIsPressingChargesExpanded(!isPressingChargesExpanded)
-                  }
-                >
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center space-x-2">
-                      <h4 className="text-lg font-semibold text-gray-900">
-                        Pressing Charges
-                      </h4>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <span className="font-medium">
-                        {calculatePressingTotal(pressingCharges).toFixed(2)} AED
-                      </span>
-                      <ChevronDown
-                        className={`h-5 w-5 text-gray-500 transition-transform duration-200 ${
-                          isPressingChargesExpanded ? "rotate-180" : ""
-                        }`}
-                      />
+              {/* Two-column layout for desktop */}
+              <div className="lg:grid lg:grid-cols-2 lg:gap-6 space-y-6 lg:space-y-0">
+                {/* Pressing Charges Card */}
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                  <div
+                    className="bg-gradient-to-r from-emerald-50 to-green-50 px-6 py-4 border-b border-gray-200 cursor-pointer hover:bg-emerald-100 transition-colors"
+                    onClick={() =>
+                      setIsPressingChargesExpanded(!isPressingChargesExpanded)
+                    }
+                  >
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center space-x-2">
+                        <h4 className="text-lg font-semibold text-gray-900">
+                          Pressing Charges
+                        </h4>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <span className="font-medium">
+                          {calculatePressingTotal(pressingCharges).toFixed(2)}{" "}
+                          AED
+                        </span>
+                        <ChevronDown
+                          className={`h-5 w-5 text-gray-500 transition-transform duration-200 ${
+                            isPressingChargesExpanded ? "rotate-180" : ""
+                          }`}
+                        />
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div
-                  className={`transition-all duration-300 ease-in-out ${
-                    isPressingChargesExpanded
-                      ? "opacity-100 max-h-[1500px] overflow-auto"
-                      : "opacity-0 max-h-0 overflow-hidden"
-                  }`}
-                >
-                  <div className="p-3 space-y-4">
-                    {pressingCharges.length === 0 ? (
-                      <div className="text-center py-2 text-gray-500">
-                        <p className="text-sm">
-                          No pressing charges added yet. Click "Add Charge" to
-                          start.
-                        </p>
-                      </div>
-                    ) : (
-                      pressingCharges.map((charge, index) => (
-                        <div
-                          key={index}
-                          className="bg-gray-50 rounded-lg p-4 border border-gray-200"
-                        >
-                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-2">
-                            {/* Work Type - 100% */}
-                            <div className="space-y-1 w-full">
-                              <Label className="text-xs font-medium text-gray-600">
-                                Work Type
-                              </Label>
-                              {loadingPressingItems ? (
-                                <div className="flex items-center gap-2">
-                                  <Loader2 className="animate-spin h-4 w-4" />
-                                  <span className="text-sm">
-                                    Loading work types...
-                                  </span>
-                                </div>
-                              ) : (
-                                <Select
-                                  value={charge.work_type}
-                                  onValueChange={(value) =>
-                                    updatePressingCharge(
-                                      index,
-                                      "work_type",
-                                      value
-                                    )
-                                  }
-                                  disabled={isReadOnly}
-                                >
-                                  <SelectTrigger className="h-9 text-sm w-full truncate sm:max-w-xs">
-                                    <SelectValue placeholder="Select work type" />
-                                  </SelectTrigger>
-                                  <SelectContent className="bg-white max-w-full sm:max-w-xs">
-                                    {pressingItems.map((item) => (
-                                      <SelectItem
-                                        key={item.name}
-                                        value={item.name}
-                                      >
-                                        <div className="flex justify-between w-full truncate">
-                                          <span className="truncate">
-                                            {item.item_name || item.name}
-                                          </span>
-                                        </div>
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              )}
-                            </div>
-
-                            <div className="flex gap-2 w-full">
-                              {/* Size - 40% */}
-                              <div className="space-y-1 w-[40%]">
-                                <Label className="text-xs font-medium text-gray-600">
-                                  Size
-                                </Label>
-                                <Input
-                                  placeholder="Size"
-                                  value={charge.size}
-                                  onChange={(e) =>
-                                    updatePressingCharge(
-                                      index,
-                                      "size",
-                                      e.target.value
-                                    )
-                                  }
-                                  disabled={isReadOnly}
-                                  className="h-9 text-sm"
-                                />
-                              </div>
-
-                              {/* Thickness - 60% */}
-                              <div className="space-y-1 w-[60%]">
-                                <Label className="text-xs font-medium text-gray-600">
-                                  Thickness
-                                </Label>
-                                <Input
-                                  placeholder="Thickness"
-                                  value={charge.thickness}
-                                  onChange={(e) =>
-                                    updatePressingCharge(
-                                      index,
-                                      "thickness",
-                                      e.target.value
-                                    )
-                                  }
-                                  disabled={isReadOnly}
-                                  className="h-9 text-sm"
-                                />
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="flex gap-2 pt-2 w-full">
-                            {/* No of Sides - 40% */}
-                            <div className="space-y-1 w-[40%]">
-                              <Label className="text-xs font-medium text-gray-600">
-                                No of Sides
-                              </Label>
-                              <Input
-                                placeholder="No of Sides"
-                                type="number"
-                                min="1"
-                                value={charge.no_of_sides || ""}
-                                onChange={(e) =>
-                                  updatePressingCharge(
-                                    index,
-                                    "no_of_sides",
-                                    e.target.value
-                                  )
-                                }
-                                disabled={isReadOnly}
-                                className="h-9 text-sm"
-                              />
-                            </div>
-
-                            {/* Price - 60% */}
-                            <div className="space-y-1 w-[60%]">
-                              <Label className="text-xs font-medium text-gray-600">
-                                Price
-                              </Label>
-                              <div className="flex rounded-md border border-gray-300 overflow-hidden">
-                                <Input
-                                  placeholder="0.00"
-                                  type="number"
-                                  value={charge.price || ""}
-                                  onChange={(e) =>
-                                    updatePressingCharge(
-                                      index,
-                                      "price",
-                                      e.target.value
-                                    )
-                                  }
-                                  disabled={isReadOnly}
-                                  className="h-9 text-sm border-none focus:ring-0 rounded-none flex-1"
-                                  style={{
-                                    WebkitAppearance: "none",
-                                    MozAppearance: "textfield",
-                                  }}
-                                />
-                                <span className="inline-flex items-center px-3 bg-gray-50 text-gray-500 text-sm border-l">
-                                  AED
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                          <div className="space-y-1 pt-2">
-                            <Label className="text-xs font-medium text-gray-600">
-                              Remarks
-                            </Label>
-                            <Input
-                              placeholder="Enter remarks"
-                              value={charge.remarks}
-                              onChange={(e) =>
-                                updatePressingCharge(
-                                  index,
-                                  "remarks",
-                                  e.target.value
-                                )
-                              }
-                              disabled={isReadOnly}
-                              className="h-9 text-sm"
-                            />
-                          </div>
-
-                          <div className="flex justify-between space-y-1 pt-2">
-                            <Label className="text-xs items-end font-medium text-gray-600">
-                              Total Amount : {charge.amount} AED
-                            </Label>
-                            <div className="flex items-end">
-                              {!isReadOnly && (
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="sm"
-                                  className="text-red-500 hover:text-red-700"
-                                  onClick={() => removePressingCharge(index)}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              )}
-                            </div>
-                          </div>
+                  <div
+                    className={`transition-all duration-300 ease-in-out ${
+                      isPressingChargesExpanded
+                        ? "opacity-100 max-h-[1500px] overflow-auto"
+                        : "opacity-0 max-h-0 overflow-hidden"
+                    }`}
+                  >
+                    <div className="p-4 space-y-4">
+                      {pressingCharges.length === 0 ? (
+                        <div className="text-center py-4 text-gray-500">
+                          <p className="text-sm">
+                            No pressing charges added yet. Click "Add Charge" to
+                            start.
+                          </p>
                         </div>
-                      ))
-                    )}
-
-                    {!isReadOnly && (
-                      <Button
-                        type="button"
-                        onClick={addPressingCharge}
-                        size="sm"
-                        className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm mt-4"
-                      >
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add Charge
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Materials Sold Card - Complete Implementation */}
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mt-6">
-                <div
-                  className="bg-gradient-to-r from-purple-50 to-indigo-50 px-6 py-4 border-b border-gray-200 cursor-pointer hover:bg-purple-100 transition-colors"
-                  onClick={() =>
-                    setIsMaterialsSoldExpanded(!isMaterialsSoldExpanded)
-                  }
-                >
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center space-x-2">
-                      <h4 className="text-lg font-semibold text-gray-900">
-                        Materials Sold
-                      </h4>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <span className="font-medium">
-                        {calculatePressingTotal(materialsSold).toFixed(2)} AED
-                      </span>
-                      <ChevronDown
-                        className={`h-5 w-5 text-gray-500 transition-transform duration-200 ${
-                          isMaterialsSoldExpanded ? "rotate-180" : ""
-                        }`}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div
-                  className={`transition-all duration-300 ease-in-out ${
-                    isMaterialsSoldExpanded
-                      ? "opacity-100 max-h-[1500px] overflow-auto"
-                      : "opacity-0 max-h-0 overflow-hidden"
-                  }`}
-                >
-                  <div className="p-3 space-y-4">
-                    {materialsSold.length === 0 ? (
-                      <div className="text-center text-gray-500">
-                        <p className="text-sm">
-                          No materials sold added yet. Click "Add Material" to
-                          start.
-                        </p>
-                      </div>
-                    ) : (
-                      materialsSold.map((material, index) => (
-                        <div
-                          key={index}
-                          className="bg-gray-50 rounded-lg p-4 border border-gray-200"
-                        >
-                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-2">
-                            <div className="space-y-1 w-full">
-                              <Label className="text-xs font-medium text-gray-600">
-                                Work Type
-                              </Label>
-                              {loadingMaterialSoldItems ? (
-                                <div className="flex items-center gap-2">
-                                  <Loader2 className="animate-spin h-4 w-4" />
-                                  <span className="text-sm">
-                                    Loading work types...
-                                  </span>
-                                </div>
-                              ) : (
-                                <Select
-                                  value={material.work_type}
-                                  onValueChange={(value) =>
-                                    updateMaterialSold(
-                                      index,
-                                      "work_type",
-                                      value
-                                    )
-                                  }
-                                  disabled={isReadOnly}
-                                >
-                                  <SelectTrigger className="h-9 text-sm w-full truncate sm:max-w-xs">
-                                    <SelectValue placeholder="Select work type" />
-                                  </SelectTrigger>
-                                  <SelectContent className="bg-white max-w-full sm:max-w-xs">
-                                    {materialSoldItems.map((item) => (
-                                      <SelectItem
-                                        key={item.name}
-                                        value={item.name}
-                                      >
-                                        <div className="flex justify-between w-full truncate">
+                      ) : (
+                        pressingCharges.map((charge, index) => (
+                          <div
+                            key={index}
+                            className="bg-gray-50 rounded-lg p-4 border border-gray-200"
+                          >
+                            <div className="grid grid-cols-1 gap-2">
+                              {/* Work Type - Full width */}
+                              <div className="space-y-2">
+                                <Label className="text-xs font-medium text-gray-600">
+                                  Work Type
+                                </Label>
+                                {loadingPressingItems ? (
+                                  <div className="flex items-center gap-2">
+                                    <Loader2 className="animate-spin h-4 w-4" />
+                                    <span className="text-sm">
+                                      Loading work types...
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <Select
+                                    value={charge.work_type}
+                                    onValueChange={(value) =>
+                                      updatePressingCharge(
+                                        index,
+                                        "work_type",
+                                        value
+                                      )
+                                    }
+                                    disabled={isReadOnly}
+                                  >
+                                    <SelectTrigger className="h-9 text-sm w-full">
+                                      <SelectValue placeholder="Select work type" />
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-white min-w-[300px]">
+                                      {pressingItems.map((item) => (
+                                        <SelectItem
+                                          key={item.name}
+                                          value={item.name}
+                                          className="truncate"
+                                        >
                                           <span className="truncate">
                                             {item.item_name || item.name}
                                           </span>
-                                        </div>
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              )}
-                            </div>
-                            <div className="flex gap-2 w-full">
-                              {/* Size - 40% */}
-                              <div className="space-y-1 w-[40%]">
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                )}
+                              </div>
+
+                              {/* Size and Thickness - Side by side */}
+                              <div className="grid grid-cols-2 gap-1">
+                                <div className="space-y-2">
+                                  <Label className="text-xs font-medium text-gray-600">
+                                    Size
+                                  </Label>
+                                  <Input
+                                    placeholder="Size"
+                                    value={charge.size}
+                                    onChange={(e) =>
+                                      updatePressingCharge(
+                                        index,
+                                        "size",
+                                        e.target.value
+                                      )
+                                    }
+                                    disabled={isReadOnly}
+                                    className="h-9 text-sm w-full"
+                                  />
+                                </div>
+
+                                <div className="space-y-2">
+                                  <Label className="text-xs font-medium text-gray-600">
+                                    Thickness
+                                  </Label>
+                                  <Input
+                                    placeholder="Thickness"
+                                    value={charge.thickness}
+                                    onChange={(e) =>
+                                      updatePressingCharge(
+                                        index,
+                                        "thickness",
+                                        e.target.value
+                                      )
+                                    }
+                                    disabled={isReadOnly}
+                                    className="h-9 text-sm w-full"
+                                  />
+                                </div>
+                              </div>
+
+                              {/* No of Sides and Price - Side by side */}
+                              <div className="grid grid-cols-2 gap-3">
+                                <div className="space-y-2">
+                                  <Label className="text-xs font-medium text-gray-600">
+                                    No of Sides
+                                  </Label>
+                                  <Input
+                                    placeholder="No of Sides"
+                                    type="number"
+                                    min="1"
+                                    value={charge.no_of_sides || ""}
+                                    onChange={(e) =>
+                                      updatePressingCharge(
+                                        index,
+                                        "no_of_sides",
+                                        e.target.value
+                                      )
+                                    }
+                                    disabled={isReadOnly}
+                                    className="h-9 text-sm w-full"
+                                  />
+                                </div>
+
+                                <div className="space-y-2">
+                                  <Label className="text-xs font-medium text-gray-600">
+                                    Price
+                                  </Label>
+                                  <div className="flex rounded-md border border-gray-300 overflow-hidden w-full">
+                                    <Input
+                                      placeholder="0.00"
+                                      type="number"
+                                      value={charge.price || ""}
+                                      onChange={(e) =>
+                                        updatePressingCharge(
+                                          index,
+                                          "price",
+                                          e.target.value
+                                        )
+                                      }
+                                      disabled={isReadOnly}
+                                      className="h-9 text-sm border-none focus:ring-0 rounded-none flex-1"
+                                    />
+                                    <span className="inline-flex items-center px-3 bg-gray-50 text-gray-500 text-sm border-l">
+                                      AED
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Remarks - Full width */}
+                              <div className="space-y-2">
                                 <Label className="text-xs font-medium text-gray-600">
-                                  Unit
+                                  Remarks
                                 </Label>
                                 <Input
-                                  placeholder="Unit"
-                                  value={material.size}
+                                  placeholder="Enter remarks"
+                                  value={charge.remarks}
                                   onChange={(e) =>
-                                    updateMaterialSold(
+                                    updatePressingCharge(
                                       index,
-                                      "size",
+                                      "remarks",
                                       e.target.value
                                     )
                                   }
                                   disabled={isReadOnly}
-                                  className="h-9 text-sm"
+                                  className="h-9 text-sm w-full"
                                 />
                               </div>
 
-                              {/* Thickness - 60% */}
-                              {/* <div className="space-y-1 w-[60%]">
+                              {/* Total and Delete - Full width */}
+                              <div className="flex justify-between items-center pt-2">
                                 <Label className="text-xs font-medium text-gray-600">
-                                  Thickness
+                                  Total Amount: {charge.amount} AED
                                 </Label>
-                                <Input
-                                  placeholder="Thickness"
-                                  value={material.thickness}
-                                  onChange={(e) =>
-                                    updateMaterialSold(
-                                      index,
-                                      "thickness",
-                                      e.target.value
-                                    )
-                                  }
-                                  disabled={isReadOnly}
-                                  className="h-9 text-sm"
-                                />
-                              </div> */}
-
-                              <div className="space-y-1 w-[60%]">
-                                <Label className="text-xs font-medium text-gray-600">
-                                  Qty
-                                </Label>
-                                <Input
-                                  placeholder="Qty"
-                                  type="number"
-                                  min="1"
-                                  value={material.no_of_sides || ""}
-                                  onChange={(e) =>
-                                    updateMaterialSold(
-                                      index,
-                                      "no_of_sides",
-                                      e.target.value
-                                    )
-                                  }
-                                  disabled={isReadOnly}
-                                  className="h-9 text-sm"
-                                />
+                                {!isReadOnly && (
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-red-500 hover:text-red-700"
+                                    onClick={() => removePressingCharge(index)}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                )}
                               </div>
                             </div>
-                            <div className="flex gap-2 w-full">
-                              {/* No of Sides - 40% */}
-                              
+                          </div>
+                        ))
+                      )}
 
-                              {/* Price - 60% */}
-                              <div className="space-y-1 w-[100%]">
+                      {!isReadOnly && (
+                        <Button
+                          type="button"
+                          onClick={addPressingCharge}
+                          size="sm"
+                          className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm w-full sm:w-auto"
+                        >
+                          <Plus className="h-4 w-4 mr-2" />
+                          Add Charge
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Materials Sold Card */}
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                  <div
+                    className="bg-gradient-to-r from-purple-50 to-indigo-50 px-6 py-4 border-b border-gray-200 cursor-pointer hover:bg-purple-100 transition-colors"
+                    onClick={() =>
+                      setIsMaterialsSoldExpanded(!isMaterialsSoldExpanded)
+                    }
+                  >
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center space-x-2">
+                        <h4 className="text-lg font-semibold text-gray-900">
+                          Materials Sold
+                        </h4>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <span className="font-medium">
+                          {calculatePressingTotal(materialsSold).toFixed(2)} AED
+                        </span>
+                        <ChevronDown
+                          className={`h-5 w-5 text-gray-500 transition-transform duration-200 ${
+                            isMaterialsSoldExpanded ? "rotate-180" : ""
+                          }`}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div
+                    className={`transition-all duration-300 ease-in-out ${
+                      isMaterialsSoldExpanded
+                        ? "opacity-100 max-h-[1500px] overflow-auto"
+                        : "opacity-0 max-h-0 overflow-hidden"
+                    }`}
+                  >
+                    <div className="p-4 space-y-4">
+                      {materialsSold.length === 0 ? (
+                        <div className="text-center py-4 text-gray-500">
+                          <p className="text-sm">
+                            No materials sold added yet. Click "Add Material" to
+                            start.
+                          </p>
+                        </div>
+                      ) : (
+                        materialsSold.map((material, index) => (
+                          <div
+                            key={index}
+                            className="bg-gray-50 rounded-lg p-4 border border-gray-200"
+                          >
+                            <div className="grid grid-cols-1 gap-4">
+                              {/* Work Type - Full width */}
+                              <div className="space-y-2">
+                                <Label className="text-xs font-medium text-gray-600">
+                                  Work Type
+                                </Label>
+                                {loadingMaterialSoldItems ? (
+                                  <div className="flex items-center gap-2">
+                                    <Loader2 className="animate-spin h-4 w-4" />
+                                    <span className="text-sm">
+                                      Loading work types...
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <Select
+                                    value={material.work_type}
+                                    onValueChange={(value) =>
+                                      updateMaterialSold(
+                                        index,
+                                        "work_type",
+                                        value
+                                      )
+                                    }
+                                    disabled={isReadOnly}
+                                  >
+                                    <SelectTrigger className="h-9 text-sm w-full">
+                                      <SelectValue placeholder="Select work type" />
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-white min-w-[300px]">
+                                      {materialSoldItems.map((item) => (
+                                        <SelectItem
+                                          key={item.name}
+                                          value={item.name}
+                                          className="truncate"
+                                        >
+                                          <span className="truncate">
+                                            {item.item_name || item.name}
+                                          </span>
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                )}
+                              </div>
+
+                              {/* Unit and Qty - Side by side */}
+                              <div className="grid grid-cols-2 gap-3">
+                                <div className="space-y-2">
+                                  <Label className="text-xs font-medium text-gray-600">
+                                    Unit
+                                  </Label>
+                                  <Input
+                                    placeholder="Unit"
+                                    value={material.size}
+                                    onChange={(e) =>
+                                      updateMaterialSold(
+                                        index,
+                                        "size",
+                                        e.target.value
+                                      )
+                                    }
+                                    disabled={isReadOnly}
+                                    className="h-9 text-sm w-full"
+                                  />
+                                </div>
+
+                                <div className="space-y-2">
+                                  <Label className="text-xs font-medium text-gray-600">
+                                    Qty
+                                  </Label>
+                                  <Input
+                                    placeholder="Qty"
+                                    type="number"
+                                    min="1"
+                                    value={material.no_of_sides || ""}
+                                    onChange={(e) =>
+                                      updateMaterialSold(
+                                        index,
+                                        "no_of_sides",
+                                        e.target.value
+                                      )
+                                    }
+                                    disabled={isReadOnly}
+                                    className="h-9 text-sm w-full"
+                                  />
+                                </div>
+                              </div>
+
+                              {/* Price - Full width */}
+                              <div className="space-y-2">
                                 <Label className="text-xs font-medium text-gray-600">
                                   Price
                                 </Label>
-                                <div className="flex rounded-md border border-gray-300 overflow-hidden">
+                                <div className="flex rounded-md border border-gray-300 overflow-hidden w-full">
                                   <Input
                                     placeholder="0.00"
                                     type="number"
@@ -1523,73 +1494,51 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                                     }
                                     disabled={isReadOnly}
                                     className="h-9 text-sm border-none focus:ring-0 rounded-none flex-1"
-                                    style={{
-                                      WebkitAppearance: "none",
-                                      MozAppearance: "textfield",
-                                    }}
                                   />
                                   <span className="inline-flex items-center px-3 bg-gray-50 text-gray-500 text-sm border-l">
                                     AED
                                   </span>
                                 </div>
                               </div>
-                            </div>
-                            {/* <div className="space-y-1 pt-2">
-                              <Label className="text-xs font-medium text-gray-600">
-                                Remarks
-                              </Label>
-                              <Input
-                                placeholder="Enter remarks"
-                                value={material.remarks}
-                                onChange={(e) =>
-                                  updateMaterialSold(
-                                    index,
-                                    "remarks",
-                                    e.target.value
-                                  )
-                                }
-                                disabled={isReadOnly}
-                                className="h-9 text-sm"
-                              />
-                            </div> */}
-                          </div>
 
-                          <div className="flex justify-between">
-                            <Label className="text-xs pt-2 font-medium text-gray-600">
-                              Total Amount : {material.amount || 0} AED
-                            </Label>
-                            <div className="flex items-end">
-                              {!isReadOnly && (
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="sm"
-                                  className="text-red-500 hover:text-red-700"
-                                  onClick={() => removeMaterialSold(index)}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              )}
+                              {/* Total and Delete - Full width */}
+                              <div className="flex justify-between items-center pt-2">
+                                <Label className="text-xs font-medium text-gray-600">
+                                  Total Amount: {material.amount || 0} AED
+                                </Label>
+                                {!isReadOnly && (
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-red-500 hover:text-red-700"
+                                    onClick={() => removeMaterialSold(index)}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                )}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      ))
-                    )}
+                        ))
+                      )}
 
-                    {!isReadOnly && (
-                      <Button
-                        type="button"
-                        onClick={addMaterialSold}
-                        size="sm"
-                        className="bg-purple-600 hover:bg-purple-700 text-white shadow-sm mt-4"
-                      >
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add Material
-                      </Button>
-                    )}
+                      {!isReadOnly && (
+                        <Button
+                          type="button"
+                          onClick={addMaterialSold}
+                          size="sm"
+                          className="bg-purple-600 hover:bg-purple-700 text-white shadow-sm w-full sm:w-auto"
+                        >
+                          <Plus className="h-4 w-4 mr-2" />
+                          Add Material
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
+
               {/* Action Buttons */}
               {!isReadOnly && (
                 <div className="sticky bottom-0 bg-white border-t border-gray-200 p-6 shadow-lg">
@@ -1628,7 +1577,6 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
       </div>
 
       {/* Add Customer Dialog */}
-
       <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
         <DialogContent className="sm:max-w-[425px] bg-white">
           <DialogHeader>
@@ -1650,6 +1598,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
       <Dialog
         open={showAddCustomerDialog}
         onOpenChange={setShowAddCustomerDialog}

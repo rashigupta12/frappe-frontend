@@ -530,7 +530,6 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
         lead_id: formData.lead_id || "",
         customer_id: formData.customer_id || "",
         custom_total_amount: calculateServiceTotal().toString(), // Add this line
-
       };
 
       if (jobCard?.name) {
@@ -567,10 +566,11 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
       />
 
       <div
-        className="fixed inset-0 sm:inset-y-0 sm:right-0 w-full sm:max-w-6xl bg-white shadow-2xl sm:border-l border-gray-200 transform transition-transform duration-300 ease-in-out z-50 flex flex-col"
+        className="fixed inset-0 sm:inset-4 sm:rounded-xl lg:inset-y-4 lg:right-0 w-full lg:max-w-6xl bg-white shadow-2xl sm:border border-gray-200 transform transition-transform duration-300 ease-in-out z-50 flex flex-col"
         style={{ transform: isOpen ? "translateX(0)" : "translateX(100%)" }}
       >
-        <div className="bg-gradient-to-r from-emerald-500 to-blue-500 text-white shadow-lg transform scale-105 hover:from-emerald-600 hover:to-blue-600 p-4">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-emerald-500 to-blue-500 text-white shadow-lg transform scale-105 hover:from-emerald-600 hover:to-blue-600 p-4 sm:rounded-t-xl">
           <div className="flex justify-between items-start">
             <div className="flex items-start space-x-4">
               <div className="bg-white/20 p-2 rounded-lg mt-1">
@@ -581,7 +581,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                   {jobCard ? "Edit Job Card" : "New Job Card"}
                 </h3>
                 <p className="text-blue-100 text-sm">Other Services Details</p>
-                <div className="flex items-center space-x-6 mt-1">
+                <div className="flex flex-wrap items-center gap-x-6 gap-y-2 mt-1">
                   {formData.project_id_no && (
                     <div className="flex items-center space-x-2">
                       <span className="text-xs text-blue-100">Project ID:</span>
@@ -618,8 +618,8 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
 
         {/* Form Content */}
         <div className="flex-1 overflow-y-auto bg-gray-50">
-          <div className="max-w-5xl mx-auto p-3 space-y-2">
-            <form onSubmit={handleSubmit} className="space-y-8">
+          <div className="max-w-5xl mx-auto p-4 sm:p-6 space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-6">
               {/* Basic Information Card */}
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                 <div
@@ -647,12 +647,13 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                 <div
                   className={`transition-all px-6 duration-300 ease-in-out ${
                     isBasicInfoExpanded
-                      ? "opacity-100 max-h-[1500px]"
+                      ? "opacity-100 max-h-[1500px] py-4"
                       : "opacity-0 max-h-0 overflow-hidden"
                   }`}
                 >
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <div className="space-y-2 pt-2 relative">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {/* Customer Search - Full width on mobile, spans 2 cols on md, 1 col on lg */}
+                    <div className="space-y-2 col-span-1 md:col-span-2 lg:col-span-1">
                       <Label
                         htmlFor="party_name"
                         className="flex items-center space-x-2"
@@ -661,11 +662,10 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                         <label className="block text-sm font-medium text-gray-700">
                           Customer{" "}
                           <span className="text-gray-500">
-                            (name / email / phone)
+                            (name/email/phone)
                           </span>
                           <span className="text-red-500 ml-1">*</span>
                         </label>
-
                         {(fetchingCustomerDetails || fetchingLeadDetails) && (
                           <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
                         )}
@@ -678,13 +678,12 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                           onChange={handleSearchChange}
                           placeholder="Search by name, phone, or email"
                           required
-                          className="focus:ring-blue-500 focus:border-blue-500 pr-10"
+                          className="focus:ring-blue-500 focus:border-blue-500 pr-10 w-full"
                         />
                         {isSearching && (
                           <Loader2 className="absolute right-3 top-3 h-4 w-4 animate-spin text-gray-500" />
                         )}
                       </div>
-
                       {showDropdown && (
                         <div className="absolute z-10 mt-1 w-full bg-white shadow-lg rounded-md border border-gray-200 max-h-60 overflow-auto">
                           {searchResults.length > 0 ? (
@@ -745,6 +744,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                       )}
                     </div>
 
+                    {/* Building Name */}
                     <div className="space-y-2">
                       <Label
                         htmlFor="building_name"
@@ -759,10 +759,11 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                         value={formData.building_name || ""}
                         onChange={handleInputChange}
                         placeholder="Enter building name"
-                        className="focus:ring-blue-500 focus:border-blue-500"
+                        className="focus:ring-blue-500 focus:border-blue-500 w-full"
                       />
                     </div>
 
+                    {/* Property No */}
                     <div className="space-y-2">
                       <Label htmlFor="property_no">Property No</Label>
                       <Input
@@ -771,10 +772,11 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                         value={formData.property_no || ""}
                         onChange={handleInputChange}
                         placeholder="Enter property number"
-                        className="focus:ring-blue-500 focus:border-blue-500"
+                        className="focus:ring-blue-500 focus:border-blue-500 w-full"
                       />
                     </div>
 
+                    {/* Area */}
                     <div className="space-y-2">
                       <Label
                         htmlFor="area"
@@ -789,12 +791,13 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                         value={formData.area || ""}
                         onChange={handleInputChange}
                         placeholder="Enter area"
-                        className="focus:ring-blue-500 focus:border-blue-500"
+                        className="focus:ring-blue-500 focus:border-blue-500 w-full"
                       />
                     </div>
 
-                    <div className="flex pb-4 flex-wrap gap-2">
-                      <div className="w-[48%] space-y-1">
+                    {/* Date Range - Full width on mobile, spans 2 cols on larger screens */}
+                    <div className="grid grid-cols-2 sm:grid-cols-2 gap-4 col-span-1 md:col-span-2 lg:col-span-1">
+                      <div className="space-y-1">
                         <Label
                           htmlFor="start_date"
                           className="flex items-center space-x-1"
@@ -808,14 +811,15 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                           id="start_date"
                           name="start_date"
                           type="date"
+                          readOnly
                           value={formData.start_date}
                           onChange={handleInputChange}
                           required
-                          className="w-full pl-1"
+                          className="pl-0.5 w-full"
                         />
                       </div>
 
-                      <div className="w-[48%] space-y-1">
+                      <div className="space-y-1">
                         <Label
                           htmlFor="finish_date"
                           className="flex items-center space-x-1"
@@ -845,7 +849,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                           }}
                           min={formData.start_date}
                           required
-                          className="w-full pl-1"
+                          className="w-full *:pl-0.5"
                         />
                       </div>
                     </div>
@@ -856,17 +860,19 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
               {/* Services Section */}
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                 <div className="bg-gradient-to-r from-green-50 to-emerald-50 px-6 py-4 border-b border-gray-200">
-                  <div className="flex justify-between space-x-2">
+                  <div className="flex justify-between items-center">
                     <h4 className="text-lg font-semibold text-gray-900">
                       Services
                     </h4>
-                    <span className="pt-1">{serviceTotal.toFixed(2)} AED</span>
+                    <span className="font-medium">
+                      {serviceTotal.toFixed(2)} AED
+                    </span>
                   </div>
                 </div>
 
                 <div className="p-4 space-y-4">
                   {services.length === 0 ? (
-                    <div className="text-center text-gray-500">
+                    <div className="text-center py-4 text-gray-500">
                       <p className="text-sm">No services added yet.</p>
                     </div>
                   ) : (
@@ -876,56 +882,58 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                         className="bg-gray-50 rounded-lg p-4 border border-gray-200"
                       >
                         <div className="grid grid-cols-1 gap-4">
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="space-y-1 w-full">
-                              <Label className="text-xs font-medium text-gray-600">
-                                Work Type
-                              </Label>
-                              {loadingJobTypes ? (
-                                <div className="flex items-center gap-2">
-                                  <Loader2 className="animate-spin h-4 w-4" />
-                                  <span className="text-sm">
-                                    Loading work types...
-                                  </span>
-                                </div>
-                              ) : (
-                                <Select
-                                  value={service.work_type}
-                                  onValueChange={(value) =>
-                                    updateService(index, "work_type", value)
-                                  }
-                                >
-                                  <SelectTrigger className="h-9 text-sm w-full truncate sm:max-w-xs">
-                                    <SelectValue placeholder="Select work type" />
-                                  </SelectTrigger>
-                                  <SelectContent className="bg-white max-w-full sm:max-w-xs">
-                                    {jobTypes
-                                      .filter(
-                                        (jobType) =>
-                                          jobType.name !== "8. Veneer Pressing"
-                                      )
-                                      .map((jobType) => (
-                                        <SelectItem
-                                          key={jobType.name}
-                                          value={jobType.name}
-                                        >
-                                          {jobType.name}
-                                        </SelectItem>
-                                      ))}
-                                  </SelectContent>
-                                </Select>
-                              )}
-                            </div>
+                          {/* Work Type - Full width */}
+                          <div className="space-y-1">
+                            <Label className="text-xs font-medium text-gray-600">
+                              Work Type
+                            </Label>
+                            {loadingJobTypes ? (
+                              <div className="flex items-center gap-2">
+                                <Loader2 className="animate-spin h-4 w-4" />
+                                <span className="text-sm">
+                                  Loading work types...
+                                </span>
+                              </div>
+                            ) : (
+                              <Select
+                                value={service.work_type}
+                                onValueChange={(value) =>
+                                  updateService(index, "work_type", value)
+                                }
+                              >
+                                <SelectTrigger className="h-9 text-sm w-full">
+                                  <SelectValue placeholder="Select work type" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-white min-w-[300px]">
+                                  {jobTypes
+                                    .filter(
+                                      (jobType) =>
+                                        jobType.name !== "8. Veneer Pressing"
+                                    )
+                                    .map((jobType) => (
+                                      <SelectItem
+                                        key={jobType.name}
+                                        value={jobType.name}
+                                        className="truncate"
+                                      >
+                                        {jobType.name}
+                                      </SelectItem>
+                                    ))}
+                                </SelectContent>
+                              </Select>
+                            )}
                           </div>
 
-                          <div className="flex w-full gap-2">
-                            <div className="space-y-1 w-1/2">
+                          {/* Date Range - Side by side on desktop */}
+                          <div className="grid grid-cols-2 sm:grid-cols-2 gap-4">
+                            <div className="space-y-1">
                               <Label className="text-sm font-medium text-gray-600">
                                 Start Date
                               </Label>
                               <Input
                                 type="date"
                                 value={service.start_date}
+                                
                                 onChange={(e) => {
                                   if (
                                     formData.finish_date &&
@@ -945,7 +953,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                                 }}
                                 min={formData.start_date}
                                 max={formData.finish_date}
-                                className="h-10 pl-1"
+                                className="h-10 pl-0.5"
                               />
                               {service.start_date &&
                                 !isDateInRange(service.start_date) && (
@@ -955,7 +963,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                                 )}
                             </div>
 
-                            <div className="space-y-1 w-1/2">
+                            <div className="space-y-1">
                               <Label className="text-sm font-medium text-gray-600">
                                 Finish Date
                               </Label>
@@ -991,7 +999,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                                 }}
                                 min={formData.start_date || service.start_date}
                                 max={formData.finish_date}
-                                className="h-10 pl-1"
+                                className="h-10 pl-0.5"
                               />
                               {service.finish_date &&
                                 !isDateInRange(service.finish_date) && (
@@ -1002,7 +1010,8 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                             </div>
                           </div>
 
-                          <div className="w-[100%]">
+                          {/* Price - Full width */}
+                          <div className="space-y-1">
                             <Label className="text-sm font-medium text-gray-600">
                               Price
                             </Label>
@@ -1015,10 +1024,6 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                                   updateService(index, "price", e.target.value)
                                 }
                                 className="h-9 text-sm border-none focus:ring-0 rounded-none flex-1"
-                                style={{
-                                  WebkitAppearance: "none",
-                                  MozAppearance: "textfield",
-                                }}
                               />
                               <span className="inline-flex items-center px-2 bg-gray-50 text-gray-500 text-sm border-l">
                                 AED
@@ -1026,7 +1031,8 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                             </div>
                           </div>
 
-                          <div className="space-y-1 w-full">
+                          {/* Work Description - Full width */}
+                          <div className="space-y-1">
                             <Label className="text-sm font-medium text-gray-600">
                               Work Description
                             </Label>
@@ -1043,18 +1049,20 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                                 target.style.height = "auto";
                                 target.style.height = `${target.scrollHeight}px`;
                               }}
-                              className="min-h-[40px] text-md resize-none overflow-hidden"
+                              className="min-h-[40px] text-md resize-none overflow-hidden w-full"
                               rows={1}
                             />
                           </div>
+
+                          {/* Delete Button - Right aligned */}
                           <div className="flex justify-end">
                             <Button
                               type="button"
                               variant="destructive"
                               size="sm"
                               onClick={() => {
-                                setServiceToDelete(index); // Set the index of service to delete
-                                setShowCancelDialog(true); // Show confirmation dialog
+                                setServiceToDelete(index);
+                                setShowCancelDialog(true);
                               }}
                               className="h-10 w-10 p-0 text-red-500 hover:text-red-700"
                             >
@@ -1069,7 +1077,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                     type="button"
                     onClick={addService}
                     size="sm"
-                    className="bg-green-600 hover:bg-green-700 text-white shadow-sm"
+                    className="bg-green-600 hover:bg-green-700 text-white shadow-sm w-full sm:w-auto"
                   >
                     <Plus className="h-4 w-4 mr-2" />
                     Add Service
@@ -1112,6 +1120,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
         </div>
       </div>
 
+      {/* Delete Confirmation Dialog */}
       <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
         <DialogContent className="sm:max-w-[425px] bg-white">
           <DialogHeader>

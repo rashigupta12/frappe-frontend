@@ -445,7 +445,7 @@ const JobCardOtherList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 ">
           {filteredJobCards.map((card) => {
             const totalAmount = calculateTotalAmount(card);
             const servicesSummary = getServicesSummary(card);
@@ -486,7 +486,7 @@ const JobCardOtherList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
 
                   <div className="flex items-center justify-between gap-1">
                     <div className="flex items-center gap-1 text-xs">
-                      <Wrench className="h-3 w-3 text-blue-500 flex-shrink-0" />
+                      
                       <span className="text-blue-700 font-medium truncate">
                         {servicesSummary}
                       </span>
