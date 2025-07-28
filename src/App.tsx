@@ -12,6 +12,7 @@ import { roleMiddleware } from './middleware/roleMiddleware';
 import { JobCardProvider } from './context/JobCardContext';
 import HomePage from './components/pages/Homepage';
 import { JobCardOtherProvider } from './context/JobCardOtherContext';
+import AccountUser from './components/pages/AccountUser';
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -99,34 +100,34 @@ const UserDashboard = () => (
 );
 
 // New AccountUser Dashboard Component
-const AccountUserDashboard = () => (
-  <div style={{ padding: '20px' }}>
-    <h1>Account User Dashboard</h1>
-    <p>Welcome to your financial management dashboard!</p>
-    <div>
-      <h3>Available Actions:</h3>
-      <ul>
-        <li>View Profile</li>
-        <li>View Orders & Customers</li>
-        <li>Manage Invoices</li>
-        <li>Process Payments</li>
-        <li>Generate Financial Reports</li>
-        <li>Handle Billing</li>
-        <li>View Projects & Tasks</li>
-      </ul>
-    </div>
-    <div style={{ marginTop: '20px' }}>
-      <h3>Financial Management Features:</h3>
-      <ul>
-        <li>Create and update invoices</li>
-        <li>Track payment status</li>
-        <li>Generate billing reports</li>
-        <li>Monitor accounts receivable</li>
-        <li>Financial analytics dashboard</li>
-      </ul>
-    </div>
-  </div>
-);
+// const AccountUserDashboard = () => (
+//   <div style={{ padding: '20px' }}>
+//     <h1>Account User Dashboard</h1>
+//     <p>Welcome to your financial management dashboard!</p>
+//     <div>
+//       <h3>Available Actions:</h3>
+//       <ul>
+//         <li>View Profile</li>
+//         <li>View Orders & Customers</li>
+//         <li>Manage Invoices</li>
+//         <li>Process Payments</li>
+//         <li>Generate Financial Reports</li>
+//         <li>Handle Billing</li>
+//         <li>View Projects & Tasks</li>
+//       </ul>
+//     </div>
+//     <div style={{ marginTop: '20px' }}>
+//       <h3>Financial Management Features:</h3>
+//       <ul>
+//         <li>Create and update invoices</li>
+//         <li>Track payment status</li>
+//         <li>Generate billing reports</li>
+//         <li>Monitor accounts receivable</li>
+//         <li>Financial analytics dashboard</li>
+//       </ul>
+//     </div>
+//   </div>
+// );
 
 const AdminDashboard = () => (
   <div style={{ padding: '20px' }}>
@@ -229,7 +230,7 @@ function AppRoutes() {
           path="/accountUser"
           element={
             <ProtectedRoute allowedRoles={['accountUser']}>
-              <AccountUserDashboard />
+              <AccountUser/>
             </ProtectedRoute>
           }
         />
