@@ -304,20 +304,20 @@ export const frappeAPI = {
   },
 
   // Add this to your frappeAPI object
-get: async (url: string, config?: any) => {
-  try {
-    const response = await frappeClient.get(url, config);
-    return response;
-  } catch (error) {
-    if (axios.isAxiosError(error) && (error.response?.status === 403 || error.response?.status === 401)) {
-      localStorage.removeItem('frappe_user');
-      localStorage.removeItem('frappe_session');
-      localStorage.removeItem('frappe_csrf_token');
-      throw new Error('Session expired. Please login again.');
+  get: async (url: string, config?: any) => {
+    try {
+      const response = await frappeClient.get(url, config);
+      return response;
+    } catch (error) {
+      if (axios.isAxiosError(error) && (error.response?.status === 403 || error.response?.status === 401)) {
+        localStorage.removeItem('frappe_user');
+        localStorage.removeItem('frappe_session');
+        localStorage.removeItem('frappe_csrf_token');
+        throw new Error('Session expired. Please login again.');
+      }
+      throw error;
     }
-    throw error;
-  }
-},
+  },
 
   // ... rest of your API methods remain the same
   getJobTypes: async () => {
@@ -454,7 +454,7 @@ get: async (url: string, config?: any) => {
     return await frappeAPI.makeAuthenticatedRequest('POST', '/api/resource/Job Card -Veneer Pressing', jobCardData);
   },
 
-  
+
   updateJobCard: async (jobCardId: string, jobCardData: Record<string, unknown>) => {
     return await frappeAPI.makeAuthenticatedRequest('PUT', `/api/resource/Job Card -Veneer Pressing/${jobCardId}`, jobCardData);
   },
@@ -465,17 +465,8 @@ get: async (url: string, config?: any) => {
   getEmployees: async () => {
     return await frappeAPI.makeAuthenticatedRequest('GET', '/api/resource/Employee?fields=["name","employee_name"]&filters=[["status","=","Active"]]&order_by=employee_name');
   },
-  createPayment: async (paymentData: Record<string, unknown>) => {
-    return await frappeAPI.makeAuthenticatedRequest('POST', '/api/resource/EITS Payment',paymentData);
-  },
-   updatePayment: async (paymentId: string, paymentData: Record<string, unknown>) => {
-    return await frappeAPI.makeAuthenticatedRequest('PUT', `/api/resource/EITS Payment/${paymentId}`, paymentData);
-  },
-  deletePayment: async (paymentId: string) => {
-    return await frappeAPI.makeAuthenticatedRequest('DELETE', `/api/resource/EITS Payment/${paymentId}`);
-  },
+ 
 
-  
   // getPaymentbyId: async () => {
   //   return await frappeAPI.makeAuthenticatedRequest('GET', '/api/resource/Employee?fields=["name","employee_name"]&filters=[["status","=","Active"]]&order_by=employee_name');
   // },
@@ -528,51 +519,51 @@ get: async (url: string, config?: any) => {
   // },
 
   getpressingItem: async () => {
-  return await axios.get("/api/resource/Pressing Item/", {
-    // params: {
-    //   filters: JSON.stringify([["item_group", "=", "Veneer Pressing Work"]]),
-    //   // Add the fields parameter to get all required fields
-    //   fields: JSON.stringify(["name","item_name","valuation_rate","standard_rate","last_purchase_rate"])
-    // }
-  });
-},
+    return await axios.get("/api/resource/Pressing Item/", {
+      // params: {
+      //   filters: JSON.stringify([["item_group", "=", "Veneer Pressing Work"]]),
+      //   // Add the fields parameter to get all required fields
+      //   fields: JSON.stringify(["name","item_name","valuation_rate","standard_rate","last_purchase_rate"])
+      // }
+    });
+  },
 
-getMaterialSoldItems: async () => {
-  return await axios.get("/api/resource/other items/", {
-    // Add any specific filters or fields if needed
-    // params: {
-    //   filters: JSON.stringify([["item_group", "=", "Material Sold"]]),
-    //   fields: JSON.stringify(["name","item_name","valuation_rate","standard_rate"])
-    // }
-  });
-},
+  getMaterialSoldItems: async () => {
+    return await axios.get("/api/resource/other items/", {
+      // Add any specific filters or fields if needed
+      // params: {
+      //   filters: JSON.stringify([["item_group", "=", "Material Sold"]]),
+      //   fields: JSON.stringify(["name","item_name","valuation_rate","standard_rate"])
+      // }
+    });
+  },
 
-// Add separate detail methods if needed:
-getMaterialSoldItemDetails: async (itemName: string) => {
-  return await axios.get(`/api/resource/other items/${itemName}`);
-},
+  // Add separate detail methods if needed:
+  getMaterialSoldItemDetails: async (itemName: string) => {
+    return await axios.get(`/api/resource/other items/${itemName}`);
+  },
 
-getPressingItemDetails: async (itemName: string) => {
-  return await axios.get(`/api/resource/Pressing Item/${itemName}`, {
-  
-  });
-},
+  getPressingItemDetails: async (itemName: string) => {
+    return await axios.get(`/api/resource/Pressing Item/${itemName}`, {
 
-getAllJobCardsOther: async (filters: Record<string, unknown> = {}) => {
+    });
+  },
+
+  getAllJobCardsOther: async (filters: Record<string, unknown> = {}) => {
     const filterArray = Object.entries(filters).map(([key, value]) => [key, "=", value]);
-    
+
     const params = new URLSearchParams();
-    
+
     // Add filters if they exist
     if (filterArray.length > 0) {
       params.append('filters', JSON.stringify(filterArray));
     }
-    
+
     // Add ordering
     params.append('order_by', 'creation desc');
-    
+
     const url = `/api/resource/Job Card -Other Services?${params.toString()}`;
-    
+
     return await frappeAPI.makeAuthenticatedRequest('GET', url);
   },
   getItemById: async (itemName: string) => {
@@ -599,20 +590,39 @@ getAllJobCardsOther: async (filters: Record<string, unknown> = {}) => {
     return await frappeAPI.makeAuthenticatedRequest('POST', '/api/resource/Customer', customerData
     );
   },
+ 
+  
 
   // Add this to your frappeAPI object
-searchCustomersByPhone: async (mobile_no: string) => {
-  return await frappeAPI.makeAuthenticatedRequest(
-    'GET', 
-    `/api/method/eits_app.customer_search.search_customers?mobile_no=${mobile_no}`
-  );
-},
-searchAllCustomers: async () => {
-  return await frappeAPI.makeAuthenticatedRequest(
-    'GET', 
-    `/api/method/eits_app.customer_search.search_customers`
-  );
-},
+  searchCustomersByPhone: async (mobile_no: string) => {
+    return await frappeAPI.makeAuthenticatedRequest(
+      'GET',
+      `/api/method/eits_app.customer_search.search_customers?mobile_no=${mobile_no}`
+    );
+  },
+  searchAllCustomers: async () => {
+    return await frappeAPI.makeAuthenticatedRequest(
+      'GET',
+      `/api/method/eits_app.customer_search.search_customers`
+    );
+  },
+
+
+  createPayment: async (paymentData: Record<string, unknown>) => {
+    return await frappeAPI.makeAuthenticatedRequest('POST', '/api/resource/EITS Payment', paymentData);
+  },
+  updatePayment: async (paymentId: string, paymentData: Record<string, unknown>) => {
+    return await frappeAPI.makeAuthenticatedRequest('PUT', `/api/resource/EITS Payment/${paymentId}`, paymentData);
+  },
+  deletePayment: async (paymentId: string) => {
+    return await frappeAPI.makeAuthenticatedRequest('DELETE', `/api/resource/EITS Payment/${paymentId}`);
+  },
+  getPaymentbyId: async (paymentId: string) => {
+    return await frappeAPI.makeAuthenticatedRequest('GET', `/api/resource/EITS Payment/${paymentId}`);
+  },
+   getSupplier: async () => {
+    return await frappeAPI.makeAuthenticatedRequest('GET', `/api/resource/Supplier`);
+  },
   upload: async (file: File, options: {
     is_private?: boolean;
     folder?: string;
