@@ -1,6 +1,5 @@
 // src/components/account/PaymentSummary.tsx
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useMemo, useState } from "react";
 import {
   Calendar,
   Check,
@@ -10,8 +9,10 @@ import {
   Search,
   Trash2,
 } from "lucide-react";
-import { Button } from "../ui/button";
+import React, { useMemo, useState } from "react";
 import DeleteConfirmation from "../../common/DeleteComfirmation";
+import { useAuth } from "../../context/AuthContext";
+import { Button } from "../ui/button";
 
 export interface Payment {
   name: string;
@@ -34,6 +35,7 @@ interface Props {
   onEdit: (payment: Payment) => void;
   onDelete: (paymentName: string) => Promise<void>;
   onOpenForm: () => void;
+  onRefresh?: () => void; // Add refresh callback
 }
 
 const PaymentSummary: React.FC<Props> = ({
@@ -42,7 +44,16 @@ const PaymentSummary: React.FC<Props> = ({
   onEdit,
   onDelete,
   onOpenForm,
+  onRefresh,
 }) => {
+
+  const user = useAuth();
+  const userEmail = user?.user?.username ;
+  const userName = user?.user?.full_name || "User";
+
+  console.log("User Email:", userEmail);
+  console.log("User Name:", userName);
+
   /* -------------------------------------------------------------------- */
   /*  state for filters & search (very similar to JobCardList)            */
   /* -------------------------------------------------------------------- */
@@ -81,11 +92,15 @@ const PaymentSummary: React.FC<Props> = ({
   };
 
   /* -------------------------------------------------------------------- */
-  /*  filtering logic (useMemo)                                           */
+  /*  filtering logic (useMemo) - Filter by logged-in user's payments    */
   /* -------------------------------------------------------------------- */
   const filteredPayments = useMemo(() => {
     return payments.filter((p) => {
-      /* 1) date range (same “today only” default as JobCardList) */
+      /* 0) Only show payments made by the logged-in user */
+      const userPayment = p.paid_by === userEmail;
+      if (!userPayment) return false;
+
+      /* 1) date range (same "today only" default as JobCardList) */
       const dateOk = isDefaultFilter
         ? p.date === todayStr
         : isDateInRange(p.date);
@@ -110,7 +125,7 @@ const PaymentSummary: React.FC<Props> = ({
 
       return dateOk && searchOk && modeOk;
     });
-  }, [payments, searchQuery, fromDate, toDate, modeFilter, isDefaultFilter]);
+  }, [payments, searchQuery, fromDate, toDate, modeFilter, isDefaultFilter, userEmail]);
 
   /* -------------------------------------------------------------------- */
   /*  delete helpers                                                      */
@@ -119,11 +134,25 @@ const PaymentSummary: React.FC<Props> = ({
     setPaymentToDelete(name);
     setDeleteModalOpen(true);
   };
+  
   const confirmDelete = async () => {
-    if (paymentToDelete) await onDelete(paymentToDelete);
+    if (paymentToDelete) {
+      await onDelete(paymentToDelete);
+      // Refresh data after deletion
+      if (onRefresh) {
+        onRefresh();
+      }
+    }
     setDeleteModalOpen(false);
     setPaymentToDelete(null);
   };
+
+  /* -------------------------------------------------------------------- */
+  /*  Calculate total amount for filtered payments                        */
+  /* -------------------------------------------------------------------- */
+  const totalAmount = useMemo(() => {
+    return filteredPayments.reduce((sum, payment) => sum + (payment.amountaed || 0), 0);
+  }, [filteredPayments]);
 
   /* -------------------------------------------------------------------- */
   /*  UI                                                                  */
@@ -140,25 +169,52 @@ const PaymentSummary: React.FC<Props> = ({
     <div className="pb-10 max-w-7xl mx-auto">
       {/* header */}
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-xl font-bold text-emerald-800 flex items-center gap-2">
-          Payments
-          <span className="bg-emerald-50 text-emerald-700 text-sm font-medium px-2 py-0.5 rounded-full border border-emerald-200">
-            {filteredPayments.length}
-          </span>
-          {isDefaultFilter && (
-            <span className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full border border-blue-200">
-              Today
+        <div className="flex items-center gap-3">
+          <h2 className="text-xl font-bold text-emerald-800 flex items-center gap-2">
+            My Payments
+            <span className="bg-emerald-50 text-emerald-700 text-sm font-medium px-2 py-0.5 rounded-full border border-emerald-200">
+              {filteredPayments.length}
             </span>
+            {isDefaultFilter && (
+              <span className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full border border-blue-200">
+                Today
+              </span>
+            )}
+          </h2>
+          {/* Total amount display */}
+          {filteredPayments.length > 0 && (
+            <div className="text-sm">
+              <span className="text-gray-600">Total: </span>
+              <span className="font-semibold text-emerald-700">{totalAmount.toFixed(2)} AED</span>
+            </div>
           )}
-        </h2>
-        <Button
-          onClick={onOpenForm}
-          size="sm"
-          className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-md px-3 py-2"
-        >
-          <Plus className="h-4 w-4 mr-1" />
-          Add
-        </Button>
+        </div>
+        <div className="flex gap-2">
+          {onRefresh && (
+            <Button
+              onClick={onRefresh}
+              variant="outline"
+              size="sm"
+              className="px-3 py-2"
+            >
+              Refresh
+            </Button>
+          )}
+          <Button
+            onClick={onOpenForm}
+            size="sm"
+            className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-md px-3 py-2"
+          >
+            <Plus className="h-4 w-4 mr-1" />
+            Add Payment
+          </Button>
+        </div>
+      </div>
+
+      {/* User info display */}
+      <div className="mb-4 text-sm text-gray-600">
+        <span>Showing payments made by: </span>
+        <span className="font-medium text-gray-800">{userName} ({userEmail})</span>
       </div>
 
       {/* search & filter bar */}
@@ -168,7 +224,7 @@ const PaymentSummary: React.FC<Props> = ({
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
             <input
               type="text"
-              placeholder="Search paid by / paid to / bill / purpose..."
+              placeholder="Search paid to / bill / purpose..."
               value={searchQuery}
               onChange={(e) => {
                 setSearchQuery(e.target.value);
@@ -298,7 +354,7 @@ const PaymentSummary: React.FC<Props> = ({
           </h3>
           <p className="text-sm text-gray-500 mb-3">
             {isDefaultFilter
-              ? "No payments recorded for today."
+              ? "You haven't made any payments today."
               : "No payments match your current filters."}
           </p>
           <Button
@@ -335,10 +391,7 @@ const PaymentSummary: React.FC<Props> = ({
                     </span>
                   </div>
 
-                  {/* paid by / to */}
-                  <p className="text-xs text-gray-600 leading-tight">
-                    <strong>By:</strong> {p.paid_by || "N/A"}
-                  </p>
+                  {/* paid to (removed paid by since it's always the current user) */}
                   <p className="text-xs text-gray-600 leading-tight">
                     <strong>To:</strong> {p.paid_to || "N/A"}
                   </p>

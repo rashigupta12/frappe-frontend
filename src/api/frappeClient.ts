@@ -620,8 +620,17 @@ export const frappeAPI = {
   getPaymentbyId: async (paymentId: string) => {
     return await frappeAPI.makeAuthenticatedRequest('GET', `/api/resource/EITS Payment/${paymentId}`);
   },
-  getAllPayments: async () => {
-    return await frappeAPI.makeAuthenticatedRequest('GET', `/api/resource/EITS Payment`);
+  getAllPayments: async (filters: Record<string, unknown> = {}) => {
+    const filterArray = Object.entries(filters).map(([key, value]) => [key, "=", value]);
+    const filterString = encodeURIComponent(JSON.stringify(filterArray));
+
+    return await frappeAPI.makeAuthenticatedRequest(
+      'GET',
+      `/api/resource/EITS Payment?filters=${filterString}&order_by=creation%20asc`
+    );
+  },
+  getPaymentbypaidby: async (paid_by: string) => {
+    return await frappeAPI.makeAuthenticatedRequest('GET', `/api/resource/EITS Payment?filters=[["paid_by","=","${paid_by}"]]&order_by=creation%20desc`);
   },
   getSupplier: async () => {
     return await frappeAPI.makeAuthenticatedRequest('GET', `/api/resource/Supplier`);

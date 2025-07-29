@@ -234,8 +234,9 @@ import { useAuth } from "../../context/AuthContext";
 import { Button } from "../ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 
-import PaymentSummary from "../account/PaymentSummary";
+// import PaymentSummary from "../account/PaymentSummary";
 import PaymentForm from "../account/Paytmentform";
+import PaymentContainer from "../account/PaymentContainer";
 
 export default function AccountDashboard() {
   const navigate = useNavigate();
@@ -267,23 +268,7 @@ export default function AccountDashboard() {
         return <PaymentForm />;
       case "summary":
         return (
-          <PaymentSummary
-            payments={[]}
-            loading={false}
-            onEdit={(payment) => {
-              // Handle edit logic
-              console.log('Edit payment:', payment);
-              handleTabChange("payment"); // Maybe switch to payment tab for editing?
-            }}
-            onDelete={async (paymentName) => {
-              // Handle delete logic
-              console.log('Delete payment:', paymentName);
-            }}
-            onOpenForm={() => {
-              // Handle open form logic
-              handleTabChange("payment"); // Switch to payment tab to add new payment
-            }}
-          />
+          <PaymentContainer />
         );
       default:
         return (
