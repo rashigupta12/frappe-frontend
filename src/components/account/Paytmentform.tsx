@@ -207,7 +207,7 @@ const PaymentForm = () => {
   return (
     <div className="wifull mx-auto bg-white shadow-lg rounded-lg overflow-hidden lg:p-3">
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-4 text-white">
+      <div className="bg-gradient-to-r from-emerald-500 to-blue-500 px-6 py-4 text-white">
         <h1 className="text-xl md:text-2xl font-semibold">Payment Entry</h1>
         <p className="text-blue-100 text-sm md:text-base">
           Enter payment details
@@ -433,7 +433,7 @@ const PaymentForm = () => {
             <button
               type="submit"
               disabled={isLoading || isUploading}
-              className="w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white py-3 px-4 rounded-md font-medium hover:from-blue-600 hover:to-blue-700 transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 outline-none disabled:opacity-50"
+              className="w-full bg-gradient-to-r from-emerald-500 to-blue-500 text-white py-3 px-4 rounded-md font-medium hover:from-blue-600 hover:to-blue-700 transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 outline-none disabled:opacity-50"
             >
               {isLoading ? (
                 <span className="flex items-center justify-center">
