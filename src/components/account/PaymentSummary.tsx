@@ -3,16 +3,16 @@
 import {
   Calendar,
   Check,
-  Edit,
   Filter,
   Plus,
   Search,
-  Trash2,
+  Trash2
 } from "lucide-react";
 import React, { useMemo, useState } from "react";
 import DeleteConfirmation from "../../common/DeleteComfirmation";
-import { useAuth } from "../../context/AuthContext";
+
 import { Button } from "../ui/button";
+import { Link } from "react-router-dom";
 
 export interface Payment {
   name: string;
@@ -41,18 +41,16 @@ interface Props {
 const PaymentSummary: React.FC<Props> = ({
   payments,
   loading,
-  onEdit,
   onDelete,
-  onOpenForm,
   onRefresh,
 }) => {
 
-  const user = useAuth();
-  const userEmail = user?.user?.username ;
-  const userName = user?.user?.full_name || "User";
+  // const user = useAuth();
+  // const userEmail = user?.user?.username ;
+  // const userName = user?.user?.full_name || "User";
 
-  console.log("User Email:", userEmail);
-  console.log("User Name:", userName);
+  // console.log("User Email:", userEmail);
+  // console.log("User Name:", userName);
 
   /* -------------------------------------------------------------------- */
   /*  state for filters & search (very similar to JobCardList)            */
@@ -82,14 +80,17 @@ const PaymentSummary: React.FC<Props> = ({
       year: "2-digit",
     });
 
-  const isDateInRange = (date: string) => {
-    const d = new Date(date);
-    const f = new Date(fromDate);
-    const t = new Date(toDate);
-    // normalise to start-of-day
-    [d, f, t].forEach((x) => x.setHours(0, 0, 0, 0));
-    return d >= f && d <= t;
-  };
+  const isDateInRange = React.useCallback(
+    (date: string) => {
+      const d = new Date(date);
+      const f = new Date(fromDate);
+      const t = new Date(toDate);
+      // normalise to start-of-day
+      [d, f, t].forEach((x) => x.setHours(0, 0, 0, 0));
+      return d >= f && d <= t;
+    },
+    [fromDate, toDate]
+  );
 
   /* -------------------------------------------------------------------- */
   /*  filtering logic (useMemo) - Filter by logged-in user's payments    */
@@ -97,8 +98,8 @@ const PaymentSummary: React.FC<Props> = ({
   const filteredPayments = useMemo(() => {
     return payments.filter((p) => {
       /* 0) Only show payments made by the logged-in user */
-      const userPayment = p.paid_by === userEmail;
-      if (!userPayment) return false;
+      // const userPayment = p.paid_by === userEmail;
+      // if (!userPayment) return false;
 
       /* 1) date range (same "today only" default as JobCardList) */
       const dateOk = isDefaultFilter
@@ -125,7 +126,7 @@ const PaymentSummary: React.FC<Props> = ({
 
       return dateOk && searchOk && modeOk;
     });
-  }, [payments, searchQuery, fromDate, toDate, modeFilter, isDefaultFilter, userEmail]);
+  }, [payments, searchQuery, modeFilter, isDefaultFilter, isDateInRange, todayStr]);
 
   /* -------------------------------------------------------------------- */
   /*  delete helpers                                                      */
@@ -150,9 +151,9 @@ const PaymentSummary: React.FC<Props> = ({
   /* -------------------------------------------------------------------- */
   /*  Calculate total amount for filtered payments                        */
   /* -------------------------------------------------------------------- */
-  const totalAmount = useMemo(() => {
-    return filteredPayments.reduce((sum, payment) => sum + (payment.amountaed || 0), 0);
-  }, [filteredPayments]);
+  // const totalAmount = useMemo(() => {
+  //   return filteredPayments.reduce((sum, payment) => sum + (payment.amountaed || 0), 0);
+  // }, [filteredPayments]);
 
   /* -------------------------------------------------------------------- */
   /*  UI                                                                  */
@@ -186,11 +187,21 @@ const PaymentSummary: React.FC<Props> = ({
           )} */}
         </div>
         <div className="flex gap-2">
-         
-          <Button
-            onClick={onOpenForm}
-            size="sm"
-            className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-md px-3 py-2"
+          <Link to="/accountUser?tab=payment">
+            <Button
+              size="sm"
+              className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-md px-3 py-2"
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              Add Payment
+            </Button>
+          </Link>
+        </div>
+      </div>
+
+      {/* User info display
+      <div className="mb-4 text-sm text-gray-600">
+        <span>Showing payments made by: </span>
           >
             <Plus className="h-4 w-4 mr-1" />
             Add Payment
@@ -247,7 +258,7 @@ const PaymentSummary: React.FC<Props> = ({
               variant={modeFilter === m ? "default" : "outline"}
               size="sm"
               onClick={() => setModeFilter(modeFilter === m ? "all" : m)}
-              className="h-8 px-3 text-xs"
+              className="h-8 px-3 text-xs "
             >
               {m.charAt(0).toUpperCase() + m.slice(1)}
             </Button>
@@ -344,13 +355,14 @@ const PaymentSummary: React.FC<Props> = ({
               ? "You haven't made any payments today."
               : "No payments match your current filters."}
           </p>
-          <Button
-            onClick={onOpenForm}
-            size="sm"
-            className="bg-emerald-600 hover:bg-emerald-700"
-          >
-            Add Payment
-          </Button>
+          <Link to="/accountUser?tab=payment">
+            <Button
+              size="sm"
+              className="bg-emerald-600 hover:bg-emerald-700"
+            >
+              Add Payment
+            </Button>
+          </Link>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">

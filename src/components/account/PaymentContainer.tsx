@@ -1,8 +1,10 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 // src/components/account/PaymentContainer.tsx or similar parent component
 import React, { useState, useEffect, useCallback } from 'react';
 import PaymentSummary, { type Payment } from './PaymentSummary';
 import { useAuth } from '../../context/AuthContext';
 import { frappeAPI } from '../../api/frappeClient';
+
 // Import your API service
 // import { paymentAPI } from '../../services/paymentAPI';
 
@@ -55,11 +57,11 @@ const PaymentContainer: React.FC = () => {
   }, [fetchUserPayments]);
 
   // Handle edit payment
-  const handleEditPayment = useCallback((payment: Payment) => {
-    // Open edit form/modal with payment data
-    console.log('Edit payment:', payment.name);
-    // You can implement your edit logic here
-  }, []);
+  // const handleEditPayment = useCallback((payment: Payment) => {
+  //   // Open edit form/modal with payment data
+    
+  //   // You can implement your edit logic here
+  // }, []);
 
   // Handle delete payment
   const handleDeletePayment = useCallback(async (paymentName: string) => {
@@ -78,12 +80,7 @@ const PaymentContainer: React.FC = () => {
     }
   }, []);
 
-  // Handle open form for new payment
-  const handleOpenForm = useCallback(() => {
-    // Open create payment form/modal
-    console.log('Open create payment form');
-    // You can implement your create form logic here
-  }, []);
+ 
 
   // Handle refresh
   const handleRefresh = useCallback(() => {
@@ -108,11 +105,15 @@ const PaymentContainer: React.FC = () => {
     <PaymentSummary
       payments={payments}
       loading={loading}
-      onEdit={handleEditPayment}
+      // onEdit={handleEditPayment}
       onDelete={handleDeletePayment}
-      onOpenForm={handleOpenForm}
-      onRefresh={handleRefresh}
-    />
+      // onOpenForm={handleOpenForm}
+      onRefresh={handleRefresh} onEdit={function (payment: Payment): void {
+        console.error('Edit function not implemented' + payment.name);
+        throw new Error('Function not implemented.');
+      } } onOpenForm={function (): void {
+        throw new Error('Function not implemented.');
+      } }    />
   );
 };
 
