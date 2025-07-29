@@ -2,9 +2,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { create } from 'zustand';
 import { frappeAPI } from '../api/frappeClient';
-import { useAuth } from '../context/AuthContext';
 
 interface ImageAttachment {
+  remarks: string;
   name?: string;
   image: string;
   idx?: number;
@@ -93,6 +93,7 @@ export const usePaymentStore = create<PaymentFormData & PaymentStoreActions>((se
         modified: fileData.modified,
         modified_by: fileData.modified_by,
         docstatus: fileData.docstatus,
+        remarks: ''
       };
 
       // Add to the attachments array

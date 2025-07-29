@@ -1,12 +1,14 @@
-import { Camera, X, Loader2, Eye } from 'lucide-react';
+import { Loader2, X } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
-import { usePaymentStore } from '../../store/payment';
 import { useAuth } from '../../context/AuthContext';
+import { usePaymentStore } from '../../store/payment';
+import { toast } from 'react-hot-toast';
+import MediaUpload from '../inspection/components/MediaUpload/MediaUpload';
+import type { MediaItem } from '../inspection/components/utils/fileUpload';
 
-export default function PaymentEntryForm() {
-  const baseUrl = "https://eits.thebigocommunity.org"; // Base URL for your server
+const PaymentForm = () => {
+  // const baseUrl = "https://eits.thebigocommunity.org";
   const user = useAuth();
-  console.log('User:', user.user);
   
   const {
     bill_number,
@@ -32,14 +34,14 @@ export default function PaymentEntryForm() {
 
   const [previewImage, setPreviewImage] = useState<string | null>(null);
 
-  // Ensure paid_by is always set to the current user's username
+  // Set paid_by to current user's username
   useEffect(() => {
     if (user.user?.username && paid_by !== user.user.username) {
       setField('paid_by', user.user.username);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user.user?.username]);
+  }, [user.user?.username, paid_by, setField]);
 
+  // Fetch suppliers on mount
   useEffect(() => {
     fetchSuppliers();
   }, [fetchSuppliers]);
@@ -59,23 +61,85 @@ export default function PaymentEntryForm() {
     setField(field, value);
   };
 
-  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (event.target.files) {
-      const files = Array.from(event.target.files);
-      for (const file of files) {
-        await uploadAndAddAttachment(file);
-      }
+const handleMediaUpload = async (newMedia: MediaItem[] | MediaItem | undefined) => {
+  console.log('handleMediaUpload called with:', newMedia);
+  
+  // Handle clearing all media
+  if (!newMedia) {
+    // Clear all existing attachments
+    for (let i = custom_attachments.length - 1; i >= 0; i--) {
+      removeAttachment(i);
     }
-  };
+    return;
+  }
 
+  // Convert single MediaItem to array for consistent processing
+  const mediaArray = Array.isArray(newMedia) ? newMedia : [newMedia];
+  console.log('Processing media array:', mediaArray);
+  
+  // Process each media item
+  for (const mediaItem of mediaArray) {
+    try {
+      console.log('Processing media item:', mediaItem);
+      
+      // Check if this is a new upload that needs to be processed
+      if (mediaItem.file) {
+        console.log('Processing new file upload:', mediaItem.file.name);
+        
+        // Use the uploadAndAddAttachment function with the File object
+        await uploadAndAddAttachment(mediaItem.file);
+        console.log('Successfully uploaded and added attachment:', mediaItem.file.name);
+      } 
+      // Handle existing attachments (already on server)
+      else if (mediaItem.url) {
+        console.log('Processing existing media item:', mediaItem.url);
+        
+        // Check if this attachment already exists in custom_attachments
+        const existsInAttachments = custom_attachments.some(
+          attachment => {
+            const normalizedAttachmentUrl = attachment.image.startsWith('/') ? attachment.image : `/${attachment.image}`;
+            const normalizedMediaUrl = mediaItem.url.startsWith('/') ? mediaItem.url : `/${mediaItem.url}`;
+            return normalizedAttachmentUrl === normalizedMediaUrl;
+          }
+        );
+        
+        if (!existsInAttachments) {
+          console.log('Adding existing media item to attachments');
+          // Directly add the existing item to attachments
+          setField('custom_attachments', [
+            ...custom_attachments,
+            { image: mediaItem.url, remarks: mediaItem.remarks || '' }
+          ]);
+        }
+      }
+      
+    } catch (error) {
+      console.error('Error processing media item:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      toast.error(`Failed to process ${mediaItem.remarks || 'media item'}: ${errorMessage}`);
+    }
+  }
+
+  console.log('Current attachments after processing:', custom_attachments);
+};
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     const result = await submitPayment();
     if (result.success) {
-      alert('Payment submitted successfully!');
+      toast.success('Payment submitted successfully!');
+      // Reset form fields after successful submission
+      setField('bill_number', '');
+      setField('amountaed', '0.00');
+      setField('paid_by', '');
+      setField('paid_to', '');
+      setField('custom_purpose_of_payment', '');
+      setField('custom_mode_of_payment', '');
+      setField('custom_name_of_bank', '');
+      setField('custom_account_number', '');
+      setField('custom_card_number', '');
+      setField('custom_attachments', []);
     } else {
-      alert(`Error: ${result.error}`);
+      toast.error(`Error: ${result.error}`);
     }
   };
 
@@ -99,25 +163,50 @@ export default function PaymentEntryForm() {
     }
   };
 
-  // Helper function to construct full image URL
-  const getImageUrl = (imagePath: string) => {
-    return `${baseUrl}${imagePath}`;
-  };
+  // const getImageUrl = (imagePath: string) => {
+  //   // Handle different URL formats
+  //   if (imagePath.startsWith('http')) {
+  //     return imagePath;
+  //   }
+  //   // Remove leading slashes and add baseUrl
+  //   const cleanPath = imagePath.replace(/^\/+/, '');
+  //   return `${baseUrl}/${cleanPath}`;
+  // };
 
-  const openImagePreview = (imagePath: string) => {
-    setPreviewImage(getImageUrl(imagePath));
-  };
+  // const openImagePreview = (imagePath: string) => {
+  //   setPreviewImage(getImageUrl(imagePath));
+  // };
+
 
   const closeImagePreview = () => {
     setPreviewImage(null);
   };
 
+  // Convert existing attachments to MediaItem format for MediaUpload component
+  const mediaItems: MediaItem[] = custom_attachments.map((attachment, index) => {
+    // Ensure proper URL format
+    let url = attachment.image;
+    if (!url.startsWith('/')) {
+      url = `/${url}`;
+    }
+    
+    return {
+      id: `existing-${index}-${attachment.image}`,
+      url: url,
+      type: 'image' as const,
+      remarks: attachment.remarks || `Attachment ${index + 1}`,
+    };
+  });
+
+  console.log('Current mediaItems for MediaUpload:', mediaItems);
+  console.log('Current custom_attachments:', custom_attachments);
+
   return (
     <div className="max-w-md mx-auto bg-white shadow-lg rounded-lg overflow-hidden">
       {/* Header */}
-      <div className="bg-gradient-to-r from-purple-500 to-purple-600 px-6 py-4 text-white">
+      <div className="bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-4 text-white">
         <h1 className="text-xl font-semibold">Payment Entry</h1>
-        <p className="text-purple-100 text-sm">Enter payment details</p>
+        <p className="text-blue-100 text-sm">Enter payment details</p>
       </div>
 
       {/* Error Message */}
@@ -128,86 +217,30 @@ export default function PaymentEntryForm() {
       )}
 
       {/* Form Content */}
-      <div className="p-6">
+      <form onSubmit={handleSubmit} className="p-6">
         <div className="space-y-6">
-          {/* Upload Image Section */}
+          {/* Media Upload Section */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Upload Image <span className="text-red-500">*</span>
+              Payment Evidence <span className="text-red-500">*</span>
             </label>
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center bg-gray-50">
-              <input
-                type="file"
-                multiple
-                accept="image/*"
-                onChange={handleImageUpload}
-                className="hidden"
-                id="image-upload"
-                disabled={isUploading}
-              />
-              <label htmlFor="image-upload" className={`cursor-pointer ${isUploading ? 'opacity-50' : ''}`}>
-                {isUploading ? (
-                  <Loader2 className="mx-auto h-12 w-12 text-purple-500 mb-2 animate-spin" />
-                ) : (
-                  <Camera className="mx-auto h-12 w-12 text-gray-400 mb-2" />
-                )}
-                <div className="text-blue-600 font-medium">
-                  {isUploading ? 'Uploading...' : 'Upload Images'}
-                </div>
-                <div className="text-gray-500 text-sm">
-                  {isUploading ? 'Please wait' : 'Tap to select images'}
-                </div>
-              </label>
-            </div>
-            
-            {/* Uploaded Images Preview */}
-            <div className="mt-3">
-              <p className="text-sm text-gray-600 mb-2">Uploaded Images:</p>
-              {custom_attachments.length === 0 ? (
-                <p className="text-sm text-gray-400">No images uploaded yet</p>
-              ) : (
-                <div className="grid grid-cols-2 gap-3">
-                  {custom_attachments.map((attachment, index) => (
-                    <div key={index} className="relative group">
-                      <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden border">
-                        <img
-                          src={getImageUrl(attachment.image)}
-                          alt={`Attachment ${index + 1}`}
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                            console.error('Image failed to load:', attachment.image);
-                            // Optional: Set a placeholder image
-                            e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIiBmaWxsPSIjRjNGNEY2Ii8+Cjx0ZXh0IHg9IjUwIiB5PSI1NSIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjEyIiBmaWxsPSIjOTlBM0FFIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5JbWFnZTwvdGV4dD4KPC9zdmc+';
-                          }}
-                        />
-                      </div>
-                      <div className="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-lg flex items-center justify-center">
-                        <button
-                          onClick={() => openImagePreview(attachment.image)}
-                          className="p-2 bg-white text-gray-700 rounded-full hover:bg-gray-100 transition-colors mr-2"
-                          title="Preview image"
-                        >
-                          <Eye className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => removeAttachment(index)}
-                          className="p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
-                          title="Remove image"
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-              {custom_attachments.length > 0 && (
-                <div className="text-sm text-green-600 mt-2">
-                  {custom_attachments.length} image(s) uploaded
-                </div>
-              )}
-            </div>
+            <MediaUpload
+              label="Upload payment evidence"
+              multiple={true}
+              allowedTypes={["image"]}
+              value={mediaItems}
+              onChange={handleMediaUpload}
+              maxFiles={5}
+              maxSizeMB={10}
+            />
+            {isUploading && (
+              <div className="mt-2 text-sm text-blue-600 flex items-center">
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                Uploading files...
+              </div>
+            )}
           </div>
+
 
           {/* Amount Paid */}
           <div>
@@ -220,8 +253,9 @@ export default function PaymentEntryForm() {
                 step="0.01"
                 value={amountaed}
                 onChange={(e) => handleInputChange('amountaed', e.target.value)}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-l-md focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-l-md focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                 placeholder="0.00"
+                required
               />
               <div className="px-3 py-2 bg-gray-100 border border-l-0 border-gray-300 rounded-r-md text-gray-700 font-medium">
                 AED
@@ -232,12 +266,13 @@ export default function PaymentEntryForm() {
           {/* Mode of Payment */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Mode Of Payment
+              Mode Of Payment <span className="text-red-500">*</span>
             </label>
             <select
               value={getModeOfPaymentValue()}
               onChange={(e) => setModeOfPayment(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none bg-white"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white"
+              required
             >
               <option value="">Select Mode Of Payment</option>
               <option value="cash">Cash</option>
@@ -258,8 +293,9 @@ export default function PaymentEntryForm() {
                   type="text"
                   value={custom_name_of_bank}
                   onChange={(e) => handleInputChange('custom_name_of_bank', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                   placeholder="Enter Bank Name"
+                  required
                 />
               </div>
               <div>
@@ -270,8 +306,9 @@ export default function PaymentEntryForm() {
                   type="text"
                   value={custom_account_number}
                   onChange={(e) => handleInputChange('custom_account_number', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                   placeholder="Enter Account Number"
+                  required
                 />
               </div>
             </>
@@ -287,8 +324,9 @@ export default function PaymentEntryForm() {
                   type="text"
                   value={custom_name_of_bank}
                   onChange={(e) => handleInputChange('custom_name_of_bank', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                   placeholder="Enter Bank Name"
+                  required
                 />
               </div>
               <div>
@@ -299,8 +337,9 @@ export default function PaymentEntryForm() {
                   type="text"
                   value={custom_card_number}
                   onChange={(e) => handleInputChange('custom_card_number', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                   placeholder="Enter Card Number"
+                  required
                 />
               </div>
             </>
@@ -315,7 +354,7 @@ export default function PaymentEntryForm() {
               type="text"
               value={bill_number}
               onChange={(e) => handleInputChange('bill_number', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
               placeholder="Enter Bill No"
             />
           </div>
@@ -329,20 +368,21 @@ export default function PaymentEntryForm() {
               rows={3}
               value={custom_purpose_of_payment}
               onChange={(e) => handleInputChange('custom_purpose_of_payment', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none resize-none"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none"
               placeholder="Enter Purpose of Payment"
             />
           </div>
 
-          {/* Paid to (now a dropdown) */}
+          {/* Paid to (dropdown) */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Paid to
+              Paid to <span className="text-red-500">*</span>
             </label>
             <select
               value={paid_to}
               onChange={(e) => handleInputChange('paid_to', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+              required
             >
               <option value="">Select Supplier</option>
               {suppliers.map((supplier) => (
@@ -353,18 +393,28 @@ export default function PaymentEntryForm() {
             </select>
           </div>
 
-
           {/* Submit Button */}
           <button
-            type="button"
-            onClick={handleSubmit}
+            type="submit"
             disabled={isLoading || isUploading}
-            className="w-full bg-gradient-to-r from-purple-500 to-purple-600 text-white py-3 px-4 rounded-md font-medium hover:from-purple-600 hover:to-purple-700 transition-all duration-200 focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 outline-none disabled:opacity-50"
+            className="w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white py-3 px-4 rounded-md font-medium hover:from-blue-600 hover:to-blue-700 transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 outline-none disabled:opacity-50"
           >
-            {isLoading ? 'Submitting...' : isUploading ? 'Uploading Images...' : 'Submit'}
+            {isLoading ? (
+              <span className="flex items-center justify-center">
+                <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                Submitting...
+              </span>
+            ) : isUploading ? (
+              <span className="flex items-center justify-center">
+                <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                Uploading...
+              </span>
+            ) : (
+              'Submit Payment'
+            )}
           </button>
         </div>
-      </div>
+      </form>
 
       {/* Image Preview Modal */}
       {previewImage && (
@@ -386,4 +436,6 @@ export default function PaymentEntryForm() {
       )}
     </div>
   );
-}
+};
+
+export default PaymentForm;

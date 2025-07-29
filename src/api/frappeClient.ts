@@ -620,7 +620,10 @@ export const frappeAPI = {
   getPaymentbyId: async (paymentId: string) => {
     return await frappeAPI.makeAuthenticatedRequest('GET', `/api/resource/EITS Payment/${paymentId}`);
   },
-   getSupplier: async () => {
+  getAllPayments: async () => {
+    return await frappeAPI.makeAuthenticatedRequest('GET', `/api/resource/EITS Payment`);
+  },
+  getSupplier: async () => {
     return await frappeAPI.makeAuthenticatedRequest('GET', `/api/resource/Supplier`);
   },
   upload: async (file: File, options: {

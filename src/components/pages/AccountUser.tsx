@@ -233,8 +233,9 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { Button } from "../ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
-import PaymentForm from "../account/Paytmentform";
+
 import PaymentSummary from "../account/PaymentSummary";
+import PaymentForm from "../account/Paytmentform";
 
 export default function AccountDashboard() {
   const navigate = useNavigate();
