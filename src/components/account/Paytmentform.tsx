@@ -5,7 +5,7 @@ import { usePaymentStore } from '../../store/payment';
 import { toast } from 'react-hot-toast';
 import MediaUpload from '../inspection/components/MediaUpload/MediaUpload';
 import type { MediaItem } from '../inspection/components/utils/fileUpload';
-
+import SearchableSelect from '../../common/SearchSelect';
 const PaymentForm = () => {
   // const baseUrl = "https://eits.thebigocommunity.org";
   const user = useAuth();
@@ -182,24 +182,11 @@ const handleMediaUpload = async (newMedia: MediaItem[] | MediaItem | undefined) 
     setPreviewImage(null);
   };
 
-  // Convert existing attachments to MediaItem format for MediaUpload component
-  const mediaItems: MediaItem[] = custom_attachments.map((attachment, index) => {
-    // Ensure proper URL format
-    let url = attachment.image;
-    if (!url.startsWith('/')) {
-      url = `/${url}`;
-    }
-    
-    return {
-      id: `existing-${index}-${attachment.image}`,
-      url: url,
-      type: 'image' as const,
-      remarks: attachment.remarks || `Attachment ${index + 1}`,
-    };
-  });
-
-  console.log('Current mediaItems for MediaUpload:', mediaItems);
-  console.log('Current custom_attachments:', custom_attachments);
+  // Get the label for the selected supplier
+  const getSelectedSupplierLabel = () => {
+    const selectedSupplier = suppliers.find(supplier => supplier.value === paid_to);
+    return selectedSupplier ? selectedSupplier.label : '';
+  };
 
   return (
     <div className="max-w-md mx-auto bg-white shadow-lg rounded-lg overflow-hidden">
@@ -244,16 +231,16 @@ const handleMediaUpload = async (newMedia: MediaItem[] | MediaItem | undefined) 
 
           {/* Amount Paid */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700   mb-0">
               Amount Paid <span className="text-red-500">*</span>
             </label>
-            <div className="flex">
+            <div className="flex focus:ring-1">
               <input
                 type="number"
                 step="0.01"
                 value={amountaed}
                 onChange={(e) => handleInputChange('amountaed', e.target.value)}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-l-md focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-l-md focus:ring-1  focus:border-transparent outline-none"
                 placeholder="0.00"
                 required
               />
@@ -265,16 +252,14 @@ const handleMediaUpload = async (newMedia: MediaItem[] | MediaItem | undefined) 
 
           {/* Mode of Payment */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Mode Of Payment <span className="text-red-500">*</span>
+            <label className="block text-sm font-medium text-gray-700   mb-0">
+              Mode Of Payment
             </label>
             <select
               value={getModeOfPaymentValue()}
               onChange={(e) => setModeOfPayment(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white"
-              required
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:border-transparent outline-none bg-white"
             >
-              <option value="">Select Mode Of Payment</option>
               <option value="cash">Cash</option>
               <option value="card">Card</option>
               <option value="bank-transfer">Bank Transfer</option>
@@ -286,27 +271,27 @@ const handleMediaUpload = async (newMedia: MediaItem[] | MediaItem | undefined) 
           {custom_mode_of_payment === 'Bank' && (
             <>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700   mb-0">
                   Bank Name <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   value={custom_name_of_bank}
                   onChange={(e) => handleInputChange('custom_name_of_bank', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2  -500 focus:border-transparent outline-none"
                   placeholder="Enter Bank Name"
                   required
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700   mb-0">
                   Account Number <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   value={custom_account_number}
                   onChange={(e) => handleInputChange('custom_account_number', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2  -500 focus:border-transparent outline-none"
                   placeholder="Enter Account Number"
                   required
                 />
@@ -317,27 +302,27 @@ const handleMediaUpload = async (newMedia: MediaItem[] | MediaItem | undefined) 
           {custom_mode_of_payment === 'Credit Card' && (
             <>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700   mb-0">
                   Bank Name <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   value={custom_name_of_bank}
                   onChange={(e) => handleInputChange('custom_name_of_bank', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2  -500 focus:border-transparent outline-none"
                   placeholder="Enter Bank Name"
                   required
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700   mb-0">
                   Card Number <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   value={custom_card_number}
                   onChange={(e) => handleInputChange('custom_card_number', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2  -500 focus:border-transparent outline-none"
                   placeholder="Enter Card Number"
                   required
                 />
@@ -347,57 +332,51 @@ const handleMediaUpload = async (newMedia: MediaItem[] | MediaItem | undefined) 
 
           {/* Bill No */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700   mb-0">
               Bill No
             </label>
             <input
               type="text"
               value={bill_number}
               onChange={(e) => handleInputChange('bill_number', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2  -500 focus:border-transparent outline-none"
               placeholder="Enter Bill No"
             />
           </div>
-
+ <div>
+            <label className="block text-sm font-medium text-gray-700   mb-0">
+              Paid to
+            </label>
+            <SearchableSelect
+              options={suppliers}
+              value={getSelectedSupplierLabel()}
+              onChange={(value) => handleInputChange('paid_to', value)}
+              placeholder="Select or search supplier..."
+              disabled={isLoading || suppliers.length === 0}
+            />
+          </div>
           {/* Purpose of Payment */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700   mb-0">
               Purpose of Payment
             </label>
             <textarea
               rows={3}
               value={custom_purpose_of_payment}
               onChange={(e) => handleInputChange('custom_purpose_of_payment', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2  -500 focus:border-transparent outline-none resize-none"
               placeholder="Enter Purpose of Payment"
             />
           </div>
 
-          {/* Paid to (dropdown) */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Paid to <span className="text-red-500">*</span>
-            </label>
-            <select
-              value={paid_to}
-              onChange={(e) => handleInputChange('paid_to', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-              required
-            >
-              <option value="">Select Supplier</option>
-              {suppliers.map((supplier) => (
-                <option key={supplier.value} value={supplier.value}>
-                  {supplier.label}
-                </option>
-              ))}
-            </select>
-          </div>
+          {/* Paid to - Now using SearchableSelect */}
+         
 
           {/* Submit Button */}
           <button
             type="submit"
             disabled={isLoading || isUploading}
-            className="w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white py-3 px-4 rounded-md font-medium hover:from-blue-600 hover:to-blue-700 transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 outline-none disabled:opacity-50"
+            className="w-full bg-gradient-to-r from-purple-500 to-purple-600 text-white py-3 px-4 rounded-md font-medium hover:from-purple-600 hover:to-purple-700 transition-all duration-200 focus:ring-2  -500 focus:ring-offset-2 outline-none disabled:opacity-50"
           >
             {isLoading ? (
               <span className="flex items-center justify-center">
