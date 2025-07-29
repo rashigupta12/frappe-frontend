@@ -1,9 +1,12 @@
 import { Camera, X, Loader2, Eye } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { usePaymentStore } from '../../store/payment';
+import { useAuth } from '../../context/AuthContext';
 
 export default function PaymentEntryForm() {
   const baseUrl = "https://eits.thebigocommunity.org"; // Base URL for your server
+  const user = useAuth();
+  console.log('User:', user.user);
   
   const {
     bill_number,
@@ -28,6 +31,14 @@ export default function PaymentEntryForm() {
   } = usePaymentStore();
 
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+
+  // Ensure paid_by is always set to the current user's username
+  useEffect(() => {
+    if (user.user?.username && paid_by !== user.user.username) {
+      setField('paid_by', user.user.username);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user.user?.username]);
 
   useEffect(() => {
     fetchSuppliers();
@@ -59,6 +70,7 @@ export default function PaymentEntryForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     const result = await submitPayment();
     if (result.success) {
       alert('Payment submitted successfully!');
@@ -89,10 +101,7 @@ export default function PaymentEntryForm() {
 
   // Helper function to construct full image URL
   const getImageUrl = (imagePath: string) => {
-    if (imagePath.startsWith('http')) {
-      return imagePath; // Already a full URL
-    }
-    return `${baseUrl}${imagePath}`; // Construct full URL
+    return `${baseUrl}${imagePath}`;
   };
 
   const openImagePreview = (imagePath: string) => {
@@ -344,19 +353,6 @@ export default function PaymentEntryForm() {
             </select>
           </div>
 
-          {/* Paid By */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Paid By
-            </label>
-            <input
-              type="text"
-              value={paid_by}
-              onChange={(e) => handleInputChange('paid_by', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
-              placeholder="Enter Paid By"
-            />
-          </div>
 
           {/* Submit Button */}
           <button

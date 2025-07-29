@@ -2,6 +2,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { create } from 'zustand';
 import { frappeAPI } from '../api/frappeClient';
+import { useAuth } from '../context/AuthContext';
 
 interface ImageAttachment {
   name?: string;
@@ -105,6 +106,7 @@ export const usePaymentStore = create<PaymentFormData & PaymentStoreActions>((se
       set({ error: errorMessage, isUploading: false });
     }
   },
+  
 
   removeAttachment: (index) =>
     set((state) => ({
