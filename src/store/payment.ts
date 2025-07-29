@@ -2,7 +2,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { create } from 'zustand';
 import { frappeAPI } from '../api/frappeClient';
-import { useAuth } from '../context/AuthContext';
 
 interface ImageAttachment {
   name?: string;

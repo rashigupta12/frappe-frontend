@@ -2,7 +2,7 @@ import { Camera, X, Loader2, Eye } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { usePaymentStore } from '../../store/payment';
 import { useAuth } from '../../context/AuthContext';
-
+import SearchableSelect from '../../common/SearchSelect';
 export default function PaymentEntryForm() {
   const baseUrl = "https://eits.thebigocommunity.org"; // Base URL for your server
   const user = useAuth();
@@ -101,15 +101,27 @@ export default function PaymentEntryForm() {
 
   // Helper function to construct full image URL
   const getImageUrl = (imagePath: string) => {
-    return `${baseUrl}${imagePath}`;
+    // return `${baseUrl}${imagePath}`;
+
+     const cleanPath = imagePath.startsWith('/') ? imagePath : `/${imagePath}`;
+  return `${baseUrl}${cleanPath}`;
   };
 
   const openImagePreview = (imagePath: string) => {
+     const fullUrl = getImageUrl(imagePath);
+  console.log('Full image URL:', fullUrl);
+  console.log('Original path:', imagePath);
     setPreviewImage(getImageUrl(imagePath));
   };
 
   const closeImagePreview = () => {
     setPreviewImage(null);
+  };
+
+  // Get the label for the selected supplier
+  const getSelectedSupplierLabel = () => {
+    const selectedSupplier = suppliers.find(supplier => supplier.value === paid_to);
+    return selectedSupplier ? selectedSupplier.label : '';
   };
 
   return (
@@ -132,7 +144,7 @@ export default function PaymentEntryForm() {
         <div className="space-y-6">
           {/* Upload Image Section */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700   mb-0">
               Upload Image <span className="text-red-500">*</span>
             </label>
             <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center bg-gray-50">
@@ -147,9 +159,9 @@ export default function PaymentEntryForm() {
               />
               <label htmlFor="image-upload" className={`cursor-pointer ${isUploading ? 'opacity-50' : ''}`}>
                 {isUploading ? (
-                  <Loader2 className="mx-auto h-12 w-12 text-purple-500 mb-2 animate-spin" />
+                  <Loader2 className="mx-auto h-12 w-12 text-purple-500   mb-0 animate-spin" />
                 ) : (
-                  <Camera className="mx-auto h-12 w-12 text-gray-400 mb-2" />
+                  <Camera className="mx-auto h-12 w-12 text-gray-400   mb-0" />
                 )}
                 <div className="text-blue-600 font-medium">
                   {isUploading ? 'Uploading...' : 'Upload Images'}
@@ -162,7 +174,7 @@ export default function PaymentEntryForm() {
             
             {/* Uploaded Images Preview */}
             <div className="mt-3">
-              <p className="text-sm text-gray-600 mb-2">Uploaded Images:</p>
+              <p className="text-sm text-gray-600   mb-0">Uploaded Images:</p>
               {custom_attachments.length === 0 ? (
                 <p className="text-sm text-gray-400">No images uploaded yet</p>
               ) : (
@@ -174,6 +186,8 @@ export default function PaymentEntryForm() {
                           src={getImageUrl(attachment.image)}
                           alt={`Attachment ${index + 1}`}
                           className="w-full h-full object-cover"
+                            crossOrigin="use-credentials" // Add this if authentication is required
+
                           onError={(e) => {
                             console.error('Image failed to load:', attachment.image);
                             // Optional: Set a placeholder image
@@ -211,16 +225,16 @@ export default function PaymentEntryForm() {
 
           {/* Amount Paid */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700   mb-0">
               Amount Paid <span className="text-red-500">*</span>
             </label>
-            <div className="flex">
+            <div className="flex focus:ring-1">
               <input
                 type="number"
                 step="0.01"
                 value={amountaed}
                 onChange={(e) => handleInputChange('amountaed', e.target.value)}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-l-md focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-l-md focus:ring-1  focus:border-transparent outline-none"
                 placeholder="0.00"
               />
               <div className="px-3 py-2 bg-gray-100 border border-l-0 border-gray-300 rounded-r-md text-gray-700 font-medium">
@@ -231,15 +245,14 @@ export default function PaymentEntryForm() {
 
           {/* Mode of Payment */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700   mb-0">
               Mode Of Payment
             </label>
             <select
               value={getModeOfPaymentValue()}
               onChange={(e) => setModeOfPayment(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none bg-white"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:border-transparent outline-none bg-white"
             >
-              <option value="">Select Mode Of Payment</option>
               <option value="cash">Cash</option>
               <option value="card">Card</option>
               <option value="bank-transfer">Bank Transfer</option>
@@ -251,26 +264,26 @@ export default function PaymentEntryForm() {
           {custom_mode_of_payment === 'Bank' && (
             <>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700   mb-0">
                   Bank Name <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   value={custom_name_of_bank}
                   onChange={(e) => handleInputChange('custom_name_of_bank', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2  -500 focus:border-transparent outline-none"
                   placeholder="Enter Bank Name"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700   mb-0">
                   Account Number <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   value={custom_account_number}
                   onChange={(e) => handleInputChange('custom_account_number', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2  -500 focus:border-transparent outline-none"
                   placeholder="Enter Account Number"
                 />
               </div>
@@ -280,26 +293,26 @@ export default function PaymentEntryForm() {
           {custom_mode_of_payment === 'Credit Card' && (
             <>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700   mb-0">
                   Bank Name <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   value={custom_name_of_bank}
                   onChange={(e) => handleInputChange('custom_name_of_bank', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2  -500 focus:border-transparent outline-none"
                   placeholder="Enter Bank Name"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700   mb-0">
                   Card Number <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   value={custom_card_number}
                   onChange={(e) => handleInputChange('custom_card_number', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2  -500 focus:border-transparent outline-none"
                   placeholder="Enter Card Number"
                 />
               </div>
@@ -308,58 +321,52 @@ export default function PaymentEntryForm() {
 
           {/* Bill No */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700   mb-0">
               Bill No
             </label>
             <input
               type="text"
               value={bill_number}
               onChange={(e) => handleInputChange('bill_number', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2  -500 focus:border-transparent outline-none"
               placeholder="Enter Bill No"
             />
           </div>
-
+ <div>
+            <label className="block text-sm font-medium text-gray-700   mb-0">
+              Paid to
+            </label>
+            <SearchableSelect
+              options={suppliers}
+              value={getSelectedSupplierLabel()}
+              onChange={(value) => handleInputChange('paid_to', value)}
+              placeholder="Select or search supplier..."
+              disabled={isLoading || suppliers.length === 0}
+            />
+          </div>
           {/* Purpose of Payment */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700   mb-0">
               Purpose of Payment
             </label>
             <textarea
               rows={3}
               value={custom_purpose_of_payment}
               onChange={(e) => handleInputChange('custom_purpose_of_payment', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none resize-none"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2  -500 focus:border-transparent outline-none resize-none"
               placeholder="Enter Purpose of Payment"
             />
           </div>
 
-          {/* Paid to (now a dropdown) */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Paid to
-            </label>
-            <select
-              value={paid_to}
-              onChange={(e) => handleInputChange('paid_to', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
-            >
-              <option value="">Select Supplier</option>
-              {suppliers.map((supplier) => (
-                <option key={supplier.value} value={supplier.value}>
-                  {supplier.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
+          {/* Paid to - Now using SearchableSelect */}
+         
 
           {/* Submit Button */}
           <button
             type="button"
             onClick={handleSubmit}
             disabled={isLoading || isUploading}
-            className="w-full bg-gradient-to-r from-purple-500 to-purple-600 text-white py-3 px-4 rounded-md font-medium hover:from-purple-600 hover:to-purple-700 transition-all duration-200 focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 outline-none disabled:opacity-50"
+            className="w-full bg-gradient-to-r from-purple-500 to-purple-600 text-white py-3 px-4 rounded-md font-medium hover:from-purple-600 hover:to-purple-700 transition-all duration-200 focus:ring-2  -500 focus:ring-offset-2 outline-none disabled:opacity-50"
           >
             {isLoading ? 'Submitting...' : isUploading ? 'Uploading Images...' : 'Submit'}
           </button>
