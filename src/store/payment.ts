@@ -11,6 +11,11 @@ interface ImageAttachment {
   parent?: string;
   parentfield?: string;
   parenttype?: string;
+  owner?: string;
+  creation?: string;
+  modified?: string;
+  modified_by?: string;
+  docstatus?: number;
 }
 
 interface PaymentFormData {
@@ -72,10 +77,21 @@ export const usePaymentStore = create<PaymentFormData & PaymentStoreActions>((se
         is_private: true,
       });
 
+      console.log('Upload response:', uploadResponse); // Debug log
+
       // Create the attachment object in the format expected by the backend
+      // Handle both possible response structures
+      const fileData = uploadResponse.data.message || uploadResponse.data;
       const attachment: ImageAttachment = {
-        image: uploadResponse.data.file_url, // Assuming the API returns file_url
+        image: fileData.file_url, // Use the correct path from upload response
         doctype: "Image Attachments",
+        // Store additional metadata that might be useful
+        name: fileData.name,
+        owner: fileData.owner,
+        creation: fileData.creation,
+        modified: fileData.modified,
+        modified_by: fileData.modified_by,
+        docstatus: fileData.docstatus,
       };
 
       // Add to the attachments array
@@ -127,6 +143,14 @@ export const usePaymentStore = create<PaymentFormData & PaymentStoreActions>((se
     set({ isLoading: true, error: null });
 
     try {
+      // Prepare the attachments in the correct format for submission
+      const formattedAttachments = custom_attachments.map((attachment, index) => ({
+        image: attachment.image,
+        doctype: "Image Attachments",
+        idx: index + 1, // Set proper index for child table
+        // Don't include parent fields here as they will be set by the backend
+      }));
+
       // Prepare base payment data
       const paymentData: Record<string, any> = {
         date,
@@ -137,7 +161,7 @@ export const usePaymentStore = create<PaymentFormData & PaymentStoreActions>((se
         custom_purpose_of_payment,
         custom_mode_of_payment,
         doctype: "EITS Payment",
-        custom_attachments: custom_attachments, // Include the uploaded attachments
+        custom_attachments: formattedAttachments, // Use formatted attachments
       };
 
       // Add conditional fields based on payment mode
@@ -152,6 +176,9 @@ export const usePaymentStore = create<PaymentFormData & PaymentStoreActions>((se
       // Create the payment record with attachments
       const paymentResponse = await frappeAPI.createPayment(paymentData);
 
+      // Reset form after successful submission
+      set(initialState);
+      
       set({ isLoading: false });
       return { success: true, data: paymentResponse.data };
     } catch (error) {

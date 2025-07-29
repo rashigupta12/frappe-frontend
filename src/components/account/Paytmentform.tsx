@@ -3,7 +3,8 @@ import React, { useEffect, useState } from 'react';
 import { usePaymentStore } from '../../store/payment';
 
 export default function PaymentEntryForm() {
-  const imageUrl= "https://eits.thebigocommunity.org"
+  const baseUrl = "https://eits.thebigocommunity.org"; // Base URL for your server
+  
   const {
     bill_number,
     amountaed,
@@ -86,8 +87,16 @@ export default function PaymentEntryForm() {
     }
   };
 
-  const openImagePreview = (imageUrl: string) => {
-    setPreviewImage(imageUrl);
+  // Helper function to construct full image URL
+  const getImageUrl = (imagePath: string) => {
+    if (imagePath.startsWith('http')) {
+      return imagePath; // Already a full URL
+    }
+    return `${baseUrl}${imagePath}`; // Construct full URL
+  };
+
+  const openImagePreview = (imagePath: string) => {
+    setPreviewImage(getImageUrl(imagePath));
   };
 
   const closeImagePreview = () => {
@@ -152,11 +161,15 @@ export default function PaymentEntryForm() {
                   {custom_attachments.map((attachment, index) => (
                     <div key={index} className="relative group">
                       <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden border">
-                        
                         <img
-                          src={`${imageUrl}/${attachment.image}`}
+                          src={getImageUrl(attachment.image)}
                           alt={`Attachment ${index + 1}`}
                           className="w-full h-full object-cover"
+                          onError={(e) => {
+                            console.error('Image failed to load:', attachment.image);
+                            // Optional: Set a placeholder image
+                            e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIiBmaWxsPSIjRjNGNEY2Ii8+Cjx0ZXh0IHg9IjUwIiB5PSI1NSIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjEyIiBmaWxsPSIjOTlBM0FFIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5JbWFnZTwvdGV4dD4KPC9zdmc+';
+                          }}
                         />
                       </div>
                       <div className="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-lg flex items-center justify-center">
