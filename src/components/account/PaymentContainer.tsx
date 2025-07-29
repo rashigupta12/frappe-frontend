@@ -81,7 +81,7 @@ const PaymentContainer: React.FC = () => {
   // Handle open form for new payment
   const handleOpenForm = useCallback(() => {
     // Open create payment form/modal
-    console.log('Open new payment form');
+    console.log('Open create payment form');
     // You can implement your create form logic here
   }, []);
 
