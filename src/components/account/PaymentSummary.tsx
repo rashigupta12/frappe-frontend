@@ -166,40 +166,27 @@ const PaymentSummary: React.FC<Props> = ({
   }
 
   return (
-    <div className="pb-10 max-w-7xl mx-auto">
+    <div className="pb-10 px-4 py-2 max-w-7xl mx-auto">
       {/* header */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-3">
-          <h2 className="text-xl font-bold text-emerald-800 flex items-center gap-2">
+          <h2 className="text-xl pl-2 font-bold text-emerald-800 flex items-center gap-2">
             My Payments
             <span className="bg-emerald-50 text-emerald-700 text-sm font-medium px-2 py-0.5 rounded-full border border-emerald-200">
               {filteredPayments.length}
             </span>
-            {isDefaultFilter && (
-              <span className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full border border-blue-200">
-                Today
-              </span>
-            )}
+            
           </h2>
           {/* Total amount display */}
-          {filteredPayments.length > 0 && (
+          {/* {filteredPayments.length > 0 && (
             <div className="text-sm">
               <span className="text-gray-600">Total: </span>
               <span className="font-semibold text-emerald-700">{totalAmount.toFixed(2)} AED</span>
             </div>
-          )}
+          )} */}
         </div>
         <div className="flex gap-2">
-          {onRefresh && (
-            <Button
-              onClick={onRefresh}
-              variant="outline"
-              size="sm"
-              className="px-3 py-2"
-            >
-              Refresh
-            </Button>
-          )}
+         
           <Button
             onClick={onOpenForm}
             size="sm"
@@ -211,11 +198,11 @@ const PaymentSummary: React.FC<Props> = ({
         </div>
       </div>
 
-      {/* User info display */}
+      {/* User info display
       <div className="mb-4 text-sm text-gray-600">
         <span>Showing payments made by: </span>
         <span className="font-medium text-gray-800">{userName} ({userEmail})</span>
-      </div>
+      </div> */}
 
       {/* search & filter bar */}
       <div className="bg-white mb-4">
@@ -383,7 +370,7 @@ const PaymentSummary: React.FC<Props> = ({
                         <span>{formatDate(p.date)}</span>
                       </div>
                       <p className="font-semibold text-gray-900 text-sm truncate">
-                        {p.bill_number ? `Bill #${p.bill_number}` : p.name}
+                        {p.bill_number ? `Bill #${p.name}` : p.name}
                       </p>
                     </div>
                     <span className="font-medium text-emerald-700 text-sm whitespace-nowrap">
@@ -408,14 +395,14 @@ const PaymentSummary: React.FC<Props> = ({
 
                     {!readOnly && (
                       <div className="flex gap-0.5">
-                        <Button
+                        {/* <Button
                           variant="ghost"
                           size="sm"
                           className="h-5 w-5 p-0 hover:bg-green-50"
                           onClick={() => onEdit(p)}
                         >
                           <Edit className="h-3 w-3 text-green-700" />
-                        </Button>
+                        </Button> */}
                         <Button
                           variant="ghost"
                           size="sm"
