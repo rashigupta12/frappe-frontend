@@ -1,11 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-unused-vars */
 // src/components/account/ReceiptContainer.tsx
 import React, { useState, useEffect, useCallback } from 'react';
-import ReceiptSummary from './ReceiptSummary';
+
 import { useAuth } from '../../context/AuthContext';
 import { frappeAPI } from '../../api/frappeClient';
-import type { Receipt } from './ReciptSummary';
+import type { Receipt } from './ReceiptDetails';
+import ReceiptSummary from './ReciptSummary';
+
+
 
 const ReceiptContainer: React.FC = () => {
   const [receipts, setReceipts] = useState<Receipt[]>([]);
@@ -99,18 +101,17 @@ const ReceiptContainer: React.FC = () => {
 
   return (
     <ReceiptSummary
-      payments={payments}
+      receipts={payments}
       loading={loading}
+      // onEdit={handleEditPayment}
       onDelete={handleDeleteReceipt}
-      onRefresh={handleRefresh} 
-      onEdit={function (payment): void {
+      // onOpenForm={handleOpenForm}
+      onRefresh={handleRefresh} onEdit={function (payment: Receipt): void {
         console.error('Edit function not implemented' + payment.name);
         throw new Error('Function not implemented.');
-      }} 
-      onOpenForm={function (): void {
+      } } onOpenForm={function (): void {
         throw new Error('Function not implemented.');
-      }}
-    />
+      } }    />
   );
 };
 

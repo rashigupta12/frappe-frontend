@@ -1,24 +1,41 @@
-import React, { useState } from 'react';
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import {
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '../ui/dialog';
-import { Button } from '../ui/button';
-import { 
-  Calendar, 
-  CreditCard, 
-  User, 
-  Building, 
-  FileText, 
+  Building,
+  Calendar,
+  CreditCard,
   DollarSign,
+  FileText,
   Hash,
-  Download,
-  Eye,
+  User,
   X
 } from 'lucide-react';
-import type { Receipt } from './ReciptSummary';
+import React, { useState } from 'react';
+import { Button } from '../ui/button';
+import {
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '../ui/dialog';
+// Fixed import path - changed from './ReciptSummary' to './ReceiptSummary'
+export interface Receipt {
+  name: string;
+  bill_number: string;
+  amountaed: number;
+  paid_by: string;
+  paid_from: string;
+  custom_purpose_of_payment: string;
+  custom_mode_of_payment: string;
+  custom_name_of_bank?: string;
+  custom_account_number?: string;
+  custom_card_number?: string;
+  docstatus: number; // 0 = draft, 1 = submitted
+  date: string;      // yyyy-mm-dd
+  custom_attachments: any[];
+  custom_ifscibanswift_code?: string;
+  custom_account_holder_name?: string;
+}
 
 interface Props {
   receipt: Receipt;
@@ -27,7 +44,6 @@ interface Props {
 
 // Helper function to check if file is an image
 const isImageFile = (attachment: any): boolean => {
-  // Get filename from different possible properties
   const filename = attachment?.file_name || attachment?.image || attachment?.name;
   
   console.log('Checking filename:', filename);
@@ -56,7 +72,6 @@ const AttachmentPreviewModal: React.FC<{
   const currentAttachment = attachments[currentIndex];
 
   const getImageUrl = (attachment: any) => {
-    // Try different possible property names for the URL
     const url = attachment.file_url || 
                 attachment.url || 
                 attachment.image ||
@@ -160,14 +175,12 @@ const AttachmentPreviewModal: React.FC<{
   );
 };
 
-const receiptDetails: React.FC<Props> = ({ receipt, onClose }) => {
-  // State for image preview modal
+const ReceiptDetails: React.FC<Props> = ({ receipt, onClose }) => {
   const [showAttachmentPreview, setShowAttachmentPreview] = useState(false);
   const [currentAttachmentIndex, setCurrentAttachmentIndex] = useState(0);
 
-  // Debug logging
-  console.log('receipt attachments:', receipt.custom_attachments);
-  console.log('Image attachments:', receipt.custom_attachments?.filter(att => isImageFile(att)));
+  console.log('Receipt attachments:', receipt.custom_attachments);
+  console.log('Image attachments:', receipt.custom_attachments?.filter((att: any) => isImageFile(att)));
 
   const fmt = (d?: string) => {
     if (!d) return 'N/A';
@@ -182,21 +195,20 @@ const receiptDetails: React.FC<Props> = ({ receipt, onClose }) => {
     }
   };
 
-  const getreceiptModeIcon = (mode: string) => {
+  const getPaymentModeIcon = (mode: string) => {
     if (!mode) return <FileText className="h-4 w-4" />;
     const lowerMode = mode.toLowerCase();
     if (lowerMode.includes('cash')) return <DollarSign className="h-4 w-4" />;
     if (lowerMode.includes('card')) return <CreditCard className="h-4 w-4" />;
-    return <Building className="h-4 w-4" />; // bank
+    return <Building className="h-4 w-4" />;
   };
 
   const getImageUrl = (attachment: any) => {
     const imageurl = "https://eits.thebigocommunity.org";
     
-    // Try different possible property names for the URL
     const url = attachment.file_url || 
                 attachment.url || 
-                attachment.image ||  // This is the key property for your data
+                attachment.image ||
                 attachment.file_path || 
                 attachment.attachment_url ||
                 attachment.path;
@@ -223,29 +235,15 @@ const receiptDetails: React.FC<Props> = ({ receipt, onClose }) => {
 
   const handleAttachmentView = (attachment: any, index: number) => {
     if (isImageFile(attachment)) {
-      // For images, open in preview modal
-      const imageAttachments = receipt.custom_attachments?.filter(att => isImageFile(att)) || [];
-      const imageIndex = imageAttachments.findIndex(att => att === attachment);
+      const imageAttachments = receipt.custom_attachments?.filter((att: any) => isImageFile(att)) || [];
+      const imageIndex = imageAttachments.findIndex((att: any) => att === attachment);
       setCurrentAttachmentIndex(imageIndex >= 0 ? imageIndex : 0);
       setShowAttachmentPreview(true);
     } else {
-      // For non-image files, open in new tab
       const url = getImageUrl(attachment);
       if (url) {
         window.open(url, '_blank');
       }
-    }
-  };
-
-  const handleAttachmentDownload = (attachment: any) => {
-    const url = getImageUrl(attachment);
-    if (url) {
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = attachment?.image?.split('/').pop() || attachment?.file_name || 'attachment';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
     }
   };
 
@@ -254,7 +252,7 @@ const receiptDetails: React.FC<Props> = ({ receipt, onClose }) => {
       <DialogHeader>
         <DialogTitle className="text-lg sm:text-xl leading-tight flex items-center gap-2">
           <FileText className="h-5 w-5 text-emerald-600" />
-          receipt Details – {receipt.name || receipt.name}
+          Receipt Details – {receipt.name}
         </DialogTitle>
       </DialogHeader>
 
@@ -274,23 +272,28 @@ const receiptDetails: React.FC<Props> = ({ receipt, onClose }) => {
           />
         </div>
 
-        {/* receipt From and To */}
+        {/* Payment From and To */}
         <div className="grid grid-cols-2 gap-3">
           <Field 
-            label="Received From" 
+            label="Paid From" 
             value={receipt.paid_from}
+            icon={<User className="h-4 w-4" />}
+          />
+          <Field 
+            label="Paid By" 
+            value={receipt.paid_by}
             icon={<User className="h-4 w-4" />}
           />
         </div>
 
         {/* Purpose */}
         <Field 
-          label="Purpose of receipt" 
+          label="Purpose of Payment" 
           value={receipt.custom_purpose_of_payment}
           icon={<FileText className="h-4 w-4" />}
         />
 
-        {/* Conditional fields based on receipt mode */}
+        {/* Conditional fields */}
         {receipt.custom_name_of_bank && (
           <Field 
             label="Bank Name" 
@@ -302,7 +305,7 @@ const receiptDetails: React.FC<Props> = ({ receipt, onClose }) => {
         {receipt.custom_card_number && (
           <Field 
             label="Card Number" 
-            value={receipt.custom_card_number}
+            value={`****-****-****-${receipt.custom_card_number.toString().slice(-4)}`}
             icon={<CreditCard className="h-4 w-4" />}
           />
         )}
@@ -312,7 +315,7 @@ const receiptDetails: React.FC<Props> = ({ receipt, onClose }) => {
       {receipt.custom_attachments && receipt.custom_attachments.length > 0 && (
         <Section title={`Attachments (${receipt.custom_attachments.length})`}>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {receipt.custom_attachments.map((attachment, index) => (
+            {receipt.custom_attachments.map((attachment: any, index: number) => (
               <div 
                 key={index}
                 className="flex flex-col p-3 bg-gray-50 rounded-lg border hover:shadow-md transition-shadow"
@@ -340,16 +343,20 @@ const receiptDetails: React.FC<Props> = ({ receipt, onClose }) => {
                   </div>
                 )}
                 
-                {/* File Info and Actions */}
-              
+                {/* File Info */}
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-gray-700 truncate">
+                    {attachment?.image?.split('/').pop() || attachment?.file_name || `Attachment ${index + 1}`}
+                  </span>
+                </div>
               </div>
             ))}
           </div>
         </Section>
       )}
 
-      {/* receipt Summary */}
-      <Section title="receipt Summary">
+      {/* Payment Summary */}
+      <Section title="Payment Summary">
         <div className="bg-emerald-50 p-4 rounded-lg border border-emerald-200">
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -357,11 +364,11 @@ const receiptDetails: React.FC<Props> = ({ receipt, onClose }) => {
               <p className="text-lg font-bold text-emerald-800">{receipt.amountaed || 0} AED</p>
             </div>
             <div>
-              <p className="text-sm text-emerald-700 font-medium">receipt Method</p>
+              <p className="text-sm text-emerald-700 font-medium">Payment Method</p>
               <div className="flex items-center gap-2">
-                {getreceiptModeIcon(receipt.custom_mode_of_payment)}
+                {getPaymentModeIcon(receipt.custom_mode_of_payment)}
                 <span className="font-medium text-emerald-800">
-                  {receipt.custom_mode_of_payment|| 'N/A'}
+                  {receipt.custom_mode_of_payment || 'N/A'}
                 </span>
               </div>
             </div>
@@ -373,7 +380,7 @@ const receiptDetails: React.FC<Props> = ({ receipt, onClose }) => {
       <AttachmentPreviewModal
         isOpen={showAttachmentPreview}
         onClose={() => setShowAttachmentPreview(false)}
-        attachments={receipt.custom_attachments?.filter(att => isImageFile(att)) || []}
+        attachments={receipt.custom_attachments?.filter((att: any) => isImageFile(att)) || []}
         currentIndex={currentAttachmentIndex}
         onIndexChange={setCurrentAttachmentIndex}
       />
@@ -385,11 +392,9 @@ const receiptDetails: React.FC<Props> = ({ receipt, onClose }) => {
   );
 };
 
-export default receiptDetails;
+export default ReceiptDetails;
 
-/* --------------------------------------------------------------------------
-   Helper Components
--------------------------------------------------------------------------- */
+/* Helper Components */
 interface FieldProps {
   label: string;
   value?: string;

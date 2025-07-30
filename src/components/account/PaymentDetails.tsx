@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 // /* eslint-disable @typescript-eslint/no-explicit-any */
 // import React, { useState } from 'react';
 // import {
@@ -425,26 +426,24 @@
 
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useState } from 'react';
 import {
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '../ui/dialog';
-import { Button } from '../ui/button';
-import { 
-  Calendar, 
-  CreditCard, 
-  User, 
-  Building, 
-  FileText, 
+  Building,
+  Calendar,
+  CreditCard,
   DollarSign,
+  FileText,
   Hash,
-  Download,
-  Eye,
+  User,
   X
 } from 'lucide-react';
+import React, { useState } from 'react';
+import { Button } from '../ui/button';
+import {
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '../ui/dialog';
 import type { Payment } from './PaymentSummary';
 
 interface Props {
@@ -664,17 +663,17 @@ const PaymentDetails: React.FC<Props> = ({ payment, onClose }) => {
     }
   };
 
-  const handleAttachmentDownload = (attachment: any) => {
-    const url = getImageUrl(attachment);
-    if (url) {
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = attachment?.image?.split('/').pop() || attachment?.file_name || 'attachment';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    }
-  };
+  // const handleAttachmentDownload = (attachment: any) => {
+  //   const url = getImageUrl(attachment);
+  //   if (url) {
+  //     const link = document.createElement('a');
+  //     link.href = url;
+  //     link.download = attachment?.image?.split('/').pop() || attachment?.file_name || 'attachment';
+  //     document.body.appendChild(link);
+  //     link.click();
+  //     document.body.removeChild(link);
+  //   }
+  // };
 
   return (
     <DialogContent className="max-w-[95vw] sm:max-w-2xl w-full max-h-[90vh] overflow-y-auto bg-white mx-auto overflow-x-hidden">
