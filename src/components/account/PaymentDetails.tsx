@@ -679,8 +679,7 @@ const PaymentDetails: React.FC<Props> = ({ payment, onClose }) => {
     <DialogContent className="max-w-[95vw] sm:max-w-2xl w-full max-h-[90vh] overflow-y-auto bg-white mx-auto overflow-x-hidden">
       <DialogHeader>
         <DialogTitle className="text-lg sm:text-xl leading-tight flex items-center gap-2">
-          <FileText className="h-5 w-5 text-emerald-600" />
-          Payment Details – {payment.name || payment.name}
+          Payment Details {payment.name || payment.name}
         </DialogTitle>
       </DialogHeader>
 
@@ -707,14 +706,15 @@ const PaymentDetails: React.FC<Props> = ({ payment, onClose }) => {
             value={payment.paid_to}
             icon={<User className="h-4 w-4" />}
           />
-        </div>
-
-        {/* Purpose */}
-        <Field 
+          <Field 
           label="Purpose of Payment" 
           value={payment.custom_purpose_of_payment}
           icon={<FileText className="h-4 w-4" />}
         />
+        </div>
+
+        {/* Purpose */}
+        
 
         {/* Conditional fields based on payment mode */}
         {payment.custom_name_of_bank && (
@@ -728,7 +728,7 @@ const PaymentDetails: React.FC<Props> = ({ payment, onClose }) => {
         {payment.custom_card_number && (
           <Field 
             label="Card Number" 
-            value={`****-****-****-${payment.custom_card_number.toString().slice(-4)}`}
+            value={payment.custom_card_number}
             icon={<CreditCard className="h-4 w-4" />}
           />
         )}
@@ -741,7 +741,7 @@ const PaymentDetails: React.FC<Props> = ({ payment, onClose }) => {
             {payment.custom_attachments.map((attachment, index) => (
               <div 
                 key={index}
-                className="flex flex-col p-3 bg-gray-50 rounded-lg border hover:shadow-md transition-shadow"
+                className="flex flex-col p-3 rounded-lg border hover:shadow-md transition-shadow"
               >
                 {/* Image Preview or File Icon */}
                 {isImageFile(attachment) ? (
@@ -759,7 +759,6 @@ const PaymentDetails: React.FC<Props> = ({ payment, onClose }) => {
                   </div>
                 ) : (
                   <div className="mb-3 flex flex-col items-center justify-center h-32 bg-gray-200 rounded border">
-                    <FileText className="h-8 w-8 text-gray-400 mb-1" />
                     <span className="text-xs text-gray-500 text-center">
                       {attachment?.image?.split('.').pop()?.toUpperCase() || 'FILE'}
                     </span>
