@@ -370,6 +370,9 @@ export const frappeAPI = {
   updateTodoStatus: async (todoId: string, status: string) => {
     return await frappeAPI.makeAuthenticatedRequest('PUT', `/api/resource/ToDo/${todoId}`, { status });
   },
+  updateTodo: async (todoId: string, todoData: Record<string, unknown>) => {
+    return await frappeAPI.makeAuthenticatedRequest('PUT', `/api/resource/ToDo/${todoId}`, todoData);
+  },
 
   createInspection: async (inspectionData: Record<string, unknown>) => {
     return await frappeAPI.makeAuthenticatedRequest('POST', '/api/resource/SiteInspection', inspectionData);

@@ -446,7 +446,7 @@ const InquiryPage = () => {
 
                 {/* Fixed: Updated modal dialog logic */}
                 <div className="flex items-center gap-2">
-                  {viewInquiry.status === "Open" ? (
+                  {/* {viewInquiry.status === "Open" ? (
                     <span className="text-sm bg-emerald-100 text-emerald-800 px-2 py-1 rounded-full">
                       Assigned
                     </span>
@@ -462,7 +462,7 @@ const InquiryPage = () => {
                     >
                       Assign
                     </Button>
-                  )}
+                  )} */}
                   <Button
                     variant="ghost"
                     size="sm"

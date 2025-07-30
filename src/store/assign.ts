@@ -86,6 +86,7 @@ interface AssignStore {
   fetchAvailableInquiries: () => Promise<void>;
   fetchInspectors: () => Promise<void>;
   createTodo: (todoData: CreateTodoData) => Promise<void>;
+  updateTodo: (todoId: string, todoData: Record<string, unknown>) => Promise<void>;
 
   // Dashboard specific actions
   openAssignForm: (inquiry?: Inquiry) => void;
@@ -359,4 +360,33 @@ export const useAssignStore = create<AssignStore>((set, get) => ({
       success: false
     });
   },
+  updateTodo: async (todoId: string, todoData: Record<string, unknown>) => {
+    try {
+      set({ createTodoLoading: true, error: null });
+
+      // Update the todo
+      const todoPayload = {
+        status: 'Open',
+        priority: todoData.priority,
+        date: todoData.inspectionDate,
+        allocated_to: todoData.inspector,
+        description: `${todoData.specialRequirements || ''} ${todoData.description || ''}`,
+        reference_type: 'Lead',
+        assigned_by: todoData.assigned_by || get().currentUserEmail, // Use current user email if not provided
+        doctype: 'ToDo'
+      };
+
+
+      await frappeAPI.updateTodo(todoId, todoPayload);
+
+      // Optionally, you can fetch todos again to refresh the state
+      await get().fetchTodos();
+
+    } catch (err: any) {
+      const errorMessage = err?.message || err?.response?.data?.message || 'Failed to update todo';
+      set({ error: errorMessage });
+    } finally {
+      set({ createTodoLoading: false });
+    }
+  }
 }));

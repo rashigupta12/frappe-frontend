@@ -346,10 +346,6 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
       alert("Name is required");
       return false;
     }
-    if (!formData.email_id) {
-      alert("Email is required");
-      return false;
-    }
     if (!formData.mobile_no) {
       alert("Mobile number is required");
       return false;
