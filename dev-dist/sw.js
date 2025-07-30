@@ -83,9 +83,13 @@ define(['./workbox-d9a5ed57'], (function (workbox) { 'use strict';
   }, {
     "url": "index.html",
 <<<<<<< HEAD
+<<<<<<< HEAD
     "revision": "0.md61af8milo"
 =======
     "revision": "0.o0l95m2s6bg"
+>>>>>>> adii-dms
+=======
+    "revision": "0.36a2djrahmg"
 >>>>>>> adii-dms
   }], {});
   workbox.cleanupOutdatedCaches();
