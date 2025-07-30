@@ -118,6 +118,8 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
       price?: number;
       remarks?: string;
       thickness?: string;
+            uom?: string; // Added UOM field
+
     }[]
   >([]);
   const [loadingMaterialSoldItems, setLoadingMaterialSoldItems] =
@@ -132,6 +134,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
       price?: number;
       remarks?: string;
       thickness?: string;
+      uom?: string; // Added UOM field
     }[]
   >([]);
   const [loadingPressingItems, setLoadingPressingItems] = useState(false);
@@ -502,6 +505,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
       work_type: "",
       size: "",
       thickness: "",
+      uom: "",
       no_of_sides: "",
       price: 0,
       amount: 0,
@@ -537,6 +541,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
               amount:
                 (itemDetails?.price || 0) * (Number(charge.no_of_sides) || 0),
               thickness: itemDetails?.thickness || "",
+              uom: itemDetails?.uom || "",
               remarks: itemDetails?.remarks || "",
             };
           })
@@ -558,6 +563,8 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
               amount:
                 (selectedItem?.price || 0) * (Number(charge.no_of_sides) || 0),
               thickness: selectedItem?.thickness || "",
+                            uom: selectedItem?.uom || "",
+
               remarks: selectedItem?.remarks || "",
             };
           })
@@ -592,6 +599,8 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
       work_type: "",
       size: "",
       thickness: "",
+            uom: "",
+
       no_of_sides: "",
       price: 0,
       amount: 0,
@@ -627,6 +636,8 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
               amount:
                 (itemDetails?.price || 0) * (Number(material.no_of_sides) || 0),
               thickness: itemDetails?.thickness || "",
+                    uom: itemDetails?.uom || "", // Added UOM field
+
               remarks: itemDetails?.remarks || "",
             };
           })
@@ -651,6 +662,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                 (selectedItem?.price || 0) *
                 (Number(material.no_of_sides) || 0),
               thickness: selectedItem?.thickness || "",
+              uom: selectedItem?.uom || "", // Added UOM field
               remarks: selectedItem?.remarks || "",
             };
           })
@@ -1233,6 +1245,24 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                                 </div>
                               </div>
 
+                                <div className="space-y-2">
+                                  <Label className="text-xs font-medium text-gray-600">
+                                    UOM
+                                  </Label>
+                                  <Input
+                                    placeholder="Unit"
+                                    value={charge.uom}
+                                    onChange={(e) =>
+                                      updatePressingCharge(
+                                        index,
+                                        "uom",
+                                        e.target.value
+                                      )
+                                    }
+                                    disabled={isReadOnly}
+                                    className="h-9 text-sm w-full"
+                                  />
+                                </div>
                               {/* No of Sides and Price - Side by side */}
                               <div className="grid grid-cols-2 gap-3">
                                 <div className="space-y-2">
