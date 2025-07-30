@@ -395,12 +395,7 @@ const PaymentForm = () => {
               maxImages={5}
               maxSizeMB={10}
             />
-            {isUploading && (
-              <div className="mt-2 text-sm text-blue-600 flex items-center">
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                Uploading files...
-              </div>
-            )}
+            
           </div>
 
           {/* Grid layout for desktop */}
