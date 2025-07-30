@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import React, { useMemo, useState } from "react";
 import DeleteConfirmation from "../../common/DeleteComfirmation";
+import ReceiptDetails from "./ReceiptDetails";
 
 import { Button } from "../ui/button";
 import { Dialog } from "../ui/dialog";
