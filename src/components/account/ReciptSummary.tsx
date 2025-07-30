@@ -1,4 +1,4 @@
-// src/components/account/PaymentSummary.tsx
+// src/components/account/ReceiptSummary.tsx
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import {
   Calendar,
@@ -13,35 +13,37 @@ import DeleteConfirmation from "../../common/DeleteComfirmation";
 
 import { Button } from "../ui/button";
 import { Dialog } from "../ui/dialog";
-import PaymentDetails from "./PaymentDetails";
 import { Link } from "react-router-dom";
 
-export interface Payment {
+export interface Receipt {
   name: string;
   bill_number: string;
   amountaed: number;
   paid_by: string;
-  paid_to: string;
+  paid_from: string;
   custom_purpose_of_payment: string;
   custom_mode_of_payment: string;
   custom_name_of_bank?: string;
+  custom_account_number?: string;
   custom_card_number?: string;
   docstatus: number; // 0 = draft, 1 = submitted
   date: string;      // yyyy-mm-dd
   custom_attachments: any[];
+  custom_ifscibanswift_code?: string;
+  custom_account_holder_name?: string;
 }
 
 interface Props {
-  payments: Payment[];
+  receipts: Receipt[];
   loading: boolean;
-  onEdit: (payment: Payment) => void;
-  onDelete: (paymentName: string) => Promise<void>;
+  onEdit: (receipt: Receipt) => void;
+  onDelete: (receiptName: string) => Promise<void>;
   onOpenForm: () => void;
   onRefresh?: () => void;
 }
 
-const PaymentSummary: React.FC<Props> = ({
-  payments,
+const ReceiptSummary: React.FC<Props> = ({
+  receipts,
   loading,
   onDelete,
   onRefresh,
@@ -51,17 +53,17 @@ const PaymentSummary: React.FC<Props> = ({
   const [fromDate, setFromDate] = useState(todayStr);
   const [toDate, setToDate] = useState(todayStr);
   const [searchQuery, setSearchQuery] = useState("");
-  const [modeFilter, setModeFilter] = useState<"all" | "cash" | "card" | "bank" | "credit">(
+  const [modeFilter, setModeFilter] = useState<"all" | "cash" | "bank" | "card" | "credit">(
     "all"
   );
   const [showFilters, setShowFilters] = useState(false);
   const [isDefaultFilter, setIsDefaultFilter] = useState(true);
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [paymentToDelete, setPaymentToDelete] = useState<string | null>(null);
+  const [receiptToDelete, setReceiptToDelete] = useState<string | null>(null);
 
   const [detailModalOpen, setDetailModalOpen] = useState(false);
-  const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
+  const [selectedReceipt, setSelectedReceipt] = useState<Receipt | null>(null);
   
   const formatDate = (d: string) =>
     new Date(d).toLocaleDateString("en-GB", {
@@ -81,20 +83,20 @@ const PaymentSummary: React.FC<Props> = ({
     [fromDate, toDate]
   );
 
-  const filteredPayments = useMemo(() => {
-    return payments.filter((p) => {
-      // Search filter (always searches ALL payments)
+  const filteredReceipts = useMemo(() => {
+    return receipts.filter((r) => {
+      // Search filter (always searches ALL receipts)
       const q = searchQuery.toLowerCase();
       const searchOk =
         q === "" ||
-        (p.name && p.name.toLowerCase().includes(q)) ||
-        (p.paid_by && p.paid_by.toLowerCase().includes(q)) ||
-        (p.paid_to && p.paid_to.toLowerCase().includes(q)) ||
-        (p.bill_number && p.bill_number.includes(q)) ||
-        (p.custom_purpose_of_payment && p.custom_purpose_of_payment.toLowerCase().includes(q));
+        (r.name && r.name.toLowerCase().includes(q)) ||
+        (r.paid_by && r.paid_by.toLowerCase().includes(q)) ||
+        (r.paid_from && r.paid_from.toLowerCase().includes(q)) ||
+        (r.bill_number && r.bill_number.includes(q)) ||
+        (r.custom_purpose_of_payment && r.custom_purpose_of_payment.toLowerCase().includes(q));
 
       // Payment mode filter
-      const paymentMode = p.custom_mode_of_payment?.toLowerCase() || "";
+      const paymentMode = r.custom_mode_of_payment?.toLowerCase() || "";
       const mode = 
         paymentMode.includes("cash") ? "cash" :
         paymentMode.includes("card") ? "card" :
@@ -106,30 +108,30 @@ const PaymentSummary: React.FC<Props> = ({
       // Date filter (only applies when no search is active)
       const dateOk = searchQuery.trim() !== "" ? true : (
         isDefaultFilter
-          ? p.date === todayStr
-          : isDateInRange(p.date)
+          ? r.date === todayStr
+          : isDateInRange(r.date)
       );
 
       return searchOk && modeOk && dateOk;
     });
-  }, [payments, searchQuery, modeFilter, isDefaultFilter, isDateInRange, todayStr]);
+  }, [receipts, searchQuery, modeFilter, isDefaultFilter, isDateInRange, todayStr]);
 
   const askDelete = (name: string) => {
-    setPaymentToDelete(name);
+    setReceiptToDelete(name);
     setDeleteModalOpen(true);
   };
   
   const confirmDelete = async () => {
-    if (paymentToDelete) {
-      await onDelete(paymentToDelete);
+    if (receiptToDelete) {
+      await onDelete(receiptToDelete);
       onRefresh?.();
     }
     setDeleteModalOpen(false);
-    setPaymentToDelete(null);
+    setReceiptToDelete(null);
   };
 
-  const openPaymentDetails = (payment: Payment) => {
-    setSelectedPayment(payment);
+  const openReceiptDetails = (receipt: Receipt) => {
+    setSelectedReceipt(receipt);
     setDetailModalOpen(true);
   };
 
@@ -147,20 +149,20 @@ const PaymentSummary: React.FC<Props> = ({
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-3">
           <h2 className="text-xl pl-2 font-bold text-emerald-800 flex items-center gap-2">
-            My Payments
+            My Receipts
             <span className="bg-emerald-50 text-emerald-700 text-sm font-medium px-2 py-0.5 rounded-full border border-emerald-200">
-              {filteredPayments.length}
+              {filteredReceipts.length}
             </span>
           </h2>
         </div>
         <div className="flex gap-2">
-          <Link to="/accountUser?tab=payment-form" className="no-underline">
+          <Link to="/accountUser?tab=receipt-form" className="no-underline">
             <Button
               size="sm"
               className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-md px-3 py-2"
             >
               <Plus className="h-4 w-4 mr-1" />
-              Add Payment
+              Add Receipt
             </Button>
           </Link>
         </div>
@@ -173,7 +175,7 @@ const PaymentSummary: React.FC<Props> = ({
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
             <input
               type="text"
-              placeholder="Search name / paid to / bill / purpose..."
+              placeholder="Search name / paid from / bill / purpose..."
               value={searchQuery}
               onChange={(e) => {
                 setSearchQuery(e.target.value);
@@ -203,7 +205,7 @@ const PaymentSummary: React.FC<Props> = ({
 
         {/* quick mode filter buttons */}
         <div className="flex gap-2 mt-2">
-          {(["cash", "card", "bank", "credit"] as const).map((m) => (
+          {(["cash", "bank", "card", "credit"] as const).map((m) => (
             <Button
               key={m}
               variant={modeFilter === m ? "default" : "outline"}
@@ -253,7 +255,7 @@ const PaymentSummary: React.FC<Props> = ({
             <div className="flex justify-between items-center">
               <div className="text-xs text-gray-500">
                 {isDefaultFilter
-                  ? "Showing today's payments"
+                  ? "Showing today's receipts"
                   : `Custom: ${formatDate(fromDate)}–${formatDate(toDate)}`}
               </div>
               <div className="flex gap-2">
@@ -295,63 +297,63 @@ const PaymentSummary: React.FC<Props> = ({
       </div>
 
       {/* list / empty-state */}
-      {filteredPayments.length === 0 ? (
+      {filteredReceipts.length === 0 ? (
         <div className="text-center py-8 bg-white rounded-lg border border-gray-200">
           <Search className="h-8 w-8 text-gray-400 mx-auto mb-2" />
           <h3 className="text-base font-medium text-gray-900 mb-1">
-            No payments found
+            No receipts found
           </h3>
           <p className="text-sm text-gray-500 mb-3">
             {isDefaultFilter
-              ? "You haven't made any payments today."
-              : "No payments match your current filters."}
+              ? "You haven't received any payments today."
+              : "No receipts match your current filters."}
           </p>
-          <Link to="/accountUser?tab=payment-form" className="no-underline">
+          <Link to="/accountUser?tab=receipt-form" className="no-underline">
             <Button
               size="sm"
               className="bg-emerald-600 hover:bg-emerald-700"
             >
-              Add Payment
+              Add Receipt
             </Button>
           </Link>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
-          {filteredPayments.map((p) => {
-            const readOnly = p.docstatus === 1;
+          {filteredReceipts.map((r) => {
+            const readOnly = r.docstatus === 1;
             return (
               <div
-                key={p.name}
+                key={r.name}
                 className="relative bg-white border border-gray-200 rounded-lg hover:shadow-sm transition-all duration-150 cursor-pointer group overflow-hidden"
-                onClick={() => openPaymentDetails(p)}
+                onClick={() => openReceiptDetails(r)}
               >
                 <div className="p-2 space-y-1.5">
                   <div className="flex justify-between items-start gap-2">
                     <div>
                       <div className="flex items-center gap-1 text-xs text-gray-500">
                         <Calendar className="h-3 w-3" />
-                        <span>{formatDate(p.date)}</span>
+                        <span>{formatDate(r.date)}</span>
                       </div>
                       <p className="font-semibold text-gray-900 text-sm truncate">
-                        {p.name}
+                        {r.name}
                       </p>
                     </div>
                     <span className="font-medium text-emerald-700 text-sm whitespace-nowrap">
-                      {p.amountaed} AED
+                      {r.amountaed} AED
                     </span>
                   </div>
 
                   <p className="text-xs text-gray-600 leading-tight">
-                    <strong>To:</strong> {p.paid_to || "N/A"}
+                    <strong>From:</strong> {r.paid_from || "N/A"}
                   </p>
                   <p className="text-xs text-gray-600 truncate">
                     <strong>Purpose:</strong>{" "}
-                    {p.custom_purpose_of_payment || "N/A"}
+                    {r.custom_purpose_of_payment || "N/A"}
                   </p>
 
                   <div className="flex items-center justify-between pt-1">
                     <span className="text-[0.65rem] font-medium px-1.5 py-0.5 rounded bg-gray-50 text-gray-700 border border-gray-200">
-                      {p.custom_mode_of_payment || "N/A"}
+                      {r.custom_mode_of_payment || "N/A"}
                     </span>
 
                     {!readOnly && (
@@ -360,7 +362,7 @@ const PaymentSummary: React.FC<Props> = ({
                           variant="ghost"
                           size="sm"
                           className="h-5 w-5 p-0 hover:bg-red-50"
-                          onClick={() => askDelete(p.name)}
+                          onClick={() => askDelete(r.name)}
                         >
                           <Trash2 className="h-3 w-3 text-red-500" />
                         </Button>
@@ -383,16 +385,16 @@ const PaymentSummary: React.FC<Props> = ({
       <DeleteConfirmation
         isOpen={deleteModalOpen}
         setIsOpen={setDeleteModalOpen}
-        text="Are you sure you want to delete this payment? This action cannot be undone."
+        text="Are you sure you want to delete this receipt? This action cannot be undone."
         onConfirm={confirmDelete}
         onCancel={() => setDeleteModalOpen(false)}
       />
 
-      {/* payment details modal */}
-      {selectedPayment && (
+      {/* receipt details modal */}
+      {selectedReceipt && (
         <Dialog open={detailModalOpen} onOpenChange={setDetailModalOpen}>
-          <PaymentDetails
-            payment={selectedPayment}
+          <ReceiptDetails
+            receipt={selectedReceipt}
             onClose={() => setDetailModalOpen(false)}
           />
         </Dialog>
@@ -401,4 +403,4 @@ const PaymentSummary: React.FC<Props> = ({
   );
 };
 
-export default PaymentSummary;
+export default ReceiptSummary;

@@ -1,316 +1,15 @@
-// import {
-//   CreditCard,
-//   FileText,
-//   LogOut,
-//   Menu,
-//   X,
-// } from "lucide-react";
-// import { useEffect, useState, type SetStateAction } from "react";
-// import { Link, useNavigate, useSearchParams } from "react-router-dom";
-
-// import { useAuth } from "../../context/AuthContext";
-// import { Button } from "../ui/button";
-// import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
-
-// // import PaymentSummary from "../account/PaymentSummary";
-// import PaymentForm from "../account/Paytmentform";
-// import PaymentContainer from "../account/PaymentContainer";
-
-// export default function AccountDashboard() {
-//   const navigate = useNavigate();
-//   const [searchParams] = useSearchParams();
-//   const { user, logout } = useAuth();
-
-//   const initialTab = searchParams.get("tab") || "payment"|| "summary" || "receipt";
-//   const [activeTab, setActiveTab] = useState(initialTab);
-//   const [sidebarOpen, setSidebarOpen] = useState(false);
-
-//   useEffect(() => {
-//     setActiveTab(initialTab);
-//   }, [initialTab]);
-
-//   const handleTabChange = (tab: SetStateAction<string>) => {
-//     setActiveTab(tab);
-//     navigate(`/accountUser?tab=${tab}`, { replace: true });
-//     setSidebarOpen(false); // Close sidebar on mobile after selection
-//   };
-
-//   const handleLogout = async () => {
-//     await logout();
-//     navigate("/");
-//   };
-
-//   const renderContent = () => {
-//     switch (activeTab) {
-//       case "payment":
-//         return <PaymentForm />;
-//       case "summary":
-//         return (
-//           <PaymentContainer />
-//         );
-//       case "receipt":
-//         return(
-//           <div className="bg-white rounded-xl shadow-sm p-6 border border-emerald-100">
-//             <h2 className="text-2xl font-bold text-emerald-800 mb-4">
-//               Receipt
-//             </h2>
-//             <p className="text-emerald-600">
-//               Your receipt will be displayed here.
-//             </p>
-//           </div>
-//         )
-//       default:
-//         return (
-//           <div className="bg-white rounded-xl shadow-sm p-6 border border-emerald-100">
-//             <h2 className="text-2xl font-bold text-emerald-800 mb-4">
-//               Account Dashboard
-//             </h2>
-//             <p className="text-emerald-600">
-//               Welcome to your account dashboard.
-//             </p>
-//           </div>
-//         );
-//     }
-//   };
-
-//   return (
-//     <div className="h-screen flex flex-col overflow-hidden">
-//       {/* Top Navigation Bar - Fixed */}
-//       <nav className="bg-white shadow-lg border-b-2 border-emerald-200 px-3 sm:px-4 py-2 flex-shrink-0 z-50">
-//         <div className="flex items-center justify-between">
-//           <div className="flex items-center gap-2 sm:gap-3">
-//             {/* Mobile Menu Button */}
-//             <Button
-//               variant="ghost"
-//               size="icon"
-//               onClick={() => setSidebarOpen(!sidebarOpen)}
-//               className="lg:hidden p-1.5 rounded-lg hover:bg-emerald-50 text-emerald-700 transition-colors"
-//             >
-//               {sidebarOpen ? (
-//                 <X className="h-5 w-5" />
-//               ) : (
-//                 <Menu className="h-5 w-5" />
-//               )}
-//             </Button>
-
-//             {/* Logo */}
-//             <Link to="/" className="flex items-center gap-1.5">
-//               <div className="rounded-lg p-1 flex items-center justify-center">
-//                 <img
-//                   src="/logo.jpg"
-//                   alt="Logo"
-//                   className="w-8 h-8 sm:w-10 sm:h-10 object-contain"
-//                 />
-//               </div>
-//             </Link>
-//           </div>
-
-//           {/* Title - Visible on all screens */}
-//           <h1 className="text-center text-lg sm:text-xl font-bold text-emerald-800">
-//             Account Dashboard
-//           </h1>
-
-//           {/* User Menu */}
-//           <div className="flex items-center gap-1 sm:gap-2">
-//             {/* Mobile Logout Button */}
-//             <Button
-//               variant="ghost"
-//               size="icon"
-//               onClick={handleLogout}
-//               className="lg:hidden p-1.5 rounded-lg hover:bg-red-50 text-red-600 hover:text-red-700 transition-colors"
-//             >
-//               <LogOut className="h-4 w-4" />
-//               <span className="sr-only">Logout</span>
-//             </Button>
-
-//             {/* Desktop User Menu */}
-//             <Popover>
-//               <PopoverTrigger asChild>
-//                 <Button
-//                   variant="ghost"
-//                   size="sm"
-//                   className="hidden lg:flex items-center gap-1 hover:bg-emerald-50 rounded-lg px-2 py-1.5 transition-colors"
-//                 >
-//                   <span className="text-sm text-emerald-700 font-medium">
-//                     {user?.full_name || user?.username || "User"}
-//                   </span>
-//                 </Button>
-//               </PopoverTrigger>
-//               <PopoverContent
-//                 className="w-48 border border-emerald-200 bg-white shadow-md"
-//                 align="end"
-//               >
-//                 <Button
-//                   variant="ghost"
-//                   size="sm"
-//                   onClick={handleLogout}
-//                   className="w-full justify-start gap-2 text-red-600 hover:bg-red-100 hover:text-red-700 transition-colors"
-//                 >
-//                   <LogOut className="h-4 w-4" />
-//                   Logout
-//                 </Button>
-//               </PopoverContent>
-//             </Popover>
-//           </div>
-//         </div>
-//       </nav>
-
-//       {/* Main Content Area with Sidebar */}
-//       <div className="flex flex-1 overflow-hidden">
-//         {/* Mobile Sidebar Overlay */}
-//         {sidebarOpen && (
-//           <div
-//             className="fixed inset-0 bg-white/30 backdrop-blur-sm z-40 lg:hidden"
-//             onClick={() => setSidebarOpen(false)}
-//           />
-//         )}
-
-//         {/* Sidebar - Fixed on desktop, overlay on mobile */}
-//         <aside
-//           className={`
-//             fixed lg:relative z-40 w-64 bg-white border-r-2 border-emerald-200 
-//             h-full p-4 shadow-lg lg:shadow-none overflow-y-auto flex-shrink-0
-//             transform transition-transform duration-300 ease-in-out lg:transform-none
-//             ${sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
-//           `}
-//         >
-//           <nav className="space-y-2 mt-2">
-//             <Button
-//               variant={activeTab === "payment" ? "default" : "ghost"}
-//               onClick={() => handleTabChange("payment")}
-//               className={`w-full justify-start gap-3 rounded-xl p-3 text-left transition-all duration-200 ${
-//                 activeTab === "payment"
-//                   ? "bg-gradient-to-r from-emerald-500 to-blue-500 text-white shadow-lg transform scale-105 hover:from-emerald-600 hover:to-blue-600"
-//                   : "text-emerald-700 hover:bg-emerald-50 hover:shadow-md"
-//               }`}
-//             >
-//               <CreditCard className="h-5 w-5" />
-//               <span className="font-medium">Payment</span>
-//             </Button>
-
-//             {/* Summary Button */}
-//             <Button
-//               variant={activeTab === "summary" ? "default" : "ghost"}
-//               onClick={() => handleTabChange("summary")}
-//               className={`w-full justify-start gap-3 rounded-xl p-3 text-left transition-all duration-200 ${
-//                 activeTab === "summary"
-//                   ? "bg-gradient-to-r from-emerald-500 to-blue-500 text-white shadow-lg transform scale-105 hover:from-emerald-600 hover:to-blue-600"
-//                   : "text-emerald-700 hover:bg-emerald-50 hover:shadow-md"
-//               }`}
-//             >
-//               <FileText className="h-5 w-5" />
-//               <span className="font-medium">Summary</span>
-//             </Button>
-//               <Button
-//               variant={activeTab === "receipt" ? "default" : "ghost"}
-//               onClick={() => handleTabChange("receipt")}
-//               className={`w-full justify-start gap-3 rounded-xl p-3 text-left transition-all duration-200 ${
-//                 activeTab === "receipt"
-//                   ? "bg-gradient-to-r from-emerald-500 to-blue-500 text-white shadow-lg transform scale-105 hover:from-emerald-600 hover:to-blue-600"
-//                   : "text-emerald-700 hover:bg-emerald-50 hover:shadow-md"
-//               }`}
-//             >
-//               <FileText className="h-5 w-5" />
-//               <span className="font-medium">receipt</span>
-//             </Button>
-//           </nav>
-//         </aside>
-
-//         {/* Main Content Container */}
-//         <div className="flex-1 flex flex-col overflow-hidden">
-//           {/* Main Content - Scrollable */}
-//           <main className="flex-1 overflow-y-auto">
-//             <div className="w-full mx-auto">
-//               {/* Main Content Area */}
-//               <div className="pb-20">{renderContent()}</div>
-//             </div>
-//           </main>
-
-//           {/* Footer - Sticky at bottom (Mobile Only) */}
-//           <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-30 safe-area-pb lg:hidden">
-//             <div className="flex items-center justify-center px-4 py-2">
-//               {/* Payment Button */}
-//               <Link
-//                 to="/accountUser?tab=payment"
-//                 className="flex-1 max-w-xs flex justify-center"
-//               >
-//                 <button className="flex flex-col items-center justify-center w-full py-1 group">
-//                   <div className="w-10 h-6 flex items-center justify-center group-active:scale-95 transition-transform">
-//                     <CreditCard
-//                       className={`h-5 w-5 ${
-//                         activeTab === "payment"
-//                           ? "text-emerald-600"
-//                           : "text-gray-500"
-//                       }`}
-//                     />
-//                   </div>
-//                   <span
-//                     className={`text-xs font-medium mt-1 ${
-//                       activeTab === "payment"
-//                         ? "text-emerald-600"
-//                         : "text-gray-600"
-//                     }`}
-//                   >
-//                     Payment
-//                   </span>
-//                 </button>
-//               </Link>
-
-//               {/* Summary Button */}
-//               <Link
-//                 to="/accountUser?tab=summary"
-//                 className="flex-1 max-w-xs flex justify-center"
-//               >
-//                 <button className="flex flex-col items-center justify-center w-full py-1 group">
-//                   <div className="w-10 h-6 flex items-center justify-center group-active:scale-95 transition-transform">
-//                     <FileText
-//                       className={`h-5 w-5 ${
-//                         activeTab === "summary"
-//                           ? "text-emerald-600"
-//                           : "text-gray-500"
-//                       }`}
-//                     />
-//                   </div>
-//                   <span
-//                     className={`text-xs font-medium mt-1 ${
-//                       activeTab === "summary"
-//                         ? "text-emerald-600"
-//                         : "text-gray-600"
-//                     }`}
-//                   >
-//                     Summary
-//                   </span>
-//                 </button>
-//               </Link>
-//             </div>
-//           </div>
-//         </div>
-//       </div>
-//     </div>
-//   );
-// }
-
-
-
-import {
-  CreditCard,
-  FileText,
-  LogOut,
-  Menu,
-  Plus,
-  Receipt,
-  X,
-} from "lucide-react";
-import { useEffect, useState, type SetStateAction } from "react";
+import { CreditCard, FileText, LogOut, Menu, X } from "lucide-react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
 import { useAuth } from "../../context/AuthContext";
 import { Button } from "../ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 
-import PaymentForm from "../account/Paytmentform";
 import PaymentContainer from "../account/PaymentContainer";
+import PaymentForm from "../account/Paytmentform";
 import ReceiptForm from "../account/Recipt";
+import ReceiptContainer from "../account/ReciptContainer";
 
 export default function AccountDashboard() {
   const navigate = useNavigate();
@@ -318,23 +17,19 @@ export default function AccountDashboard() {
   const { user, logout } = useAuth();
 
   // Default to summary, with payment-summary as the default toggle
-  const initialTab = searchParams.get("tab") || "summary";
-  const initialSummaryType = searchParams.get("summaryType") || "payment-summary";
-  
+  const initialTab = searchParams.get("tab") || "payment-summary";
   const [activeTab, setActiveTab] = useState(initialTab);
-  const [summaryType, setSummaryType] = useState(initialSummaryType);
-  const [isPaymentFormOpen, setIsPaymentFormOpen] = useState(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   useEffect(() => {
-    setActiveTab(initialTab);
-    if (initialTab === "summary") {
-      setSummaryType(initialSummaryType);
-    }
-  }, [initialTab, initialSummaryType]);
+    const tabFromUrl = searchParams.get("tab") || "payment-summary";
+    setActiveTab(tabFromUrl);
+  }, [searchParams]);
 
-  const handleSummaryToggle = (type: string) => {
-    setSummaryType(type);
-    navigate(`/accountUser?tab=summary&summaryType=${type}`, { replace: true });
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    navigate(`/accountUser?tab=${tab}`, { replace: true });
+    setMobileSidebarOpen(false); // Close mobile sidebar after navigation
   };
 
   const handleLogout = async () => {
@@ -342,59 +37,25 @@ export default function AccountDashboard() {
     navigate("/");
   };
 
-  const openPaymentForm = () => {
-    setIsPaymentFormOpen(true);
+  const toggleMobileSidebar = () => {
+    setMobileSidebarOpen(!mobileSidebarOpen);
   };
 
-  const closePaymentForm = () => {
-    setIsPaymentFormOpen(false);
-  };
-
-  const renderSummaryContent = () => {
-    switch (summaryType) {
+  const renderContent = () => {
+    switch (activeTab) {
       case "payment-summary":
-        return (
-          <div className="space-y-4">
-            {/* Add Payment Button */}
-            <div className="flex justify-end mb-4">
-              <Button
-                onClick={openPaymentForm}
-                className="bg-emerald-600 hover:bg-emerald-700 shadow-lg"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Add Payment
-              </Button>
-            </div>
-            {/* Payment Summary Content */}
-            <PaymentContainer />
-          </div>
-        );
+        return <PaymentContainer />;
       
+
       case "receipt-summary":
-        return (
-          <div className="space-y-4">
-            {/* Add Receipt Button */}
-            <div className="flex justify-end mb-4">
-              <Button
-                onClick={openPaymentForm}
-                className="bg-blue-600 hover:bg-blue-700 shadow-lg"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Add Receipt
-              </Button>
-            </div>
-            {/* Receipt Summary Content - Placeholder for now */}
-            <div className="bg-white rounded-xl shadow-sm p-6 border border-blue-100">
-              <h2 className="text-2xl font-bold text-blue-800 mb-4">
-                Receipt Summary
-              </h2>
-              <p className="text-blue-600">
-                Your receipt summary will be displayed here.
-              </p>
-            </div>
-          </div>
-        );
-      
+        return <ReceiptContainer/>
+
+      case "payment-form":
+        return <PaymentForm />;
+
+      case "receipt-form":
+        return <ReceiptForm />;
+
       default:
         return (
           <div className="bg-white rounded-xl shadow-sm p-6 border border-emerald-100">
@@ -409,140 +70,212 @@ export default function AccountDashboard() {
     }
   };
 
-  const renderContent = () => {
-    if (isPaymentFormOpen) {
-      return (
-        <PaymentForm />
-      );
-    }
-
-    // Always show summary content since that's the main functionality
-    return renderSummaryContent();
-  };
+  const isFormView = activeTab === "payment-form" || activeTab === "receipt-form";
+  const isSummaryView = activeTab === "payment-summary" || activeTab === "receipt-summary";
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden">
-      {/* Top Navigation Bar - Fixed */}
-      <nav className="bg-white shadow-lg border-b-2 border-emerald-200 px-3 sm:px-4 py-2 flex-shrink-0 z-50">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 sm:gap-3">
-            {/* Logo */}
-            <Link to="/" className="flex items-center gap-1.5">
-              <div className="rounded-lg p-1 flex items-center justify-center">
+    <div className="h-screen flex overflow-hidden bg-gray-50">
+      {/* Mobile sidebar backdrop */}
+      {mobileSidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
+          onClick={toggleMobileSidebar}
+        ></div>
+      )}
+
+      {/* Sidebar */}
+      <div
+        className={`fixed inset-y-0 left-0 transform ${
+          mobileSidebarOpen ? "translate-x-0" : "-translate-x-full"
+        } md:relative md:translate-x-0 transition-transform duration-200 ease-in-out z-50 md:z-auto flex flex-col w-64 border-r border-gray-200 bg-white`}
+      >
+        <div className="flex-1 flex flex-col pt-5 pb-4 overflow-y-auto">
+          {/* Sidebar header */}
+          <div className="flex items-center justify-between px-4 mb-6">
+            <div className="flex items-center">
+              <img className="h-8 w-auto" src="/logo.jpg" alt="Logo" />
+              <span className="ml-2 text-xl font-bold text-emerald-800">
+                MyApp
+              </span>
+            </div>
+            <button
+              onClick={toggleMobileSidebar}
+              className="md:hidden p-1 rounded-md text-gray-500 hover:text-gray-600"
+            >
+              <X className="h-6 w-6" />
+            </button>
+          </div>
+
+          {/* Sidebar navigation */}
+          <nav className="flex-1 px-2 space-y-1">
+            <button
+              onClick={() => handleTabChange("payment-summary")}
+              className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg ${
+                activeTab === "payment-summary" || activeTab === "payment-form"
+                  ? "bg-emerald-50 text-emerald-800"
+                  : "text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+              }`}
+            >
+              <CreditCard className="mr-3 h-5 w-5" />
+              Payments
+            </button>
+            <button
+              onClick={() => handleTabChange("receipt-summary")}
+              className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg ${
+                activeTab === "receipt-summary" || activeTab === "receipt-form"
+                  ? "bg-emerald-50 text-emerald-800"
+                  : "text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+              }`}
+            >
+              <FileText className="mr-3 h-5 w-5" />
+              Receipts
+            </button>
+          </nav>
+        </div>
+
+        {/* Sidebar footer */}
+        <div className="flex-shrink-0 flex border-t border-gray-200 p-4">
+          <div className="flex items-center w-full">
+            <div className="ml-3 flex-1">
+              <p className="text-sm font-medium text-gray-700">
+                {user?.full_name || user?.username || "User"}
+              </p>
+              <button
+                onClick={handleLogout}
+                className="text-xs font-medium text-gray-500 hover:text-gray-700"
+              >
+                Sign out
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main content area */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Top Navigation Bar */}
+        <nav className="bg-white shadow-lg border-b-2 border-emerald-200 px-3 sm:px-4 py-2 flex-shrink-0 z-40">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <button
+                onClick={toggleMobileSidebar}
+                className="md:hidden p-1.5 rounded-lg hover:bg-gray-100"
+              >
+                <Menu className="h-5 w-5 text-gray-600" />
+              </button>
+              <Link to="/" className="flex items-center gap-1.5">
                 <img
                   src="/logo.jpg"
                   alt="Logo"
                   className="w-8 h-8 sm:w-10 sm:h-10 object-contain"
                 />
-              </div>
-            </Link>
-          </div>
+              </Link>
+            </div>
 
-          {/* Title - Visible on all screens */}
-          <h1 className="text-center text-lg sm:text-xl font-bold text-emerald-800">
-            Payment/Recipt
-          </h1>
+            <h1 className="text-center text-lg sm:text-xl font-bold text-emerald-800">
+              {activeTab === "payment-summary" || activeTab === "payment-form" ? "Payment" : "Receipt"}{" "}
+              Dashboard
+            </h1>
 
-          {/* User Menu */}
-          <div className="flex items-center gap-1 sm:gap-2">
-            {/* Mobile Logout Button */}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleLogout}
-              className="lg:hidden p-1.5 rounded-lg hover:bg-red-50 text-red-600 hover:text-red-700 transition-colors"
-            >
-              <LogOut className="h-4 w-4" />
-              <span className="sr-only">Logout</span>
-            </Button>
-
-            {/* Desktop User Menu */}
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="hidden lg:flex items-center gap-1 hover:bg-emerald-50 rounded-lg px-2 py-1.5 transition-colors"
-                >
-                  <span className="text-sm text-emerald-700 font-medium">
-                    {user?.full_name || user?.username || "User"}
-                  </span>
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent
-                className="w-48 border border-emerald-200 bg-white shadow-md"
-                align="end"
-              >
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleLogout}
-                  className="w-full justify-start gap-2 text-red-600 hover:bg-red-100 hover:text-red-700 transition-colors"
-                >
-                  <LogOut className="h-4 w-4" />
-                  Logout
-                </Button>
-              </PopoverContent>
-            </Popover>
-          </div>
-        </div>
-      </nav>
-
-      {/* Summary Toggle - Only show when not in payment form */}
-      {!isPaymentFormOpen && (
-        <div className="bg-white border-b border-gray-200 px-4 py-3">
-          <div className="flex bg-gray-100 rounded-full p-1 max-w-md mx-auto">
-            <button
-              onClick={() => handleSummaryToggle("payment-summary")}
-              className={`flex-1 py-2.5 px-4 rounded-full text-sm font-medium transition-all duration-200 ${
-                summaryType === "payment-summary"
-                  ? "bg-emerald-500 text-white shadow-md"
-                  : "text-gray-600 hover:text-gray-800"
-              }`}
-            >
-              Payment Summary
-            </button>
-            <button
-              onClick={() => handleSummaryToggle("receipt-summary")}
-              className={`flex-1 py-2.5 px-4 rounded-full text-sm font-medium transition-all duration-200 ${
-                summaryType === "receipt-summary"
-                  ? "bg-emerald-500 text-white shadow-md"
-                  : "text-gray-600 hover:text-gray-800"
-              }`}
-            >
-              Receipt Summary
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Main Content Area */}
-      <div className="flex-1 overflow-hidden">
-        {/* Main Content Container */}
-        <div className="flex-1 flex flex-col overflow-hidden h-full">
-          {/* Back Button - Only show when in payment form */}
-          {isPaymentFormOpen && (
-            <div className="bg-white border-b border-gray-200 px-4 py-2">
+            <div className="flex items-center gap-1 sm:gap-2">
               <Button
                 variant="ghost"
-                onClick={closePaymentForm}
-                className="flex items-center gap-2 text-emerald-600 hover:text-emerald-700"
+                size="icon"
+                onClick={handleLogout}
+                className="lg:hidden p-1.5 rounded-lg hover:bg-red-50 text-red-600 hover:text-red-700 transition-colors"
               >
-                <X className="h-4 w-4" />
-                Back to Summary
+                <LogOut className="h-4 w-4" />
+                <span className="sr-only">Logout</span>
               </Button>
-            </div>
-          )}
 
-          {/* Main Content - Scrollable */}
-          <main className="flex-1 overflow-y-auto">
-            <div className="w-full mx-auto">
-              {/* Main Content Area */}
-              <div className="p-4 pb-20">
-                {renderContent()}
-              </div>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="hidden lg:flex items-center gap-1 hover:bg-emerald-50 rounded-lg px-2 py-1.5 transition-colors"
+                  >
+                    <span className="text-sm text-emerald-700 font-medium">
+                      {user?.full_name || user?.username || "User"}
+                    </span>
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent
+                  className="w-48 border border-emerald-200 bg-white shadow-md"
+                  align="end"
+                >
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleLogout}
+                    className="w-full justify-start gap-2 text-red-600 hover:bg-red-100 hover:text-red-700 transition-colors"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    Logout
+                  </Button>
+                </PopoverContent>
+              </Popover>
             </div>
-          </main>
+          </div>
+        </nav>
+
+        {/* Summary Toggle - Only show for summary views */}
+        {isSummaryView && (
+          <div className="bg-white border-b border-gray-200 px-4 py-3 lg:hidden">
+            <div className="flex bg-gray-100 rounded-full p-1 max-w-md mx-auto">
+              <button
+                onClick={() => handleTabChange("payment-summary")}
+                className={`flex-1 py-2.5 px-4 rounded-full text-sm font-medium transition-all duration-200 ${
+                  activeTab === "payment-summary"
+                    ? "bg-emerald-500 text-white shadow-md"
+                    : "text-gray-600 hover:text-gray-800"
+                }`}
+              >
+                Payment 
+              </button>
+              <button
+                onClick={() => handleTabChange("receipt-summary")}
+                className={`flex-1 py-2.5 px-4 rounded-full text-sm font-medium transition-all duration-200 ${
+                  activeTab === "receipt-summary"
+                    ? "bg-emerald-500 text-white shadow-md"
+                    : "text-gray-600 hover:text-gray-800"
+                }`}
+              >
+                Receipt
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Main Content Area */}
+        <div className="flex-1 overflow-hidden">
+          <div className="flex-1 flex flex-col overflow-hidden h-full">
+            {/* Back button for form views */}
+            {isFormView && (
+              <div className="bg-white border-b border-gray-200 px-4 py-2">
+                <Button
+                  variant="ghost"
+                  onClick={() => {
+                    if (activeTab === "payment-form") {
+                      handleTabChange("payment-summary");
+                    } else if (activeTab === "receipt-form") {
+                      handleTabChange("receipt-summary");
+                    }
+                  }}
+                  className="flex items-center gap-2 text-emerald-600 hover:text-emerald-700"
+                >
+                  <X className="h-4 w-4" />
+                  Back to Summary
+                </Button>
+              </div>
+            )}
+
+            <main className="flex-1 overflow-y-auto">
+              <div className="w-full mx-auto">
+                <div className="py-2">{renderContent()}</div>
+              </div>
+            </main>
+          </div>
         </div>
       </div>
     </div>

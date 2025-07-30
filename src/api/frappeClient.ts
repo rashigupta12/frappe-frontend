@@ -667,8 +667,8 @@ export const frappeAPI = {
       `/api/resource/Receipt EITS?filters=${filterString}&order_by=creation%20asc`
     );
   },
-  getReceiptByPaidFrom: async (paid_from: string) => {
-    return await frappeAPI.makeAuthenticatedRequest('GET', `/api/resource/Receipt EITS?filters=[["paid_from","=","${paid_from}"]]&order_by=creation%20desc`);
+  getReceiptByPaidBy: async (paid_by: string) => {
+    return await frappeAPI.makeAuthenticatedRequest('GET', `/api/resource/Receipt EITS?filters=[["paid_by","=","${paid_by}"]]&order_by=creation%20desc`);
   },
 
   upload: async (file: File, options: {
