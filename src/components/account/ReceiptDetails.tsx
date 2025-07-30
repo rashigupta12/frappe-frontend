@@ -232,7 +232,7 @@ const ReceiptDetails: React.FC<Props> = ({ receipt, onClose }) => {
     return finalUrl;
   };
 
-  const handleAttachmentView = (attachment: any, index: number) => {
+  const handleAttachmentView = (attachment: any) => {
     if (isImageFile(attachment)) {
       const imageAttachments = receipt.custom_attachments?.filter((att: any) => isImageFile(att)) || [];
       const imageIndex = imageAttachments.findIndex((att: any) => att === attachment);
@@ -326,7 +326,7 @@ const ReceiptDetails: React.FC<Props> = ({ receipt, onClose }) => {
                       src={getImageUrl(attachment)} 
                       alt={attachment?.image || attachment?.file_name || `Attachment ${index + 1}`}
                       className="w-full h-32 object-cover rounded border cursor-pointer hover:opacity-80 transition-opacity"
-                      onClick={() => handleAttachmentView(attachment, index)}
+                      onClick={() => handleAttachmentView(attachment)}
                       onError={(e) => {
                         console.log('Image failed to load:', e.currentTarget.src);
                         e.currentTarget.style.display = 'none';
