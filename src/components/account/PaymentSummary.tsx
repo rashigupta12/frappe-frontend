@@ -458,6 +458,7 @@ import { Button } from "../ui/button";
 import { Dialog } from "../ui/dialog";
 import PaymentDetails from "./PaymentDetails";
 import { Link } from "react-router-dom";
+// import { useAuth } from "../../context/AuthContext";
 
 export interface Payment {
   name: string;
@@ -489,9 +490,9 @@ const PaymentSummary: React.FC<Props> = ({
   onDelete,
   onRefresh,
 }) => {
-  const user = useAuth();
-  const userEmail = user?.user?.username;
-  const userName = user?.user?.full_name || "User";
+  // const user = useAuth();
+  // const userEmail = user?.user?.username;
+  // const userName = user?.user?.full_name || "User";
 
   // console.log("User Email:", userEmail);
   // console.log("User Name:", userName);

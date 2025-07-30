@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // src/api/frappeClient.ts
 import axios from 'axios';
-import type { get } from 'http';
 
 
 
@@ -633,14 +632,7 @@ export const frappeAPI = {
       `/api/resource/EITS Payment?filters=${filterString}&order_by=creation%20asc`
     );
   },
-  getAllReceipts: async (filters: Record<string, unknown> = {}) => {
-    const filterArray = Object.entries(filters).map(([key, value]) => [key, "=", value]);
-    const filterString = encodeURIComponent(JSON.stringify(filterArray));     
-    return await frappeAPI.makeAuthenticatedRequest(
-      'GET',
-      `/api/resource/Receipt EITS ?filters=${filterString}&order_by=creation%20asc`
-    );
-  },
+
   getPaymentbypaidby: async (paid_by: string) => {
     return await frappeAPI.makeAuthenticatedRequest('GET', `/api/resource/EITS Payment?filters=[["paid_by","=","${paid_by}"]]&order_by=creation%20desc`);
   },
