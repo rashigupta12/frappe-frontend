@@ -17,6 +17,11 @@ import PaymentDetails from "./PaymentDetails";
 import { Link } from "react-router-dom";
 
 export interface Payment {
+  custom_account_number: string | undefined;
+  custom_account_holder_name: string | undefined;
+  custom_ifscibanswift_code: string | undefined;
+  creation(creation: any): string | undefined;
+  modified_by: string | undefined;
   name: string;
   bill_number: string;
   amountaed: number;

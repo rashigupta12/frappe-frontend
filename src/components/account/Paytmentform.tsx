@@ -306,6 +306,7 @@ const PaymentForm = () => {
       toast.error("Please enter a valid amount");
       return;
     }
+    
 
     const result = await submitPayment();
     if (result.success) {
