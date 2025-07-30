@@ -430,7 +430,6 @@ import {
   Building,
   Calendar,
   CreditCard,
-  DollarSign,
   FileText,
   Hash,
   User,
@@ -611,7 +610,7 @@ const PaymentDetails: React.FC<Props> = ({ payment, onClose }) => {
   const getPaymentModeIcon = (mode: string) => {
     if (!mode) return <FileText className="h-4 w-4" />;
     const lowerMode = mode.toLowerCase();
-    if (lowerMode.includes('cash')) return <DollarSign className="h-4 w-4" />;
+    if (lowerMode.includes('cash')) return ;
     if (lowerMode.includes('card')) return <CreditCard className="h-4 w-4" />;
     return <Building className="h-4 w-4" />; // bank
   };
