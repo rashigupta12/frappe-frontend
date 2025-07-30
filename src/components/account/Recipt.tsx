@@ -4,8 +4,9 @@ import React, { useCallback, useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
 import { useAuth } from "../../context/AuthContext";
 import { frappeAPI } from "../../api/frappeClient";
-import { usePaymentStore } from "../../store/payment";
+
 import PaymentImageUpload from "./imageupload/ImageUpload";
+import { useReciptStore } from "../../store/recipt";
 
 interface ImageItem {
   id: string;
@@ -14,14 +15,14 @@ interface ImageItem {
   remarks?: string;
 }
 
-const PaymentForm = () => {
+const ReceiptForm = () => {
   const user = useAuth();
 
   const {
     bill_number,
     amountaed,
     paid_by,
-    paid_to, // This is now being used in handleSearchChange and form submission
+    paid_from, // This is now the customer
     custom_purpose_of_payment,
     custom_mode_of_payment,
     custom_name_of_bank,
@@ -36,20 +37,18 @@ const PaymentForm = () => {
     setField,
     uploadAndAddAttachment,
     submitPayment,
-  } = usePaymentStore();
+  } = useReciptStore();
 
   const [images, setImages] = useState<ImageItem[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
-  const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(
-    null
-  );
-  const [showAddSupplierDialog, setShowAddSupplierDialog] = useState(false);
-  const [creatingSupplier, setCreatingSupplier] = useState(false);
-  const [newSupplierData, setNewSupplierData] = useState({
-    supplier_name: "",
+  const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [showAddCustomerDialog, setShowAddCustomerDialog] = useState(false);
+  const [creatingCustomer, setCreatingCustomer] = useState(false);
+  const [newCustomerData, setNewCustomerData] = useState({
+    customer_name: "",
     mobile_no: "",
     email_id: "",
   });
@@ -60,18 +59,18 @@ const PaymentForm = () => {
       setField("custom_mode_of_payment", "Cash");
     }
 
-    // Set paid_by to current user's username
+    // Set paid_by to current user's username (who is receiving the payment)
     if (user.user?.username && paid_by !== user.user.username) {
       setField("paid_by", user.user.username);
     }
   }, [custom_mode_of_payment, setField, user.user?.username, paid_by]);
 
-  // Sync searchQuery with paid_to from store
+  // Sync searchQuery with paid_from from store
   useEffect(() => {
-    if (paid_to && paid_to !== searchQuery) {
-      setSearchQuery(paid_to);
+    if (paid_from && paid_from !== searchQuery) {
+      setSearchQuery(paid_from);
     }
-  }, [paid_to, searchQuery]);
+  }, [paid_from, searchQuery]);
 
   // Convert custom_attachments to images format
   useEffect(() => {
@@ -91,7 +90,7 @@ const PaymentForm = () => {
     setImages(convertedImages);
   }, [custom_attachments]);
 
-  const handleSupplierSearch = useCallback(async (query: string) => {
+  const handleCustomerSearch = useCallback(async (query: string) => {
     if (!query.trim()) {
       setSearchResults([]);
       setShowDropdown(false);
@@ -105,17 +104,17 @@ const PaymentForm = () => {
       if (/^\d+$/.test(query)) {
         response = await frappeAPI.makeAuthenticatedRequest(
           "GET",
-          `/api/method/eits_app.supplier_search.search_suppliers?mobile_no=${query}`
+          `/api/method/eits_app.customer_search.search_customers?mobile_no=${query}`
         );
       } else if (query.includes("@")) {
         response = await frappeAPI.makeAuthenticatedRequest(
           "GET",
-          `/api/method/eits_app.supplier_search.search_suppliers?email_id=${query}`
+          `/api/method/eits_app.customer_search.search_customers?email_id=${query}`
         );
       } else {
         response = await frappeAPI.makeAuthenticatedRequest(
           "GET",
-          `/api/method/eits_app.supplier_search.search_suppliers?supplier_name=${query}`
+          `/api/method/eits_app.customer_search.search_customers?customer_name=${query}`
         );
       }
 
@@ -123,24 +122,24 @@ const PaymentForm = () => {
         throw new Error("Invalid response format");
       }
 
-      const suppliers = response.message.data;
+      const customers = response.message.data;
       setShowDropdown(true);
 
-      if (suppliers.length === 0) {
+      if (customers.length === 0) {
         setSearchResults([]);
         return;
       }
 
-      const detailedSuppliers = await Promise.all(
-        suppliers.map(async (supplier: { name: any }) => {
+      const detailedCustomers = await Promise.all(
+        customers.map(async (customer: { name: any }) => {
           try {
-            const supplierDetails = await frappeAPI.getSupplierById(
-              supplier.name
+            const customerDetails = await frappeAPI.getCustomerById(
+              customer.name
             );
-            return supplierDetails.data;
+            return customerDetails.data;
           } catch (error) {
             console.error(
-              `Failed to fetch details for supplier ${supplier.name}:`,
+              `Failed to fetch details for customer ${customer.name}:`,
               error
             );
             return null;
@@ -148,10 +147,10 @@ const PaymentForm = () => {
         })
       );
 
-      const validSuppliers = detailedSuppliers.filter(
-        (supplier) => supplier !== null
+      const validCustomers = detailedCustomers.filter(
+        (customer) => customer !== null
       );
-      setSearchResults(validSuppliers);
+      setSearchResults(validCustomers);
     } catch (error) {
       console.error("Search error:", error);
       setSearchResults([]);
@@ -164,7 +163,7 @@ const PaymentForm = () => {
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value;
     setSearchQuery(query);
-    setField("paid_to", query);
+    setField("paid_from", query);
 
     if (searchTimeout) {
       clearTimeout(searchTimeout);
@@ -173,7 +172,7 @@ const PaymentForm = () => {
     if (query.length > 0) {
       setSearchTimeout(
         setTimeout(() => {
-          handleSupplierSearch(query);
+          handleCustomerSearch(query);
         }, 300)
       );
     } else {
@@ -182,64 +181,64 @@ const PaymentForm = () => {
     }
   };
 
-  const handleSupplierSelect = (supplier: any) => {
-    const supplierName = supplier.supplier_name || supplier.name || "";
-    setField("paid_to", supplierName);
-    setSearchQuery(supplierName);
+  const handleCustomerSelect = (customer: any) => {
+    const customerName = customer.customer_name || customer.name || "";
+    setField("paid_from", customerName);
+    setSearchQuery(customerName);
     setShowDropdown(false);
-    toast.success("Supplier selected");
+    toast.success("Customer selected");
   };
 
-  const handleNewSupplierInputChange = (
+  const handleNewCustomerInputChange = (
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
     const { name, value } = e.target;
-    setNewSupplierData((prev) => ({ ...prev, [name]: value }));
+    setNewCustomerData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleAddNewSupplier = () => {
-    setNewSupplierData({
-      supplier_name:
+  const handleAddNewCustomer = () => {
+    setNewCustomerData({
+      customer_name:
         /^\d+$/.test(searchQuery) || searchQuery.includes("@")
           ? ""
           : searchQuery,
       mobile_no: /^\d+$/.test(searchQuery) ? searchQuery : "",
       email_id: searchQuery.includes("@") ? searchQuery : "",
     });
-    setShowAddSupplierDialog(true);
+    setShowAddCustomerDialog(true);
     setShowDropdown(false);
   };
 
-  const handleCreateSupplier = async () => {
-    if (!newSupplierData.supplier_name) {
-      toast.error("Supplier name is required");
+  const handleCreateCustomer = async () => {
+    if (!newCustomerData.customer_name) {
+      toast.error("Customer name is required");
       return;
     }
 
-    setCreatingSupplier(true);
+    setCreatingCustomer(true);
     try {
-      const response = await frappeAPI.createSupplier({
-        supplier_name: newSupplierData.supplier_name,
-        mobile_no: newSupplierData.mobile_no,
-        email_id: newSupplierData.email_id || "",
+      const response = await frappeAPI.createCustomer({
+        customer_name: newCustomerData.customer_name,
+        mobile_no: newCustomerData.mobile_no,
+        email_id: newCustomerData.email_id || "",
       });
 
       if (response.data) {
-        toast.success("Supplier created successfully");
-        handleSupplierSelect(response.data);
-        setShowAddSupplierDialog(false);
+        toast.success("Customer created successfully");
+        handleCustomerSelect(response.data);
+        setShowAddCustomerDialog(false);
       } else {
-        throw new Error("Failed to create supplier");
+        throw new Error("Failed to create customer");
       }
     } catch (error) {
-      console.error("Error creating supplier:", error);
+      console.error("Error creating customer:", error);
       toast.error(
         error instanceof Error
           ? error.message
-          : "Failed to create supplier. Please try again."
+          : "Failed to create customer. Please try again."
       );
     } finally {
-      setCreatingSupplier(false);
+      setCreatingCustomer(false);
     }
   };
 
@@ -251,11 +250,11 @@ const PaymentForm = () => {
     };
   }, [searchTimeout]);
 
-  type PaymentField =
+  type ReceiptField =
     | "bill_number"
     | "amountaed"
     | "paid_by"
-    | "paid_to"
+    | "paid_from"
     | "custom_purpose_of_payment"
     | "custom_mode_of_payment"
     | "custom_name_of_bank"
@@ -264,7 +263,7 @@ const PaymentForm = () => {
     | "custom_ifscibanswift_code"
     | "custom_account_holder_name";
 
-  const handleInputChange = (field: PaymentField, value: string) => {
+  const handleInputChange = (field: ReceiptField, value: string) => {
     setField(field, value);
   };
 
@@ -297,23 +296,24 @@ const PaymentForm = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validate that paid_to (supplier) is selected
-    if (!paid_to || paid_to.trim() === "") {
-      toast.error("Please select a supplier");
+    // Validate that paid_from (customer) is selected
+    if (!paid_from || paid_from.trim() === "") {
+      toast.error("Please select a customer");
       return;
     }
-    if (amountaed === "" || parseFloat(amountaed) <= 0) {
+    // Validate that amountaed is a valid number greater than 0
+    if (!amountaed || parseFloat(amountaed) <= 0) {
       toast.error("Please enter a valid amount");
       return;
     }
 
     const result = await submitPayment();
     if (result.success) {
-      toast.success("Payment submitted successfully!");
+      toast.success("Receipt submitted successfully!");
       // Reset form fields
       setField("bill_number", "");
       setField("amountaed", "0.00");
-      setField("paid_to", "");
+      setField("paid_from", "");
       setField("custom_purpose_of_payment", "");
       setField("custom_mode_of_payment", "");
       setField("custom_name_of_bank", "");
@@ -327,7 +327,6 @@ const PaymentForm = () => {
     }
   };
 
-  // Then modify your getModeOfPaymentValue function to handle the default case:
   const getModeOfPaymentValue = () => {
     switch (custom_mode_of_payment) {
       case "Bank":
@@ -367,9 +366,9 @@ const PaymentForm = () => {
     <div className="wifull mx-auto bg-white shadow-lg rounded-lg overflow-hidden lg:p-3">
       {/* Header */}
       <div className="bg-gradient-to-r from-emerald-500 to-blue-500 px-6 py-4 text-white">
-        <h1 className="text-xl md:text-2xl font-semibold">Payment Entry</h1>
+        <h1 className="text-xl md:text-2xl font-semibold">Receipt Entry</h1>
         <p className="text-blue-100 text-sm md:text-base">
-          Enter payment details
+          Enter receipt details
         </p>
       </div>
 
@@ -405,20 +404,20 @@ const PaymentForm = () => {
 
           {/* Grid layout for desktop */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-            {/* Amount Paid */}
+            {/* Amount Received */}
             <div>
               <label className="block text-sm md:text-base font-medium text-gray-700 mb-2">
-                Amount Paid <span className="text-red-500">*</span>
+                Amount Received <span className="text-red-500">*</span>
               </label>
               <div className="flex">
                 <input
                   type="number"
-                  
+                  step="0.01"
                   value={amountaed}
                   onChange={(e) =>
                     handleInputChange("amountaed", e.target.value)
                   }
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-l-md  outline-none"
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-l-md focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                   placeholder="0.00"
                   required
                 />
@@ -570,12 +569,27 @@ const PaymentForm = () => {
               />
             </div>
 
-            {/* Supplier Search */}
+            {/* Received By (paid_by) */}
+            {/* <div>
+              <label className="block text-sm md:text-base font-medium text-gray-700 mb-2">
+                Received By <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={paid_by}
+                onChange={(e) => handleInputChange("paid_by", e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                placeholder="Received by"
+                required
+              />
+            </div> */}
+
+            {/* Customer Search (paid_from) */}
             <div className="relative col-span-1 md:col-span-2">
               <label className="flex items-center space-x-2 text-sm md:text-base font-medium text-gray-700 mb-2">
                 <User className="h-4 w-4 text-gray-500" />
                 <span>
-                  Supplier{" "}
+                  Customer{" "}
                   <span className="text-gray-500">(name/email/phone)</span>
                   <span className="text-red-500 ml-1">*</span>
                 </span>
@@ -599,27 +613,27 @@ const PaymentForm = () => {
               {showDropdown && (
                 <div className="absolute z-10 w-full bg-white shadow-lg rounded-md border border-gray-200 max-h-60 overflow-auto mt-1">
                   {searchResults.length > 0 ? (
-                    searchResults.map((supplier) => (
+                    searchResults.map((customer) => (
                       <div
-                        key={supplier.name}
+                        key={customer.name}
                         className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center justify-between"
-                        onClick={() => handleSupplierSelect(supplier)}
+                        onClick={() => handleCustomerSelect(customer)}
                       >
                         <div>
                           <p className="font-medium">
-                            {supplier.supplier_name || supplier.name}
+                            {customer.customer_name || customer.name}
                           </p>
                           <div className="text-xs text-gray-500 flex gap-2 flex-wrap">
-                            {supplier.mobile_no && (
+                            {customer.mobile_no && (
                               <span className="flex items-center">
                                 <Phone className="h-3 w-3 mr-1" />
-                                {supplier.mobile_no}
+                                {customer.mobile_no}
                               </span>
                             )}
-                            {supplier.email_id && (
+                            {customer.email_id && (
                               <span className="flex items-center">
                                 <Mail className="h-3 w-3 mr-1" />
-                                {supplier.email_id}
+                                {customer.email_id}
                               </span>
                             )}
                           </div>
@@ -632,14 +646,14 @@ const PaymentForm = () => {
                   ) : (
                     <div
                       className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center justify-between"
-                      onClick={handleAddNewSupplier}
+                      onClick={handleAddNewCustomer}
                     >
                       <div>
                         <p className="font-medium">
-                          No suppliers found for "{searchQuery}"
+                          No customers found for "{searchQuery}"
                         </p>
                         <p className="text-xs text-gray-500">
-                          Click to add a new supplier
+                          Click to add a new customer
                         </p>
                       </div>
                       <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
@@ -655,7 +669,7 @@ const PaymentForm = () => {
           {/* Purpose of Payment (full width) */}
           <div>
             <label className="block text-sm md:text-base font-medium text-gray-700 mb-2">
-              Purpose of Payment
+              Purpose of Receipt
             </label>
             <textarea
               rows={3}
@@ -664,7 +678,7 @@ const PaymentForm = () => {
                 handleInputChange("custom_purpose_of_payment", e.target.value)
               }
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none"
-              placeholder="Enter Purpose of Payment"
+              placeholder="Enter Purpose of Receipt"
             />
           </div>
 
@@ -686,22 +700,22 @@ const PaymentForm = () => {
                   Uploading...
                 </span>
               ) : (
-                "Submit Payment"
+                "Submit Receipt"
               )}
             </button>
           </div>
         </div>
       </form>
 
-      {/* Add Supplier Dialog */}
-      {showAddSupplierDialog && (
+      {/* Add Customer Dialog */}
+      {showAddCustomerDialog && (
         <div className="fixed inset-0 backdrop-blur-sm bg-black/30 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
             <div className="p-6">
               <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold">Add New Supplier</h3>
+                <h3 className="text-lg font-semibold">Add New Customer</h3>
                 <button
-                  onClick={() => setShowAddSupplierDialog(false)}
+                  onClick={() => setShowAddCustomerDialog(false)}
                   className="text-gray-500 hover:text-gray-700"
                 >
                   <X className="h-5 w-5" />
@@ -710,15 +724,15 @@ const PaymentForm = () => {
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Supplier Name <span className="text-red-500">*</span>
+                    Customer Name <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
-                    name="supplier_name"
-                    value={newSupplierData.supplier_name}
-                    onChange={handleNewSupplierInputChange}
+                    name="customer_name"
+                    value={newCustomerData.customer_name}
+                    onChange={handleNewCustomerInputChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                    placeholder="Enter supplier name"
+                    placeholder="Enter customer name"
                     required
                   />
                 </div>
@@ -729,8 +743,8 @@ const PaymentForm = () => {
                   <input
                     type="text"
                     name="mobile_no"
-                    value={newSupplierData.mobile_no}
-                    onChange={handleNewSupplierInputChange}
+                    value={newCustomerData.mobile_no}
+                    onChange={handleNewCustomerInputChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                     placeholder="Enter mobile number"
                   />
@@ -742,8 +756,8 @@ const PaymentForm = () => {
                   <input
                     type="email"
                     name="email_id"
-                    value={newSupplierData.email_id}
-                    onChange={handleNewSupplierInputChange}
+                    value={newCustomerData.email_id}
+                    onChange={handleNewCustomerInputChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                     placeholder="Enter email address"
                   />
@@ -752,24 +766,24 @@ const PaymentForm = () => {
               <div className="mt-6 flex justify-end space-x-3">
                 <button
                   type="button"
-                  onClick={() => setShowAddSupplierDialog(false)}
+                  onClick={() => setShowAddCustomerDialog(false)}
                   className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   Cancel
                 </button>
                 <button
                   type="button"
-                  onClick={handleCreateSupplier}
-                  disabled={creatingSupplier}
+                  onClick={handleCreateCustomer}
+                  disabled={creatingCustomer}
                   className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
                 >
-                  {creatingSupplier ? (
+                  {creatingCustomer ? (
                     <span className="flex items-center justify-center">
                       <Loader2 className="h-4 w-4 animate-spin mr-2" />
                       Creating...
                     </span>
                   ) : (
-                    "Create Supplier"
+                    "Create Customer"
                   )}
                 </button>
               </div>
@@ -781,4 +795,4 @@ const PaymentForm = () => {
   );
 };
 
-export default PaymentForm;
+export default ReceiptForm;

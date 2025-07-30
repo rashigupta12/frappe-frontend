@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { create } from 'zustand';
 import { frappeAPI } from '../api/frappeClient';
@@ -19,12 +18,12 @@ interface ImageAttachment {
   docstatus?: number;
 }
 
-interface PaymentFormData {
+interface ReciptFormData {
   date: string;
   bill_number: string;
   amountaed: string;
   paid_by: string;
-  paid_to: string;
+  paid_from: string;
   custom_purpose_of_payment: string;
   custom_mode_of_payment: 'Cash' | 'Bank' | 'Credit Card' | 'Credit' | '';
   custom_name_of_bank: string;
@@ -39,21 +38,20 @@ interface PaymentFormData {
   custom_account_holder_name: string; // Added field for account holder name
 }
 
-interface PaymentStoreActions {
-  setField: <K extends keyof PaymentFormData>(field: K, value: PaymentFormData[K]) => void;
+interface ReciptStoreActions {
+  setField: <K extends keyof ReciptFormData>(field: K, value: ReciptFormData[K]) => void;
   uploadAndAddAttachment: (file: File) => Promise<void>;
   removeAttachment: (index: number) => void;
-  fetchSuppliers: () => Promise<void>;
   submitPayment: () => Promise<{ success: boolean; error?: string; data?: any }>;
   resetForm: () => void;
 }
 
-const initialState: PaymentFormData = {
+const initialState: ReciptFormData = {
   date: new Date().toISOString().split('T')[0],
   bill_number: '',
   amountaed: '0.00',
   paid_by: '',
-  paid_to: '',
+  paid_from: '',
   custom_purpose_of_payment: '',
   custom_mode_of_payment: '',
   custom_name_of_bank: '',
@@ -68,7 +66,7 @@ const initialState: PaymentFormData = {
   custom_account_holder_name: '', // Initialize account holder name field
 };
 
-export const usePaymentStore = create<PaymentFormData & PaymentStoreActions>((set, get) => ({
+export const useReciptStore = create<ReciptFormData & ReciptStoreActions>((set, get) => ({
   ...initialState,
 
   setField: (field, value) => set({ [field]: value }),
@@ -117,19 +115,6 @@ export const usePaymentStore = create<PaymentFormData & PaymentStoreActions>((se
       custom_attachments: state.custom_attachments.filter((_, i) => i !== index),
     })),
 
-  fetchSuppliers: async () => {
-    set({ isLoading: true, error: null });
-    try {
-      const response = await frappeAPI.getSupplier();
-      const suppliers = response.data.map((supplier: any) => ({
-        label: supplier.name,
-        value: supplier.name,
-      }));
-      set({ suppliers, isLoading: false });
-    } catch (error) {
-      set({ error: 'Failed to fetch suppliers', isLoading: false });
-    }
-  },
 
   submitPayment: async () => {
     const {
@@ -137,7 +122,7 @@ export const usePaymentStore = create<PaymentFormData & PaymentStoreActions>((se
       bill_number,
       amountaed,
       paid_by,
-      paid_to,
+      paid_from,
       custom_purpose_of_payment,
       custom_mode_of_payment,
       custom_name_of_bank,
@@ -159,13 +144,13 @@ export const usePaymentStore = create<PaymentFormData & PaymentStoreActions>((se
         // Don't include parent fields here as they will be set by the backend
       }));
 
-      // Prepare base payment data
-      const paymentData: Record<string, any> = {
+      // Prepare base Recipt data
+      const ReciptData: Record<string, any> = {
         date,
         bill_number,
         amountaed: parseFloat(amountaed),
         paid_by,
-        paid_to,
+        paid_from,
         custom_purpose_of_payment,
         custom_mode_of_payment,
         doctype: "EITS Payment",
@@ -174,26 +159,26 @@ export const usePaymentStore = create<PaymentFormData & PaymentStoreActions>((se
 
       // Add conditional fields based on payment mode
       if (custom_mode_of_payment === 'Bank') {
-        paymentData.custom_name_of_bank = custom_name_of_bank;
-        paymentData.custom_account_number = custom_account_number;
-        paymentData.custom_ifscibanswift_code = custom_ifscibanswift_code; // Add IFSC/IBAN/SWIFT code
-        paymentData.custom_account_holder_name = custom_account_holder_name; // Add account holder name
+        ReciptData.custom_name_of_bank = custom_name_of_bank;
+        ReciptData.custom_account_number = custom_account_number;
+        ReciptData.custom_ifscibanswift_code = custom_ifscibanswift_code; // Add IFSC/IBAN/SWIFT code
+        ReciptData.custom_account_holder_name = custom_account_holder_name; // Add account holder name
       } else if (custom_mode_of_payment === 'Credit Card') {
-        paymentData.custom_name_of_bank = custom_name_of_bank;
-        paymentData.custom_card_number = custom_card_number;
+        ReciptData.custom_name_of_bank = custom_name_of_bank;
+        ReciptData.custom_card_number = custom_card_number;
       }
 
-      // Create the payment record with attachments
-      const paymentResponse = await frappeAPI.createPayment(paymentData);
+      // Create the Recipt record with attachments
+      const ReciptResponse = await frappeAPI.createReceipt(ReciptData);
 
       // Reset form after successful submission
       set(initialState);
       
       set({ isLoading: false });
-      return { success: true, data: paymentResponse.data };
+      return { success: true, data: ReciptResponse.data };
     } catch (error) {
-      console.error('Payment submission failed:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Payment submission failed';
+      console.error('Recipt submission failed:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Recipt submission failed';
       set({ error: errorMessage, isLoading: false });
       return { success: false, error: errorMessage };
     }

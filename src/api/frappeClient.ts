@@ -635,6 +635,38 @@ export const frappeAPI = {
   getSupplier: async () => {
     return await frappeAPI.makeAuthenticatedRequest('GET', `/api/resource/Supplier`);
   },
+  getSupplierById: async (supplierId: string) => {
+    return await frappeAPI.makeAuthenticatedRequest('GET', `/api/resource/Supplier/${supplierId}`);
+  },
+  createSupplier: async (supplierData: Record<string, unknown>) => {
+    return await frappeAPI.makeAuthenticatedRequest('POST', '/api/resource/Supplier', supplierData);
+  },
+  createReceipt: async (receiptData: Record<string, unknown>) => {
+    return await frappeAPI.makeAuthenticatedRequest('POST', '/api/resource/Receipt EITS', receiptData);
+  },
+
+  updateReceipt: async (receiptId: string, receiptData: Record<string, unknown>) => {
+    return await frappeAPI.makeAuthenticatedRequest('PUT', `/api/resource/Receipt EITS/${receiptId}`, receiptData);
+  },
+  deleteReceipt: async (receiptId: string) => {
+    return await frappeAPI.makeAuthenticatedRequest('DELETE', `/api/resource/Receipt EITS/${receiptId}`);
+  },
+  getReceiptById: async (receiptId: string) => {
+    return await frappeAPI.makeAuthenticatedRequest('GET', `/api/resource/Receipt EITS/${receiptId}`);
+  },
+  getAllReceipts: async (filters: Record<string, unknown> = {}) => {
+    const filterArray = Object.entries(filters).map(([key, value]) => [key, "=", value]);
+    const filterString = encodeURIComponent(JSON.stringify(filterArray));
+
+    return await frappeAPI.makeAuthenticatedRequest(
+      'GET',
+      `/api/resource/Receipt EITS?filters=${filterString}&order_by=creation%20asc`
+    );
+  },
+  getReceiptByPaidFrom: async (paid_from: string) => {
+    return await frappeAPI.makeAuthenticatedRequest('GET', `/api/resource/Receipt EITS?filters=[["paid_from","=","${paid_from}"]]&order_by=creation%20desc`);
+  },
+
   upload: async (file: File, options: {
     is_private?: boolean;
     folder?: string;
