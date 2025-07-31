@@ -1,35 +1,46 @@
 // src/App.tsx
-import type { ReactNode } from 'react';
+import type { ReactNode } from "react";
 import { Toaster } from "react-hot-toast";
-import { Navigate, Route, BrowserRouter as Router, Routes } from 'react-router-dom';
-import LoginPage from './components/auth/Login';
-import SalesDashboard from './components/pages/Dashboard';
-import ProjectManagerDashboard from './components/pages/projectManagerDashboard';
-import InspectorDashboard from './components/pages/InspectorDashboard';
-import { AuthProvider, useAuth } from './context/AuthContext';
-import { LeadsProvider } from './context/LeadContext';
-import { roleMiddleware } from './middleware/roleMiddleware';
-import { JobCardProvider } from './context/JobCardContext';
-import HomePage from './components/pages/Homepage';
-import { JobCardOtherProvider } from './context/JobCardOtherContext';
-import AccountUser from './components/pages/AccountUser';
+import {
+  Navigate,
+  Route,
+  BrowserRouter as Router,
+  Routes,
+} from "react-router-dom";
+import LoginPage from "./components/auth/Login";
+import SalesDashboard from "./components/pages/Dashboard";
+import ProjectManagerDashboard from "./components/pages/projectManagerDashboard";
+import InspectorDashboard from "./components/pages/InspectorDashboard";
+import { AuthProvider, useAuth } from "./context/AuthContext";
+import { LeadsProvider } from "./context/LeadContext";
+import { roleMiddleware } from "./middleware/roleMiddleware";
+import { JobCardProvider } from "./context/JobCardContext";
+import HomePage from "./components/pages/Homepage";
+import { JobCardOtherProvider } from "./context/JobCardOtherContext";
+import AccountUser from "./components/pages/AccountUser";
+import { Loader } from "lucide-react";
 
 interface ProtectedRouteProps {
   children: ReactNode;
   allowedRoles?: string[];
 }
 
-const ProtectedRoute = ({ children, allowedRoles = [] }: ProtectedRouteProps) => {
+const ProtectedRoute = ({
+  children,
+  allowedRoles = [],
+}: ProtectedRouteProps) => {
   const { isAuthenticated, user, loading } = useAuth();
 
   if (loading) {
     return (
-      <div style={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center'
-      }}>
+      <div
+        style={{
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
         <div>Loading...</div>
       </div>
     );
@@ -40,7 +51,10 @@ const ProtectedRoute = ({ children, allowedRoles = [] }: ProtectedRouteProps) =>
   }
 
   // Check role-based access
-  if (allowedRoles.length > 0 && !roleMiddleware(user?.role ?? '', allowedRoles)) {
+  if (
+    allowedRoles.length > 0 &&
+    !roleMiddleware(user?.role ?? "", allowedRoles)
+  ) {
     return <Navigate to="/unauthorized" replace />;
   }
 
@@ -52,25 +66,31 @@ const PublicRoute = ({ children }: { children: ReactNode }) => {
   const { isAuthenticated, loading, user } = useAuth();
 
   if (loading) {
-    return (
-      <div style={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center'
-      }}>
-        <div>Loading...</div>
-      </div>
-    );
+    return <Loader />;
   }
 
-  // If user is authenticated, redirect to appropriate dashboard
   if (isAuthenticated && user) {
-    return <Navigate to={`/${user.role}`} replace />;
+    // Redirect based on role
+    switch (user.role) {
+      case "EITS_Sale_Representative":
+        return <Navigate to="/sales" replace />;
+      case "project_manager":
+        return <Navigate to="/project_manager" replace />;
+      case "EITS_Site_Inspector":
+        return <Navigate to="/inspector" replace />;
+      case "accountUser":
+        return <Navigate to="/accountUser" replace />;
+      case "admin":
+        return <Navigate to="/admin" replace />;
+      default:
+        return <Navigate to="/user" replace />;
+    }
   }
 
   return <>{children}</>;
 };
+
+// If user is authenticated, redirect to appropriate dashboard
 
 // Dashboard Router - routes users to appropriate dashboard based on role
 const DashboardRouter = () => {
@@ -85,7 +105,7 @@ const DashboardRouter = () => {
 
 // Dashboard Components
 const UserDashboard = () => (
-  <div style={{ padding: '20px' }}>
+  <div style={{ padding: "20px" }}>
     <h1>User Dashboard</h1>
     <p>Welcome to your user dashboard!</p>
     <div>
@@ -130,7 +150,7 @@ const UserDashboard = () => (
 // );
 
 const AdminDashboard = () => (
-  <div style={{ padding: '20px' }}>
+  <div style={{ padding: "20px" }}>
     <h1>Admin Dashboard</h1>
     <p>Welcome to your admin dashboard!</p>
     <div>
@@ -153,18 +173,22 @@ const Unauthorized = () => {
   const { user, logout } = useAuth();
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      flexDirection: 'column',
-      gap: '20px'
-    }}>
+    <div
+      style={{
+        minHeight: "100vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        flexDirection: "column",
+        gap: "20px",
+      }}
+    >
       <h2>Unauthorized Access</h2>
       <p>You don't have permission to access this page.</p>
-      <p>Current role: <strong>{user?.role || 'Unknown'}</strong></p>
-      <div style={{ display: 'flex', gap: '10px' }}>
+      <p>
+        Current role: <strong>{user?.role || "Unknown"}</strong>
+      </p>
+      <div style={{ display: "flex", gap: "10px" }}>
         <button onClick={() => window.history.back()}>Go Back</button>
         <button onClick={logout}>Logout</button>
       </div>
@@ -205,7 +229,7 @@ function AppRoutes() {
         <Route
           path="/user"
           element={
-            <ProtectedRoute allowedRoles={['user']}>
+            <ProtectedRoute allowedRoles={["user"]}>
               <UserDashboard />
             </ProtectedRoute>
           }
@@ -213,7 +237,7 @@ function AppRoutes() {
         <Route
           path="/sales"
           element={
-            <ProtectedRoute allowedRoles={['sales']}>
+            <ProtectedRoute allowedRoles={["EITS_Sale_Representative"]}>
               <SalesDashboard />
             </ProtectedRoute>
           }
@@ -221,7 +245,7 @@ function AppRoutes() {
         <Route
           path="/inspector"
           element={
-            <ProtectedRoute allowedRoles={['inspector']}>
+            <ProtectedRoute allowedRoles={["EITS_Site_Inspector"]}>
               <InspectorDashboard />
             </ProtectedRoute>
           }
@@ -229,15 +253,15 @@ function AppRoutes() {
         <Route
           path="/accountUser"
           element={
-            <ProtectedRoute allowedRoles={['accountUser']}>
-              <AccountUser/>
+            <ProtectedRoute allowedRoles={["accountUser"]}>
+              <AccountUser />
             </ProtectedRoute>
           }
         />
         <Route
           path="/project_manager"
           element={
-            <ProtectedRoute allowedRoles={['project_manager']}>
+            <ProtectedRoute allowedRoles={["project_manager"]}>
               <JobCardProvider>
                 <JobCardOtherProvider>
                   <ProjectManagerDashboard />
@@ -249,7 +273,7 @@ function AppRoutes() {
         <Route
           path="/admin"
           element={
-            <ProtectedRoute allowedRoles={['admin']}>
+            <ProtectedRoute allowedRoles={["admin"]}>
               <AdminDashboard />
             </ProtectedRoute>
           }
@@ -271,17 +295,18 @@ function App() {
           <Toaster
             position="top-right"
             toastOptions={{
-              className: '',
+              className: "",
               style: {
-                border: '1px solid #713200',
-                padding: '16px',
-                color: '#713200',
+                border: "1px solid #713200",
+                padding: "16px",
+                color: "#713200",
               },
               success: {
-                className: 'border border-green-500 bg-green-100 text-green-700',
+                className:
+                  "border border-green-500 bg-green-100 text-green-700",
               },
               error: {
-                className: 'border border-red-500 bg-red-100 text-red-700',
+                className: "border border-red-500 bg-red-100 text-red-700",
               },
             }}
           />

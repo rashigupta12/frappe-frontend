@@ -161,10 +161,15 @@ const PaymentForm = () => {
     }
   }, []);
 
+  // Update the handleSearchChange function to reset paid_to when clearing search
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value;
     setSearchQuery(query);
-    setField("paid_to", query);
+
+    // Clear paid_to when search query is empty
+    if (!query.trim()) {
+      setField("paid_to", "");
+    }
 
     if (searchTimeout) {
       clearTimeout(searchTimeout);
@@ -179,6 +184,15 @@ const PaymentForm = () => {
     } else {
       setSearchResults([]);
       setShowDropdown(false);
+    }
+  };
+
+  // Update the dialog close handler to validate supplier
+  const handleCloseSupplierDialog = () => {
+    setShowAddSupplierDialog(false);
+    if (!paid_to) {
+      toast.error("Please select a supplier to proceed with payment");
+      setSearchQuery("");
     }
   };
 
@@ -302,11 +316,18 @@ const PaymentForm = () => {
       toast.error("Please select a supplier");
       return;
     }
+
+    // Validate amount
     if (amountaed === "" || parseFloat(amountaed) <= 0) {
       toast.error("Please enter a valid amount");
       return;
     }
-    
+
+    // Validate at least one image is uploaded
+    if (images.length === 0) {
+      toast.error("Please upload at least one payment evidence image");
+      return;
+    }
 
     const result = await submitPayment();
     if (result.success) {
@@ -387,7 +408,7 @@ const PaymentForm = () => {
           {/* Payment Evidence Section */}
           <div>
             <label className="block text-sm md:text-base font-medium text-gray-700 mb-2">
-              Upload Image 
+              Upload Image <span className="text-red-500">*</span>
             </label>
             <PaymentImageUpload
               images={images}
@@ -396,7 +417,11 @@ const PaymentForm = () => {
               maxImages={5}
               maxSizeMB={10}
             />
-            
+            {images.length === 0 && (
+              <p className=" text-xs text-red-500">
+                At least one payment evidence image is required
+              </p>
+            )}
           </div>
 
           {/* Grid layout for desktop */}
@@ -409,7 +434,6 @@ const PaymentForm = () => {
               <div className="flex">
                 <input
                   type="number"
-                  
                   value={amountaed}
                   onChange={(e) =>
                     handleInputChange("amountaed", e.target.value)
@@ -429,17 +453,17 @@ const PaymentForm = () => {
               <label className="block text-sm md:text-base font-medium text-gray-700 mb-2">
                 Mode of Payment <span className="text-red-500">*</span>
               </label>
-            <select
-              value={getModeOfPaymentValue()}
-              onChange={(e) => setModeOfPayment(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white"
-              required
-            >
-              <option value="cash">Cash</option>
-              <option value="card">Card</option>
-              <option value="bank-transfer">Bank Transfer</option>
-              <option value="credit">Credit</option>
-            </select>
+              <select
+                value={getModeOfPaymentValue()}
+                onChange={(e) => setModeOfPayment(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white"
+                required
+              >
+                <option value="cash">Cash</option>
+                <option value="card">Card</option>
+                <option value="bank-transfer">Bank Transfer</option>
+                <option value="credit">Credit</option>
+              </select>
             </div>
 
             {/* Date */}
@@ -697,7 +721,7 @@ const PaymentForm = () => {
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg font-semibold">Add New Supplier</h3>
                 <button
-                  onClick={() => setShowAddSupplierDialog(false)}
+                  onClick={handleCloseSupplierDialog}
                   className="text-gray-500 hover:text-gray-700"
                 >
                   <X className="h-5 w-5" />
@@ -748,7 +772,7 @@ const PaymentForm = () => {
               <div className="mt-6 flex justify-end space-x-3">
                 <button
                   type="button"
-                  onClick={() => setShowAddSupplierDialog(false)}
+                   onClick={handleCloseSupplierDialog}
                   className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   Cancel

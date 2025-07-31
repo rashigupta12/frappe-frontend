@@ -160,26 +160,38 @@ const ReceiptForm = () => {
     }
   }, []);
 
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const query = e.target.value;
-    setSearchQuery(query);
-    setField("paid_from", query);
+const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const query = e.target.value;
+  setSearchQuery(query);
+  
+  // Clear paid_from when search query is empty
+  if (!query.trim()) {
+    setField("paid_from", "");
+  }
 
-    if (searchTimeout) {
-      clearTimeout(searchTimeout);
-    }
+  if (searchTimeout) {
+    clearTimeout(searchTimeout);
+  }
 
-    if (query.length > 0) {
-      setSearchTimeout(
-        setTimeout(() => {
-          handleCustomerSearch(query);
-        }, 300)
-      );
-    } else {
-      setSearchResults([]);
-      setShowDropdown(false);
-    }
-  };
+  if (query.length > 0) {
+    setSearchTimeout(
+      setTimeout(() => {
+        handleCustomerSearch(query);
+      }, 300)
+    );
+  } else {
+    setSearchResults([]);
+    setShowDropdown(false);
+  }
+};
+
+const handleCloseCustomerDialog = () => {
+  setShowAddCustomerDialog(false);
+  if (!paid_from) {
+    toast.error("Please select a customer to proceed with receipt submission");
+    setSearchQuery("");
+  }
+};
 
   const handleCustomerSelect = (customer: any) => {
     const customerName = customer.customer_name || customer.name || "";
@@ -293,39 +305,46 @@ const ReceiptForm = () => {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
 
-    // Validate that paid_from (customer) is selected
-    if (!paid_from || paid_from.trim() === "") {
-      toast.error("Please select a customer");
-      return;
-    }
-    // Validate that amountaed is a valid number greater than 0
-    if (!amountaed || parseFloat(amountaed) <= 0) {
-      toast.error("Please enter a valid amount");
-      return;
-    }
+  // Validate that paid_from (customer) is selected
+  if (!paid_from || paid_from.trim() === "") {
+    toast.error("Please select a customer");
+    return;
+  }
 
-    const result = await submitPayment();
-    if (result.success) {
-      toast.success("Receipt submitted successfully!");
-      // Reset form fields
-      setField("bill_number", "");
-      setField("amountaed", "0.00");
-      setField("paid_from", "");
-      setField("custom_purpose_of_payment", "");
-      setField("custom_mode_of_payment", "");
-      setField("custom_name_of_bank", "");
-      setField("custom_account_number", "");
-      setField("custom_card_number", "");
-      setField("custom_attachments", []);
-      setImages([]);
-      setSearchQuery("");
-    } else {
-      toast.error(`Error: ${result.error}`);
-    }
-  };
+  // Validate amount
+  if (!amountaed || parseFloat(amountaed) <= 0) {
+    toast.error("Please enter a valid amount");
+    return;
+  }
+
+  // Validate at least one image is uploaded
+  if (images.length === 0) {
+    toast.error("Please upload at least one receipt evidence image");
+    return;
+  }
+
+  const result = await submitPayment();
+  if (result.success) {
+    toast.success("Receipt submitted successfully!");
+    // Reset form fields
+    setField("bill_number", "");
+    setField("amountaed", "0.00");
+    setField("paid_from", "");
+    setField("custom_purpose_of_payment", "");
+    setField("custom_mode_of_payment", "");
+    setField("custom_name_of_bank", "");
+    setField("custom_account_number", "");
+    setField("custom_card_number", "");
+    setField("custom_attachments", []);
+    setImages([]);
+    setSearchQuery("");
+  } else {
+    toast.error(`Error: ${result.error}`);
+  }
+};
 
   const getModeOfPaymentValue = () => {
     switch (custom_mode_of_payment) {
@@ -385,8 +404,8 @@ const ReceiptForm = () => {
           {/* Payment Evidence Section */}
           <div>
             <label className="block text-sm md:text-base font-medium text-gray-700 mb-2">
-              Upload Image 
-            </label>
+  Upload Image <span className="text-red-500">*</span>
+</label>
             <PaymentImageUpload
               images={images}
               onImagesChange={handleImagesChange}
@@ -394,6 +413,11 @@ const ReceiptForm = () => {
               maxImages={5}
               maxSizeMB={10}
             />
+            {images.length === 0 && (
+  <p className=" text-xs text-red-500">
+    At least one receipt evidence image is required
+  </p>
+)}
           
           </div>
 
@@ -710,11 +734,11 @@ const ReceiptForm = () => {
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg font-semibold">Add New Customer</h3>
                 <button
-                  onClick={() => setShowAddCustomerDialog(false)}
-                  className="text-gray-500 hover:text-gray-700"
-                >
-                  <X className="h-5 w-5" />
-                </button>
+  onClick={handleCloseCustomerDialog}
+  className="text-gray-500 hover:text-gray-700"
+>
+  <X className="h-5 w-5" />
+</button>
               </div>
               <div className="space-y-4">
                 <div>
@@ -761,7 +785,7 @@ const ReceiptForm = () => {
               <div className="mt-6 flex justify-end space-x-3">
                 <button
                   type="button"
-                  onClick={() => setShowAddCustomerDialog(false)}
+                  onClick={handleCloseCustomerDialog}
                   className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   Cancel

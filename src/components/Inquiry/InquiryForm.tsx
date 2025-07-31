@@ -161,6 +161,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     error: assignError,
     success: assignSuccess,
   } = useAssignStore();
+  console.log("InquiryForm rendered with inquiry:", inquiry);
 
   console.log("Inspectors:", inspectors);
 
@@ -190,6 +191,8 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
   const [creatingCustomer, setCreatingCustomer] = useState(false);
   const [fetchingCustomerDetails, setFetchingCustomerDetails] = useState(false);
   const [fetchingLeadDetails, setFetchingLeadDetails] = useState(false);
+  const [propertyArea, setPropertyArea] = useState<string>(inquiry?.custom_property_area || "");
+  console.log("customer", newCustomerData);
   const navigate = useNavigate();
 
   // Update section completion status
@@ -227,6 +230,8 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     }
   });
 
+
+
   // Fetch initial data
   useEffect(() => {
     if (!hasFetchedInitialData && isOpen) {
@@ -247,6 +252,13 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     fetchUtmSource,
     fetchInspectors,
   ]);
+
+  useEffect(() => {
+  setFormData(prev => ({
+    ...prev,
+    custom_property_area: propertyArea
+  }));
+}, [propertyArea]);
 
   // Set default values when data is loaded
   useEffect(() => {
@@ -294,6 +306,7 @@ const getCurrentTime = () => {
             ? new Date(inquiry.custom_alternative_inspection_date)
             : null,
       });
+      setPropertyArea(inquiry.custom_property_area || "");
       setPhoneNumber(inquiry.mobile_no || "+971 ");
       setDate(
         inquiry.custom_preferred_inspection_date
@@ -515,76 +528,88 @@ const getCurrentTime = () => {
     setNewCustomerData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleCustomerSearch = useCallback(async (query: string) => {
-    if (!query.trim()) {
+ const handleCustomerSearch = useCallback(async (query: string) => {
+  if (!query.trim()) {
+    setSearchResults([]);
+    setShowDropdown(false);
+    return;
+  }
+
+  setIsSearching(true);
+  try {
+    const endpoint = '/api/method/eits_app.customer_search.search_customers';
+    const params = new URLSearchParams();
+
+    if (/^\d+$/.test(query)) {
+      // Search by phone number (only digits)
+      params.append('mobile_no', query);
+    } else if (/^[a-zA-Z0-9._-]+$/.test(query)) {
+      // Search by email (partial match) OR name
+      // First try email search
+      params.append('email_id', query);
+      const emailResponse = await frappeAPI.makeAuthenticatedRequest(
+        "GET",
+        `${endpoint}?${params.toString()}`
+      );
+      
+      // If no email results, try name search
+      if (!emailResponse.message.data?.length) {
+        params.delete('email_id');
+        params.append('customer_name', query);
+      }
+    } else {
+      // Search by name
+      params.append('customer_name', query);
+    }
+
+    const response = await frappeAPI.makeAuthenticatedRequest(
+      "GET",
+      `${endpoint}?${params.toString()}`
+    );
+     if (!response.message || !Array.isArray(response.message.data)) {
+      throw new Error("Invalid response format");
+    }
+
+    const customers = response.message.data;
+    setShowDropdown(true);
+
+    if (customers.length === 0) {
       setSearchResults([]);
-      setShowDropdown(false);
       return;
     }
 
-    setIsSearching(true);
-    try {
-      let response;
+    const detailedCustomers = await Promise.all(
+      customers.map(async (customer: { name: any }) => {
+        try {
+          const customerDetails = await frappeAPI.getCustomerById(
+            customer.name
+          );
+          return customerDetails.data;
+        } catch (error) {
+          console.error(
+            `Failed to fetch details for customer ${customer.name}:`,
+            error
+          );
+          return null;
+        }
+      })
+    );
 
-      if (/^\d+$/.test(query)) {
-        response = await frappeAPI.makeAuthenticatedRequest(
-          "GET",
-          `/api/method/eits_app.customer_search.search_customers?mobile_no=${query}`
-        );
-      } else if (query.includes("@")) {
-        response = await frappeAPI.makeAuthenticatedRequest(
-          "GET",
-          `/api/method/eits_app.customer_search.search_customers?email_id=${query}`
-        );
-      } else {
-        response = await frappeAPI.makeAuthenticatedRequest(
-          "GET",
-          `/api/method/eits_app.customer_search.search_customers?customer_name=${query}`
-        );
-      }
+    const validCustomers = detailedCustomers.filter(
+      (customer) => customer !== null
+    );
 
-      if (!response.message || !Array.isArray(response.message.data)) {
-        throw new Error("Invalid response format");
-      }
-
-      const customers = response.message.data;
-      setShowDropdown(true);
-
-      if (customers.length === 0) {
-        setSearchResults([]);
-        return;
-      }
-
-      const detailedCustomers = await Promise.all(
-        customers.map(async (customer: { name: any }) => {
-          try {
-            const customerDetails = await frappeAPI.getCustomerById(
-              customer.name
-            );
-            return customerDetails.data;
-          } catch (error) {
-            console.error(
-              `Failed to fetch details for customer ${customer.name}:`,
-              error
-            );
-            return null;
-          }
-        })
-      );
-
-      const validCustomers = detailedCustomers.filter(
-        (customer) => customer !== null
-      );
-
-      setSearchResults(validCustomers);
-    } catch (error) {
-      console.error("Search error:", error);
-      setSearchResults([]);
-      setShowDropdown(true);
-    } finally {
-      setIsSearching(false);
-    }
-  }, []);
+    setSearchResults(validCustomers);
+  } catch (error) {
+    // Error handling...
+    console.error("Search error:", error);
+    setSearchResults([]);
+    setShowDropdown(true);
+    toast.error("Failed to search customers. Please try again.");
+  } finally {
+    setIsSearching(false);
+  }
+}, []);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value;
@@ -671,6 +696,7 @@ const getCurrentTime = () => {
         setFetchingLeadDetails(true);
         try {
           const leadResponse = await frappeAPI.getLeadById(customer.lead_name);
+          console.log("leadResponse", leadResponse);
 
           if (leadResponse.data) {
             const lead = leadResponse.data;
@@ -819,6 +845,7 @@ const getCurrentTime = () => {
                   handleAddNewCustomer={handleAddNewCustomer}
                   fetchingCustomerDetails={fetchingCustomerDetails}
                   fetchingLeadDetails={fetchingLeadDetails}
+                  getPropertyArea={propertyArea}
                 />
               ))}
 
@@ -971,6 +998,7 @@ interface SectionProps {
   handleAddNewCustomer: () => void;
   fetchingCustomerDetails: boolean;
   fetchingLeadDetails: boolean;
+  getPropertyArea: string;
 }
 
 const Section: React.FC<SectionProps> = ({
@@ -1009,8 +1037,10 @@ const Section: React.FC<SectionProps> = ({
   handleAddNewCustomer,
   fetchingCustomerDetails,
   fetchingLeadDetails,
+  getPropertyArea,
 }) => {
   
+  console.log("propertyArea:", getPropertyArea);
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (
       [8, 9, 13, 16, 17, 18, 20, 27, 35, 36, 37, 38, 39, 40, 45, 46].includes(
@@ -1390,6 +1420,7 @@ const Section: React.FC<SectionProps> = ({
               handleSelectChange={handleSelectChange}
               propertyTypes={propertyTypes}
               buildingTypes={buildingTypes}
+              getPropertyArea={getPropertyArea}
             />
           )}
 
