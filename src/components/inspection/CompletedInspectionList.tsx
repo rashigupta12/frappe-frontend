@@ -260,6 +260,7 @@ const MobileSiteInspectionList = ({ userEmail }: InspectionListProps) => {
       await updateInspectionbyId(inspectionName, {
         inspection_status: newStatus,
       });
+      
 
       // Refresh the list to show updated status
       await fetchAllInspectionsByField("owner", userEmail);

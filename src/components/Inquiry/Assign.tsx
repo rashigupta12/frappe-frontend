@@ -363,22 +363,22 @@ export default function TodoPage() {
                       )}
                     </div>
                   </div>
-
-                  {/* Edit Button - only show if status is not "Closed" */}
-                  {todo.status !== "Closed" && (
-                    <div className="flex flex-col items-end">
-                      <Button
-                        onClick={() => handleEditInspection(todo)}
-                        variant="outline"
-                        size="sm"
-                        className="h-6  flex items-center gap-1 text-xs bg-white hover:bg-emerald-50 hover:border-emerald-200 hover:text-emerald-700 transition-all duration-200"
-                      >
-                        <Edit className="h-4 w-4" />
-                        <span className="hidden sm:inline">Edit</span>
-                      </Button>
-                    </div>
-                  )}
                 </div>
+
+                {/* Edit Button - moved to bottom right */}
+                {todo.status !== "Closed" && (
+                  <div className="flex justify-end ">
+                    <Button
+                      onClick={() => handleEditInspection(todo)}
+                      variant="outline"
+                      size="sm"
+                      className="h-6 flex items-center gap-1 text-xs  border-emerald-900 text-emerald-800 hover:bg-emerald-900 hover:border-emerald-900 hover:text-emerald-900 transition-all duration-200"
+                    >
+                      <Edit className="h-3 w-3 text-emerald-900" />
+                      <span className="hidden sm:inline">Edit</span>
+                    </Button>
+                  </div>
+                )}
               </div>
             ))}
           </div>

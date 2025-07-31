@@ -416,14 +416,16 @@ const getCurrentTime = () => {
 
       if (inquiry?.name) {
         await updateLead(inquiry.name, submissionData);
+        toast.success("Inquiry updated successfully!");
         return inquiry.name;
       } else {
         const newInquiry = await createLead(submissionData);
+        toast.success("Inquiry created successfully!");
         return newInquiry.name;
       }
     } catch (err) {
       console.error("Error saving lead:", err);
-      alert("Failed to save lead. Please try again.");
+      toast.error("Failed to save inquiry. Please try again.");
       return undefined;
     }
   };
@@ -435,9 +437,11 @@ const getCurrentTime = () => {
 
     try {
       await saveLead();
+      toast.success("Inquiry created successfully!");
       onClose();
     } catch (err) {
       console.error("Form submission error:", err);
+      toast.error("Failed to create inquiry. Please try again.");
     }
   };
 
@@ -445,24 +449,24 @@ const getCurrentTime = () => {
     if (!validateForm()) return;
 
     if (!inspectorEmail) {
-      alert("Please select an inspector");
+      toast.error("Please select an inspector");
       return;
     }
 
     if (!date) {
-      alert("Please select an inspection date");
+      toast.error("Please select an inspection date");
       return;
     }
 
     try {
       // 1. Save Lead
-      console.log("Starting lead save...");
+     
       const inquiryName = await saveLead();
       if (!inquiryName) {
-        alert("Failed to save lead");
+        toast.error("Failed to save inquiry");
         return;
       }
-      console.log("Lead saved successfully:", inquiryName);
+      
 
       // 2. Create ToDo
       const preferredDate = format(date, "yyyy-MM-dd");
@@ -678,7 +682,7 @@ const getCurrentTime = () => {
               custom_property_area: lead.custom_property_area || "",
               lead_id: lead.name,
             }));
-            toast.success("Customer and property details loaded!");
+            toast.success("Customer details loaded!");
           }
         } catch (error) {
           console.error("Failed to fetch lead data:", error);
@@ -687,7 +691,7 @@ const getCurrentTime = () => {
           setFetchingLeadDetails(false);
         }
       } else {
-        toast.success("Customer loaded (no property details found)");
+        toast.success("Customer details loaded! ");
       }
     } finally {
       setFetchingCustomerDetails(false);

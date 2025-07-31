@@ -23,6 +23,7 @@ import { useAssignStore } from "../../store/assign";
 import { useAuth } from "../../context/AuthContext";
 import { format } from "date-fns";
 import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 // import { cn } from "../../lib/utils";
 
 type PriorityLevel = "Low" | "Medium" | "High";
@@ -86,17 +87,17 @@ const IspectionDialog: React.FC<IspectionDialogProps> = ({
 
   const handleAssign = async () => {
     if (!inspectorEmail) {
-      alert("Please select an inspector");
+      toast.error("Please select an inspector");
       return;
     }
 
     if (!date) {
-      alert("Please select an inspection date");
+      toast.error("Please select an inspection date");
       return;
     }
 
     if (!inquiry?.name) {
-      alert("Invalid inquiry data");
+      toast.error("Invalid inquiry data");
       return;
     }
 
@@ -111,6 +112,7 @@ const IspectionDialog: React.FC<IspectionDialogProps> = ({
         priority: priority,
         preferred_date: preferredDate,
       });
+      toast.success("Inspector assigned successfully!");
 
       
       onClose();

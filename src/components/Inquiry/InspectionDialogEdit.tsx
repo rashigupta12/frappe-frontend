@@ -15,6 +15,7 @@ import { format } from "date-fns";
 import { X, ChevronDown, ChevronRight } from "lucide-react";
 import { useAssignStore } from "../../store/assign";
 import { Input } from "../ui/input";
+import toast from "react-hot-toast";
 
 interface InspectionDialogProps {
   isOpen: boolean;
@@ -29,7 +30,6 @@ export default function InspectionDialog({
   todoData,
   mode,
 }: InspectionDialogProps) {
-  console.log("todoData", todoData);
   const { fetchInspectors, inspectors , updateTodo} = useAssignStore();
   const [showPropertyInfo, setShowPropertyInfo] = useState(false);
   const [formData, setFormData] = useState({
@@ -100,10 +100,11 @@ export default function InspectionDialog({
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (mode === "edit") {
-      updateTodo(todoData.name,formData);
+      await updateTodo(todoData.name, formData);
+      toast.success("Inspection updated successfully!");
     }
     onClose();
   };
