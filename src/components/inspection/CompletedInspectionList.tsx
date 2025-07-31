@@ -46,6 +46,7 @@ const StatusDropdown = ({
 
   // Check if status is completed - prevent any changes
   const isCompleted = currentStatus === "Completed";
+  
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {

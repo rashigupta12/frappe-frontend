@@ -1058,7 +1058,7 @@ const CreateInspection = () => {
                                 Cancelling...
                               </>
                             ) : (
-                              "Cancel Todo"
+                              "Cancel Inspection"
                             )}
                           </Button>
                         )}
@@ -1081,9 +1081,9 @@ const CreateInspection = () => {
         setIsOpen={setDeleteModalOpen}
       />
 
-      {/* Cancel Todo Confirmation Modal */}
+      {/* Cancel Inspection Confirmation Modal */}
       <DeleteConfirmation
-        text="Are you sure you want to cancel this todo? This action cannot be undone and the todo will be marked as cancelled."
+        text="Are you sure you want to cancel this inspection? This action cannot be undone and the inspection will be marked as cancelled."
         onConfirm={handleCancelTodo}
         onCancel={() => setCancelTodoModalOpen(false)}
         isOpen={cancelTodoModalOpen}
