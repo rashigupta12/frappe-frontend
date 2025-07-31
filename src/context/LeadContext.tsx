@@ -272,14 +272,14 @@ export const LeadsProvider: React.FC<LeadsProviderProps> = ({ children }) => {
 
         
         const response = await frappeAPI.createLead(processedData);
-        toast.success("Lead created successfully!");
+        toast.success("Inquiry created successfully!");
 
         await fetchLeads();
 
         return response.data;
       } catch (err) {
-        toast.error("Failed to create lead. Please try again.");
-        console.error("Error creating lead:", err);
+        toast.error("Failed to create inquiry. Please try again.");
+        console.error("Error creating inquiry:", err);
         const errorMessage =
           err instanceof Error ? err.message : "Failed to create lead";
         setError(errorMessage);
@@ -310,14 +310,14 @@ export const LeadsProvider: React.FC<LeadsProviderProps> = ({ children }) => {
       
 
         const response = await frappeAPI.updateLead(leadId, processedData);
-        toast.success(`Lead updated successfully!`);
+       
 
         await fetchLeads();
 
         return response.data;
       } catch (err) {
-        toast.error(`Failed to update lead ${leadId}. Please try again.`);
-        console.error(`Error updating lead ${leadId}:`, err);
+        toast.error(`Failed to update Inquiry ${leadId}. Please try again.`);
+        console.error(`Error updating inquiry ${leadId}:`, err);
         const errorMessage =
           err instanceof Error
             ? err.message
