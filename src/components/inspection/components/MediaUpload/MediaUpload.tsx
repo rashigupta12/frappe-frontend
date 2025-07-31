@@ -10,7 +10,6 @@ import {
 import React, { useEffect, useRef, useState } from "react";
 import { toast } from "react-hot-toast";
 import { Button } from "../../../ui/button";
-// import { FormLabel } from "../../../ui/form";
 import { Progress } from "../../../ui/progress";
 import { Textarea } from "../../../ui/textarea";
 import { getMediaType, uploadFile, type MediaItem } from "../utils/fileUpload";
@@ -38,7 +37,6 @@ const MediaPreviewModal: React.FC<{
 
   return (
     <div className="fixed inset-0 bg-black/95 flex flex-col z-50">
-      {/* Header */}
       <div className="flex items-center justify-between p-4 bg-black/50 backdrop-blur-sm">
         <h2 className="text-white text-lg font-semibold">Media Preview</h2>
         <Button
@@ -51,7 +49,6 @@ const MediaPreviewModal: React.FC<{
         </Button>
       </div>
 
-      {/* Media Content */}
       <div className="flex-1 flex items-center justify-center p-4 overflow-hidden">
         {media.type === "image" && (
           <img
@@ -85,17 +82,13 @@ const MediaPreviewModal: React.FC<{
         )}
       </div>
 
-      {/* Bottom Section - Fixed Actions */}
       <div className="bg-gray-900/90 backdrop-blur-sm p-4 sticky bottom-0 z-10">
-        {/* Remarks */}
         {media.remarks && (
           <div className="bg-gray-800/50 rounded-lg p-4 mb-4">
             <div className="flex items-start gap-3">
               <MessageSquare className="h-5 w-5 text-blue-400 mt-0.5 flex-shrink-0" />
               <div className="flex-1">
-                <h4 className="text-sm font-medium text-gray-200 mb-2">
-                  Remark
-                </h4>
+                <h4 className="text-sm font-medium text-gray-200 mb-2">Remark</h4>
                 <p className="text-sm text-gray-300 leading-relaxed">
                   {media.remarks}
                 </p>
@@ -104,7 +97,6 @@ const MediaPreviewModal: React.FC<{
           </div>
         )}
 
-        {/* Action Buttons */}
         <div className="flex gap-3">
           {onEditRemark && (
             <Button
@@ -200,6 +192,47 @@ const RemarksDialog: React.FC<{
   );
 };
 
+const DeleteConfirmationDialog: React.FC<{
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  title?: string;
+  message?: string;
+}> = ({ isOpen, onClose, onConfirm, title = "Remove Media File", message = "Are you sure you want to remove this media file? This action cannot be undone." }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[70] p-4">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 animate-in fade-in-0 zoom-in-95">
+        <div className="text-center mb-6">
+          <div className="mx-auto w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
+            <Trash2 className="w-8 h-8 text-red-600" />
+          </div>
+          <h3 className="text-xl font-semibold text-gray-900 mb-2">
+            {title}
+          </h3>
+          <p className="text-gray-600 text-sm">
+            {message}
+          </p>
+        </div>
+
+        <div className="flex gap-3">
+          <Button onClick={onClose} variant="outline" className="flex-1">
+            Cancel
+          </Button>
+          <Button
+            onClick={onConfirm}
+            variant="destructive"
+            className="flex-1 bg-red-600 hover:bg-red-700"
+          >
+            Remove
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const AudioRecordingDialog: React.FC<{
   isOpen: boolean;
   onClose: () => void;
@@ -207,15 +240,12 @@ const AudioRecordingDialog: React.FC<{
 }> = ({ isOpen, onClose, onComplete }) => {
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
-  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(
-    null
-  );
+  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-
       const mimeTypes = [
         "audio/webm;codecs=opus",
         "audio/webm",
@@ -441,24 +471,79 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
   const [showRecordingDialog, setShowRecordingDialog] = useState(false);
   const [showRemarksDialog, setShowRemarksDialog] = useState(false);
   const [showCameraOptions, setShowCameraOptions] = useState(false);
-  const [pendingMediaItem, setPendingMediaItem] = useState<MediaItem | null>(
-    null
-  );
+  const [pendingMediaItem, setPendingMediaItem] = useState<MediaItem | null>(null);
   const [editingRemark, setEditingRemark] = useState<string | null>(null);
   const [showCameraPreview, setShowCameraPreview] = useState(false);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [mediaToDelete, setMediaToDelete] = useState<string | null>(null);
+  const [currentMediaItems, setCurrentMediaItems] = useState<MediaItem[]>([]);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const currentMediaItems = multiple
-    ? (value as MediaItem[]) || []
-    : value
-    ? [value as MediaItem]
-    : [];
+  // Sync with external value changes
+  useEffect(() => {
+    if (value) {
+      setCurrentMediaItems(Array.isArray(value) ? [...value] : [value]);
+    } else {
+      setCurrentMediaItems([]);
+    }
+  }, [value]);
 
-  // Start camera and show preview
+  const handleDeleteClick = (e: React.MouseEvent, mediaId: string) => {
+    e.stopPropagation();
+    e.preventDefault();
+    setMediaToDelete(mediaId);
+    setShowDeleteConfirm(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (mediaToDelete) {
+      const updatedItems = currentMediaItems.filter(
+        (item) => item.id !== mediaToDelete
+      );
+      
+      // Optimistically update local state
+      setCurrentMediaItems(updatedItems);
+      
+      // Update parent component
+      if (multiple) {
+        onChange(updatedItems.length > 0 ? updatedItems : undefined);
+      } else {
+        onChange(undefined);
+      }
+      
+      toast.success("Media file removed.");
+    }
+    
+    setShowDeleteConfirm(false);
+    setMediaToDelete(null);
+    setModalOpen(false);
+    setSelectedMedia(null);
+  };
+
+  const handleCancelDelete = () => {
+    // Revert to original state if user cancels
+    if (value) {
+      setCurrentMediaItems(Array.isArray(value) ? [...value] : [value]);
+    }
+    setShowDeleteConfirm(false);
+    setMediaToDelete(null);
+  };
+
+  const handleRemoveFromModal = () => {
+    if (selectedMedia) {
+      // Optimistically update UI
+      const tempItems = currentMediaItems.filter(item => item.id !== selectedMedia.id);
+      setCurrentMediaItems(tempItems);
+      
+      setMediaToDelete(selectedMedia.id);
+      setShowDeleteConfirm(true);
+    }
+  };
+
   const startCamera = async () => {
     try {
       setShowCameraOptions(false);
@@ -466,7 +551,7 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
 
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
-          facingMode: "environment", // Prefer rear camera
+          facingMode: "environment",
           width: { ideal: 1920 },
           height: { ideal: 1080 },
         },
@@ -483,27 +568,20 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
     }
   };
 
-  // Capture image manually
   const captureImage = () => {
     if (!videoRef.current || !canvasRef.current) return;
 
     const video = videoRef.current;
     const canvas = canvasRef.current;
-
-    // Set canvas dimensions to match video
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
 
-    // Draw current video frame to canvas
     const ctx = canvas.getContext("2d");
     if (ctx) {
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-      // Convert canvas to data URL
       const imageDataUrl = canvas.toDataURL("image/jpeg", 0.8);
       setCapturedImage(imageDataUrl);
 
-      // Stop camera stream
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((track) => track.stop());
         streamRef.current = null;
@@ -511,7 +589,6 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
     }
   };
 
-  // Upload the captured image
   const uploadCapturedImage = async () => {
     if (!capturedImage) return;
 
@@ -519,7 +596,6 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
     setUploadProgress(0);
 
     try {
-      // Convert data URL to Blob
       const blob = await fetch(capturedImage).then((res) => res.blob());
       const file = new File([blob], `captured-${Date.now()}.jpg`, {
         type: "image/jpeg",
@@ -548,7 +624,6 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
     }
   };
 
-  // Cancel camera
   const cancelCamera = () => {
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((track) => track.stop());
@@ -565,8 +640,11 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
         remarks: remark || pendingMediaItem.remarks,
       };
 
+      const updatedItems = [...currentMediaItems, updatedMediaItem];
+      setCurrentMediaItems(updatedItems);
+      
       if (multiple) {
-        onChange([...currentMediaItems, updatedMediaItem]);
+        onChange(updatedItems);
       } else {
         onChange(updatedMediaItem);
       }
@@ -577,7 +655,9 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
       const updatedItems = currentMediaItems.map((item) =>
         item.id === editingRemark ? { ...item, remarks: remark } : item
       );
-
+      
+      setCurrentMediaItems(updatedItems);
+      
       if (multiple) {
         onChange(updatedItems);
       } else {
@@ -589,9 +669,7 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
     }
   };
 
-  const handleFileChange = async (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (!files || files.length === 0) return;
 
@@ -636,7 +714,6 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
     setUploadProgress(0);
 
     try {
-      // Process files sequentially to avoid overwhelming the server
       for (let i = 0; i < validFiles.length; i++) {
         const file = validFiles[i];
         const fileProgressStart = (i / validFiles.length) * 100;
@@ -655,7 +732,7 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
 
           setPendingMediaItem(mediaItem);
           setShowRemarksDialog(true);
-          break; // Process one file at a time for better UX
+          break;
         } catch (error) {
           console.error(`Error uploading ${file.name}:`, error);
           const errorMsg =
@@ -713,20 +790,6 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
     setShowRemarksDialog(true);
   };
 
-  const handleRemoveMedia = (idToRemove: string) => {
-    if (multiple) {
-      const updatedItems = currentMediaItems.filter(
-        (item) => item.id !== idToRemove
-      );
-      onChange(updatedItems);
-    } else {
-      onChange(undefined);
-    }
-    setModalOpen(false);
-    setSelectedMedia(null);
-    toast.success("Media file removed.");
-  };
-
   const handleClearAll = () => {
     if (currentMediaItems.length === 0) {
       toast.error("No media files to clear.");
@@ -739,6 +802,8 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
     ) {
       return;
     }
+    
+    setCurrentMediaItems([]);
     if (multiple) {
       onChange([]);
       toast.success("All media files cleared.");
@@ -782,105 +847,95 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
 
   return (
     <div className="space-y-4">
-      {/* Upload Controls */}
-      <div className=" ">
-        <div className="grid grid-cols-4 gap-4">
-          {/* Upload Button - Hidden when uploading or when single file limit reached */}
-          {!(isUploading || (!multiple && currentMediaItems.length > 0)) && (
-            <div className="flex flex-col items-center">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => fileInputRef.current?.click()}
-                className="h-14 w-14 rounded-2xl border-2 border-dashed border-gray-300 hover:border-blue-500 hover:bg-blue-50 transition-all duration-200 flex items-center justify-center"
-              >
-                <Upload className="h-6 w-6 text-gray-600" />
-              </Button>
-              <span className="text-xs text-gray-500 mt-2 text-center">
-                Upload
-              </span>
-            </div>
-          )}
-
-          {/* Camera Options - Hidden when uploading or when single file limit reached */}
-          {(allowedTypes.includes("image") || allowedTypes.includes("video")) &&
-            !(isUploading || (!multiple && currentMediaItems.length > 0)) && (
-              <div className="flex flex-col items-center">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setShowCameraOptions(true)}
-                  className="h-14 w-14 rounded-2xl border-2 border-dashed border-gray-300 hover:border-green-500 hover:bg-green-50 transition-all duration-200 flex items-center justify-center"
-                >
-                  <Camera className="h-6 w-6 text-gray-600" />
-                </Button>
-                <span className="text-xs text-gray-500 mt-2 text-center">
-                  Camera
-                </span>
-              </div>
-            )}
-
-          {/* Audio Recording - Hidden when uploading or when single file limit reached */}
-          {allowedTypes.includes("audio") &&
-            !(isUploading || (!multiple && currentMediaItems.length > 0)) && (
-              <div className="flex flex-col items-center">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setShowRecordingDialog(true)}
-                  className="h-14 w-14 rounded-2xl border-2 border-dashed border-gray-300 hover:border-red-500 hover:bg-red-50 transition-all duration-200 flex items-center justify-center"
-                >
-                  <Mic className="h-6 w-6 text-gray-600" />
-                </Button>
-                <span className="text-xs text-gray-500 mt-2 text-center">
-                  Record
-                </span>
-              </div>
-            )}
-
-          {/* Clear All Button - Hidden when uploading or when no files */}
-          {multiple && currentMediaItems.length > 0 && !isUploading && (
-            <div className="flex flex-col items-center">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleClearAll}
-                className="h-14 w-14 rounded-2xl border-2 border-dashed border-red-300 hover:border-red-500 hover:bg-red-50 transition-all duration-200 flex items-center justify-center"
-              >
-                <Trash2 className="h-6 w-6 text-red-600" />
-              </Button>
-              <span className="text-xs text-gray-500 mt-2 text-center">
-                Clear All
-              </span>
-            </div>
-          )}
-        </div>
-
-        {/* Progress Bar */}
-        {isUploading && (
-          <div className="mt-4 space-y-2">
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-600">Uploading...</span>
-              <span className="text-blue-600">
-                {Math.round(uploadProgress)}%
-              </span>
-            </div>
-            <Progress value={uploadProgress} className="h-2" />
+      <div className="grid grid-cols-4 gap-4">
+        {!(isUploading || (!multiple && currentMediaItems.length > 0)) && (
+          <div className="flex flex-col items-center">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => fileInputRef.current?.click()}
+              className="h-14 w-14 rounded-2xl border-2 border-dashed border-gray-300 hover:border-blue-500 hover:bg-blue-50 transition-all duration-200 flex items-center justify-center"
+            >
+              <Upload className="h-6 w-6 text-gray-600" />
+            </Button>
+            <span className="text-xs text-gray-500 mt-2 text-center">
+              Upload
+            </span>
           </div>
         )}
 
-        {/* File Input */}
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept={getFileAcceptString()}
-          onChange={handleFileChange}
-          className="hidden"
-          multiple={multiple}
-        />
+        {(allowedTypes.includes("image") || allowedTypes.includes("video")) &&
+          !(isUploading || (!multiple && currentMediaItems.length > 0)) && (
+            <div className="flex flex-col items-center">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowCameraOptions(true)}
+                className="h-14 w-14 rounded-2xl border-2 border-dashed border-gray-300 hover:border-green-500 hover:bg-green-50 transition-all duration-200 flex items-center justify-center"
+              >
+                <Camera className="h-6 w-6 text-gray-600" />
+              </Button>
+              <span className="text-xs text-gray-500 mt-2 text-center">
+                Camera
+              </span>
+            </div>
+          )}
+
+        {allowedTypes.includes("audio") &&
+          !(isUploading || (!multiple && currentMediaItems.length > 0)) && (
+            <div className="flex flex-col items-center">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowRecordingDialog(true)}
+                className="h-14 w-14 rounded-2xl border-2 border-dashed border-gray-300 hover:border-red-500 hover:bg-red-50 transition-all duration-200 flex items-center justify-center"
+              >
+                <Mic className="h-6 w-6 text-gray-600" />
+              </Button>
+              <span className="text-xs text-gray-500 mt-2 text-center">
+                Record
+              </span>
+            </div>
+          )}
+
+        {multiple && currentMediaItems.length > 0 && !isUploading && (
+          <div className="flex flex-col items-center">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleClearAll}
+              className="h-14 w-14 rounded-2xl border-2 border-dashed border-red-300 hover:border-red-500 hover:bg-red-50 transition-all duration-200 flex items-center justify-center"
+            >
+              <Trash2 className="h-6 w-6 text-red-600" />
+            </Button>
+            <span className="text-xs text-gray-500 mt-2 text-center">
+              Clear All
+            </span>
+          </div>
+        )}
       </div>
 
-      {/* Media Grid */}
+      {isUploading && (
+        <div className="mt-4 space-y-2">
+          <div className="flex justify-between text-sm">
+            <span className="text-gray-600">Uploading...</span>
+            <span className="text-blue-600">
+              {Math.round(uploadProgress)}%
+            </span>
+          </div>
+          <Progress value={uploadProgress} className="h-2" />
+        </div>
+      )}
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept={getFileAcceptString()}
+        onChange={handleFileChange}
+        className="hidden"
+        multiple={multiple}
+      />
+
       {currentMediaItems.length > 0 && (
         <div className="bg-white rounded-2xl p-4 border border-gray-200 shadow-sm">
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
@@ -888,54 +943,46 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
               <div
                 key={media.id}
                 className="relative group aspect-square rounded-xl overflow-hidden bg-gray-100 cursor-pointer hover:shadow-lg transition-all duration-200"
-                onClick={() => openMediaModal(media)}
               >
-                {media.type === "image" && (
-                  <img
-                    src={`${imageurl}${media.url}`}
-                    alt={media.remarks || "Media"}
-                    className="w-full h-full object-cover"
-                  />
-                )}
-                {media.type === "video" && (
-                  <div className="relative w-full h-full bg-gray-900 flex items-center justify-center">
-                    <video
+                <div 
+                  className="w-full h-full"
+                  onClick={() => openMediaModal(media)}
+                >
+                  {media.type === "image" && (
+                    <img
                       src={`${imageurl}${media.url}`}
+                      alt={media.remarks || "Media"}
                       className="w-full h-full object-cover"
-                      muted
                     />
-                    <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
-                      <div className="w-12 h-12 bg-white/90 rounded-full flex items-center justify-center">
-                        <div className="w-0 h-0 border-l-[8px] border-l-gray-800 border-y-[6px] border-y-transparent ml-1"></div>
+                  )}
+                  {media.type === "video" && (
+                    <div className="relative w-full h-full bg-gray-900 flex items-center justify-center">
+                      <video
+                        src={`${imageurl}${media.url}`}
+                        className="w-full h-full object-cover"
+                        muted
+                      />
+                      <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                        <div className="w-12 h-12 bg-white/90 rounded-full flex items-center justify-center">
+                          <div className="w-0 h-0 border-l-[8px] border-l-gray-800 border-y-[6px] border-y-transparent ml-1"></div>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                )}
-                {media.type === "audio" && (
-                  <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-                    <Mic className="h-8 w-8 text-white" />
-                  </div>
-                )}
-
-                {/* Overlay */}
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-200" />
-
-                {/* Quick Actions */}
-                <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-all duration-200">
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="h-8 w-8 bg-white/90 hover:bg-white text-gray-700 rounded-full"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleRemoveMedia(media.id);
-                    }}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
+                  )}
+                  {media.type === "audio" && (
+                    <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+                      <Mic className="h-8 w-8 text-white" />
+                    </div>
+                  )}
                 </div>
 
-                {/* Remarks Indicator */}
+                <button
+                  onClick={(e) => handleDeleteClick(e, media.id)}
+                  className="absolute top-2 right-2 p-1 bg-red-500 hover:bg-red-600 rounded-full text-white shadow-md transition-all duration-200 z-10"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+
                 {media.remarks && (
                   <div className="absolute bottom-2 left-2 right-2">
                     <div className="bg-black/70 text-white text-xs px-2 py-1 rounded-md backdrop-blur-sm truncate">
@@ -949,7 +996,6 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
         </div>
       )}
 
-      {/* Media Count */}
       {currentMediaItems.length > 0 && (
         <div className="text-sm text-gray-600 text-center">
           {currentMediaItems.length}{" "}
@@ -1027,6 +1073,13 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
         </div>
       )}
 
+      {/* DELETE CONFIRMATION DIALOG - NEW */}
+      <DeleteConfirmationDialog
+        isOpen={showDeleteConfirm}
+        onClose={handleCancelDelete}
+        onConfirm={handleConfirmDelete}
+      />
+
       {/* Modals */}
       {selectedMedia && (
         <MediaPreviewModal
@@ -1036,7 +1089,7 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
             setSelectedMedia(null);
           }}
           media={selectedMedia}
-          onRemove={() => handleRemoveMedia(selectedMedia.id)}
+          onRemove={handleRemoveFromModal}
           onEditRemark={() => handleEditRemark(selectedMedia.id)}
         />
       )}

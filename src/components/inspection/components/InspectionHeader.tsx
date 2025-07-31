@@ -52,77 +52,79 @@ const InspectionHeader = ({
   }
 
   return (
-    <CardHeader className="bg-gradient-to-r from-emerald-500 to-blue-500 text-white px-4 pt-4">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-        <div className="flex flex-col w-full">
-          <CardTitle className="flex flex-col sm:flex-row sm:items-center gap-1 text-lg m-0 p-0">
-            <div className="flex items-center gap-1">
-              {isUpdateMode ? (
-                <>
-                  <Edit className="h-4 w-4" />
-                  <span>Update Inspection</span>
-                </>
-              ) : (
-                <span>Create Inspection</span>
-              )}
-            </div>
-            
-            <span className="text-sm text-gray-200 truncate max-w-[280px] sm:max-w-[400px] md:max-w-[500px]">
-              {displayData.inspectionName ||
-                displayData.leadDetails?.name ||
-                "New Inspection"}
-            </span>
-            {isSubmitted && (
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                Submitted
-              </span>
-            )}
-            <button
-              className="ml-auto text-gray-200 hover:text-white"
-              onClick={() => window.history.back()}
-              aria-label="Close"
-            >
-              <X className="h-5 w-5" />
-            </button>
-          </CardTitle>
+    <CardHeader className="bg-gradient-to-r from-emerald-500 to-blue-500 text-white px-4 pt-4 relative">
+  {/* Close button at absolute top-right */}
+  <button
+    className="absolute top-4 right-4 text-gray-200 hover:text-white z-10"
+    onClick={() => window.history.back()}
+    aria-label="Close"
+  >
+    <X className="h-5 w-5" />
+  </button>
 
-          <div className="flex flex-wrap items-center gap-x-4 mt-1 text-sm">
-            <div className="flex items-center gap-1">
-              <User className="h-4 w-4 opacity-80" />
-              <span>
-                {displayData.leadDetails?.lead_name || "Unknown Customer"}
-              </span>
-            </div>
-            <div className="flex items-center gap-1">
-              <Phone className="h-4 w-4 opacity-80" />
-              <span>{displayData.leadDetails?.mobile_no || "N/A"}</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <Home className="h-4 w-4 opacity-80" />
-              <span>
-                {displayData.leadDetails?.custom_property_type || "N/A"}
-              </span>
-            </div>
-          </div>
-          {displayData.leadDetails?.custom_property_area && (
-            <div className="mt-1 text-sm text-gray-200">
-              <span className="font-semibold">Address:</span>{" "}
-              {displayData.leadDetails.custom_property_area
-                .replace(/,/g, ", ")
-                .replace(/(\d{5})/, "$1 ")
-                .replace(/(\d{3})-(\d{4})/, "$1-$2") || "N/A"}
-            </div>
+  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+    <div className="flex flex-col w-full">
+      <CardTitle className="flex flex-col sm:flex-row sm:items-center gap-1 text-lg m-0 p-0">
+        <div className="flex items-center gap-1">
+          {isUpdateMode ? (
+            <>
+              <Edit className="h-4 w-4" />
+              <span>Update Inspection</span>
+            </>
+          ) : (
+            <span>Create Inspection</span>
           )}
         </div>
-      </div>
+        
+        <span className="text-sm text-gray-200 truncate max-w-[280px] sm:max-w-[400px] md:max-w-[500px]">
+          {displayData.inspectionName ||
+            displayData.leadDetails?.name ||
+            "New Inspection"}
+        </span>
+        {isSubmitted && (
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+            Submitted
+          </span>
+        )}
+      </CardTitle>
 
-      {storeError && (
-        <div className="text-yellow-200 text-sm flex items-center mt-1">
-          <Info className="h-4 w-4" />
-          Error: {storeError}
+      <div className="flex flex-wrap items-center gap-x-4 mt-1 text-sm">
+        <div className="flex items-center gap-1">
+          <User className="h-4 w-4 opacity-80" />
+          <span>
+            {displayData.leadDetails?.lead_name || "Unknown Customer"}
+          </span>
+        </div>
+        <div className="flex items-center gap-1">
+          <Phone className="h-4 w-4 opacity-80" />
+          <span>{displayData.leadDetails?.mobile_no || "N/A"}</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <Home className="h-4 w-4 opacity-80" />
+          <span>
+            {displayData.leadDetails?.custom_property_type || "N/A"}
+          </span>
+        </div>
+      </div>
+      {displayData.leadDetails?.custom_property_area && (
+        <div className="mt-1 text-sm text-gray-200">
+          <span className="font-semibold">Address:</span>{" "}
+          {displayData.leadDetails.custom_property_area
+            .replace(/,/g, ", ")
+            .replace(/(\d{5})/, "$1 ")
+            .replace(/(\d{3})-(\d{4})/, "$1-$2") || "N/A"}
         </div>
       )}
-    </CardHeader>
+    </div>
+  </div>
+
+  {storeError && (
+    <div className="text-yellow-200 text-sm flex items-center mt-1">
+      <Info className="h-4 w-4" />
+      Error: {storeError}
+    </div>
+  )}
+</CardHeader>
   );
 };
 

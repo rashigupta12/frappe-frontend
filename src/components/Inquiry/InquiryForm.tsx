@@ -1,5 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
+import { format } from "date-fns";
 import {
   Building,
   Calendar as CalendarIcon,
@@ -8,14 +10,18 @@ import {
   ChevronUp,
   FileText,
   Home,
+  Loader2,
+  Mail,
   Phone,
   Save,
-  X,
   User,
-  Loader2,
+  X,
 } from "lucide-react";
-import { Calendar } from "../ui/calendar";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import toast from "react-hot-toast";
+import { useNavigate } from "react-router-dom";
+import { frappeAPI } from "../../api/frappeClient";
+import { useAuth } from "../../context/AuthContext";
 import {
   type Lead,
   type LeadFormData,
@@ -26,10 +32,21 @@ import {
   buildingTypes,
   formatSubmissionData,
   propertyTypes,
-  validatePhoneNumber,
 } from "../../helpers/helper";
+import { cn } from "../../lib/utils";
+import { useAssignStore } from "../../store/assign";
 import { Button } from "../ui/button";
+import { Calendar } from "../ui/calendar";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "../ui/dialog";
 import { Input } from "../ui/input";
+import { Label } from "../ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import {
   Select,
   SelectContent,
@@ -38,13 +55,6 @@ import {
   SelectValue,
 } from "../ui/select";
 import { Textarea } from "../ui/textarea";
-import { Label } from "../ui/label";
-import { useAssignStore } from "../../store/assign";
-import { format } from "date-fns";
-import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
-import { cn } from "../../lib/utils";
-import { useAuth } from "../../context/AuthContext";
-import { useNavigate } from "react-router-dom";
 import PropertyAddressSection from "./PropertyAddress";
 
 type FormSection = {
@@ -81,6 +91,8 @@ const defaultFormData: LeadFormData = {
   custom_reference_name: "",
   custom_alternative_inspection_time: "",
   utm_source: "",
+  customer_id: "",
+  lead_id: "",
 };
 
 const sections: FormSection[] = [
@@ -150,6 +162,8 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     success: assignSuccess,
   } = useAssignStore();
 
+  console.log("Inspectors:", inspectors);
+
   const [activeSection, setActiveSection] = useState<string>("contact");
   const [phoneNumber, setPhoneNumber] = useState("+971 ");
   const [date, setDate] = useState<Date | undefined>(new Date());
@@ -160,6 +174,22 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     ...defaultFormData,
   });
   const [showReferenceInput, setShowReferenceInput] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(
+    null
+  );
+  const [showAddCustomerDialog, setShowAddCustomerDialog] = useState(false);
+  const [newCustomerData, setNewCustomerData] = useState({
+    customer_name: "",
+    mobile_no: "",
+    email_id: "",
+  });
+  const [creatingCustomer, setCreatingCustomer] = useState(false);
+  const [fetchingCustomerDetails, setFetchingCustomerDetails] = useState(false);
+  const [fetchingLeadDetails, setFetchingLeadDetails] = useState(false);
   const navigate = useNavigate();
 
   // Update section completion status
@@ -169,8 +199,8 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
         return {
           ...section,
           completed:
-            !!formData.lead_name && 
-            !!formData.email_id && 
+            !!formData.lead_name &&
+            !!formData.email_id &&
             !!formData.mobile_no &&
             (!showReferenceInput || !!formData.custom_reference_name),
         };
@@ -229,6 +259,21 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
       }));
     }
   }, [hasFetchedInitialData, jobTypes, projectUrgency, utmSource, inquiry]);
+  useEffect(() => {
+  // Set initial time value if not already set
+  if (!formData.custom_preferred_inspection_time) {
+    setFormData(prev => ({
+      ...prev,
+      custom_preferred_inspection_time: getCurrentTime()
+    }));
+  }
+}, []);
+const getCurrentTime = () => {
+  const now = new Date();
+  const hours = now.getHours().toString().padStart(2, '0');
+  const minutes = now.getMinutes().toString().padStart(2, '0');
+  return `${hours}:${minutes}`;
+};
 
   // Load inquiry data when editing
   useEffect(() => {
@@ -256,8 +301,8 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
           : new Date()
       );
       setShowReferenceInput(
-        inquiry.utm_source === "Reference" || 
-        inquiry.utm_source === "Supplier Reference"
+        inquiry.utm_source === "Reference" ||
+          inquiry.utm_source === "Supplier Reference"
       );
     }
   }, [inquiry, hasFetchedInitialData, jobTypes, projectUrgency, utmSource]);
@@ -270,6 +315,9 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     setDate(new Date());
     setHasFetchedInitialData(false);
     setShowReferenceInput(false);
+    setSearchQuery("");
+    setSearchResults([]);
+    setShowDropdown(false);
   };
 
   const toggleSection = (sectionId: string) => {
@@ -284,10 +332,10 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
   };
 
   const handleSelectChange = (name: string, value: string) => {
-    setFormData((prev) => ({ 
-      ...prev, 
+    setFormData((prev) => ({
+      ...prev,
       [name]: value,
-      ...(name === "utm_source" && { custom_reference_name: "" })
+      ...(name === "utm_source" && { custom_reference_name: "" }),
     }));
     if (name === "utm_source") {
       setShowReferenceInput(
@@ -304,8 +352,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     const input = e.target.value;
 
     if (!input.startsWith("+971 ")) {
-      setPhoneNumber("+971 ");
-      setFormData((prev) => ({ ...prev, mobile_no: "+971 " }));
+      setNewCustomerData((prev) => ({ ...prev, mobile_no: "+971 " }));
       return;
     }
 
@@ -336,9 +383,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
       }
     }
 
-    setPhoneNumber(formattedNumber);
-    setFormData((prev) => ({ ...prev, mobile_no: formattedNumber }));
-    validatePhoneNumber(formattedNumber);
+    setNewCustomerData((prev) => ({ ...prev, mobile_no: formattedNumber }));
   };
 
   const validateForm = (): boolean => {
@@ -355,8 +400,8 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
       return false;
     }
     if (
-      (formData.utm_source === "Reference" || 
-       formData.utm_source === "Supplier Reference") &&
+      (formData.utm_source === "Reference" ||
+        formData.utm_source === "Supplier Reference") &&
       !formData.custom_reference_name
     ) {
       alert("Reference name is required");
@@ -410,10 +455,24 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     }
 
     try {
+      // 1. Save Lead
+      console.log("Starting lead save...");
       const inquiryName = await saveLead();
-      if (!inquiryName) return;
+      if (!inquiryName) {
+        alert("Failed to save lead");
+        return;
+      }
+      console.log("Lead saved successfully:", inquiryName);
 
+      // 2. Create ToDo
       const preferredDate = format(date, "yyyy-MM-dd");
+      console.log("Creating ToDo with data:", {
+        inquiry_id: inquiryName,
+        inspector_email: inspectorEmail,
+        preferred_date: preferredDate,
+        priority,
+        description: formData.custom_special_requirements || "",
+      });
 
       await createTodo({
         assigned_by: user?.username || "sales_rep@eits.com",
@@ -424,18 +483,266 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
         preferred_date: preferredDate,
       });
 
-      alert("Inspector assigned successfully!");
+      console.log("ToDo created successfully");
+      toast.success("Inspector assigned successfully!");
       navigate("/sales?tab=assign");
       onClose();
     } catch (error) {
-      console.error("Error assigning inspector:", error);
-      alert("Failed to assign inspector. Please try again.");
+      console.error("Full error in assignment process:", error);
+      toast.error(
+        `Failed to complete assignment: ${
+          error && typeof error === "object" && "message" in error
+            ? (error as { message: string }).message
+            : String(error)
+        }`
+      );
     }
   };
 
   const handleClose = () => {
     resetForm();
     onClose();
+  };
+
+  const handleNewCustomerInputChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const { name, value } = e.target;
+    setNewCustomerData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleCustomerSearch = useCallback(async (query: string) => {
+    if (!query.trim()) {
+      setSearchResults([]);
+      setShowDropdown(false);
+      return;
+    }
+
+    setIsSearching(true);
+    try {
+      let response;
+
+      if (/^\d+$/.test(query)) {
+        response = await frappeAPI.makeAuthenticatedRequest(
+          "GET",
+          `/api/method/eits_app.customer_search.search_customers?mobile_no=${query}`
+        );
+      } else if (query.includes("@")) {
+        response = await frappeAPI.makeAuthenticatedRequest(
+          "GET",
+          `/api/method/eits_app.customer_search.search_customers?email_id=${query}`
+        );
+      } else {
+        response = await frappeAPI.makeAuthenticatedRequest(
+          "GET",
+          `/api/method/eits_app.customer_search.search_customers?customer_name=${query}`
+        );
+      }
+
+      if (!response.message || !Array.isArray(response.message.data)) {
+        throw new Error("Invalid response format");
+      }
+
+      const customers = response.message.data;
+      setShowDropdown(true);
+
+      if (customers.length === 0) {
+        setSearchResults([]);
+        return;
+      }
+
+      const detailedCustomers = await Promise.all(
+        customers.map(async (customer: { name: any }) => {
+          try {
+            const customerDetails = await frappeAPI.getCustomerById(
+              customer.name
+            );
+            return customerDetails.data;
+          } catch (error) {
+            console.error(
+              `Failed to fetch details for customer ${customer.name}:`,
+              error
+            );
+            return null;
+          }
+        })
+      );
+
+      const validCustomers = detailedCustomers.filter(
+        (customer) => customer !== null
+      );
+
+      setSearchResults(validCustomers);
+    } catch (error) {
+      console.error("Search error:", error);
+      setSearchResults([]);
+      setShowDropdown(true);
+    } finally {
+      setIsSearching(false);
+    }
+  }, []);
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const query = e.target.value;
+    setSearchQuery(query);
+
+    if (searchTimeout) {
+      clearTimeout(searchTimeout);
+    }
+
+    if (query.length > 0) {
+      setSearchTimeout(
+        setTimeout(() => {
+          handleCustomerSearch(query);
+        }, 300)
+      );
+    } else {
+      setSearchResults([]);
+      setShowDropdown(false);
+    }
+  };
+
+  const handleAddNewCustomer = () => {
+    setNewCustomerData({
+      customer_name:
+        /^\d+$/.test(searchQuery) || searchQuery.includes("@")
+          ? ""
+          : searchQuery,
+      mobile_no: /^\d+$/.test(searchQuery) ? searchQuery : "",
+      email_id: searchQuery.includes("@") ? searchQuery : "",
+    });
+    setShowAddCustomerDialog(true);
+    setShowDropdown(false);
+  };
+
+  const handleCreateCustomer = async () => {
+    if (!newCustomerData.customer_name) {
+      toast.error("Customer name is required");
+      return;
+    }
+
+    setCreatingCustomer(true);
+    try {
+      const response = await frappeAPI.createCustomer({
+        customer_name: newCustomerData.customer_name,
+        mobile_no: newCustomerData.mobile_no,
+        email_id: newCustomerData.email_id || "",
+      });
+
+      if (response.data) {
+        toast.success("Customer created successfully");
+        handleCustomerSelect(response.data);
+        setShowAddCustomerDialog(false);
+      } else {
+        throw new Error("Failed to create customer");
+      }
+    } catch (error) {
+      console.error("Error creating customer:", error);
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to create customer. Please try again."
+      );
+    } finally {
+      setCreatingCustomer(false);
+    }
+  };
+
+  const handleCustomerSelect = async (customer: any) => {
+    setFetchingCustomerDetails(true);
+
+    try {
+      setFormData((prev) => ({
+        ...prev,
+        lead_name: customer.customer_name || customer.name || "",
+        email_id: customer.email_id || "",
+        mobile_no: customer.mobile_no || "+971 ",
+        customer_id: customer.name,
+      }));
+
+      setSearchQuery(customer.customer_name || customer.name || "");
+      setShowDropdown(false);
+
+      if (customer.lead_name) {
+        setFetchingLeadDetails(true);
+        try {
+          const leadResponse = await frappeAPI.getLeadById(customer.lead_name);
+
+          if (leadResponse.data) {
+            const lead = leadResponse.data;
+            setFormData((prev) => ({
+              ...prev,
+              custom_building_name: lead.custom_building_name || "",
+              custom_bulding__apartment__villa__office_number:
+                lead.custom_bulding__apartment__villa__office_number || "",
+              custom_property_area: lead.custom_property_area || "",
+              lead_id: lead.name,
+            }));
+            toast.success("Customer and property details loaded!");
+          }
+        } catch (error) {
+          console.error("Failed to fetch lead data:", error);
+          toast.error("Loaded customer but failed to fetch property details");
+        } finally {
+          setFetchingLeadDetails(false);
+        }
+      } else {
+        toast.success("Customer loaded (no property details found)");
+      }
+    } finally {
+      setFetchingCustomerDetails(false);
+    }
+  };
+
+  useEffect(() => {
+    if (searchQuery === "") {
+      setFormData((prev) => ({
+        ...prev,
+        customer_id: "",
+        lead_id: "",
+      }));
+    }
+  }, [searchQuery]);
+
+  useEffect(() => {
+    return () => {
+      if (searchTimeout) {
+        clearTimeout(searchTimeout);
+      }
+    };
+  }, [searchTimeout]);
+
+  useEffect(() => {
+    if (inquiry?.lead_name) {
+      const fetchCustomerData = async () => {
+        try {
+          const customer = await frappeAPI.getCustomerById(inquiry.lead_name);
+          setFormData((prev) => ({
+            ...prev,
+            lead_name: customer.data.customer_name || "",
+          }));
+          setSearchQuery(customer.data.customer_name || "");
+        } catch (error) {
+          console.error("Failed to fetch customer data:", error);
+        }
+      };
+
+      fetchCustomerData();
+    }
+  }, [inquiry?.lead_name]);
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (
+      [8, 9, 13, 16, 17, 18, 20, 27, 35, 36, 37, 38, 39, 40, 45, 46].includes(
+        e.keyCode
+      )
+    ) {
+      return;
+    }
+
+    const input = e.currentTarget;
+    if (input.selectionStart && input.selectionStart < 5) {
+      e.preventDefault();
+    }
   };
 
   if (!isOpen) return null;
@@ -499,6 +806,15 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                   createTodoLoading={createTodoLoading}
                   loading={loading}
                   showReferenceInput={showReferenceInput}
+                  searchQuery={searchQuery}
+                  searchResults={searchResults}
+                  showDropdown={showDropdown}
+                  isSearching={isSearching}
+                  handleSearchChange={handleSearchChange}
+                  handleCustomerSelect={handleCustomerSelect}
+                  handleAddNewCustomer={handleAddNewCustomer}
+                  fetchingCustomerDetails={fetchingCustomerDetails}
+                  fetchingLeadDetails={fetchingLeadDetails}
                 />
               ))}
 
@@ -533,12 +849,127 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Add Customer Dialog */}
+      <Dialog
+        open={showAddCustomerDialog}
+        onOpenChange={setShowAddCustomerDialog}
+      >
+        <DialogContent className="sm:max-w-[425px] bg-white">
+          <DialogHeader>
+            <DialogTitle>Add New Customer</DialogTitle>
+            <DialogDescription>
+              Fill in the details to create a new customer.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="customer_name">
+                Customer Name <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="customer_name"
+                name="customer_name"
+                value={newCustomerData.customer_name}
+                onChange={handleNewCustomerInputChange}
+                placeholder="Enter customer name"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="mobile_no">
+                Mobile Number <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                type="tel"
+                id="mobile_no"
+                name="mobile_no"
+                value={newCustomerData.mobile_no || "+971 "}
+                onChange={handlePhoneChange}
+                onKeyDown={handleKeyDown}
+                placeholder="+971 XX XXX XXXX"
+                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                maxLength={17}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="email_id">Email (Optional)</Label>
+              <Input
+                id="email_id"
+                name="email_id"
+                value={newCustomerData.email_id || ""}
+                onChange={handleNewCustomerInputChange}
+                placeholder="Enter email address"
+                type="email"
+              />
+            </div>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setShowAddCustomerDialog(false)}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleCreateCustomer} disabled={creatingCustomer}>
+              {creatingCustomer ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : null}
+              {creatingCustomer ? "Creating..." : "Create Customer"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };
 
 // Extracted Section component for better organization
-const Section = ({
+interface SectionProps {
+  section: FormSection;
+  activeSection: string;
+  toggleSection: (sectionId: string) => void;
+  formData: LeadFormData;
+  handleInputChange: (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => void;
+  handleSelectChange: (name: string, value: string) => void;
+  handleDateChange: (name: string, date: Date | undefined) => void;
+  handlePhoneChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  phoneNumber: string;
+  jobTypes: { name: string }[];
+  projectUrgency: { name: string }[];
+  utmSource: { name: string }[];
+  inspectors: {
+    full_name?: string | null;
+    name: string;
+  }[];
+  inspectorsLoading: boolean;
+  assignError: string | null;
+  assignSuccess: boolean;
+  date: Date | undefined;
+  priority: PriorityLevel;
+  setDate: (date: Date | undefined) => void;
+  setPriority: (priority: PriorityLevel) => void;
+  inspectorEmail: string;
+  setInspectorEmail: (email: string) => void;
+  handleAssignAndSave: () => Promise<void>;
+  createTodoLoading: boolean;
+  loading: boolean;
+  showReferenceInput: boolean;
+  searchQuery: string;
+  searchResults: any[];
+  showDropdown: boolean;
+  isSearching: boolean;
+  handleSearchChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  handleCustomerSelect: (customer: any) => void;
+  handleAddNewCustomer: () => void;
+  fetchingCustomerDetails: boolean;
+  fetchingLeadDetails: boolean;
+}
+
+const Section: React.FC<SectionProps> = ({
   section,
   activeSection,
   toggleSection,
@@ -565,36 +996,17 @@ const Section = ({
   createTodoLoading,
   loading,
   showReferenceInput,
-}: {
-  section: FormSection;
-  activeSection: string;
-  toggleSection: (sectionId: string) => void;
-  formData: LeadFormData;
-  handleInputChange: (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => void;
-  handleSelectChange: (name: string, value: string) => void;
-  handleDateChange: (name: string, date: Date | undefined) => void;
-  handlePhoneChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  phoneNumber: string;
-  jobTypes: { name: string }[];
-  projectUrgency: { name: string }[];
-  utmSource: { name: string }[];
-  inspectors: { name: string }[];
-  inspectorsLoading: boolean;
-  assignError: string | null;
-  assignSuccess: boolean;
-  date: Date | undefined;
-  priority: PriorityLevel;
-  setDate: (date: Date | undefined) => void;
-  setPriority: (priority: PriorityLevel) => void;
-  inspectorEmail: string;
-  setInspectorEmail: (email: string) => void;
-  handleAssignAndSave: () => Promise<void>;
-  createTodoLoading: boolean;
-  loading: boolean;
-  showReferenceInput: boolean;
+  searchQuery,
+  searchResults,
+  showDropdown,
+  isSearching,
+  handleSearchChange,
+  handleCustomerSelect,
+  handleAddNewCustomer,
+  fetchingCustomerDetails,
+  fetchingLeadDetails,
 }) => {
+  
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (
       [8, 9, 13, 16, 17, 18, 20, 27, 35, 36, 37, 38, 39, 40, 45, 46].includes(
@@ -609,6 +1021,12 @@ const Section = ({
       e.preventDefault();
     }
   };
+  const getCurrentTime = () => {
+  const now = new Date();
+  const hours = now.getHours().toString().padStart(2, '0');
+  const minutes = now.getMinutes().toString().padStart(2, '0');
+  return `${hours}:${minutes}`;
+};
 
   return (
     <div className="border border-gray-200 rounded-lg overflow-hidden">
@@ -645,60 +1063,165 @@ const Section = ({
         <div className="p-4 pt-2 space-y-4">
           {section.id === "contact" && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label
-                  htmlFor="lead_name"
-                  className="block text-sm font-medium text-gray-700 mb-1"
+              <div className="space-y-2 col-span-1 md:col-span-3 relative">
+                {" "}
+                {/* Added relative here */}
+                <Label
+                  htmlFor="customer_search"
+                  className="flex items-center space-x-2"
                 >
-                  Name <span className="text-red-500">*</span>
-                </label>
-                <Input
-                  type="text"
-                  id="lead_name"
-                  name="lead_name"
-                  value={formData.lead_name || ""}
-                  onChange={handleInputChange}
-                  required
-                  placeholder="Enter Name"
-                />
+                  <User className="h-4 w-4 text-gray-500" />
+                  <label className="block text-sm font-medium text-gray-700">
+                    Customer{" "}
+                    <span className="text-gray-500">(name/email/phone)</span>
+                    <span className="text-red-500 ml-1">*</span>
+                  </label>
+                  {(fetchingCustomerDetails || fetchingLeadDetails) && (
+                    <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
+                  )}
+                </Label>
+                <div className="relative">
+                  <Input
+                    id="customer_search"
+                    name="customer_search"
+                    value={searchQuery}
+                    onChange={handleSearchChange}
+                    placeholder="Search by name, phone, or email"
+                    required
+                    className="focus:ring-blue-500 focus:border-blue-500 pr-10 text-black w-full"
+                  />
+                  {isSearching && (
+                    <Loader2 className="absolute right-3 top-3 h-4 w-4 animate-spin text-gray-500" />
+                  )}
+                </div>
+                {showDropdown && (
+                  <div className="absolute z-10 mt-1 w-full bg-white shadow-lg rounded-md border border-gray-200 max-h-60 overflow-y-auto">
+                    {" "}
+                    {/* Changed to overflow-y-auto */}
+                    {searchResults.length > 0 ? (
+                      searchResults.map((customer) => (
+                        <div
+                          key={customer.name}
+                          className="px-4 pt-2  hover:bg-gray-100 cursor-pointer flex items-center min-w-0"
+                          onClick={() => handleCustomerSelect(customer)}
+                        >
+                          <div className="min-w-0 overflow-hidden flex-1">
+                            {" "}
+                            {/* Added flex-1 */}
+                            <p className="font-medium truncate">
+                              {customer.customer_name || customer.name}
+                            </p>
+                            <div className="text-xs text-gray-500 flex flex-col sm:flex-row sm:flex-wrap gap-1 sm:gap-2 mt-1">
+                              {" "}
+                              {/* Changed to column on mobile */}
+                              {customer.mobile_no && (
+                                <span className="flex items-center">
+                                  <Phone className="h-3 w-3 mr-1 flex-shrink-0" />
+                                  <span className="truncate">
+                                    {customer.mobile_no}
+                                  </span>
+                                </span>
+                              )}
+                              {customer.email_id && (
+                                <span className="flex items-center">
+                                  <Mail className="h-3 w-3 mr-1 flex-shrink-0" />
+                                  <span className="truncate">
+                                    {customer.email_id}
+                                  </span>
+                                </span>
+                              )}
+                              {customer.lead_name && (
+                                <span className="bg-green-100 text-green-800 px-1.5 py-0.5 rounded text-xs inline-flex items-center mt-1 sm:mt-0">
+                                  Has Property
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded flex-shrink-0 ml-2">
+                            Select
+                          </span>
+                        </div>
+                      ))
+                    ) : (
+                      <div
+                        className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center justify-between min-w-0"
+                        onClick={handleAddNewCustomer}
+                      >
+                        <div className="min-w-0 overflow-hidden">
+                          <p className="font-medium truncate">
+                            No customers found for "{searchQuery}"
+                          </p>
+                          <p className="text-xs text-gray-500 truncate">
+                            Click to add a new customer
+                          </p>
+                        </div>
+                        <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded flex-shrink-0">
+                          Add New
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
-              <div>
-                <label
-                  htmlFor="phone"
-                  className="block text-sm font-medium text-gray-700 mb-1"
-                >
-                  Phone Number
-                  <span className="text-red-500"> *</span>
-                </label>
-                <input
-                  type="tel"
-                  id="phone"
-                  name="mobile_no"
-                  value={formData.mobile_no || phoneNumber}
-                  onChange={handlePhoneChange}
-                  onKeyDown={handleKeyDown}
-                  placeholder="+971 XX XXX XXXX"
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  maxLength={17}
-                />
-              </div>
-              <div>
-                <label
-                  htmlFor="email_id"
-                  className="block text-sm font-medium text-gray-700 mb-1"
-                >
-                  Email
-                </label>
-                <Input
-                  type="email"
-                  id="email_id"
-                  name="email_id"
-                  value={formData.email_id || ""}
-                  onChange={handleInputChange}
-                  required
-                  placeholder="Enter Email"
-                />
-              </div>
+
+              {formData.lead_name && (
+                <>
+                  {/* <div>
+                    <label
+                      htmlFor="lead_name"
+                      className="block text-sm font-medium text-gray-700 mb-1"
+                    >
+                      Name <span className="text-red-500">*</span>
+                    </label>
+                    <Input
+                      type="text"
+                      id="lead_name"
+                      name="lead_name"
+                      value={formData.lead_name || ""}
+                      onChange={handleInputChange}
+                      required
+                      placeholder="Enter Name"
+                    />
+                  </div> */}
+                  <div>
+                    <label
+                      htmlFor="phone"
+                      className="block text-sm font-medium text-gray-700 mb-1"
+                    >
+                      Phone Number
+                      <span className="text-red-500"> *</span>
+                    </label>
+                    <input
+                      type="tel"
+                      id="phone"
+                      name="mobile_no"
+                      value={formData.mobile_no || phoneNumber}
+                      onChange={handlePhoneChange}
+                      onKeyDown={handleKeyDown}
+                      placeholder="+971 XX XXX XXXX"
+                      className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      maxLength={17}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label
+                      htmlFor="email_id"
+                      className="block text-sm font-medium text-gray-700 mb-1"
+                    >
+                      Email
+                    </label>
+                    <Input
+                      type="email"
+                      id="email_id"
+                      name="email_id"
+                      value={formData.email_id || ""}
+                      onChange={handleInputChange}
+                      placeholder="Enter Email"
+                    />
+                  </div>
+                </>
+              )}
               <div>
                 <label
                   htmlFor="utm_source"
@@ -876,18 +1399,24 @@ const Section = ({
                   type="date"
                   min={new Date().toISOString().split("T")[0]}
                   value={
-                    formData.custom_preferred_inspection_date
+                    date
+                      ? format(date, "yyyy-MM-dd")
+                      : formData.custom_preferred_inspection_date
                       ? new Date(formData.custom_preferred_inspection_date)
                           .toISOString()
                           .split("T")[0]
                       : ""
                   }
-                  onChange={(e) =>
+                  onChange={(e) => {
+                    const selectedDate = e.target.value
+                      ? new Date(e.target.value)
+                      : undefined;
+                    setDate(selectedDate);
                     handleDateChange(
                       "custom_preferred_inspection_date",
-                      e.target.value ? new Date(e.target.value) : undefined
-                    )
-                  }
+                      selectedDate
+                    );
+                  }}
                   className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-black shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
               </div>
@@ -903,7 +1432,10 @@ const Section = ({
                   type="time"
                   id="custom_preferred_inspection_time"
                   name="custom_preferred_inspection_time"
-                  value={formData.custom_preferred_inspection_time || ""}
+                  value={
+                    formData.custom_preferred_inspection_time ||
+                    getCurrentTime()
+                  }
                   onChange={handleInputChange}
                   className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-black shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
@@ -956,9 +1488,12 @@ const Section = ({
                   </SelectTrigger>
                   <SelectContent className="bg-white border border-gray-300 max-h-[200px]">
                     {inspectors.map((inspector) => (
-                      <SelectItem key={inspector.name} value={inspector.name}>
+                      <SelectItem
+                        key={inspector.full_name ?? inspector.name}
+                        value={inspector.name ?? ""}
+                      >
                         <div className="flex items-center gap-2">
-                          <span>{inspector.name}</span>
+                          <span>{inspector.full_name ?? inspector.name}</span>
                         </div>
                       </SelectItem>
                     ))}
@@ -987,11 +1522,36 @@ const Section = ({
                     <PopoverContent className="w-auto p-0 bg-white border border-gray-200 shadow-md">
                       <Calendar
                         mode="single"
-                        selected={date}
-                        onSelect={(selectedDate: Date | undefined) =>
-                          setDate(selectedDate)
+                        selected={
+                          date ||
+                          (formData.custom_preferred_inspection_date
+                            ? new Date(
+                                formData.custom_preferred_inspection_date
+                              )
+                            : undefined)
                         }
+                        onSelect={(selectedDate: Date | undefined) => {
+                          setDate(selectedDate);
+                          // Also update the form data if needed
+                          handleDateChange(
+                            "custom_preferred_inspection_date",
+                            selectedDate
+                          );
+                        }}
                         initialFocus
+                        disabled={
+                          (date) =>
+                            date < new Date(new Date().setHours(0, 0, 0, 0)) // Disable past dates
+                        }
+                        modifiers={{
+                          today: new Date(), // Highlight today's date
+                        }}
+                        modifiersStyles={{
+                          today: {
+                            border: "2px solid #059669", // emerald-600
+                            fontWeight: "bold",
+                          },
+                        }}
                       />
                     </PopoverContent>
                   </Popover>
@@ -1029,7 +1589,6 @@ const Section = ({
                     !inspectorEmail ||
                     !date ||
                     !formData.lead_name ||
-                    !formData.email_id ||
                     !formData.mobile_no ||
                     !formData.custom_job_type ||
                     (showReferenceInput && !formData.custom_reference_name)

@@ -261,87 +261,115 @@ export const useAssignStore = create<AssignStore>((set, get) => ({
   },
 
   fetchInspectors: async () => {
-    try {
-      set({ inspectorsLoading: true, error: null });
+  try {
+    set({ inspectorsLoading: true, error: null });
 
-      // Fetch all inspector users
-      const response = await frappeAPI.ispectionUser(); 
-      const users = response.data || [];
+    // Fetch all inspector users
+    const response = await frappeAPI.ispectionUser(); 
+    const users = response.data || [];
+    console.log('Fetched users:', users);
 
-      // Ensure proper mapping to Inspector interface
-      const inspectors: Inspector[] = users.map((user: any) => ({
-        name: user.name || user.email,
-        email: user.email,
-        full_name: user.full_name || user.name || user.email
-      }));
+    // Fetch detailed information for each user
+    const inspectorsPromises = users.map(async (user: any) => {
+      try {
+        // Fetch detailed user information
+        const userDetailsResponse = await frappeAPI.makeAuthenticatedRequest(
+          'GET', 
+          `/api/resource/User/${user.name}`
+        );
+        
+        const userDetails = userDetailsResponse.data;
+        
+        return {
+          name: userDetails.name || userDetails.email,
+          email: userDetails.email,
+          full_name: userDetails.full_name || userDetails.name || userDetails.email
+        };
+      } catch (err) {
+        console.error(`Error fetching details for user ${user.name}:`, err);
+        // Return basic info if detailed fetch fails
+        return {
+          name: user.name || user.email,
+          email: user.email,
+          full_name: user.name || user.email
+        };
+      }
+    });
 
-      set({ inspectors });
-    } catch (err: any) {
-      const errorMessage = err?.message || err?.response?.data?.message || 'Failed to fetch inspectors';
-      set({ error: errorMessage });
-      console.error('Error fetching inspectors:', err);
-    } finally {
-      set({ inspectorsLoading: false });
+    // Wait for all user details to be fetched
+    const inspectors = await Promise.all(inspectorsPromises);
+
+    set({ inspectors });
+  } catch (err: any) {
+    const errorMessage = err?.message || err?.response?.data?.message || 'Failed to fetch inspectors';
+    set({ error: errorMessage });
+    console.error('Error fetching inspectors:', err);
+  } finally {
+    set({ inspectorsLoading: false });
+  }
+},
+
+ createTodo: async (todoData: CreateTodoData) => {
+  try {
+    set({ createTodoLoading: true, error: null, success: false });
+
+    // 1. Prepare payload with debug info
+    const todoPayload = {
+      doctype: "ToDo",
+      status: "Open",
+      priority: todoData.priority || "Medium",
+      date: todoData.preferred_date,
+      allocated_to: todoData.inspector_email,
+      description: todoData.description || `Inspection for ${todoData.inquiry_id}`,
+      reference_type: "Lead",
+      reference_name: todoData.inquiry_id,
+      assigned_by: todoData.assigned_by || get().currentUserEmail,
+    };
+    console.log("ToDo Payload:", todoPayload);
+
+    // 2. Create ToDo
+    const todoResponse = await frappeAPI.toDo(todoPayload);
+    console.log("ToDo API Response:", todoResponse);
+    
+    if (!todoResponse.data || todoResponse.data.name === undefined) {
+      throw new Error("Invalid response from ToDo creation");
     }
-  },
 
-  createTodo: async (todoData: CreateTodoData) => {
+    // 3. Update Lead Status
+    const leadResponse = await frappeAPI.updateLead(todoData.inquiry_id, {
+      status: "Open"
+    });
+    console.log("Lead Status Update Response:", leadResponse);
 
-   
+    set({ success: true });
 
+    // Refresh data
+    setTimeout(() => {
+      const currentState = get();
+      currentState.fetchTodos();
+      currentState.fetchAvailableInquiries();
+      currentState.closeAssignForm();
+    }, 1000);
 
-    try {
-      set({ createTodoLoading: true, error: null, success: false });
+    return todoResponse.data.name; // Return the ToDo name if needed
 
-
-      // Prepare the todo payload
-      const todoPayload = {
-        status: 'Open',
-        priority: todoData.priority,
-        date: todoData.preferred_date,
-        allocated_to: todoData.inspector_email,
-        description: `${todoData.description}`,
-        reference_type: 'Lead',
-        reference_name: todoData.inquiry_id,
-        assigned_by: todoData.assigned_by || get().currentUserEmail, // Use current user email if not provided
-        doctype: 'ToDo'
-      };
-
-
-      // Create the todo
-       await frappeAPI.toDo(todoPayload);
-      
-
-      // Update the lead status to "Open" (assigned)
-       await frappeAPI.updateLead(todoData.inquiry_id, {
-        status: 'Open'
-      });
-
-      set({ success: true });
-
-      // Close the form after successful assignment
-      setTimeout(() => {
-        const currentState = get();
-        currentState.closeAssignForm();
-      }, 1500);
-
-      // Refresh the data
-      setTimeout(() => {
-        const currentState = get();
-        currentState.fetchTodos();
-        currentState.fetchAvailableInquiries();
-      }, 500);
-
-    } catch (err: any) {
-      const errorMessage = err?.message || err?.response?.data?.message || 'Failed to create todo';
-      set({ error: errorMessage });
-     
-      
-      // Don't throw the error, let the component handle it through the store state
-    } finally {
-      set({ createTodoLoading: false });
-    }
-  },
+  } catch (err: any) {
+    console.error("Detailed ToDo creation error:", {
+      error: err,
+      response: err?.response,
+      config: err?.config
+    });
+    
+    const errorMessage = err?.response?.data?.message 
+      || err?.message 
+      || "Failed to create ToDo";
+    
+    set({ error: errorMessage });
+    throw new Error(errorMessage); // Ensure error propagates
+  } finally {
+    set({ createTodoLoading: false });
+  }
+},
 
   resetStatus: () => {
     set({ error: null, success: false });

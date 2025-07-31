@@ -323,15 +323,13 @@ export default function InspectionDialog({
                   {inspectors.map((inspector) => (
                     <SelectItem
                       key={inspector.email}
-                      value={inspector.email || inspector.name}
+                      value={inspector.name || inspector.name}
                       className="break-words"
                     >
                       <div className="flex items-center gap-2">
                         <div>
-                          <span className="font-medium">{inspector.name}</span>
-                          <p className="text-xs text-gray-500">
-                            {inspector.email}
-                          </p>
+                          <span className="font-medium">{inspector.full_name}</span>
+                          
                         </div>
                       </div>
                     </SelectItem>

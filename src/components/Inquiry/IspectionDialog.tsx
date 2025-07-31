@@ -319,7 +319,7 @@ const IspectionDialog: React.FC<IspectionDialogProps> = ({
                     className="break-words"
                   >
                     <div className="flex items-center gap-2">
-                      <span>{inspector.name}</span>
+                      <span>{inspector.full_name}</span>
                     </div>
                   </SelectItem>
                 ))}
