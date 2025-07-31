@@ -278,8 +278,8 @@ const MobileInspectionList = ({ userEmail }: InspectionListProps) => {
 
                 {/* Description */}
                 {todo.description && (
-                  <div className=" border-t border-gray-100">
-                    <p className="text-md text-gray-600 line-clamp-2 lg:line-clamp-3">
+                  <div className=" border-t border-gray-100 pt-1">
+                    <p className="text-xs text-gray-600 line-clamp-2 lg:line-clamp-3">
                       {todo.description.replace(/<[^>]*>/g, "")}
                     </p>
                   </div>

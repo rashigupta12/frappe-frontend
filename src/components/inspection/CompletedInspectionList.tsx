@@ -366,7 +366,7 @@ const MobileSiteInspectionList = ({ userEmail }: InspectionListProps) => {
         </div>
         
         {/* Status Filter Pills */}
-        <div className="flex space-x-2 overflow-x-auto scrollbar-hide lg:flex-wrap lg:overflow-x-visible lg:space-x-2 lg:space-y-2">
+        <div className="flex space-x-2 overflow-x-auto scrollbar-hide lg:flex-wrap lg:overflow-x-visible lg:space-x-2 lg:space-y-2 pt-2">
           {statusFilters.map((filter) => (
             <button
               key={filter.id}

@@ -112,7 +112,7 @@ export default function InspectionDialog({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-2">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 ">
       <div className="bg-white rounded-lg w-full max-w-2xl shadow-xl relative max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="bg-gradient-to-r from-emerald-600 to-blue-600 p-4 text-white rounded-t-lg sticky top-0 z-10">
@@ -132,7 +132,7 @@ export default function InspectionDialog({
         </div>
 
         {/* Content */}
-        <div className="p-2">
+        <div className="p-4 ">
           {/* Basic Information - Static */}
           {/* <div className="bg-gray-50 p-4 rounded-lg">
             <h3 className="font-medium text-gray-900 mb-3">
@@ -168,11 +168,11 @@ export default function InspectionDialog({
             </div>
           </div> */}
 
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <h3 className="font-medium text-gray-900 mb-3">
+          <div className="bg-gray-50 p-4  rounded-lg">
+            <h3 className="font-medium text-gray-900 ">
               Basic Information
             </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+            <div className="grid grid-cols-1 sm:grid-cols-2  text-sm">
               <div className="break-words">
                 <span className="font-medium text-gray-600">Name:</span>
                 <span className="ml-2 text-gray-900">
@@ -204,7 +204,7 @@ export default function InspectionDialog({
           <div className="bg-gray-50 rounded-lg">
             <button
               onClick={() => setShowPropertyInfo(!showPropertyInfo)}
-              className="w-full p-4 flex items-center justify-between hover:bg-gray-100 rounded-lg transition-colors"
+              className="w-full px-4 flex items-center justify-between hover:bg-gray-100 rounded-lg transition-colors"
             >
               <h3 className="font-medium text-gray-900">
                 Property & Project Details
@@ -304,10 +304,9 @@ export default function InspectionDialog({
 
           {/* Editable Todo Information */}
           <div className="space-y-4 mt-4">
-            <h3 className="font-medium text-gray-900">Inspection Assignment</h3>
-
+           
             {/* Inspector */}
-            <div className="space-y-2">
+            <div className="space-y-2 px-4">
               <Label className="text-gray-700 text-sm font-medium">
                 Inspector <span className="text-red-500">*</span>
               </Label>
@@ -345,7 +344,7 @@ export default function InspectionDialog({
               )}
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-2 gap-4 ">
               {/* Inspection Date - Uncomment if needed */}
               <div className="space-y-2">
                 <Label className="text-gray-700 text-sm font-medium">

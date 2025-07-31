@@ -22,6 +22,8 @@ interface MediaUploadProps {
   onChange: (newValue: MediaItem[] | MediaItem | undefined) => void;
   maxFiles?: number;
   maxSizeMB?: number;
+  inspectionStatus?: string;
+  isReadOnly?: boolean; // Add this line
 }
 
 const MediaPreviewModal: React.FC<{
@@ -30,7 +32,8 @@ const MediaPreviewModal: React.FC<{
   media: MediaItem;
   onRemove: () => void;
   onEditRemark?: () => void;
-}> = ({ isOpen, onClose, media, onRemove, onEditRemark }) => {
+  inspectionStatus?: string;
+}> = ({ isOpen, onClose, media, onRemove, onEditRemark, inspectionStatus }) => {
   const imageurl = "https://eits.thebigocommunity.org";
 
   if (!isOpen) return null;
@@ -88,7 +91,9 @@ const MediaPreviewModal: React.FC<{
             <div className="flex items-start gap-3">
               <MessageSquare className="h-5 w-5 text-blue-400 mt-0.5 flex-shrink-0" />
               <div className="flex-1">
-                <h4 className="text-sm font-medium text-gray-200 mb-2">Remark</h4>
+                <h4 className="text-sm font-medium text-gray-200 mb-2">
+                  Remark
+                </h4>
                 <p className="text-sm text-gray-300 leading-relaxed">
                   {media.remarks}
                 </p>
@@ -112,6 +117,7 @@ const MediaPreviewModal: React.FC<{
             variant="destructive"
             className="flex-1 bg-red-600 hover:bg-red-700"
             onClick={onRemove}
+            disabled={inspectionStatus === "Completed"}
           >
             <Trash2 className="h-4 w-4 mr-2" />
             Delete
@@ -198,7 +204,15 @@ const DeleteConfirmationDialog: React.FC<{
   onConfirm: () => void;
   title?: string;
   message?: string;
-}> = ({ isOpen, onClose, onConfirm, title = "Remove Media File", message = "Are you sure you want to remove this media file? This action cannot be undone." }) => {
+  inspectionStatus?: string;
+}> = ({
+  isOpen,
+  onClose,
+  onConfirm,
+  title = "Remove Media File",
+  message = "Are you sure you want to remove this media file? This action cannot be undone.",
+  inspectionStatus,
+}) => {
   if (!isOpen) return null;
 
   return (
@@ -208,12 +222,8 @@ const DeleteConfirmationDialog: React.FC<{
           <div className="mx-auto w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
             <Trash2 className="w-8 h-8 text-red-600" />
           </div>
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">
-            {title}
-          </h3>
-          <p className="text-gray-600 text-sm">
-            {message}
-          </p>
+          <h3 className="text-xl font-semibold text-gray-900 mb-2">{title}</h3>
+          <p className="text-gray-600 text-sm">{message}</p>
         </div>
 
         <div className="flex gap-3">
@@ -224,6 +234,7 @@ const DeleteConfirmationDialog: React.FC<{
             onClick={onConfirm}
             variant="destructive"
             className="flex-1 bg-red-600 hover:bg-red-700"
+            disabled={inspectionStatus === "Completed"}
           >
             Remove
           </Button>
@@ -240,7 +251,9 @@ const AudioRecordingDialog: React.FC<{
 }> = ({ isOpen, onClose, onComplete }) => {
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
-  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
+  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(
+    null
+  );
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const startRecording = async () => {
@@ -462,6 +475,8 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
   onChange,
   maxFiles,
   maxSizeMB = 10,
+  inspectionStatus,
+  isReadOnly, // <-- add this line
 }) => {
   const imageurl = "https://eits.thebigocommunity.org";
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -471,7 +486,9 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
   const [showRecordingDialog, setShowRecordingDialog] = useState(false);
   const [showRemarksDialog, setShowRemarksDialog] = useState(false);
   const [showCameraOptions, setShowCameraOptions] = useState(false);
-  const [pendingMediaItem, setPendingMediaItem] = useState<MediaItem | null>(null);
+  const [pendingMediaItem, setPendingMediaItem] = useState<MediaItem | null>(
+    null
+  );
   const [editingRemark, setEditingRemark] = useState<string | null>(null);
   const [showCameraPreview, setShowCameraPreview] = useState(false);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
@@ -504,20 +521,20 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
       const updatedItems = currentMediaItems.filter(
         (item) => item.id !== mediaToDelete
       );
-      
+
       // Optimistically update local state
       setCurrentMediaItems(updatedItems);
-      
+
       // Update parent component
       if (multiple) {
         onChange(updatedItems.length > 0 ? updatedItems : undefined);
       } else {
         onChange(undefined);
       }
-      
+
       toast.success("Media file removed.");
     }
-    
+
     setShowDeleteConfirm(false);
     setMediaToDelete(null);
     setModalOpen(false);
@@ -536,9 +553,11 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
   const handleRemoveFromModal = () => {
     if (selectedMedia) {
       // Optimistically update UI
-      const tempItems = currentMediaItems.filter(item => item.id !== selectedMedia.id);
+      const tempItems = currentMediaItems.filter(
+        (item) => item.id !== selectedMedia.id
+      );
       setCurrentMediaItems(tempItems);
-      
+
       setMediaToDelete(selectedMedia.id);
       setShowDeleteConfirm(true);
     }
@@ -642,7 +661,7 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
 
       const updatedItems = [...currentMediaItems, updatedMediaItem];
       setCurrentMediaItems(updatedItems);
-      
+
       if (multiple) {
         onChange(updatedItems);
       } else {
@@ -655,9 +674,9 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
       const updatedItems = currentMediaItems.map((item) =>
         item.id === editingRemark ? { ...item, remarks: remark } : item
       );
-      
+
       setCurrentMediaItems(updatedItems);
-      
+
       if (multiple) {
         onChange(updatedItems);
       } else {
@@ -669,7 +688,9 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
     }
   };
 
-  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const files = event.target.files;
     if (!files || files.length === 0) return;
 
@@ -790,11 +811,36 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
     setShowRemarksDialog(true);
   };
 
+  // const handleClearAll = () => {
+  //   if (currentMediaItems.length === 0) {
+  //     toast.error("No media files to clear.");
+  //     return;
+  //   }
+  //   if (
+  //     !window.confirm(
+  //       "Are you sure you want to clear all media files? This action cannot be undone."
+  //     )
+  //   ) {
+  //     return;
+  //   }
+
+  //   setCurrentMediaItems([]);
+  //   if (multiple) {
+  //     onChange([]);
+  //     toast.success("All media files cleared.");
+  //   }
+  // };
   const handleClearAll = () => {
+    if (inspectionStatus === "Completed") {
+      toast.error("Cannot clear media for a completed inspection.");
+      return;
+    }
+
     if (currentMediaItems.length === 0) {
       toast.error("No media files to clear.");
       return;
     }
+
     if (
       !window.confirm(
         "Are you sure you want to clear all media files? This action cannot be undone."
@@ -802,14 +848,13 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
     ) {
       return;
     }
-    
+
     setCurrentMediaItems([]);
     if (multiple) {
       onChange([]);
       toast.success("All media files cleared.");
     }
   };
-
   const openMediaModal = (media: MediaItem) => {
     setSelectedMedia(media);
     setModalOpen(true);
@@ -904,7 +949,12 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
               type="button"
               variant="outline"
               onClick={handleClearAll}
-              className="h-14 w-14 rounded-2xl border-2 border-dashed border-red-300 hover:border-red-500 hover:bg-red-50 transition-all duration-200 flex items-center justify-center"
+              disabled={isReadOnly || inspectionStatus === "Completed"}
+              className={`h-14 w-14 rounded-2xl border-2 border-dashed ${
+                isReadOnly || inspectionStatus === "Completed"
+                  ? "border-gray-300 cursor-not-allowed"
+                  : "border-red-300 hover:border-red-500 hover:bg-red-50"
+              } transition-all duration-200 flex items-center justify-center`}
             >
               <Trash2 className="h-6 w-6 text-red-600" />
             </Button>
@@ -919,9 +969,7 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
         <div className="mt-4 space-y-2">
           <div className="flex justify-between text-sm">
             <span className="text-gray-600">Uploading...</span>
-            <span className="text-blue-600">
-              {Math.round(uploadProgress)}%
-            </span>
+            <span className="text-blue-600">{Math.round(uploadProgress)}%</span>
           </div>
           <Progress value={uploadProgress} className="h-2" />
         </div>
@@ -944,7 +992,7 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
                 key={media.id}
                 className="relative group aspect-square rounded-xl overflow-hidden bg-gray-100 cursor-pointer hover:shadow-lg transition-all duration-200"
               >
-                <div 
+                <div
                   className="w-full h-full"
                   onClick={() => openMediaModal(media)}
                 >
@@ -978,7 +1026,12 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
 
                 <button
                   onClick={(e) => handleDeleteClick(e, media.id)}
-                  className="absolute top-2 right-2 p-1 bg-red-500 hover:bg-red-600 rounded-full text-white shadow-md transition-all duration-200 z-10"
+                  disabled={isReadOnly || inspectionStatus === "Completed"}
+                  className={`absolute top-2 right-2 p-1 rounded-full text-white shadow-md transition-all duration-200 z-10 ${
+                    isReadOnly || inspectionStatus === "Completed"
+                      ? "bg-gray-400 cursor-not-allowed"
+                      : "bg-red-500 hover:bg-red-600"
+                  }`}
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -1073,14 +1126,13 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
         </div>
       )}
 
-      {/* DELETE CONFIRMATION DIALOG - NEW */}
       <DeleteConfirmationDialog
         isOpen={showDeleteConfirm}
         onClose={handleCancelDelete}
         onConfirm={handleConfirmDelete}
+        inspectionStatus={inspectionStatus}
       />
 
-      {/* Modals */}
       {selectedMedia && (
         <MediaPreviewModal
           isOpen={modalOpen}
@@ -1091,6 +1143,7 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
           media={selectedMedia}
           onRemove={handleRemoveFromModal}
           onEditRemark={() => handleEditRemark(selectedMedia.id)}
+          inspectionStatus={inspectionStatus}
         />
       )}
 

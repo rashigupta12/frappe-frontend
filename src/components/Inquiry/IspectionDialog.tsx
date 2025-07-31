@@ -144,13 +144,13 @@ const IspectionDialog: React.FC<IspectionDialogProps> = ({
         </div>
 
         {/* Content */}
-        <div className="p-4 space-y-4">
+        <div className="p-4 ">
           {/* Basic Inquiry Info */}
           <div className="bg-gray-50 p-4 rounded-lg">
             <h3 className="font-medium text-gray-900 mb-3">
               Basic Information
             </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+            <div className="grid grid-cols-1 sm:grid-cols-2 text-sm">
               <div className="break-words">
                 <span className="font-medium text-gray-600">Name:</span>
                 <span className="ml-2 text-gray-900">
@@ -172,7 +172,7 @@ const IspectionDialog: React.FC<IspectionDialogProps> = ({
             </div>
             <div className="break-words">
               <span className="font-medium text-gray-600">Budget Range:</span>
-              <span className="ml-2 text-gray-900">
+              <span className="ml-2 text-gray-900 text-sm">
                 {inquiry?.custom_budget_range || "N/A"}
               </span>
             </div>
@@ -182,7 +182,7 @@ const IspectionDialog: React.FC<IspectionDialogProps> = ({
           <div className="bg-gray-50 rounded-lg">
             <button
               onClick={() => setShowPropertyInfo(!showPropertyInfo)}
-              className="w-full p-4 flex items-center justify-between hover:bg-gray-100 rounded-lg transition-colors"
+              className="w-full px-4 flex items-center justify-between hover:bg-gray-100 rounded-lg transition-colors"
             >
               <h3 className="font-medium text-gray-900">
                 Property & Project Details
@@ -295,7 +295,7 @@ const IspectionDialog: React.FC<IspectionDialogProps> = ({
           )}
 
           {/* Inspector Selection */}
-          <div className="space-y-2">
+          <div className="space-y-2 px-4">
             <Label className="text-gray-700 text-sm font-medium">
               Select Inspector <span className="text-red-500">*</span>
             </Label>
@@ -330,7 +330,7 @@ const IspectionDialog: React.FC<IspectionDialogProps> = ({
           </div>
 
           {/* Date and Priority Selection */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 px-4">
             {/* <div className="space-y-2">
               <Label className="text-gray-700 text-sm font-medium">
                 Inspection Date <span className="text-red-500">*</span>
@@ -362,7 +362,7 @@ const IspectionDialog: React.FC<IspectionDialogProps> = ({
               </Popover>
             </div> */}
 
-            <div className="space-y-2">
+            <div className="space-y-2 ">
               <Label className="text-gray-700 text-sm font-medium">
                 Priority
               </Label>
@@ -398,7 +398,7 @@ const IspectionDialog: React.FC<IspectionDialogProps> = ({
           </div>
 
           {/* Description */}
-          <div className="space-y-2">
+          <div className="space-y-2 px-4">
             <Label className="text-gray-700 text-sm font-medium">
               Description/Special Requirements
             </Label>

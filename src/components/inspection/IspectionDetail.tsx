@@ -69,6 +69,9 @@ const CreateInspection = () => {
   // Extract state once and memoize
   const locationState = useMemo(() => location.state || {}, [location.state]);
   const { todo, inspection } = locationState;
+  console.log("CreateInspection location state:", locationState);
+  console.log("CreateInspection todo:", todo);
+  console.log("CreateInspection inspection:", inspection);
 
   const [loading, setLoading] = useState(false);
   const [cancelling, setCancelling] = useState(false);
@@ -80,7 +83,6 @@ const CreateInspection = () => {
   const [dimensionToDelete, setDimensionToDelete] = useState<number | null>(
     null
   );
-
 
   // Memoize computed values
   const isSubmitted = useMemo(
@@ -652,7 +654,7 @@ const CreateInspection = () => {
                           </div>
                         </AccordionContent>
                       </AccordionItem>
-                     
+
                       {/* Site Dimensions Section - Optimized */}
                       <AccordionItem
                         value="dimensions"
@@ -769,8 +771,6 @@ const CreateInspection = () => {
                                       )}
                                     /> */}
 
-                                    
-
                                     <FormField
                                       control={form.control}
                                       name={`site_dimensions.${index}.area_name`}
@@ -856,6 +856,7 @@ const CreateInspection = () => {
                                           <FormLabel className="text-gray-700 text-xs font-medium">
                                             📷 Photo/Video
                                           </FormLabel>
+
                                           <MediaUpload
                                             label=""
                                             multiple={false}
@@ -868,7 +869,10 @@ const CreateInspection = () => {
                                             onChange={(newMedia) => {
                                               mediaField.onChange(newMedia);
                                             }}
-                                            
+                                            inspectionStatus={form.watch(
+                                              "inspection_status"
+                                            )}
+                                            isReadOnly={isReadOnly}
                                           />
                                           <FormMessage className="text-xs" />
                                         </FormItem>
@@ -895,7 +899,10 @@ const CreateInspection = () => {
                                             onChange={(newMedia) => {
                                               mediaField.onChange(newMedia);
                                             }}
-                                            
+                                            inspectionStatus={form.watch(
+                                              "inspection_status"
+                                            )}
+                                            isReadOnly={isReadOnly}
                                           />
                                           <FormMessage className="text-xs" />
                                         </FormItem>
@@ -946,6 +953,10 @@ const CreateInspection = () => {
                                   onChange={(newMedia) => {
                                     field.onChange(newMedia);
                                   }}
+                                  inspectionStatus={form.watch(
+                                    "inspection_status"
+                                  )}
+                                  isReadOnly={isReadOnly}
                                 />
                                 <FormMessage />
                               </FormItem>
@@ -980,6 +991,10 @@ const CreateInspection = () => {
                                   onChange={(newMedia) => {
                                     field.onChange(newMedia);
                                   }}
+                                  inspectionStatus={form.watch(
+                                    "inspection_status"
+                                  )}
+                                  isReadOnly={isReadOnly}
                                 />
                                 <FormMessage />
                               </FormItem>

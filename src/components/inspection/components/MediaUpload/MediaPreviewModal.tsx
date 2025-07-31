@@ -61,6 +61,7 @@ const MediaPreviewModal: React.FC<MediaPreviewModalProps> = ({
           )}
 
           {/* Close button */}
+          
           <Button
             variant="ghost"
             size="icon"

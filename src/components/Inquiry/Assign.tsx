@@ -99,7 +99,8 @@ export default function TodoPage() {
     const matchesStatus =
       selectedStatus === "All" ||
       (selectedStatus === "Open" && todo.status === "Open") ||
-      (selectedStatus === "Completed" && todo.status === "Completed");
+      (selectedStatus === "Completed" && todo.status === "Completed")||
+      (selectedStatus === "Cancelled" && todo.status === "Cancelled");
 
     const matchesPriority =
       selectedPriority === "All" || todo.priority === selectedPriority;
@@ -204,6 +205,7 @@ export default function TodoPage() {
                       <SelectItem value="All">All Status</SelectItem>
                       <SelectItem value="Open">Open</SelectItem>
                       <SelectItem value="Completed">Completed</SelectItem>
+                      <SelectItem value="Cancelled">Cancelled</SelectItem>
                     </SelectContent>
                   </Select>
 
