@@ -141,7 +141,27 @@ const CreateInspection = () => {
   // Memoize formatDimensionsData to prevent recreation
   const formatDimensionsData = useCallback((siteDimensions: any[]) => {
     return siteDimensions.map((dim: any) => {
-      const mediaType = getMediaType(dim.media);
+      // Parse the images JSON string if it exists
+      const images = dim.media ? JSON.parse(dim.media) : [];
+
+      const formattedImages = images
+        .map((img: any) => {
+          const mediaType = getMediaType(img.image_url);
+          // Ensure only image or video types
+          if (mediaType !== "image" && mediaType !== "video") {
+            return null;
+          }
+          return {
+            id: `${img.image_url.split("/").pop()}-${Math.random()
+              .toString(36)
+              .substr(2, 9)}`,
+            url: img.image_url,
+            type: mediaType as "image" | "video", // Explicit type
+            remarks: img.image_url.split("/").pop(),
+          };
+        })
+        .filter((img: any) => img !== null);
+
       const media2Type = getMediaType(dim.media_2);
       return {
         floor: dim.floor || "",
@@ -149,25 +169,15 @@ const CreateInspection = () => {
         entity: dim.entity || "",
         area_name: dim.area_name || "",
         dimensionsunits: dim.dimensionsunits || "",
-        media:
-          dim.media && mediaType !== "unknown"
-            ? {
-                id: `${dim.media.split("/").pop()}-${Math.random()
-                  .toString(36)
-                  .substr(2, 9)}`,
-                url: typeof dim.media === "string" ? dim.media : "",
-                type: mediaType,
-                remarks: dim.media.split("/").pop(),
-              }
-            : undefined,
+        images: formattedImages,
         media_2:
-          dim.media_2 && media2Type !== "unknown"
+          dim.media_2 && media2Type === "audio"
             ? {
                 id: `${dim.media_2.split("/").pop()}-${Math.random()
                   .toString(36)
                   .substr(2, 9)}`,
                 url: typeof dim.media_2 === "string" ? dim.media_2 : "",
-                type: media2Type,
+                type: "audio" as const, // Explicit audio type
                 remarks: dim.media_2.split("/").pop(),
               }
             : undefined,
@@ -363,15 +373,19 @@ const CreateInspection = () => {
 
         const measurementSketchUrl =
           values.measurement_sketch?.url || undefined;
+
         const siteDimensionsWithUrls = values.site_dimensions?.map((dim) => ({
           floor: dim.floor || "",
           room: dim.room || "",
           entity: dim.entity || "",
           area_name: dim.area_name,
           dimensionsunits: dim.dimensionsunits,
-          media: dim.media?.url || "",
+          media: JSON.stringify(
+            dim.images?.map((img) => ({ image_url: img.url })) || "[]"
+          ), // Convert to JSON string
           media_2: dim.media_2?.url || "",
         }));
+
         const customSiteImagesWithUrls = values.custom_site_images
           ?.filter((img) => typeof img.url === "string")
           ?.map((img) => ({
@@ -502,17 +516,13 @@ const CreateInspection = () => {
     append({
       area_name: "",
       dimensionsunits: "",
-      media: undefined,
+      images: [],
       media_2: undefined,
     });
   }, [append]);
 
   // Memoize default accordion value to prevent recreation
   const defaultAccordionValue = useMemo(() => ["dimensions"], []);
-  // const accordionFieldsValue = useMemo(
-  //   () => fields.map((_, index) => `area-${index}`),
-  //   [fields]
-  // );
 
   if (!dataLoaded) {
     return (
@@ -655,7 +665,7 @@ const CreateInspection = () => {
                         </AccordionContent>
                       </AccordionItem>
 
-                      {/* Site Dimensions Section - Optimized */}
+                      {/* Site Dimensions Section */}
                       <AccordionItem
                         value="dimensions"
                         className="border border-gray-200 rounded-lg"
@@ -750,27 +760,6 @@ const CreateInspection = () => {
 
                                   {/* Row 2: Entity and Area Name */}
                                   <div className="grid grid-cols-2 gap-3">
-                                    {/* <FormField
-                                      control={form.control}
-                                      name={`site_dimensions.${index}.entity`}
-                                      render={({ field: entityField }) => (
-                                        <FormItem>
-                                          <FormLabel className="text-gray-700 text-xs font-medium">
-                                            Entity
-                                          </FormLabel>
-                                          <FormControl>
-                                            <Input
-                                              placeholder="Wall"
-                                              disabled={isReadOnly}
-                                              className="bg-white border-gray-300 h-8 text-sm"
-                                              {...entityField}
-                                            />
-                                          </FormControl>
-                                          <FormMessage className="text-xs" />
-                                        </FormItem>
-                                      )}
-                                    /> */}
-
                                     <FormField
                                       control={form.control}
                                       name={`site_dimensions.${index}.area_name`}
@@ -819,55 +808,27 @@ const CreateInspection = () => {
                                     />
                                   </div>
 
-                                  {/* Row 3: Dimensions - Full Width */}
-                                  {/* <div className="grid grid-cols-1">
-                                    <FormField
-                                      control={form.control}
-                                      name={`site_dimensions.${index}.dimensionsunits`}
-                                      render={({ field: dimensionsField }) => (
-                                        <FormItem>
-                                          <FormLabel className="text-gray-700 text-xs font-medium">
-                                            Dimensions/Units{" "}
-                                            <span className="text-red-500">
-                                              *
-                                            </span>
-                                          </FormLabel>
-                                          <FormControl>
-                                            <Input
-                                              placeholder="e.g., 10x12 ft"
-                                              disabled={isReadOnly}
-                                              className="bg-white border-gray-300 h-8 text-sm"
-                                              {...dimensionsField}
-                                            />
-                                          </FormControl>
-                                          <FormMessage className="text-xs" />
-                                        </FormItem>
-                                      )}
-                                    />
-                                  </div> */}
-
                                   {/* Media Upload - Compact Layout */}
                                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                     <FormField
                                       control={form.control}
-                                      name={`site_dimensions.${index}.media`}
-                                      render={({ field: mediaField }) => (
+                                      name={`site_dimensions.${index}.images`}
+                                      render={({ field: imagesField }) => (
                                         <FormItem>
                                           <FormLabel className="text-gray-700 text-xs font-medium">
-                                            📷 Photo/Video
+                                            📷 Photos/Videos
                                           </FormLabel>
-
                                           <MediaUpload
                                             label=""
-                                            multiple={false}
+                                            multiple={true}
                                             allowedTypes={["image", "video"]}
                                             value={
-                                              mediaField.value as
-                                                | MediaItem
+                                              imagesField.value as
+                                                | MediaItem[]
                                                 | undefined
                                             }
                                             onChange={(newMedia) => {
-                                              mediaField.onChange(newMedia);
+                                              imagesField.onChange(newMedia);
                                             }}
                                             inspectionStatus={form.watch(
                                               "inspection_status"
@@ -890,7 +851,7 @@ const CreateInspection = () => {
                                           <MediaUpload
                                             label=""
                                             multiple={false}
-                                            allowedTypes={["audio"]}
+                                            allowedTypes={["audio"]} // Only audio allowed
                                             value={
                                               mediaField.value as
                                                 | MediaItem
@@ -926,6 +887,7 @@ const CreateInspection = () => {
                           </div>
                         </AccordionContent>
                       </AccordionItem>
+
                       {/* Custom Images Section */}
                       <AccordionItem
                         value="custom-images"
@@ -964,6 +926,7 @@ const CreateInspection = () => {
                           />
                         </AccordionContent>
                       </AccordionItem>
+
                       {/* Measurement Sketch Section */}
                       <AccordionItem
                         value="measurement-sketch"
@@ -1002,6 +965,7 @@ const CreateInspection = () => {
                           />
                         </AccordionContent>
                       </AccordionItem>
+
                       {/* Notes Section */}
                       <AccordionItem
                         value="notes"

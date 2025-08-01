@@ -12,6 +12,7 @@ interface ImageItem {
   url: string;
   file?: File;
   remarks?: string;
+  type: 'image' | 'pdf' | 'doc'; // Changed from optional to required
 }
 
 const PaymentForm = () => {
@@ -74,92 +75,112 @@ const PaymentForm = () => {
   }, [paid_to, searchQuery]);
 
   // Convert custom_attachments to images format
-  useEffect(() => {
-    const convertedImages: ImageItem[] = custom_attachments.map(
-      (attachment, index) => {
-        let url = attachment.image;
-        if (!url.startsWith("http") && !url.startsWith("/")) {
-          url = `/${url}`;
-        }
-        return {
-          id: `existing-${index}-${url}`,
-          url: url,
-          remarks: attachment.remarks || `Attachment ${index + 1}`,
-        };
+useEffect(() => {
+  const convertedImages: ImageItem[] = custom_attachments.map(
+    (attachment, index) => {
+      let url = attachment.image;
+      if (!url.startsWith("http") && !url.startsWith("/")) {
+        url = `/${url}`;
       }
-    );
-    setImages(convertedImages);
-  }, [custom_attachments]);
+      
+      // Determine file type from URL
+      let type: 'image' | 'pdf' | 'doc' = 'image';
+      if (url.toLowerCase().endsWith('.pdf')) {
+        type = 'pdf';
+      } else if (url.toLowerCase().endsWith('.doc') || url.toLowerCase().endsWith('.docx')) {
+        type = 'doc';
+      }
+      
+      return {
+        id: `existing-${index}-${url}`,
+        url: url,
+        remarks: attachment.remarks || `Attachment ${index + 1}`,
+        type: type
+      };
+    }
+  );
+  setImages(convertedImages);
+}, [custom_attachments]);
 
   const handleSupplierSearch = useCallback(async (query: string) => {
-    if (!query.trim()) {
+  if (!query.trim()) {
+    setSearchResults([]);
+    setShowDropdown(false);
+    return;
+  }
+
+  setIsSearching(true);
+
+  try {
+    const endpoint = "/api/method/eits_app.supplier_search.search_suppliers";
+    const params = new URLSearchParams();
+
+    if (/^\d+$/.test(query)) {
+      // Search by phone number (only digits)
+      params.append("mobile_no", query);
+    } else if (/^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(query)) {
+      // Search by email (strict email format)
+      params.append("email_id", query);
+      const emailResponse = await frappeAPI.makeAuthenticatedRequest(
+        "GET",
+        `${endpoint}?${params.toString()}`
+      );
+
+      // If no email results, try name search
+      if (!emailResponse.message.data?.length) {
+        params.delete("email_id");
+        params.append("supplier_name", query);
+      }
+    } else {
+      // Search by name
+      params.append("supplier_name", query);
+    }
+
+    const response = await frappeAPI.makeAuthenticatedRequest(
+      "GET",
+      `${endpoint}?${params.toString()}`
+    );
+
+    if (!response.message || !Array.isArray(response.message.data)) {
+      throw new Error("Invalid response format");
+    }
+
+    const suppliers = response.message.data;
+    setShowDropdown(true);
+
+    if (suppliers.length === 0) {
       setSearchResults([]);
-      setShowDropdown(false);
       return;
     }
 
-    setIsSearching(true);
-    try {
-      let response;
+    const detailedSuppliers = await Promise.all(
+      suppliers.map(async (supplier: { name: string }) => {
+        try {
+          const supplierDetails = await frappeAPI.getSupplierById(supplier.name);
+          return supplierDetails.data;
+        } catch (error) {
+          console.error(
+            `Failed to fetch details for supplier ${supplier.name}:`,
+            error
+          );
+          return null;
+        }
+      })
+    );
 
-      if (/^\d+$/.test(query)) {
-        response = await frappeAPI.makeAuthenticatedRequest(
-          "GET",
-          `/api/method/eits_app.supplier_search.search_suppliers?mobile_no=${query}`
-        );
-      } else if (query.includes("@")) {
-        response = await frappeAPI.makeAuthenticatedRequest(
-          "GET",
-          `/api/method/eits_app.supplier_search.search_suppliers?email_id=${query}`
-        );
-      } else {
-        response = await frappeAPI.makeAuthenticatedRequest(
-          "GET",
-          `/api/method/eits_app.supplier_search.search_suppliers?supplier_name=${query}`
-        );
-      }
-
-      if (!response.message || !Array.isArray(response.message.data)) {
-        throw new Error("Invalid response format");
-      }
-
-      const suppliers = response.message.data;
-      setShowDropdown(true);
-
-      if (suppliers.length === 0) {
-        setSearchResults([]);
-        return;
-      }
-
-      const detailedSuppliers = await Promise.all(
-        suppliers.map(async (supplier: { name: any }) => {
-          try {
-            const supplierDetails = await frappeAPI.getSupplierById(
-              supplier.name
-            );
-            return supplierDetails.data;
-          } catch (error) {
-            console.error(
-              `Failed to fetch details for supplier ${supplier.name}:`,
-              error
-            );
-            return null;
-          }
-        })
-      );
-
-      const validSuppliers = detailedSuppliers.filter(
-        (supplier) => supplier !== null
-      );
-      setSearchResults(validSuppliers);
-    } catch (error) {
-      console.error("Search error:", error);
-      setSearchResults([]);
-      setShowDropdown(true);
-    } finally {
-      setIsSearching(false);
-    }
-  }, []);
+    const validSuppliers = detailedSuppliers.filter(
+      (supplier) => supplier !== null
+    );
+    setSearchResults(validSuppliers);
+  } catch (error) {
+    console.error("Search error:", error);
+    setSearchResults([]);
+    setShowDropdown(true);
+    toast.error("Failed to search suppliers. Please try again.");
+  } finally {
+    setIsSearching(false);
+  }
+}, []);
 
   // Update the handleSearchChange function to reset paid_to when clearing search
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -282,31 +303,47 @@ const PaymentForm = () => {
     setField(field, value);
   };
 
-  const handleImagesChange = (newImages: ImageItem[]) => {
-    setImages(newImages);
-    const convertedAttachments = newImages.map((image) => ({
-      image: image.url,
-      remarks: image.remarks || "",
-    }));
-    setField("custom_attachments", convertedAttachments);
-  };
+const handleImagesChange = (newImages: ImageItem[]) => {
+  setImages(newImages);
+  const convertedAttachments = newImages.map((image) => ({
+    image: image.url,
+    remarks: image.remarks || "",
+  }));
+  setField("custom_attachments", convertedAttachments);
+};
 
-  const handleImageUpload = async (file: File): Promise<string> => {
-    try {
-      await uploadAndAddAttachment(file);
-      await new Promise((resolve) => setTimeout(resolve, 200));
-      const latestAttachment =
-        custom_attachments[custom_attachments.length - 1];
-      let imageUrl = latestAttachment.image;
-      if (!imageUrl.startsWith("http") && !imageUrl.startsWith("/")) {
-        imageUrl = `/${imageUrl}`;
-      }
-      return imageUrl;
-    } catch (error) {
-      console.error("Upload error:", error);
-      throw error;
+const handleImageUpload = async (file: File): Promise<string> => {
+  try {
+    // First upload the file
+    await uploadAndAddAttachment(file);
+    
+    // Wait for the store to update (you might need to adjust this delay)
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    
+    // Get the latest attachment safely
+    if (!custom_attachments || custom_attachments.length === 0) {
+      throw new Error("No attachments found after upload");
     }
-  };
+    
+    const latestAttachment = custom_attachments[custom_attachments.length - 1];
+    
+    // Ensure the URL is properly formatted
+    let imageUrl = latestAttachment.image;
+    if (!imageUrl) {
+      throw new Error("Attachment URL is missing");
+    }
+    
+    if (!imageUrl.startsWith("http") && !imageUrl.startsWith("/")) {
+      imageUrl = `/${imageUrl}`;
+    }
+    
+    return imageUrl;
+  } catch (error) {
+    console.error("Upload error:", error);
+    toast.error("Failed to upload file. Please try again.");
+    throw error;
+  }
+};
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -408,7 +445,10 @@ const PaymentForm = () => {
           {/* Payment Evidence Section */}
           <div>
             <label className="block text-sm md:text-base font-medium text-gray-700 mb-2">
-              Upload Image <span className="text-red-500">*</span>
+              Upload Payment Evidence <span className="text-red-500">*</span>
+              <span className="block text-xs text-gray-500 mt-1">
+                (Supports images, PDF, and Word documents)
+              </span>
             </label>
             <PaymentImageUpload
               images={images}
@@ -418,8 +458,8 @@ const PaymentForm = () => {
               maxSizeMB={10}
             />
             {images.length === 0 && (
-              <p className=" text-xs text-red-500">
-                At least one payment evidence image is required
+              <p className="text-xs text-red-500 mt-1">
+                At least one payment evidence file is required
               </p>
             )}
           </div>
@@ -772,7 +812,7 @@ const PaymentForm = () => {
               <div className="mt-6 flex justify-end space-x-3">
                 <button
                   type="button"
-                   onClick={handleCloseSupplierDialog}
+                  onClick={handleCloseSupplierDialog}
                   className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   Cancel

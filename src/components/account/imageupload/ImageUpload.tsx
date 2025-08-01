@@ -1,4 +1,12 @@
-import { Camera, Trash2, Upload, X } from "lucide-react";
+import {
+  Camera,
+  Trash2,
+  Upload,
+  X,
+  FileText,
+  Image as ImageIcon,
+  Download,
+} from "lucide-react";
 import React, { useRef, useState } from "react";
 import { toast } from "react-hot-toast";
 
@@ -7,6 +15,7 @@ interface ImageItem {
   url: string;
   file?: File;
   remarks?: string;
+  type: "image" | "pdf" | "doc";
 }
 
 interface PaymentImageUploadProps {
@@ -40,9 +49,8 @@ const ImagePreviewModal: React.FC<{
   };
 
   const handleDelete = () => {
-    if (window.confirm("Are you sure you want to delete this image?")) {
+    if (window.confirm("Are you sure you want to delete this file?")) {
       onDelete(currentIndex);
-      // Adjust current index after deletion
       if (currentIndex >= images.length - 1 && images.length > 1) {
         onIndexChange(currentIndex - 1);
       } else if (images.length === 1) {
@@ -50,28 +58,34 @@ const ImagePreviewModal: React.FC<{
       }
     }
   };
-  // In ImagePreviewModal component
+
   const getImageUrl = (image: ImageItem) => {
-    // If URL is already complete (starts with http) or is a blob URL
     if (image.url.startsWith("http") || image.url.startsWith("blob:")) {
       return image.url;
     }
-    // If URL starts with / (like "/files/image.jpeg")
     if (image.url.startsWith("/")) {
       return `${imageurl}${image.url}`;
     }
-    // Otherwise assume it's a relative path
     return `${imageurl}/${image.url}`;
   };
 
-  // Then use it like this:
+  const getFileIcon = (type: string) => {
+    switch (type) {
+      case "pdf":
+        return <FileText className="h-20 w-20 text-red-500" />;
+      case "doc":
+        return <FileText className="h-20 w-20 text-blue-500" />;
+      default:
+        return <ImageIcon className="h-20 w-20 text-gray-400" />;
+    }
+  };
 
   return (
     <div className="fixed inset-0 bg-black/95 flex flex-col z-50">
       {/* Header */}
       <div className="flex items-center justify-between p-4 bg-black/50 backdrop-blur-sm">
         <div className="text-white">
-          <h2 className="text-lg font-semibold">Upload Image</h2>
+          <h2 className="text-lg font-semibold">File Preview</h2>
           <p className="text-sm text-gray-300">
             {currentIndex + 1} of {images.length}
           </p>
@@ -84,13 +98,31 @@ const ImagePreviewModal: React.FC<{
         </button>
       </div>
 
-      {/* Image Content */}
+      {/* File Content */}
       <div className="flex-1 flex items-center justify-center p-4 relative">
-        <img
-          src={getImageUrl(currentImage)}
-          alt={currentImage.remarks || "Payment evidence"}
-          className="max-w-full max-h-full object-contain rounded-lg"
-        />
+        {currentImage.type === "image" ? (
+          <img
+            src={getImageUrl(currentImage)}
+            alt={currentImage.remarks || "Payment evidence"}
+            className="max-w-full max-h-full object-contain rounded-lg"
+          />
+        ) : (
+          <div className="flex flex-col items-center justify-center h-full">
+            {getFileIcon(currentImage.type)}
+            <p className="mt-4 text-white text-lg">
+              {currentImage.remarks || currentImage.url.split("/").pop()}
+            </p>
+            <a
+              href={getImageUrl(currentImage)}
+              download
+              className="mt-6 px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center gap-2 transition-colors"
+              target="_blank"
+            >
+              <Download className="h-4 w-4" />
+              Download File
+            </a>
+          </div>
+        )}
 
         {/* Navigation Arrows */}
         {images.length > 1 && (
@@ -147,13 +179,21 @@ const ImagePreviewModal: React.FC<{
                   index === currentIndex
                     ? "border-blue-500"
                     : "border-transparent"
+                } ${
+                  image.type !== "image"
+                    ? "bg-gray-800 flex items-center justify-center"
+                    : ""
                 }`}
               >
-                <img
-                  src={`${imageurl}${image.url}`}
-                  alt=""
-                  className="w-full h-full object-cover"
-                />
+                {image.type === "image" ? (
+                  <img
+                    src={getImageUrl(image)}
+                    alt=""
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <FileText className="h-8 w-8 text-white" />
+                )}
               </button>
             ))}
           </div>
@@ -168,7 +208,7 @@ const ImagePreviewModal: React.FC<{
             className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg flex items-center gap-2 transition-colors"
           >
             <Trash2 className="h-4 w-4" />
-            Delete Image
+            Delete File
           </button>
         </div>
       </div>
@@ -196,8 +236,7 @@ const CameraModal: React.FC<{
       }
     };
   }, [isOpen]);
-
-  const startCamera = async () => {
+  const startCamera = React.useCallback(async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
@@ -216,7 +255,7 @@ const CameraModal: React.FC<{
       toast.error("Could not access camera. Please check permissions.");
       onClose();
     }
-  };
+  }, [onClose]);
 
   const captureImage = () => {
     if (!videoRef.current || !canvasRef.current) return;
@@ -327,6 +366,13 @@ const PaymentImageUpload: React.FC<PaymentImageUploadProps> = ({
   const [showCamera, setShowCamera] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
 
+  const getFileType = (file: File): "image" | "pdf" | "doc" => {
+    if (file.type.includes("pdf")) return "pdf";
+    if (file.type.includes("msword") || file.type.includes("wordprocessingml"))
+      return "doc";
+    return "image";
+  };
+
   const handleFileUpload = async (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
@@ -336,7 +382,7 @@ const PaymentImageUpload: React.FC<PaymentImageUploadProps> = ({
     const filesToUpload = Array.from(files);
 
     if (images.length + filesToUpload.length > maxImages) {
-      toast.error(`You can only upload a maximum of ${maxImages} images.`);
+      toast.error(`You can only upload a maximum of ${maxImages} files.`);
       return;
     }
 
@@ -346,8 +392,17 @@ const PaymentImageUpload: React.FC<PaymentImageUploadProps> = ({
       const newImages: ImageItem[] = [];
 
       for (const file of filesToUpload) {
-        if (!file.type.startsWith("image/")) {
-          toast.error(`File "${file.name}" is not an image.`);
+        const validTypes = [
+          "image/jpeg",
+          "image/png",
+          "image/gif",
+          "image/webp",
+          "application/pdf",
+          "application/msword",
+          "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        ];
+
+        if (!validTypes.includes(file.type)) {
           continue;
         }
 
@@ -365,16 +420,17 @@ const PaymentImageUpload: React.FC<PaymentImageUploadProps> = ({
             url,
             file: onUpload ? undefined : file,
             remarks: file.name,
+            type: getFileType(file),
           });
         } catch (error) {
           console.error(`Error uploading ${file.name}:`, error);
-          
+        
         }
       }
 
       if (newImages.length > 0) {
         onImagesChange([...images, ...newImages]);
-        toast.success(`${newImages.length} image(s) uploaded successfully!`);
+        toast.success(`${newImages.length} file(s) uploaded successfully!`);
       }
     } finally {
       setIsUploading(false);
@@ -386,7 +442,7 @@ const PaymentImageUpload: React.FC<PaymentImageUploadProps> = ({
 
   const handleCameraCapture = async (imageData: string) => {
     if (images.length >= maxImages) {
-      toast.error(`You can only upload a maximum of ${maxImages} images.`);
+      toast.error(`You can only upload a maximum of ${maxImages} files.`);
       return;
     }
 
@@ -408,13 +464,13 @@ const PaymentImageUpload: React.FC<PaymentImageUploadProps> = ({
         id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         url,
         remarks: "Captured Image",
+        type: "image",
       };
 
       onImagesChange([...images, newImage]);
       toast.success("Image captured successfully!");
     } catch (error) {
       console.error("Error processing captured image:", error);
-      toast.error("Failed to process captured image");
     } finally {
       setIsUploading(false);
     }
@@ -423,28 +479,23 @@ const PaymentImageUpload: React.FC<PaymentImageUploadProps> = ({
   const handleDeleteImage = (indexToDelete: number) => {
     const updatedImages = images.filter((_, index) => index !== indexToDelete);
     onImagesChange(updatedImages);
-    toast.success("Image deleted successfully!");
+    toast.success("File deleted successfully!");
   };
-
-  // const handleClearAll = () => {
-  //   if (images.length === 0) {
-  //     toast.error("No images to clear.");
-  //     return;
-  //   }
-
-  //   if (
-  //     window.confirm(
-  //       "Are you sure you want to clear all images? This action cannot be undone."
-  //     )
-  //   ) {
-  //     onImagesChange([]);
-  //     toast.success("All images cleared successfully!");
-  //   }
-  // };
 
   const handleImageClick = (index: number) => {
     setCurrentImageIndex(index);
     setShowPreview(true);
+  };
+
+  const getFileIcon = (type: string) => {
+    switch (type) {
+      case "pdf":
+        return <FileText className="h-6 w-6 text-red-500" />;
+      case "doc":
+        return <FileText className="h-6 w-6 text-blue-500" />;
+      default:
+        return <ImageIcon className="h-6 w-6 text-gray-500" />;
+    }
   };
 
   return (
@@ -468,24 +519,25 @@ const PaymentImageUpload: React.FC<PaymentImageUploadProps> = ({
           </div>
         )}
 
-        {/* Camera Button */}
-        {images.length < maxImages && (
-          <div className="flex flex-col items-center">
-            <button
-              type="button"
-              onClick={() => setShowCamera(true)}
-              disabled={isUploading}
-              className="h-14 w-14 rounded-2xl border-2 border-dashed border-gray-300 hover:border-green-500 hover:bg-green-50 transition-all duration-200 flex items-center justify-center disabled:opacity-50"
-            >
-              <Camera className="h-6 w-6 text-gray-600" />
-            </button>
-            <span className="text-xs text-gray-500 mt-2 text-center">
-              Capture
-            </span>
-          </div>
-        )}
+        {/* Camera Button - Only shown when no non-image files exist */}
+        {images.length < maxImages &&
+          images.every((img) => img.type === "image") && (
+            <div className="flex flex-col items-center">
+              <button
+                type="button"
+                onClick={() => setShowCamera(true)}
+                disabled={isUploading}
+                className="h-14 w-14 rounded-2xl border-2 border-dashed border-gray-300 hover:border-green-500 hover:bg-green-50 transition-all duration-200 flex items-center justify-center disabled:opacity-50"
+              >
+                <Camera className="h-6 w-6 text-gray-600" />
+              </button>
+              <span className="text-xs text-gray-500 mt-2 text-center">
+                Capture
+              </span>
+            </div>
+          )}
 
-        {/* Overlapping Images Preview */}
+        {/* Files Preview */}
         {images.length > 0 && (
           <div className="flex flex-col items-center">
             <div
@@ -495,18 +547,36 @@ const PaymentImageUpload: React.FC<PaymentImageUploadProps> = ({
               {images.slice(0, 3).map((image, index) => (
                 <div
                   key={image.id}
-                  className={`absolute w-12 h-12 rounded-lg overflow-hidden border-2 border-white shadow-md transition-transform hover:scale-105`}
+                  className={`absolute w-12 h-12 rounded-lg overflow-hidden border-2 border-white shadow-md transition-transform hover:scale-105 ${
+                    image.type !== "image"
+                      ? "bg-gray-100 flex items-center justify-center"
+                      : ""
+                  }`}
                   style={{
                     right: `${index * 6}px`,
                     top: `${index * 2}px`,
                     zIndex: 3 - index,
                   }}
                 >
-                  <img
-                    src={`${imageurl}${image.url}`}
-                    alt=""
-                    className="w-full h-full object-cover"
-                  />
+                  {image.type === "image" ? (
+                    <img
+                      src={`${imageurl}${image.url}`}
+                      alt=""
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="text-center p-1">
+                      {getFileIcon(image.type)}
+                      <span className="text-xs truncate block">
+                        {image.url
+                          .split("/")
+                          .pop()
+                          ?.split(".")
+                          .shift()
+                          ?.substring(0, 3)}
+                      </span>
+                    </div>
+                  )}
                 </div>
               ))}
               {images.length > 3 && (
@@ -521,60 +591,40 @@ const PaymentImageUpload: React.FC<PaymentImageUploadProps> = ({
                   +{images.length - 3}
                 </div>
               )}
-              {/* <div className="absolute -bottom-1 -right-1 bg-blue-500 text-white rounded-full p-1">
-                <Eye className="h-3 w-3" />
-              </div> */}
             </div>
             <span className="text-xs text-gray-500 mt-2 text-center">
-              {images.length} image{images.length !== 1 ? "s" : ""}
+              {images.length} file{images.length !== 1 ? "s" : ""}
             </span>
           </div>
         )}
-
-        {/* Clear All Button */}
-        {/* {images.length > 0 && (
-          <div className="flex flex-col items-center">
-            <button
-              type="button"
-              onClick={handleClearAll}
-              disabled={isUploading}
-              className="h-14 w-14 rounded-2xl border-2 border-dashed border-red-300 hover:border-red-500 hover:bg-red-50 transition-all duration-200 flex items-center justify-center disabled:opacity-50"
-            >
-              <Trash2 className="h-6 w-6 text-red-600" />
-            </button>
-            <span className="text-xs text-gray-500 mt-2 text-center">
-              Clear All
-            </span>
-          </div>
-        )} */}
       </div>
+
+      {/* Hidden File Input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*,.pdf,.doc,.docx"
+        onChange={handleFileUpload}
+        className="hidden"
+        multiple
+      />
 
       {/* Upload Status */}
       {isUploading && (
         <div className="text-center py-4">
           <div className="inline-flex items-center gap-2 text-sm text-blue-600">
             <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-            Processing images...
+            Processing files...
           </div>
         </div>
       )}
 
-      {/* Image Count Info */}
+      {/* File Count Info */}
       {images.length > 0 && (
         <div className="text-sm text-gray-600 text-center">
-          {images.length} of {maxImages} images selected
+          {images.length} of {maxImages} files selected
         </div>
       )}
-
-      {/* Hidden File Input */}
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        onChange={handleFileUpload}
-        className="hidden"
-        multiple
-      />
 
       {/* Modals */}
       <ImagePreviewModal

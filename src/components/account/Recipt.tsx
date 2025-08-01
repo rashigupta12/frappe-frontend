@@ -13,6 +13,7 @@ interface ImageItem {
   url: string;
   file?: File;
   remarks?: string;
+  type: 'image' | 'pdf' | 'doc'; // Changed from optional to required
 }
 
 const ReceiptForm = () => {
@@ -44,7 +45,9 @@ const ReceiptForm = () => {
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
-  const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(
+    null
+  );
   const [showAddCustomerDialog, setShowAddCustomerDialog] = useState(false);
   const [creatingCustomer, setCreatingCustomer] = useState(false);
   const [newCustomerData, setNewCustomerData] = useState({
@@ -73,125 +76,150 @@ const ReceiptForm = () => {
   }, [paid_from, searchQuery]);
 
   // Convert custom_attachments to images format
-  useEffect(() => {
-    const convertedImages: ImageItem[] = custom_attachments.map(
-      (attachment, index) => {
-        let url = attachment.image;
-        if (!url.startsWith("http") && !url.startsWith("/")) {
-          url = `/${url}`;
-        }
-        return {
-          id: `existing-${index}-${url}`,
-          url: url,
-          remarks: attachment.remarks || `Attachment ${index + 1}`,
-        };
+useEffect(() => {
+  const convertedImages: ImageItem[] = custom_attachments.map(
+    (attachment, index) => {
+      let url = attachment.image;
+      if (!url.startsWith("http") && !url.startsWith("/")) {
+        url = `/${url}`;
       }
-    );
-    setImages(convertedImages);
-  }, [custom_attachments]);
+      
+      // Determine file type from URL
+      let type: 'image' | 'pdf' | 'doc' = 'image';
+      if (url.toLowerCase().endsWith('.pdf')) {
+        type = 'pdf';
+      } else if (url.toLowerCase().endsWith('.doc') || url.toLowerCase().endsWith('.docx')) {
+        type = 'doc';
+      }
+      
+      return {
+        id: `existing-${index}-${url}`,
+        url: url,
+        remarks: attachment.remarks || `Attachment ${index + 1}`,
+        type: type
+      };
+    }
+  );
+  setImages(convertedImages);
+}, [custom_attachments]);
 
   const handleCustomerSearch = useCallback(async (query: string) => {
+     if (!query.trim()) {
+       setSearchResults([]);
+       setShowDropdown(false);
+       return;
+     }
+ 
+     setIsSearching(true);
+     try {
+       const endpoint = "/api/method/eits_app.customer_search.search_customers";
+       const params = new URLSearchParams();
+ 
+       if (/^\d+$/.test(query)) {
+         // Search by phone number (only digits)
+         params.append("mobile_no", query);
+       } else if (/^[a-zA-Z0-9._-]+$/.test(query)) {
+         // Search by email (partial match) OR name
+         // First try email search
+         params.append("email_id", query);
+         const emailResponse = await frappeAPI.makeAuthenticatedRequest(
+           "GET",
+           `${endpoint}?${params.toString()}`
+         );
+ 
+         // If no email results, try name search
+         if (!emailResponse.message.data?.length) {
+           params.delete("email_id");
+           params.append("customer_name", query);
+         }
+       } else {
+         // Search by name
+         params.append("customer_name", query);
+       }
+ 
+       const response = await frappeAPI.makeAuthenticatedRequest(
+         "GET",
+         `${endpoint}?${params.toString()}`
+       );
+       if (!response.message || !Array.isArray(response.message.data)) {
+         throw new Error("Invalid response format");
+       }
+ 
+       const customers = response.message.data;
+       setShowDropdown(true);
+ 
+       if (customers.length === 0) {
+         setSearchResults([]);
+         return;
+       }
+ 
+       const detailedCustomers = await Promise.all(
+         customers.map(async (customer: { name: any }) => {
+           try {
+             const customerDetails = await frappeAPI.getCustomerById(
+               customer.name
+             );
+             return customerDetails.data;
+           } catch (error) {
+             console.error(
+               `Failed to fetch details for customer ${customer.name}:`,
+               error
+             );
+             return null;
+           }
+         })
+       );
+ 
+       const validCustomers = detailedCustomers.filter(
+         (customer) => customer !== null
+       );
+ 
+       setSearchResults(validCustomers);
+     } catch (error) {
+       // Error handling...
+       console.error("Search error:", error);
+       setSearchResults([]);
+       setShowDropdown(true);
+       toast.error("Failed to search customers. Please try again.");
+     } finally {
+       setIsSearching(false);
+     }
+   }, []);
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const query = e.target.value;
+    setSearchQuery(query);
+
+    // Clear paid_from when search query is empty
     if (!query.trim()) {
+      setField("paid_from", "");
+    }
+
+    if (searchTimeout) {
+      clearTimeout(searchTimeout);
+    }
+
+    if (query.length > 0) {
+      setSearchTimeout(
+        setTimeout(() => {
+          handleCustomerSearch(query);
+        }, 300)
+      );
+    } else {
       setSearchResults([]);
       setShowDropdown(false);
-      return;
     }
+  };
 
-    setIsSearching(true);
-    try {
-      let response;
-
-      if (/^\d+$/.test(query)) {
-        response = await frappeAPI.makeAuthenticatedRequest(
-          "GET",
-          `/api/method/eits_app.customer_search.search_customers?mobile_no=${query}`
-        );
-      } else if (query.includes("@")) {
-        response = await frappeAPI.makeAuthenticatedRequest(
-          "GET",
-          `/api/method/eits_app.customer_search.search_customers?email_id=${query}`
-        );
-      } else {
-        response = await frappeAPI.makeAuthenticatedRequest(
-          "GET",
-          `/api/method/eits_app.customer_search.search_customers?customer_name=${query}`
-        );
-      }
-
-      if (!response.message || !Array.isArray(response.message.data)) {
-        throw new Error("Invalid response format");
-      }
-
-      const customers = response.message.data;
-      setShowDropdown(true);
-
-      if (customers.length === 0) {
-        setSearchResults([]);
-        return;
-      }
-
-      const detailedCustomers = await Promise.all(
-        customers.map(async (customer: { name: any }) => {
-          try {
-            const customerDetails = await frappeAPI.getCustomerById(
-              customer.name
-            );
-            return customerDetails.data;
-          } catch (error) {
-            console.error(
-              `Failed to fetch details for customer ${customer.name}:`,
-              error
-            );
-            return null;
-          }
-        })
+  const handleCloseCustomerDialog = () => {
+    setShowAddCustomerDialog(false);
+    if (!paid_from) {
+      toast.error(
+        "Please select a customer to proceed with receipt submission"
       );
-
-      const validCustomers = detailedCustomers.filter(
-        (customer) => customer !== null
-      );
-      setSearchResults(validCustomers);
-    } catch (error) {
-      console.error("Search error:", error);
-      setSearchResults([]);
-      setShowDropdown(true);
-    } finally {
-      setIsSearching(false);
+      setSearchQuery("");
     }
-  }, []);
-
-const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-  const query = e.target.value;
-  setSearchQuery(query);
-  
-  // Clear paid_from when search query is empty
-  if (!query.trim()) {
-    setField("paid_from", "");
-  }
-
-  if (searchTimeout) {
-    clearTimeout(searchTimeout);
-  }
-
-  if (query.length > 0) {
-    setSearchTimeout(
-      setTimeout(() => {
-        handleCustomerSearch(query);
-      }, 300)
-    );
-  } else {
-    setSearchResults([]);
-    setShowDropdown(false);
-  }
-};
-
-const handleCloseCustomerDialog = () => {
-  setShowAddCustomerDialog(false);
-  if (!paid_from) {
-    toast.error("Please select a customer to proceed with receipt submission");
-    setSearchQuery("");
-  }
-};
+  };
 
   const handleCustomerSelect = (customer: any) => {
     const customerName = customer.customer_name || customer.name || "";
@@ -305,46 +333,46 @@ const handleCloseCustomerDialog = () => {
     }
   };
 
-const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
 
-  // Validate that paid_from (customer) is selected
-  if (!paid_from || paid_from.trim() === "") {
-    toast.error("Please select a customer");
-    return;
-  }
+    // Validate that paid_from (customer) is selected
+    if (!paid_from || paid_from.trim() === "") {
+      toast.error("Please select a customer");
+      return;
+    }
 
-  // Validate amount
-  if (!amountaed || parseFloat(amountaed) <= 0) {
-    toast.error("Please enter a valid amount");
-    return;
-  }
+    // Validate amount
+    if (!amountaed || parseFloat(amountaed) <= 0) {
+      toast.error("Please enter a valid amount");
+      return;
+    }
 
-  // Validate at least one image is uploaded
-  if (images.length === 0) {
-    toast.error("Please upload at least one receipt evidence image");
-    return;
-  }
+    // Validate at least one image is uploaded
+    if (images.length === 0) {
+      toast.error("Please upload at least one receipt evidence image");
+      return;
+    }
 
-  const result = await submitPayment();
-  if (result.success) {
-    toast.success("Receipt submitted successfully!");
-    // Reset form fields
-    setField("bill_number", "");
-    setField("amountaed", "0.00");
-    setField("paid_from", "");
-    setField("custom_purpose_of_payment", "");
-    setField("custom_mode_of_payment", "");
-    setField("custom_name_of_bank", "");
-    setField("custom_account_number", "");
-    setField("custom_card_number", "");
-    setField("custom_attachments", []);
-    setImages([]);
-    setSearchQuery("");
-  } else {
-    toast.error(`Error: ${result.error}`);
-  }
-};
+    const result = await submitPayment();
+    if (result.success) {
+      toast.success("Receipt submitted successfully!");
+      // Reset form fields
+      setField("bill_number", "");
+      setField("amountaed", "0.00");
+      setField("paid_from", "");
+      setField("custom_purpose_of_payment", "");
+      setField("custom_mode_of_payment", "");
+      setField("custom_name_of_bank", "");
+      setField("custom_account_number", "");
+      setField("custom_card_number", "");
+      setField("custom_attachments", []);
+      setImages([]);
+      setSearchQuery("");
+    } else {
+      toast.error(`Error: ${result.error}`);
+    }
+  };
 
   const getModeOfPaymentValue = () => {
     switch (custom_mode_of_payment) {
@@ -404,8 +432,8 @@ const handleSubmit = async (e: React.FormEvent) => {
           {/* Payment Evidence Section */}
           <div>
             <label className="block text-sm md:text-base font-medium text-gray-700 mb-2">
-  Upload Image <span className="text-red-500">*</span>
-</label>
+              Upload Image <span className="text-red-500">*</span>
+            </label>
             <PaymentImageUpload
               images={images}
               onImagesChange={handleImagesChange}
@@ -414,11 +442,10 @@ const handleSubmit = async (e: React.FormEvent) => {
               maxSizeMB={10}
             />
             {images.length === 0 && (
-  <p className=" text-xs text-red-500">
-    At least one receipt evidence image is required
-  </p>
-)}
-          
+              <p className=" text-xs text-red-500">
+                At least one receipt evidence image is required
+              </p>
+            )}
           </div>
 
           {/* Grid layout for desktop */}
@@ -451,17 +478,17 @@ const handleSubmit = async (e: React.FormEvent) => {
               <label className="block text-sm md:text-base font-medium text-gray-700 mb-2">
                 Mode of Payment <span className="text-red-500">*</span>
               </label>
-            <select
-              value={getModeOfPaymentValue()}
-              onChange={(e) => setModeOfPayment(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white"
-              required
-            >
-              <option value="cash">Cash</option>
-              <option value="card">Card</option>
-              <option value="bank-transfer">Bank Transfer</option>
-              <option value="credit">Credit</option>
-            </select>
+              <select
+                value={getModeOfPaymentValue()}
+                onChange={(e) => setModeOfPayment(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white"
+                required
+              >
+                <option value="cash">Cash</option>
+                <option value="card">Card</option>
+                <option value="bank-transfer">Bank Transfer</option>
+                <option value="credit">Credit</option>
+              </select>
             </div>
 
             {/* Date */}
@@ -734,11 +761,11 @@ const handleSubmit = async (e: React.FormEvent) => {
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg font-semibold">Add New Customer</h3>
                 <button
-  onClick={handleCloseCustomerDialog}
-  className="text-gray-500 hover:text-gray-700"
->
-  <X className="h-5 w-5" />
-</button>
+                  onClick={handleCloseCustomerDialog}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <X className="h-5 w-5" />
+                </button>
               </div>
               <div className="space-y-4">
                 <div>

@@ -688,90 +688,110 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
     }
   };
 
-  const handleFileChange = async (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const files = event.target.files;
-    if (!files || files.length === 0) return;
+ const handleFileChange = async (
+  event: React.ChangeEvent<HTMLInputElement>
+) => {
+  const files = event.target.files;
+  if (!files || files.length === 0) return;
 
-    const filesToUpload = Array.from(files);
+  const filesToUpload = Array.from(files);
 
-    if (!multiple && filesToUpload.length > 1) {
-      toast.error(`Only one ${label.toLowerCase()} file is allowed.`);
-      return;
+  if (!multiple && filesToUpload.length > 1) {
+    toast.error(`Only one ${label.toLowerCase()} file is allowed.`);
+    return;
+  }
+
+  if (
+    multiple &&
+    maxFiles &&
+    currentMediaItems.length + filesToUpload.length > maxFiles
+  ) {
+    toast.error(`You can only upload a maximum of ${maxFiles} files.`);
+    return;
+  }
+
+  const validFiles: File[] = [];
+  for (const file of filesToUpload) {
+    const type = getMediaType(file);
+    if (type === "unknown" || !allowedTypes.includes(type)) {
+      toast.error(
+        `File "${
+          file.name
+        }" has an unsupported format. Allowed: ${allowedTypes.join(", ")}`
+      );
+      continue;
     }
 
-    if (
-      multiple &&
-      maxFiles &&
-      currentMediaItems.length + filesToUpload.length > maxFiles
-    ) {
-      toast.error(`You can only upload a maximum of ${maxFiles} files.`);
-      return;
+    if (file.size > maxSizeMB * 1024 * 1024) {
+      toast.error(`File "${file.name}" exceeds ${maxSizeMB}MB limit.`);
+      continue;
+    }
+    validFiles.push(file);
+  }
+
+  if (validFiles.length === 0) return;
+
+  setIsUploading(true);
+  setUploadProgress(0);
+
+  try {
+    const uploadedItems: MediaItem[] = [];
+    
+    for (let i = 0; i < validFiles.length; i++) {
+      const file = validFiles[i];
+      const fileProgressStart = (i / validFiles.length) * 100;
+
+      try {
+        const fileUrl = await uploadFile(file, (progress: number) => {
+          setUploadProgress(fileProgressStart + progress / validFiles.length);
+        });
+
+        const mediaItem: MediaItem = {
+          id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          url: fileUrl,
+          type: getMediaType(file) as "image" | "video" | "audio",
+          remarks: file.name,
+        };
+
+        uploadedItems.push(mediaItem);
+      } catch (error) {
+        console.error(`Error uploading ${file.name}:`, error);
+        const errorMsg =
+          error instanceof Error ? error.message : "Upload failed";
+        toast.error(`Failed to upload ${file.name}: ${errorMsg}`);
+      }
     }
 
-    const validFiles: File[] = [];
-    for (const file of filesToUpload) {
-      const type = getMediaType(file);
-      if (type === "unknown" || !allowedTypes.includes(type)) {
-        toast.error(
-          `File "${
-            file.name
-          }" has an unsupported format. Allowed: ${allowedTypes.join(", ")}`
-        );
-        continue;
+    // Combine all uploaded items at once
+    if (uploadedItems.length > 0) {
+      const updatedItems = [...currentMediaItems, ...uploadedItems];
+      setCurrentMediaItems(updatedItems);
+      
+      if (multiple) {
+        onChange(updatedItems);
+      } else {
+        onChange(updatedItems[0]);
       }
 
-      if (file.size > maxSizeMB * 1024 * 1024) {
-        toast.error(`File "${file.name}" exceeds ${maxSizeMB}MB limit.`);
-        continue;
+      // Show remarks dialog for all items at once
+      if (uploadedItems.length === 1) {
+        setPendingMediaItem(uploadedItems[0]);
+        setShowRemarksDialog(true);
+      } else {
+        toast.success(`${uploadedItems.length} files uploaded successfully!`);
       }
-      validFiles.push(file);
     }
-
-    if (validFiles.length === 0) return;
-
-    setIsUploading(true);
+  } catch (error) {
+    console.error("Batch upload error:", error);
+    toast.error("An error occurred during upload.");
+  } finally {
+    setIsUploading(false);
     setUploadProgress(0);
-
-    try {
-      for (let i = 0; i < validFiles.length; i++) {
-        const file = validFiles[i];
-        const fileProgressStart = (i / validFiles.length) * 100;
-
-        try {
-          const fileUrl = await uploadFile(file, (progress: number) => {
-            setUploadProgress(fileProgressStart + progress / validFiles.length);
-          });
-
-          const mediaItem: MediaItem = {
-            id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-            url: fileUrl,
-            type: getMediaType(file) as "image" | "video" | "audio",
-            remarks: file.name,
-          };
-
-          setPendingMediaItem(mediaItem);
-          setShowRemarksDialog(true);
-          break;
-        } catch (error) {
-          console.error(`Error uploading ${file.name}:`, error);
-          const errorMsg =
-            error instanceof Error ? error.message : "Upload failed";
-          toast.error(`Failed to upload ${file.name}: ${errorMsg}`);
-        }
-      }
-    } catch (error) {
-      console.error("Batch upload error:", error);
-      toast.error("An error occurred during upload.");
-    } finally {
-      setIsUploading(false);
-      setUploadProgress(0);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
     }
-  };
+  }
+};
 
   const handleAudioRecordingComplete = async (audioFile: File) => {
     setShowRecordingDialog(false);

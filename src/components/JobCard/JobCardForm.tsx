@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import {
+  Building,
   Calendar,
   ChevronDown,
   FileText,
@@ -42,6 +43,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
+import { useLeads } from "../../context/LeadContext";
 
 interface JobCardFormProps {
   isOpen: boolean;
@@ -62,7 +64,17 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
 }) => {
   const { createJobCard, updateJobCard, loading, fetchEmployees } =
     useJobCards();
-  console.log("job card edit form", jobCard);
+
+  // Add address-related hooks from LeadContext
+  const {
+    emirates,
+    cities,
+    areas,
+    fetchEmirates,
+    fetchCities,
+    fetchAreas,
+    addressLoading,
+  } = useLeads();
   const isReadOnly = jobCard?.docstatus === 1;
   const projectidname = jobCard?.name || jobCard?.project_id_no || "";
 
@@ -83,6 +95,14 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
     lead_id: "",
     customer_id: "",
   });
+  const [selectedEmirate, setSelectedEmirate] = useState<string>("");
+  const [selectedCity, setSelectedCity] = useState<string>("");
+  const [selectedArea, setSelectedArea] = useState<string>("");
+  const [showOtherAreaInput, setShowOtherAreaInput] = useState(false);
+  const [newAreaName, setNewAreaName] = useState("");
+  const [isAddingArea, setIsAddingArea] = useState(false);
+  const [hasPrefilled, setHasPrefilled] = useState(false);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   const [pressingCharges, setPressingCharges] = useState<PressingCharges[]>([]);
   const [materialsSold, setMaterialsSold] = useState<MaterialSold[]>([]);
@@ -118,8 +138,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
       price?: number;
       remarks?: string;
       thickness?: string;
-            uom?: string; // Added UOM field
-
+      uom?: string; // Added UOM field
     }[]
   >([]);
   const [loadingMaterialSoldItems, setLoadingMaterialSoldItems] =
@@ -139,6 +158,238 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
   >([]);
   const [loadingPressingItems, setLoadingPressingItems] = useState(false);
 
+  // Load emirates on component mount
+  useEffect(() => {
+    fetchEmirates();
+  }, [fetchEmirates]);
+
+  // Function to combine address components into a single string
+  const combineAddress = useCallback(
+    (emirate: string, city: string, area: string): string => {
+      const addressParts = [area, city, emirate].filter(
+        (part) => part && part.trim() !== ""
+      );
+
+      return addressParts.join(", ");
+    },
+    []
+  );
+// Replace the existing address parsing useEffect with this corrected version
+
+useEffect(() => {
+  if (formData.area && !hasPrefilled && emirates.length > 0) {
+    const parts = formData.area.split(",").map((part: string) => part.trim());
+
+    // Address format: "area, city, emirate" (Al Satwa, Dubai, Dubai)
+    if (parts.length >= 3) {
+      const area = parts[0]; // First part is area (Al Satwa)
+      const city = parts[1]; // Second part is city (Dubai)
+      const emirate = parts[2]; // Third part is emirate (Dubai)
+
+      console.log("Parsed address:", { area, city, emirate });
+
+      // Set the emirate if it exists in the emirates list
+      const foundEmirate = emirates.find(
+        (e) => e.name.toLowerCase() === emirate.toLowerCase()
+      );
+      
+      if (foundEmirate) {
+        setSelectedEmirate(foundEmirate.name);
+
+        // Fetch cities for this emirate and then process
+        fetchCities(foundEmirate.name).then(() => {
+          // Use a longer timeout to ensure cities are loaded
+          setTimeout(() => {
+            const foundCity = cities.find(
+              (c) => c.name.toLowerCase() === city.toLowerCase()
+            );
+            
+            if (foundCity) {
+              setSelectedCity(foundCity.name);
+
+              // Fetch areas for this city and then process
+              fetchAreas(foundCity.name).then(() => {
+                // Use a longer timeout to ensure areas are loaded
+                setTimeout(() => {
+                  const foundArea = areas.find(
+                    (a) => a.name.toLowerCase() === area.toLowerCase()
+                  );
+                  
+                  if (foundArea) {
+                    setSelectedArea(foundArea.name);
+                    setShowOtherAreaInput(false);
+                    setNewAreaName("");
+                  } else if (area) {
+                    // If area doesn't exist in dropdown but has a value, show "other" input
+                    setShowOtherAreaInput(true);
+                    setNewAreaName(area);
+                    setSelectedArea("");
+                  }
+                  setHasPrefilled(true);
+                  setIsInitialLoad(false);
+                }, 500); // Increased timeout to 500ms
+              }).catch((error) => {
+                console.error("Error fetching areas:", error);
+                setHasPrefilled(true);
+                setIsInitialLoad(false);
+              });
+            } else {
+              console.log("City not found:", city);
+              setHasPrefilled(true);
+              setIsInitialLoad(false);
+            }
+          }, 300); // Increased timeout to 300ms
+        }).catch((error) => {
+          console.error("Error fetching cities:", error);
+          setHasPrefilled(true);
+          setIsInitialLoad(false);
+        });
+      } else {
+        console.log("Emirate not found:", emirate);
+        setHasPrefilled(true);
+        setIsInitialLoad(false);
+      }
+    } else {
+      console.log("Address format not recognized:", formData.area);
+      setHasPrefilled(true);
+      setIsInitialLoad(false);
+    }
+  } else if (!formData.area) {
+    setHasPrefilled(true);
+    setIsInitialLoad(false);
+  }
+}, [
+  formData.area,
+  emirates,
+  cities,
+  areas,
+  fetchCities,
+  fetchAreas,
+  hasPrefilled,
+]);
+
+// Also add this useEffect to reset hasPrefilled when jobCard changes
+useEffect(() => {
+  if (jobCard) {
+    setHasPrefilled(false);
+    setIsInitialLoad(true);
+    // Reset address selection states when loading a new job card
+    setSelectedEmirate("");
+    setSelectedCity("");
+    setSelectedArea("");
+    setShowOtherAreaInput(false);
+    setNewAreaName("");
+  }
+}, [jobCard?.name]); // Only trigger when the job card ID changes
+
+  // Update combined address whenever any address component changes
+  useEffect(() => {
+    if (!isInitialLoad) {
+      const combinedAddress = combineAddress(
+        selectedEmirate,
+        selectedCity,
+        showOtherAreaInput ? newAreaName : selectedArea
+      );
+
+      // Only update if there's a change to avoid infinite loops
+      if (combinedAddress !== formData.area) {
+        setFormData((prev) => ({ ...prev, area: combinedAddress }));
+      }
+    }
+  }, [
+    selectedArea,
+    selectedCity,
+    selectedEmirate,
+    combineAddress,
+    formData.area,
+    showOtherAreaInput,
+    newAreaName,
+    isInitialLoad,
+  ]);
+
+  // Handle emirate selection
+  const handleEmirateChange = useCallback(
+    (value: string) => {
+      setSelectedEmirate(value);
+      setSelectedCity(""); // Reset city when emirate changes
+      setSelectedArea(""); // Reset area when emirate changes
+      setShowOtherAreaInput(false); // Reset other area input
+      setNewAreaName(""); // Reset new area name
+      fetchCities(value);
+    },
+    [fetchCities]
+  );
+
+  // Handle city selection
+  const handleCityChange = useCallback(
+    (value: string) => {
+      setSelectedCity(value);
+      setSelectedArea(""); // Reset area when city changes
+      setShowOtherAreaInput(false); // Reset other area input
+      setNewAreaName(""); // Reset new area name
+      fetchAreas(value);
+    },
+    [fetchAreas]
+  );
+
+  // Handle area selection
+  const handleAreaChange = useCallback((value: string) => {
+    if (value === "other") {
+      setShowOtherAreaInput(true);
+      setSelectedArea(""); // Clear selected area when choosing "other"
+    } else {
+      setSelectedArea(value);
+      setShowOtherAreaInput(false);
+      setNewAreaName(""); // Clear new area name when selecting from dropdown
+    }
+  }, []);
+
+  // Handle adding a new area
+  const handleAddNewArea = async () => {
+    if (!newAreaName.trim()) {
+      toast.error("Please enter an area name");
+      return;
+    }
+
+    if (!selectedCity) {
+      toast.error("Please select a city first");
+      return;
+    }
+
+    setIsAddingArea(true);
+    try {
+      // Create the new area in the database
+      const response = await frappeAPI.createArea({
+        area_name: newAreaName.trim(),
+        city: selectedCity,
+      });
+
+      if (response.data) {
+        toast.success("Area added successfully!");
+
+        // Refresh areas for the current city
+        await fetchAreas(selectedCity);
+
+        // Wait a moment for the areas to be updated, then select the newly added area
+        setTimeout(() => {
+          setSelectedArea(newAreaName.trim());
+          setShowOtherAreaInput(false);
+          setNewAreaName("");
+        }, 100);
+      } else {
+        throw new Error("Failed to create area");
+      }
+    } catch (error) {
+      console.error("Error creating area:", error);
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to create area. Please try again."
+      );
+    } finally {
+      setIsAddingArea(false);
+    }
+  };
   // Helper functions
   const calculatePressingTotal = (charges: PressingCharges[]) => {
     return charges.reduce((sum, charge) => sum + (charge.amount || 0), 0);
@@ -302,25 +553,35 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
 
     setIsSearching(true);
     try {
-      let response;
+      const endpoint = "/api/method/eits_app.customer_search.search_customers";
+      const params = new URLSearchParams();
 
       if (/^\d+$/.test(query)) {
-        response = await frappeAPI.makeAuthenticatedRequest(
+        // Search by phone number (only digits)
+        params.append("mobile_no", query);
+      } else if (/^[a-zA-Z0-9._-]+$/.test(query)) {
+        // Search by email (partial match) OR name
+        // First try email search
+        params.append("email_id", query);
+        const emailResponse = await frappeAPI.makeAuthenticatedRequest(
           "GET",
-          `/api/method/eits_app.customer_search.search_customers?mobile_no=${query}`
+          `${endpoint}?${params.toString()}`
         );
-      } else if (query.includes("@")) {
-        response = await frappeAPI.makeAuthenticatedRequest(
-          "GET",
-          `/api/method/eits_app.customer_search.search_customers?email_id=${query}`
-        );
+
+        // If no email results, try name search
+        if (!emailResponse.message.data?.length) {
+          params.delete("email_id");
+          params.append("customer_name", query);
+        }
       } else {
-        response = await frappeAPI.makeAuthenticatedRequest(
-          "GET",
-          `/api/method/eits_app.customer_search.search_customers?customer_name=${query}`
-        );
+        // Search by name
+        params.append("customer_name", query);
       }
 
+      const response = await frappeAPI.makeAuthenticatedRequest(
+        "GET",
+        `${endpoint}?${params.toString()}`
+      );
       if (!response.message || !Array.isArray(response.message.data)) {
         throw new Error("Invalid response format");
       }
@@ -356,17 +617,26 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
 
       setSearchResults(validCustomers);
     } catch (error) {
+      // Error handling...
       console.error("Search error:", error);
       setSearchResults([]);
       setShowDropdown(true);
+      toast.error("Failed to search customers. Please try again.");
     } finally {
       setIsSearching(false);
     }
   }, []);
-
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value;
     setSearchQuery(query);
+
+    if (query === "") {
+      setFormData((prev) => ({
+        ...prev,
+        customer_id: "",
+        lead_id: "",
+      }));
+    }
 
     if (searchTimeout) {
       clearTimeout(searchTimeout);
@@ -381,6 +651,16 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
     } else {
       setSearchResults([]);
       setShowDropdown(false);
+    }
+  };
+
+  const handleCloseCustomerDialog = () => {
+    setShowAddCustomerDialog(false);
+    if (!formData.customer_id && !formData.lead_id) {
+      toast.error(
+        "Please select a customer to proceed with receipt submission"
+      );
+      setSearchQuery("");
     }
   };
 
@@ -563,7 +843,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
               amount:
                 (selectedItem?.price || 0) * (Number(charge.no_of_sides) || 0),
               thickness: selectedItem?.thickness || "",
-                            uom: selectedItem?.uom || "",
+              uom: selectedItem?.uom || "",
 
               remarks: selectedItem?.remarks || "",
             };
@@ -599,7 +879,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
       work_type: "",
       size: "",
       thickness: "",
-            uom: "",
+      uom: "",
 
       no_of_sides: "",
       price: 0,
@@ -636,7 +916,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
               amount:
                 (itemDetails?.price || 0) * (Number(material.no_of_sides) || 0),
               thickness: itemDetails?.thickness || "",
-                    uom: itemDetails?.uom || "", // Added UOM field
+              uom: itemDetails?.uom || "", // Added UOM field
 
               remarks: itemDetails?.remarks || "",
             };
@@ -795,9 +1075,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
       onClose();
     } catch (error) {
       console.error("Form submission error:", error);
-      if (error instanceof Error) {
-        toast.error(`Error: ${error.message}`);
-      }
+     
     }
   };
 
@@ -918,23 +1196,20 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                   }`}
                 >
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 py-4">
-                    <div className="space-y-2 col-span-1 md:col-span-2 lg:col-span-1">
-                      <Label
-                        htmlFor="party_name"
-                        className="flex items-center space-x-2"
-                      >
+                    <div className="relative col-span-1 md:col-span-2 lg:col-span-1">
+                      <label className="flex items-center space-x-2 text-sm md:text-base font-medium text-gray-700 mb-2">
                         <User className="h-4 w-4 text-gray-500" />
-                        <label className="block text-sm font-medium text-gray-700">
+                        <span>
                           Customer{" "}
                           <span className="text-gray-500">
                             (name/email/phone)
                           </span>
                           <span className="text-red-500 ml-1">*</span>
-                        </label>
+                        </span>
                         {(fetchingCustomerDetails || fetchingLeadDetails) && (
                           <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
                         )}
-                      </Label>
+                      </label>
                       <div className="relative">
                         <Input
                           id="party_name"
@@ -944,14 +1219,14 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                           placeholder="Search by name, phone, or email"
                           disabled={isReadOnly}
                           required
-                          className="focus:ring-blue-500 focus:border-blue-500 pr-10 text-black"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none pr-10"
                         />
                         {isSearching && (
                           <Loader2 className="absolute right-3 top-3 h-4 w-4 animate-spin text-gray-500" />
                         )}
                       </div>
                       {showDropdown && (
-                        <div className="absolute z-10 mt-1 w-full bg-white shadow-lg rounded-md border border-gray-200 max-h-60 overflow-auto">
+                        <div className="absolute z-10 w-full bg-white shadow-lg rounded-md border border-gray-200 max-h-60 overflow-auto mt-1">
                           {searchResults.length > 0 ? (
                             searchResults.map((customer) => (
                               <div
@@ -976,11 +1251,11 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                                         {customer.email_id}
                                       </span>
                                     )}
-                                    {customer.lead_name && (
+                                    {/* {customer.lead_name && (
                                       <span className="bg-green-100 text-green-800 px-1.5 py-0.5 rounded text-xs">
                                         Has Property
                                       </span>
-                                    )}
+                                    )} */}
                                   </div>
                                 </div>
                                 <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
@@ -1015,53 +1290,187 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                         htmlFor="building_name"
                         className="flex items-center space-x-2"
                       >
+                        <Building className="h-4 w-4 text-gray-500" />
                         <span>Building Name</span>
                       </Label>
                       <Input
                         id="building_name"
                         name="building_name"
-                        value={formData.building_name}
+                        value={formData.building_name || ""}
                         onChange={handleInputChange}
                         placeholder="Enter building name"
-                        disabled={isReadOnly}
                         className="focus:ring-blue-500 focus:border-blue-500 w-full"
                       />
                     </div>
 
+                    {/* Property No */}
                     <div className="space-y-2">
                       <Label htmlFor="property_no">Property No</Label>
                       <Input
                         id="property_no"
                         name="property_no"
-                        value={formData.property_no}
+                        value={formData.property_no || ""}
                         onChange={handleInputChange}
                         placeholder="Enter property number"
-                        disabled={isReadOnly}
                         className="focus:ring-blue-500 focus:border-blue-500 w-full"
                       />
                     </div>
 
-                    <div className="space-y-2">
-                      <Label
-                        htmlFor="area"
-                        className="flex items-center space-x-2"
-                      >
-                        <MapPin className="h-4 w-4 text-gray-500" />
-                        <span>Area</span>
-                      </Label>
-                      <Input
-                        id="area"
-                        name="area"
-                        value={formData.area}
-                        onChange={handleInputChange}
-                        placeholder="Enter area"
-                        disabled={isReadOnly}
-                        className="focus:ring-blue-500 focus:border-blue-500 w-full"
-                      />
+                    <div className="col-span-1 md:col-span-2 lg:col-span-3">
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                        {/* Emirate */}
+                        <div className="space-y-2">
+                          <Label className="flex items-center space-x-2">
+                            <MapPin className="h-4 w-4 text-gray-500" />
+                            <span>Emirate</span>
+                          </Label>
+                          <Select
+                            value={selectedEmirate}
+                            onValueChange={handleEmirateChange}
+                            disabled={addressLoading}
+                          >
+                            <SelectTrigger className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                              <SelectValue
+                                placeholder={
+                                  addressLoading
+                                    ? "Loading..."
+                                    : "Select emirate"
+                                }
+                              />
+                            </SelectTrigger>
+                            <SelectContent className="bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                              {emirates.map((emirate) => (
+                                <SelectItem
+                                  key={emirate.name}
+                                  value={emirate.name}
+                                  className="px-4 py-2 text-sm text-gray-700 hover:bg-blue-100 focus:bg-blue-100 cursor-pointer"
+                                >
+                                  {emirate.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        {/* City */}
+                        <div className="space-y-2">
+                          <Label>City</Label>
+                          <Select
+                            value={selectedCity}
+                            onValueChange={handleCityChange}
+                            disabled={!selectedEmirate || addressLoading}
+                          >
+                            <SelectTrigger className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                              <SelectValue
+                                placeholder={
+                                  !selectedEmirate
+                                    ? "Select emirate first"
+                                    : addressLoading
+                                    ? "Loading..."
+                                    : "Select city"
+                                }
+                              />
+                            </SelectTrigger>
+                            <SelectContent className="bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                              {cities.map((city) => (
+                                <SelectItem
+                                  key={city.name}
+                                  value={city.name}
+                                  className="px-4 py-2 text-sm text-gray-700 hover:bg-blue-100 focus:bg-blue-100 cursor-pointer"
+                                >
+                                  {city.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      {/* Area */}
+                      <div className="space-y-2">
+                        <Label>Area</Label>
+                        <Select
+                          value={showOtherAreaInput ? "other" : selectedArea}
+                          onValueChange={handleAreaChange}
+                          disabled={!selectedCity || addressLoading}
+                        >
+                          <SelectTrigger className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <SelectValue
+                              placeholder={
+                                !selectedCity
+                                  ? "Select city first"
+                                  : addressLoading
+                                  ? "Loading..."
+                                  : "Select area"
+                              }
+                            />
+                          </SelectTrigger>
+                          <SelectContent className="bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                            {areas.map((area) => (
+                              <SelectItem
+                                key={area.name}
+                                value={area.name}
+                                className="px-4 py-2 text-sm text-gray-700 hover:bg-blue-100 focus:bg-blue-100 cursor-pointer"
+                              >
+                                {area.name}
+                              </SelectItem>
+                            ))}
+                            <SelectItem
+                              value="other"
+                              className="px-4 py-2 text-sm text-gray-700 hover:bg-blue-100 focus:bg-blue-100 cursor-pointer"
+                            >
+                              Other (Not listed)
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+
+                        {/* Other Area Input */}
+                        {showOtherAreaInput && (
+                          <div className="mt-2 flex gap-2">
+                            <Input
+                              type="text"
+                              value={newAreaName}
+                              onChange={(e) => setNewAreaName(e.target.value)}
+                              placeholder="Enter new area name"
+                              className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                            <Button
+                              type="button"
+                              onClick={handleAddNewArea}
+                              disabled={isAddingArea || !newAreaName.trim()}
+                              className="bg-blue-600 hover:bg-blue-700 text-white"
+                            >
+                              {isAddingArea ? (
+                                <>
+                                  <span className="animate-spin mr-2">↻</span>
+                                  Adding...
+                                </>
+                              ) : (
+                                "Add Area"
+                              )}
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Combined Address Display */}
+                      <div className="mt-4">
+                        <Label className="flex items-center space-x-2 text-sm font-medium text-gray-700 mb-2">
+                          <MapPin className="h-4 w-4 text-gray-500" />
+                          <span>Combined Address</span>
+                        </Label>
+                        <Input
+                          type="text"
+                          value={formData.area || ""}
+                          readOnly
+                          placeholder="Address will be combined automatically"
+                          className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm bg-gray-50 text-gray-600 cursor-not-allowed"
+                          title="This field is automatically generated from the address components above"
+                        />
+                      </div>
                     </div>
 
-                    <div className="flex flex-col sm:flex-row gap-4 col-span-1 md:col-span-2 lg:col-span-1">
-                      <div className="space-y-2 flex-1">
+                    <div className="grid grid-cols-2 sm:grid-cols-2 gap-4 col-span-1 md:col-span-2 lg:col-span-3">
+                      <div className="space-y-1">
                         <Label
                           htmlFor="start_date"
                           className="flex items-center space-x-1"
@@ -1075,14 +1484,15 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                           id="start_date"
                           name="start_date"
                           type="date"
-                          value={formData.start_date}
                           readOnly
-                          disabled={isReadOnly}
-                          className="w-full bg-gray-100 cursor-not-allowed"
+                          value={formData.start_date}
+                          onChange={handleInputChange}
+                          required
+                          className="pl-0.5 w-full"
                         />
                       </div>
 
-                      <div className="space-y-2 flex-1">
+                      <div className="space-y-1">
                         <Label
                           htmlFor="finish_date"
                           className="flex items-center space-x-1"
@@ -1097,10 +1507,22 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                           name="finish_date"
                           type="date"
                           value={formData.finish_date || ""}
-                          onChange={handleInputChange}
+                          onChange={(e) => {
+                            if (
+                              formData.start_date &&
+                              new Date(e.target.value) <
+                                new Date(formData.start_date)
+                            ) {
+                              toast.error(
+                                "Finish date cannot be before start date"
+                              );
+                              return;
+                            }
+                            handleInputChange(e);
+                          }}
+                          min={formData.start_date}
                           required
-                          disabled={isReadOnly}
-                          className="w-full"
+                          className="w-full -px-1"
                         />
                       </div>
                     </div>
@@ -1245,24 +1667,24 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                                 </div>
                               </div>
 
-                                <div className="space-y-2">
-                                  <Label className="text-xs font-medium text-gray-600">
-                                    UOM
-                                  </Label>
-                                  <Input
-                                    placeholder="Unit"
-                                    value={charge.uom}
-                                    onChange={(e) =>
-                                      updatePressingCharge(
-                                        index,
-                                        "uom",
-                                        e.target.value
-                                      )
-                                    }
-                                    disabled={isReadOnly}
-                                    className="h-9 text-sm w-full"
-                                  />
-                                </div>
+                              <div className="space-y-2">
+                                <Label className="text-xs font-medium text-gray-600">
+                                  UOM
+                                </Label>
+                                <Input
+                                  placeholder="Unit"
+                                  value={charge.uom}
+                                  onChange={(e) =>
+                                    updatePressingCharge(
+                                      index,
+                                      "uom",
+                                      e.target.value
+                                    )
+                                  }
+                                  disabled={isReadOnly}
+                                  className="h-9 text-sm w-full"
+                                />
+                              </div>
                               {/* No of Sides and Price - Side by side */}
                               <div className="grid grid-cols-2 gap-3">
                                 <div className="space-y-2">
@@ -1606,7 +2028,6 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
         </div>
       </div>
 
-      {/* Add Customer Dialog */}
       <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
         <DialogContent className="sm:max-w-[425px] bg-white">
           <DialogHeader>
@@ -1628,7 +2049,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
+      {/* Add Customer Dialog */}
       <Dialog
         open={showAddCustomerDialog}
         onOpenChange={setShowAddCustomerDialog}
@@ -1639,12 +2060,19 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
             <DialogDescription>
               Fill in the details to create a new customer.
             </DialogDescription>
+            <button
+              onClick={handleCloseCustomerDialog}
+              className="absolute top-4 right-4"
+            >
+              <X className="h-4 w-4" />
+            </button>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="customer_name">
                 Customer Name <span className="text-red-500">*</span>
               </Label>
+
               <Input
                 id="customer_name"
                 name="customer_name"
@@ -1676,11 +2104,8 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
               />
             </div>
           </div>
-          <div className="flex justify-end gap-2">
-            <Button
-              variant="outline"
-              onClick={() => setShowAddCustomerDialog(false)}
-            >
+          <div className="flex justify-end space-x-2 pt-4">
+            <Button variant="outline" onClick={handleCloseCustomerDialog}>
               Cancel
             </Button>
             <Button onClick={handleCreateCustomer} disabled={creatingCustomer}>

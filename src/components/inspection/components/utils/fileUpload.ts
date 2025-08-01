@@ -4,14 +4,12 @@ import { toast } from "react-hot-toast";
 import { frappeAPI } from "../../../../api/frappeClient";
 import { z } from "zod";
 
-
 export const formSchema = z.object({
   inspection_date: z.date(),
   inspection_status: z.string().optional(),
   inspection_time: z.string(),
   property_type: z.string(),
   site_photos: z.any().optional(),
-  // Fix: Change measurement_sketch to accept MediaItem or undefined
   measurement_sketch: z.union([
     z.object({
       id: z.string(),
@@ -22,36 +20,32 @@ export const formSchema = z.object({
     z.undefined()
   ]).optional(),
   inspection_notes: z.string().optional(),
-  site_dimensions: z
-    .array(
-      z.object({
-        floor: z.string().optional(),
-        room: z.string().optional(),
-        entity: z.string().optional(),
-        area_name: z.string(),
-        dimensionsunits: z.string(),
-        // Fix: Change media to accept MediaItem or undefined
-        media: z.union([
-          z.object({
-            id: z.string(),
-            url: z.string(),
-            type: z.enum(["image", "video", "audio"]),
-            remarks: z.string().optional(),
-          }),
-          z.undefined()
-        ]).optional(),
-        media_2: z.union([
-          z.object({
-            id: z.string(),
-            url: z.string(),
-            type: z.enum(["image", "video", "audio"]),
-            remarks: z.string().optional(),
-          }),
-          z.undefined()
-        ]).optional(),
-      })
-    )
-    .optional(),
+  site_dimensions: z.array(
+    z.object({
+      floor: z.string().optional(),
+      room: z.string().optional(),
+      entity: z.string().optional(),
+      area_name: z.string(),
+      dimensionsunits: z.string(),
+      images: z.array(
+        z.object({
+          id: z.string(),
+          url: z.string(),
+          type: z.enum(["image", "video"]), // Only image and video allowed for images
+          remarks: z.string().optional(),
+        })
+      ).optional(),
+      media_2: z.union([
+        z.object({
+          id: z.string(),
+          url: z.string(),
+          type: z.literal("audio"), // Strictly only audio allowed
+          remarks: z.string().optional(),
+        }),
+        z.undefined()
+      ]).optional(),
+    })
+  ).optional(),
   custom_site_images: z
     .array(
       z.object({
@@ -63,6 +57,8 @@ export const formSchema = z.object({
     )
     .optional(),
 });
+
+// MediaItem type for TypeScriptexport type MediaItem = z.infer<typeof formSchema>["measurement_sketch"];
 
 
 // Type for our media items
@@ -198,7 +194,7 @@ export const recordAudio = async (): Promise<File | null> => {
 
   } catch (error) {
     console.error("Audio recording error:", error);
-    toast.error(`Recording failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    toast.error(`Recording failed`);
     return null;
   }
 };

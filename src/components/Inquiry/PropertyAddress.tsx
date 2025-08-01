@@ -68,6 +68,14 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
         
         console.log("Parsed address:", { number, building_name, area, city, emirate });
         
+        // Update form data with parsed components if they're different
+        if (number && number !== formData.custom_bulding__apartment__villa__office_number) {
+          handleSelectChange("custom_bulding__apartment__villa__office_number", number);
+        }
+        if (building_name && building_name !== formData.custom_building_name) {
+          handleSelectChange("custom_building_name", building_name);
+        }
+        
         // Set the emirate if it exists in the emirates list
         const foundEmirate = emirates.find(e => e.name.toLowerCase() === emirate.toLowerCase());
         if (foundEmirate) {
@@ -98,13 +106,13 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
                     }
                     setHasPrefilled(true);
                     setIsInitialLoad(false);
-                  }, 100);
+                  }, 200); // Increased timeout to ensure areas are loaded
                 });
               } else {
                 setHasPrefilled(true);
                 setIsInitialLoad(false);
               }
-            }, 100);
+            }, 200); // Increased timeout to ensure cities are loaded
           });
         } else {
           setHasPrefilled(true);
@@ -121,7 +129,7 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
       setHasPrefilled(true);
       setIsInitialLoad(false);
     }
-  }, [getPropertyArea, emirates, cities, areas, fetchCities, fetchAreas, hasPrefilled]);
+  }, [getPropertyArea, emirates, cities, areas, fetchCities, fetchAreas, hasPrefilled, formData.custom_bulding__apartment__villa__office_number, formData.custom_building_name, handleSelectChange]);
 
   // Function to combine address components into a single string
   const combineAddress = useCallback((

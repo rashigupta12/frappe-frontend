@@ -49,7 +49,7 @@ interface ReciptStoreActions {
 const initialState: ReciptFormData = {
   date: new Date().toISOString().split('T')[0],
   bill_number: '',
-  amountaed: '0.00',
+  amountaed: '',
   paid_by: '',
   paid_from: '',
   custom_purpose_of_payment: '',
