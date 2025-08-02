@@ -982,6 +982,18 @@ resetFirstTimePassword: async (username: string, newPassword: string) => {
     return await frappeAPI.makeAuthenticatedRequest('GET', `/api/resource/Receipt EITS?filters=[["paid_by","=","${paid_by}"]]&order_by=creation%20desc`);
   },
 
+  createFeedback: async (feedbackData: Record<string, unknown>) => {
+    return await frappeAPI.makeAuthenticatedRequest('POST', '/api/resource/Issue', feedbackData);
+  },
+  editFeedback: async (feedbackId: string, feedbackData: Record<string, unknown>) => {
+    return await frappeAPI.makeAuthenticatedRequest('PUT', `/api/resource/Issue/${feedbackId}`, feedbackData);
+  },
+  getFeedbackByUserId: async (userId: string) => {
+    return await frappeAPI.makeAuthenticatedRequest('GET', `/api/resource/Issue?filters=[["customer","=","${userId}"]]`);
+  },
+  getFeedbackById: async (feedbackId: string) => {
+    return await frappeAPI.makeAuthenticatedRequest('GET', `/api/resource/Issue/${feedbackId}`);
+  },
   upload: async (file: File, options: {
     is_private?: boolean;
     folder?: string;

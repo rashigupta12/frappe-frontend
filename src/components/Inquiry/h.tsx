@@ -130,7 +130,8 @@ const InquiryPage = () => {
         (inquiry.mobile_no?.toLowerCase() || "").includes(
           searchTerm.toLowerCase()
         )
-    );
+
+    )
 
   return (
     <div className="w-full pb-20">
@@ -151,7 +152,7 @@ const InquiryPage = () => {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
                   type="text"
-                  placeholder="Search inquiries..."
+                  placeholder="Search by customer name "
                   className="pl-10 w-full bg-white border border-gray-300"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -199,7 +200,7 @@ const InquiryPage = () => {
                 />
               </div>
 
-              <div className="w-[20%] flex justify-end">
+              {/* <div className="w-[20%] flex justify-end">
                 <Select
                   value={selectedJobType}
                   onValueChange={setSelectedJobType}
@@ -225,7 +226,7 @@ const InquiryPage = () => {
                     ))}
                   </SelectContent>
                 </Select>
-              </div>
+              </div> */}
             </div>
           </div>
         </div>
@@ -254,7 +255,7 @@ const InquiryPage = () => {
             </Button>
           </div>
         ) : (
-          <div className="space-y-3 p-2 lg:grid lg:grid-cols-3 lg:gap-4 lg:space-y-0">
+          <div className="space-y-3 p-2 lg:grid lg:grid-cols-2 lg:gap-4 lg:space-y-0">
             {filteredInquiries.map((inquiry) => (
               <div
                 key={inquiry.name}
@@ -266,18 +267,18 @@ const InquiryPage = () => {
               >
                 <div className="flex justify-between items-start gap-2">
                   <div className="flex items-start gap-2 min-w-0 flex-1">
-                    <div className="bg-emerald-100/50 text-emerald-800 rounded-md p-1.5 mt-0.5 flex-shrink-0 lg:p-2">
-                      <User className="h-4 w-4 lg:h-5 lg:w-5" />
+                    <div className="bg-emerald-100/50 text-emerald-800 rounded-md p-1.5 mt-0.5 flex-shrink-0 ">
+                      <User className="h-4 w-4 lg:h-4 lg:w-4" />
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
-                        <h4 className="font-semibold text-sm lg:text-base text-gray-800 truncate group-hover:text-emerald-700 transition-colors">
+                        <h4 className="font-semibold text-sm  text-gray-800 truncate group-hover:text-emerald-700 transition-colors">
                           {inquiry.lead_name}
                         </h4>
                         {inquiry.custom_job_type && (
                           <Badge
                             variant="outline"
-                            className="text-xs lg:text-sm px-1.5 py-0.5 rounded-full border shadow-none self-start sm:self-auto"
+                            className="text-xs  px-1.5 py-0.5 rounded-full border shadow-none self-start sm:self-auto"
                             style={{
                               backgroundColor:
                                 getJobTypeColor(inquiry.custom_job_type).bg +
@@ -299,23 +300,23 @@ const InquiryPage = () => {
                   <div className="flex items-center gap-1 flex-shrink-0">
                     <a
                       href={`tel:${inquiry.mobile_no}`}
-                      className="flex items-center justify-center h-7 w-7 lg:h-8 lg:w-8 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"
+                      className="flex items-center justify-center h-5 w-5 lg:h-5 lg:w-5 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"
                       onClick={(e) => e.stopPropagation()}
                       title={`Call ${inquiry.mobile_no}`}
                     >
-                      <Phone className="h-3 w-3 lg:h-4 lg:w-4" />
+                      <Phone className="h-3 w-3 lg:h-3 lg:w-3" />
                     </a>
 
                     <Button
                       variant="outline"
                       size="sm"
-                      className="h-7 w-7 lg:h-8 lg:w-8 p-0 bg-white text-emerald-600 border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 transition-colors shadow-sm"
+                      className="h-5 w-5 lg:h-5 lg:w-5 p-0 bg-white text-emerald-600 border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 transition-colors shadow-sm"
                       onClick={(e) => {
                         e.stopPropagation();
                         openEditInquiryForm(inquiry);
                       }}
                     >
-                      <Edit className="h-3 w-3 lg:h-4 lg:w-4" />
+                      <Edit className="h-3 w-3 lg:h-3 lg:w-3" />
                     </Button>
                   </div>
                 </div>

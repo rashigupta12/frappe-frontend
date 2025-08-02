@@ -1,4 +1,4 @@
-import { CreditCard, FileText, LogOut, Menu, X } from "lucide-react";
+import { CreditCard, FileText, LogOut, Menu, MessageCircle, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
@@ -10,6 +10,7 @@ import PaymentContainer from "../account/PaymentContainer";
 import PaymentForm from "../account/Paytmentform";
 import ReceiptForm from "../account/Recipt";
 import ReceiptContainer from "../account/ReciptContainer";
+import FeedbackComponent from "../../common/FeedbackManagement";
 
 export default function AccountDashboard() {
   const navigate = useNavigate();
@@ -178,6 +179,17 @@ export default function AccountDashboard() {
             </h1>
 
             <div className="flex items-center gap-1 sm:gap-2">
+
+              <FeedbackComponent className="lg:hidden" >
+              <Button
+                variant="ghost"
+                size="icon"
+                className="p-1.5 rounded-lg hover:bg-blue-50 text-white bg-emerald-700 hover:text-blue-700 transition-colors"
+              >
+                <MessageCircle className="h-4 w-4" />
+                <span className="sr-only">Feedback</span>
+              </Button>
+            </FeedbackComponent>
               <Button
                 variant="ghost"
                 size="icon"
@@ -200,10 +212,21 @@ export default function AccountDashboard() {
                     </span>
                   </Button>
                 </PopoverTrigger>
+              
                 <PopoverContent
                   className="w-48 border border-emerald-200 bg-white shadow-md"
                   align="end"
                 >
+                  <FeedbackComponent>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full justify-start gap-2 text-blue-600 hover:bg-blue-100 hover:text-blue-700 transition-colors"
+                    >
+                      <MessageCircle className="h-4 w-4" />
+                      Feedback
+                    </Button>
+                  </FeedbackComponent>
                   <Button
                     variant="ghost"
                     size="sm"
