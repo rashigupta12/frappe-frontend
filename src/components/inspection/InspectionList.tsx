@@ -155,7 +155,7 @@ const MobileInspectionList = ({ userEmail }: InspectionListProps) => {
             <div className="lg:flex-1 mb-3 lg:mb-0">
               <input
                 type="text"
-                placeholder="Search inspections..."
+                placeholder="Search by name, job type, or description"
                 className="w-full px-3 py-2 text-sm lg:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}

@@ -156,9 +156,9 @@ export const frappeAPI = {
   // Enhanced login method
 login: async (username: string, password: string) => {
   try {
-    // Clear any existing session data
-    localStorage.removeItem('frappe_user');
-    localStorage.removeItem('frappe_session');
+    // // Clear any existing session data
+    // localStorage.removeItem('frappe_user');
+    // localStorage.removeItem('frappe_session');
 
     const response = await frappeClient.post('/api/method/login', {
       usr: username,
@@ -894,6 +894,9 @@ resetFirstTimePassword: async (username: string, newPassword: string) => {
   },
   getFeedbackByUserId: async (userId: string) => {
     return await frappeAPI.makeAuthenticatedRequest('GET', `/api/resource/Issue?filters=[["customer","=","${userId}"]]`);
+  },
+  getFeedbackById: async (feedbackId: string) => {
+    return await frappeAPI.makeAuthenticatedRequest('GET', `/api/resource/Issue/${feedbackId}`);
   },
   
   upload: async (file: File, options: {

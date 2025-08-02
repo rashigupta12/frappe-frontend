@@ -762,22 +762,23 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
       }
     }
 
-    // Combine all uploaded items at once
+    // Handle uploaded items
     if (uploadedItems.length > 0) {
-      const updatedItems = [...currentMediaItems, ...uploadedItems];
-      setCurrentMediaItems(updatedItems);
-      
-      if (multiple) {
-        onChange(updatedItems);
-      } else {
-        onChange(updatedItems[0]);
-      }
-
-      // Show remarks dialog for all items at once
+      // For single file uploads, show remarks dialog first (don't update state yet)
       if (uploadedItems.length === 1) {
         setPendingMediaItem(uploadedItems[0]);
         setShowRemarksDialog(true);
       } else {
+        // For multiple files, update state immediately and skip remarks dialog
+        const updatedItems = [...currentMediaItems, ...uploadedItems];
+        setCurrentMediaItems(updatedItems);
+        
+        if (multiple) {
+          onChange(updatedItems);
+        } else {
+          onChange(updatedItems[0]);
+        }
+
         toast.success(`${uploadedItems.length} files uploaded successfully!`);
       }
     }

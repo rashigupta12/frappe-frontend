@@ -41,11 +41,13 @@ const ProtectedRoute = ({
       if (user?.username) {
         const firstLoginCheck = await frappeAPI.checkFirstLogin(user.username);
         if (firstLoginCheck.requiresPasswordReset) {
-          window.location.href = `/first-time-password-reset?email=${encodeURIComponent(user.username)}`;
+          window.location.href = `/first-time-password-reset?email=${encodeURIComponent(
+            user.username
+          )}`;
         }
       }
     };
-    
+
     checkPasswordReset();
   }, [user]);
 
@@ -69,6 +71,8 @@ const ProtectedRoute = ({
 };
 
 // Public Route - prevents authenticated users from accessing login
+// In your App.tsx - Fix the PublicRoute component
+
 const PublicRoute = ({ children }: { children: ReactNode }) => {
   const { isAuthenticated, loading, user } = useAuth();
 
@@ -78,11 +82,13 @@ const PublicRoute = ({ children }: { children: ReactNode }) => {
       if (user?.username && isAuthenticated) {
         const firstLoginCheck = await frappeAPI.checkFirstLogin(user.username);
         if (firstLoginCheck.requiresPasswordReset) {
-          window.location.href = `/first-time-password-reset?email=${encodeURIComponent(user.username)}`;
+          window.location.href = `/first-time-password-reset?email=${encodeURIComponent(
+            user.username
+          )}`;
         }
       }
     };
-    
+
     checkPasswordReset();
   }, [user, isAuthenticated]);
 
@@ -90,17 +96,28 @@ const PublicRoute = ({ children }: { children: ReactNode }) => {
     return <PasswordResetLoader />;
   }
 
-  if (isAuthenticated && user && !window.location.pathname.includes('first-time-password-reset')) {
+  if (
+    isAuthenticated &&
+    user &&
+    !window.location.pathname.includes("first-time-password-reset")
+  ) {
     // Check if password reset is required first
     if (user.requiresPasswordReset) {
-      return <Navigate to={`/first-time-password-reset?email=${encodeURIComponent(user.username)}`} replace />;
+      return (
+        <Navigate
+          to={`/first-time-password-reset?email=${encodeURIComponent(
+            user.username
+          )}`}
+          replace
+        />
+      );
     }
-    
-    // Normal role-based redirect
+
+    // ✅ FIXED: Role-based redirect with correct role names
     switch (user.role) {
       case "EITS_Sale_Representative":
         return <Navigate to="/sales" replace />;
-      case "EITS_Project_Manager":
+      case "EITS_Project_Manager": // ✅ FIXED: Use EITS_Project_Manager instead of project_manager
         return <Navigate to="/project_manager" replace />;
       case "EITS_Site_Inspector":
         return <Navigate to="/inspector" replace />;
@@ -227,13 +244,13 @@ function AppRoutes() {
       <Routes>
         {/* Root redirect to login */}
         <Route path="/" element={<HomePage />} />
-         <Route 
-          path="/first-time-password-reset" 
+        <Route
+          path="/first-time-password-reset"
           element={
             <PublicRoute>
               <FirstTimePasswordReset />
             </PublicRoute>
-          } 
+          }
         />
 
         {/* Public Routes */}
@@ -295,6 +312,8 @@ function AppRoutes() {
           path="/project_manager"
           element={
             <ProtectedRoute allowedRoles={["EITS_Project_Manager"]}>
+              {" "}
+              {/* ✅ FIXED: Use EITS_Project_Manager */}
               <JobCardProvider>
                 <JobCardOtherProvider>
                   <ProjectManagerDashboard />

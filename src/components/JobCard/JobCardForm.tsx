@@ -174,113 +174,117 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
     },
     []
   );
-// Replace the existing address parsing useEffect with this corrected version
+  // Replace the existing address parsing useEffect with this corrected version
 
-useEffect(() => {
-  if (formData.area && !hasPrefilled && emirates.length > 0) {
-    const parts = formData.area.split(",").map((part: string) => part.trim());
+  useEffect(() => {
+    if (formData.area && !hasPrefilled && emirates.length > 0) {
+      const parts = formData.area.split(",").map((part: string) => part.trim());
 
-    // Address format: "area, city, emirate" (Al Satwa, Dubai, Dubai)
-    if (parts.length >= 3) {
-      const area = parts[0]; // First part is area (Al Satwa)
-      const city = parts[1]; // Second part is city (Dubai)
-      const emirate = parts[2]; // Third part is emirate (Dubai)
+      // Address format: "area, city, emirate" (Al Satwa, Dubai, Dubai)
+      if (parts.length >= 3) {
+        const area = parts[0]; // First part is area (Al Satwa)
+        const city = parts[1]; // Second part is city (Dubai)
+        const emirate = parts[2]; // Third part is emirate (Dubai)
 
-      console.log("Parsed address:", { area, city, emirate });
+        console.log("Parsed address:", { area, city, emirate });
 
-      // Set the emirate if it exists in the emirates list
-      const foundEmirate = emirates.find(
-        (e) => e.name.toLowerCase() === emirate.toLowerCase()
-      );
-      
-      if (foundEmirate) {
-        setSelectedEmirate(foundEmirate.name);
+        // Set the emirate if it exists in the emirates list
+        const foundEmirate = emirates.find(
+          (e) => e.name.toLowerCase() === emirate.toLowerCase()
+        );
 
-        // Fetch cities for this emirate and then process
-        fetchCities(foundEmirate.name).then(() => {
-          // Use a longer timeout to ensure cities are loaded
-          setTimeout(() => {
-            const foundCity = cities.find(
-              (c) => c.name.toLowerCase() === city.toLowerCase()
-            );
-            
-            if (foundCity) {
-              setSelectedCity(foundCity.name);
+        if (foundEmirate) {
+          setSelectedEmirate(foundEmirate.name);
 
-              // Fetch areas for this city and then process
-              fetchAreas(foundCity.name).then(() => {
-                // Use a longer timeout to ensure areas are loaded
-                setTimeout(() => {
-                  const foundArea = areas.find(
-                    (a) => a.name.toLowerCase() === area.toLowerCase()
-                  );
-                  
-                  if (foundArea) {
-                    setSelectedArea(foundArea.name);
-                    setShowOtherAreaInput(false);
-                    setNewAreaName("");
-                  } else if (area) {
-                    // If area doesn't exist in dropdown but has a value, show "other" input
-                    setShowOtherAreaInput(true);
-                    setNewAreaName(area);
-                    setSelectedArea("");
-                  }
+          // Fetch cities for this emirate and then process
+          fetchCities(foundEmirate.name)
+            .then(() => {
+              // Use a longer timeout to ensure cities are loaded
+              setTimeout(() => {
+                const foundCity = cities.find(
+                  (c) => c.name.toLowerCase() === city.toLowerCase()
+                );
+
+                if (foundCity) {
+                  setSelectedCity(foundCity.name);
+
+                  // Fetch areas for this city and then process
+                  fetchAreas(foundCity.name)
+                    .then(() => {
+                      // Use a longer timeout to ensure areas are loaded
+                      setTimeout(() => {
+                        const foundArea = areas.find(
+                          (a) => a.name.toLowerCase() === area.toLowerCase()
+                        );
+
+                        if (foundArea) {
+                          setSelectedArea(foundArea.name);
+                          setShowOtherAreaInput(false);
+                          setNewAreaName("");
+                        } else if (area) {
+                          // If area doesn't exist in dropdown but has a value, show "other" input
+                          setShowOtherAreaInput(true);
+                          setNewAreaName(area);
+                          setSelectedArea("");
+                        }
+                        setHasPrefilled(true);
+                        setIsInitialLoad(false);
+                      }, 500); // Increased timeout to 500ms
+                    })
+                    .catch((error) => {
+                      console.error("Error fetching areas:", error);
+                      setHasPrefilled(true);
+                      setIsInitialLoad(false);
+                    });
+                } else {
+                  console.log("City not found:", city);
                   setHasPrefilled(true);
                   setIsInitialLoad(false);
-                }, 500); // Increased timeout to 500ms
-              }).catch((error) => {
-                console.error("Error fetching areas:", error);
-                setHasPrefilled(true);
-                setIsInitialLoad(false);
-              });
-            } else {
-              console.log("City not found:", city);
+                }
+              }, 300); // Increased timeout to 300ms
+            })
+            .catch((error) => {
+              console.error("Error fetching cities:", error);
               setHasPrefilled(true);
               setIsInitialLoad(false);
-            }
-          }, 300); // Increased timeout to 300ms
-        }).catch((error) => {
-          console.error("Error fetching cities:", error);
+            });
+        } else {
+          console.log("Emirate not found:", emirate);
           setHasPrefilled(true);
           setIsInitialLoad(false);
-        });
+        }
       } else {
-        console.log("Emirate not found:", emirate);
+        console.log("Address format not recognized:", formData.area);
         setHasPrefilled(true);
         setIsInitialLoad(false);
       }
-    } else {
-      console.log("Address format not recognized:", formData.area);
+    } else if (!formData.area) {
       setHasPrefilled(true);
       setIsInitialLoad(false);
     }
-  } else if (!formData.area) {
-    setHasPrefilled(true);
-    setIsInitialLoad(false);
-  }
-}, [
-  formData.area,
-  emirates,
-  cities,
-  areas,
-  fetchCities,
-  fetchAreas,
-  hasPrefilled,
-]);
+  }, [
+    formData.area,
+    emirates,
+    cities,
+    areas,
+    fetchCities,
+    fetchAreas,
+    hasPrefilled,
+  ]);
 
-// Also add this useEffect to reset hasPrefilled when jobCard changes
-useEffect(() => {
-  if (jobCard) {
-    setHasPrefilled(false);
-    setIsInitialLoad(true);
-    // Reset address selection states when loading a new job card
-    setSelectedEmirate("");
-    setSelectedCity("");
-    setSelectedArea("");
-    setShowOtherAreaInput(false);
-    setNewAreaName("");
-  }
-}, [jobCard?.name]); // Only trigger when the job card ID changes
+  // Also add this useEffect to reset hasPrefilled when jobCard changes
+  useEffect(() => {
+    if (jobCard) {
+      setHasPrefilled(false);
+      setIsInitialLoad(true);
+      // Reset address selection states when loading a new job card
+      setSelectedEmirate("");
+      setSelectedCity("");
+      setSelectedArea("");
+      setShowOtherAreaInput(false);
+      setNewAreaName("");
+    }
+  }, [jobCard?.name]); // Only trigger when the job card ID changes
 
   // Update combined address whenever any address component changes
   useEffect(() => {
@@ -480,7 +484,6 @@ useEffect(() => {
   // Load existing job card data when editing
   useEffect(() => {
     if (jobCard) {
-      
       setFormData({
         date: jobCard.date || new Date().toISOString().split("T")[0],
         building_name: jobCard.building_name || "",
@@ -1075,7 +1078,6 @@ useEffect(() => {
       onClose();
     } catch (error) {
       console.error("Form submission error:", error);
-     
     }
   };
 
@@ -1303,7 +1305,6 @@ useEffect(() => {
                       />
                     </div>
 
-                    {/* Property No */}
                     <div className="space-y-2">
                       <Label htmlFor="property_no">Property No</Label>
                       <Input
@@ -1318,7 +1319,6 @@ useEffect(() => {
 
                     <div className="col-span-1 md:col-span-2 lg:col-span-3">
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                        {/* Emirate */}
                         <div className="space-y-2">
                           <Label className="flex items-center space-x-2">
                             <MapPin className="h-4 w-4 text-gray-500" />
@@ -1327,7 +1327,7 @@ useEffect(() => {
                           <Select
                             value={selectedEmirate}
                             onValueChange={handleEmirateChange}
-                            disabled={addressLoading}
+                            // disabled={addre}
                           >
                             <SelectTrigger className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                               <SelectValue
@@ -1352,13 +1352,12 @@ useEffect(() => {
                           </Select>
                         </div>
 
-                        {/* City */}
                         <div className="space-y-2">
                           <Label>City</Label>
                           <Select
                             value={selectedCity}
                             onValueChange={handleCityChange}
-                            disabled={!selectedEmirate || addressLoading}
+                            disabled={!selectedEmirate }
                           >
                             <SelectTrigger className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                               <SelectValue
@@ -1385,7 +1384,7 @@ useEffect(() => {
                           </Select>
                         </div>
                       </div>
-                      {/* Area */}
+
                       <div className="space-y-2">
                         <Label>Area</Label>
                         <Select
@@ -1423,7 +1422,6 @@ useEffect(() => {
                           </SelectContent>
                         </Select>
 
-                        {/* Other Area Input */}
                         {showOtherAreaInput && (
                           <div className="mt-2 flex gap-2">
                             <Input
@@ -1452,7 +1450,6 @@ useEffect(() => {
                         )}
                       </div>
 
-                      {/* Combined Address Display */}
                       <div className="mt-4">
                         <Label className="flex items-center space-x-2 text-sm font-medium text-gray-700 mb-2">
                           <MapPin className="h-4 w-4 text-gray-500" />
@@ -1627,7 +1624,7 @@ useEffect(() => {
                               </div>
 
                               {/* Size and Thickness - Side by side */}
-                              <div className="grid grid-cols-2 gap-1">
+                              {/* <div className="grid grid-cols-3 gap-1">
                                 <div className="space-y-2">
                                   <Label className="text-xs font-medium text-gray-600">
                                     Size
@@ -1665,9 +1662,7 @@ useEffect(() => {
                                     className="h-9 text-sm w-full"
                                   />
                                 </div>
-                              </div>
-
-                              <div className="space-y-2">
+                                <div className="space-y-2">
                                 <Label className="text-xs font-medium text-gray-600">
                                   UOM
                                 </Label>
@@ -1685,6 +1680,67 @@ useEffect(() => {
                                   className="h-9 text-sm w-full"
                                 />
                               </div>
+                              </div> */}
+
+                              <div className="flex gap-2">
+                                <div className="w-[50%] space-y-2">
+                                  <Label className="text-xs font-medium text-gray-600">
+                                    Size
+                                  </Label>
+                                  <Input
+                                    placeholder="Size"
+                                    value={charge.size}
+                                    onChange={(e) =>
+                                      updatePressingCharge(
+                                        index,
+                                        "size",
+                                        e.target.value
+                                      )
+                                    }
+                                    disabled={isReadOnly}
+                                    className="h-9 text-sm w-full"
+                                  />
+                                </div>
+
+                                <div className="w-[30%] space-y-2">
+                                  <Label className="text-xs font-medium text-gray-600">
+                                    Thickness
+                                  </Label>
+                                  <Input
+                                    placeholder="Thickness"
+                                    value={charge.thickness}
+                                    onChange={(e) =>
+                                      updatePressingCharge(
+                                        index,
+                                        "thickness",
+                                        e.target.value
+                                      )
+                                    }
+                                    disabled={isReadOnly}
+                                    className="h-9 text-sm w-full"
+                                  />
+                                </div>
+
+                                <div className="w-[20%] space-y-2">
+                                  <Label className="text-xs font-medium text-gray-600">
+                                    UOM
+                                  </Label>
+                                  <Input
+                                    placeholder="Unit"
+                                    value={charge.uom}
+                                    onChange={(e) =>
+                                      updatePressingCharge(
+                                        index,
+                                        "uom",
+                                        e.target.value
+                                      )
+                                    }
+                                    disabled={isReadOnly}
+                                    className="h-9 text-sm w-full"
+                                  />
+                                </div>
+                              </div>
+
                               {/* No of Sides and Price - Side by side */}
                               <div className="grid grid-cols-2 gap-3">
                                 <div className="space-y-2">
@@ -1732,6 +1788,23 @@ useEffect(() => {
                                     </span>
                                   </div>
                                 </div>
+
+                              </div>
+                               <div className="flex justify-end items-end pt-2">
+                                <Label className="text-xs font-medium text-gray-600">
+                                  Total Amount: {charge.amount} AED
+                                </Label>
+                                {/* {!isReadOnly && (
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-red-500 hover:text-red-700"
+                                    onClick={() => removePressingCharge(index)}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                )} */}
                               </div>
 
                               {/* Remarks - Full width */}
@@ -1755,16 +1828,16 @@ useEffect(() => {
                               </div>
 
                               {/* Total and Delete - Full width */}
-                              <div className="flex justify-between items-center pt-2">
-                                <Label className="text-xs font-medium text-gray-600">
+                              <div className="flex justify-end items-end pt-1">
+                                {/* <Label className="text-xs font-medium text-gray-600">
                                   Total Amount: {charge.amount} AED
-                                </Label>
+                                </Label> */}
                                 {!isReadOnly && (
                                   <Button
                                     type="button"
                                     variant="ghost"
                                     size="sm"
-                                    className="text-red-500 hover:text-red-700"
+                                    className="text-red-500 hover:text-red-700 "
                                     onClick={() => removePressingCharge(index)}
                                   >
                                     <Trash2 className="h-4 w-4" />

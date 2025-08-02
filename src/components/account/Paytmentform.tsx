@@ -340,7 +340,7 @@ const handleImageUpload = async (file: File): Promise<string> => {
     return imageUrl;
   } catch (error) {
     console.error("Upload error:", error);
-    toast.error("Failed to upload file. Please try again.");
+    
     throw error;
   }
 };

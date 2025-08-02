@@ -140,51 +140,66 @@ const CreateInspection = () => {
   }, []);
 
   // Memoize formatDimensionsData to prevent recreation
-  const formatDimensionsData = useCallback((siteDimensions: any[]) => {
-    return siteDimensions.map((dim: any) => {
-      // Parse the images JSON string if it exists
-      const images = dim.media ? JSON.parse(dim.media) : [];
+const formatDimensionsData = useCallback((siteDimensions: any[]) => {
+  return siteDimensions.map((dim: any) => {
+    let images = [];
+    
+    try {
+      // Handle cases where media might already be an array or a JSON string
+      if (typeof dim.media === 'string') {
+        images = dim.media ? JSON.parse(dim.media) : [];
+      } else if (Array.isArray(dim.media)) {
+        images = dim.media;
+      }
+    } catch (error) {
+      console.error('Error parsing media:', error);
+      images = [];
+    }
 
-      const formattedImages = images
-        .map((img: any) => {
-          const mediaType = getMediaType(img.image_url);
-          // Ensure only image or video types
-          if (mediaType !== "image" && mediaType !== "video") {
-            return null;
-          }
-          return {
-            id: `${img.image_url.split("/").pop()}-${Math.random()
-              .toString(36)
-              .substr(2, 9)}`,
-            url: img.image_url,
-            type: mediaType as "image" | "video", // Explicit type
-            remarks: img.image_url.split("/").pop(),
-          };
-        })
-        .filter((img: any) => img !== null);
+    const formattedImages = images
+      .map((img: any) => {
+        // Handle cases where img might be an object with image_url or just a string
+        const imageUrl = typeof img === 'string' ? img : img?.image_url;
+        if (!imageUrl) return null;
 
-      const media2Type = getMediaType(dim.media_2);
-      return {
-        floor: dim.floor || "",
-        room: dim.room || "",
-        entity: dim.entity || "",
-        area_name: dim.area_name || "",
-        dimensionsunits: dim.dimensionsunits || "",
-        images: formattedImages,
-        media_2:
-          dim.media_2 && media2Type === "audio"
-            ? {
-                id: `${dim.media_2.split("/").pop()}-${Math.random()
-                  .toString(36)
-                  .substr(2, 9)}`,
-                url: typeof dim.media_2 === "string" ? dim.media_2 : "",
-                type: "audio" as const, // Explicit audio type
-                remarks: dim.media_2.split("/").pop(),
-              }
-            : undefined,
-      };
-    });
-  }, []);
+        const mediaType = getMediaType(imageUrl);
+        // Ensure only image or video types
+        if (mediaType !== "image" && mediaType !== "video") {
+          return null;
+        }
+        return {
+          id: `${imageUrl.split("/").pop()}-${Math.random()
+            .toString(36)
+            .substr(2, 9)}`,
+          url: imageUrl,
+          type: mediaType as "image" | "video", // Explicit type
+          remarks: imageUrl.split("/").pop(),
+        };
+      })
+      .filter((img: any) => img !== null);
+
+    const media2Type = dim.media_2 ? getMediaType(dim.media_2) : null;
+    return {
+      floor: dim.floor || "",
+      room: dim.room || "",
+      entity: dim.entity || "",
+      area_name: dim.area_name || "",
+      dimensionsunits: dim.dimensionsunits || "",
+      images: formattedImages,
+      media_2:
+        dim.media_2 && media2Type === "audio"
+          ? {
+              id: `${dim.media_2.split("/").pop()}-${Math.random()
+                .toString(36)
+                .substr(2, 9)}`,
+              url: typeof dim.media_2 === "string" ? dim.media_2 : "",
+              type: "audio" as const, // Explicit audio type
+              remarks: dim.media_2.split("/").pop(),
+            }
+          : undefined,
+    };
+  });
+}, []);
 
   // Memoize formatCustomImages to prevent recreation
   const formatCustomImages = useCallback((customSiteImages: any[]) => {

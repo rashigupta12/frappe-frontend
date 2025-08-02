@@ -50,16 +50,18 @@ const AuthContext = createContext<AuthContextType>({
 });
 
 // Enhanced role mapping function
+// In your AuthContext.tsx - Fix the mapUserToRole function
+
 const mapUserToRole = (username: string, fullName: string, frappeRoles?: any[]): string => {
   // First check if user has specific Frappe roles
   if (frappeRoles && Array.isArray(frappeRoles)) {
     const roleNames = frappeRoles.map(r => r.role || r).filter(Boolean);
     
-    // Priority mapping from Frappe roles
+    // Priority mapping from Frappe roles - FIXED MAPPING
     const frappeRoleMap: Record<string, string> = {
       'EITS_Sale_Representative': 'EITS_Sale_Representative',
       'EITS_Site_Inspector': 'EITS_Site_Inspector',
-      'EITS_Project_Manager': 'project_manager', // Map to project_manager
+      'EITS_Project_Manager': 'EITS_Project_Manager', // ✅ FIXED: Keep as EITS_Project_Manager
       'System Manager': 'admin',
       'Administrator': 'admin',
       'Sales User': 'EITS_Sale_Representative',
@@ -67,8 +69,8 @@ const mapUserToRole = (username: string, fullName: string, frappeRoles?: any[]):
       'Quality Manager': 'EITS_Site_Inspector',
       'Quality Inspector': 'EITS_Site_Inspector',
       'Site Inspector': 'EITS_Site_Inspector',
-      'Projects Manager': 'project_manager',
-      'Projects User': 'project_manager',
+      'Projects Manager': 'EITS_Project_Manager', // ✅ FIXED: Map to EITS_Project_Manager
+      'Projects User': 'EITS_Project_Manager',     // ✅ FIXED: Map to EITS_Project_Manager
       'Accounts Manager': 'accountUser',
       'Accounts User': 'accountUser',
       'Website Manager': 'user',
@@ -88,14 +90,14 @@ const mapUserToRole = (username: string, fullName: string, frappeRoles?: any[]):
       if (lowerRole.includes('sale') || lowerRole.includes('sales')) {
         return 'EITS_Sale_Representative';
       }
-      if (lowerRole.includes('admin') || lowerRole.includes('manager')) {
+      if (lowerRole.includes('admin') || lowerRole.includes('system manager')) {
         return 'admin';
       }
       if (lowerRole.includes('inspector') || lowerRole.includes('quality') || lowerRole.includes('site')) {
         return 'EITS_Site_Inspector';
       }
-      if (lowerRole.includes('project') || lowerRole.includes('manager')) { // Added manager check
-        return 'project_manager';
+      if (lowerRole.includes('project') || lowerRole.includes('manager')) {
+        return 'EITS_Project_Manager'; // ✅ FIXED: Return EITS_Project_Manager
       }
       if (lowerRole.includes('account') || lowerRole.includes('finance')) {
         return 'accountUser';
@@ -115,13 +117,13 @@ const mapUserToRole = (username: string, fullName: string, frappeRoles?: any[]):
       'Administrator': 'admin',
       'Customer': 'user',
       'Client': 'user',
-      'Inspector': 'EITS_Site_Inspector', // Changed to match type
+      'Inspector': 'EITS_Site_Inspector',
       'Site Inspector': 'EITS_Site_Inspector',
       'Quality Inspector': 'EITS_Site_Inspector',
       'Field Inspector': 'EITS_Site_Inspector',
-      'Project': 'project_manager',
-      'Project Manager': 'project_manager',
-      'PM': 'project_manager',
+      'Project': 'EITS_Project_Manager',      // ✅ FIXED
+      'Project Manager': 'EITS_Project_Manager', // ✅ FIXED
+      'PM': 'EITS_Project_Manager',             // ✅ FIXED
       'Account User': 'accountUser',
       'Account': 'accountUser',
       'Accountant': 'accountUser',
@@ -147,9 +149,9 @@ const mapUserToRole = (username: string, fullName: string, frappeRoles?: any[]):
       return 'EITS_Sale_Representative';
     }
     if (normalizedName.includes('admin')) return 'admin';
-    if (normalizedName.includes('inspector')) return 'EITS_Site_Inspector'; // Changed to match type
+    if (normalizedName.includes('inspector')) return 'EITS_Site_Inspector';
     if (normalizedName.includes('project') || normalizedName.includes('manager')) {
-      return 'project_manager';
+      return 'EITS_Project_Manager'; // ✅ FIXED
     }
     if (normalizedName.includes('account') || normalizedName.includes('finance')) {
       return 'accountUser';
@@ -166,21 +168,22 @@ const mapUserToRole = (username: string, fullName: string, frappeRoles?: any[]):
     'admin': 'admin',
     'user@eits.com': 'user',
     'user': 'user',
-    'site_inspector@eits.com': 'EITS_Site_Inspector', // Changed to match type
+    'site_inspector@eits.com': 'EITS_Site_Inspector',
     'quality_inspector@eits.com': 'EITS_Site_Inspector',
     'field_inspector@eits.com': 'EITS_Site_Inspector',
     'inspector@eits.com': 'EITS_Site_Inspector',
     'inspector': 'EITS_Site_Inspector',
-    'project_manager@eits.com': 'project_manager',
-    'pm@eits.com': 'project_manager',
-    'project_manager': 'project_manager',
+    'project_manager@eits.com': 'EITS_Project_Manager',      // ✅ FIXED
+    'pm@eits.com': 'EITS_Project_Manager',                   // ✅ FIXED
+    'project_manager': 'EITS_Project_Manager',               // ✅ FIXED
     'account@eits.com': 'accountUser',
     'accountant@eits.com': 'accountUser',
     'finance@eits.com': 'accountUser',
     'account_user@eits.com': 'accountUser',
     'account': 'accountUser',
-    'eits_project_manager@eits.com': 'project_manager', // Added
-    'projectmanager@eits.com': 'project_manager' // Added
+    'eits_project_manager@eits.com': 'EITS_Project_Manager', // ✅ FIXED
+    'projectmanager@eits.com': 'EITS_Project_Manager',       // ✅ FIXED
+    'supervisortest@eits.com': 'EITS_Project_Manager'        // ✅ ADDED: Specific for your test user
   };
   
   // Try exact username match first
@@ -200,11 +203,12 @@ const mapUserToRole = (username: string, fullName: string, frappeRoles?: any[]):
   }
   
   if (lowerUsername.includes('inspector') || lowerUsername.includes('inspection')) {
-    return 'EITS_Site_Inspector'; // Changed to match type
+    return 'EITS_Site_Inspector';
   }
   
-  if (lowerUsername.includes('project') || lowerUsername.includes('pm') || lowerUsername.includes('manager')) {
-    return 'project_manager';
+  if (lowerUsername.includes('project') || lowerUsername.includes('pm') || 
+      lowerUsername.includes('manager') || lowerUsername.includes('supervisor')) { // ✅ ADDED supervisor
+    return 'EITS_Project_Manager'; // ✅ FIXED
   }
   
   if (lowerUsername.includes('account') || lowerUsername.includes('finance')) {
@@ -214,7 +218,6 @@ const mapUserToRole = (username: string, fullName: string, frappeRoles?: any[]):
   // Default fallback
   return 'user';
 };
-
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {

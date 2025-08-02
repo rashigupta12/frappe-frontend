@@ -32,8 +32,8 @@ import { useAuth } from "../context/AuthContext";
 interface ImageAttachment {
   name: string;
   owner: string;
-  creation: string;
-  modified: string;
+  // creation: string;
+  // modified: string;
   modified_by: string;
   docstatus: number;
   idx: number;
@@ -186,8 +186,8 @@ const FeedbackForm: React.FC<{
         custom_images: images.map((img, idx) => ({
           name: `img-${idx}-${Date.now()}`,
           owner: user?.email || "",
-          creation: new Date().toISOString(),
-          modified: new Date().toISOString(),
+          // creation: new Date().toISOString(),
+          // modified: new Date().toISOString(),
           modified_by: user?.email || "",
           docstatus: 0,
           idx: idx + 1,

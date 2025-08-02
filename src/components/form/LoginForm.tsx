@@ -73,7 +73,7 @@ const onLoginSubmit = async (values: LoginFormValues) => {
       
       toast.success("Login successful!");
     } else {
-      toast.error( "Invaloid email or password");
+      toast.error( "Invalid email or password");
       setError(result.error || "Login failed");
     }
   } catch (err) {
