@@ -15,6 +15,7 @@ import { Button } from "../ui/button";
 import { Dialog } from "../ui/dialog";
 import JobCardDetails from "./JobCardDetails";
 import DeleteConfirmation from "../../common/DeleteComfirmation";
+import { PasswordResetLoader } from "../../common/Loader";
 
 interface Props {
   onEdit: (jobCard: JobCard) => void;
@@ -253,11 +254,7 @@ const JobCardList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center p-8">
-        <div className="animate-spin h-6 w-6 border-2 border-emerald-600 border-t-transparent rounded-full" />
-      </div>
-    );
+    return <PasswordResetLoader/>
   }
 
   return (

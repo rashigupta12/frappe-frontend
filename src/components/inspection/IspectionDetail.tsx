@@ -48,6 +48,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { Textarea } from "../ui/textarea";
 import InspectionHeader from "./components/InspectionHeader";
 import MediaUpload from "./components/MediaUpload/MediaUpload";
+import { PasswordResetLoader } from "../../common/Loader";
 
 // Helper function to get current date and time - memoized
 const getCurrentDateTime = () => {
@@ -527,7 +528,7 @@ const CreateInspection = () => {
   if (!dataLoaded) {
     return (
       <div className="flex justify-center items-center h-screen">
-        <p>Loading inspection data...</p>
+        <PasswordResetLoader />
       </div>
     );
   }

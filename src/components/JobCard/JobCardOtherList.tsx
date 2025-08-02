@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import JobCardOtherDetails from "./JobCardOtherDetails";
 import DeleteConfirmation from "../../common/DeleteComfirmation";
+import { PasswordResetLoader } from "../../common/Loader";
 
 interface Props {
   onEdit: (jobCard: JobCardOther) => void;
@@ -227,11 +228,7 @@ const JobCardOtherList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center p-8">
-        <div className="animate-spin h-6 w-6 border-2 border-blue-600 border-t-transparent rounded-full" />
-      </div>
-    );
+   return <PasswordResetLoader/>
   }
 
   return (

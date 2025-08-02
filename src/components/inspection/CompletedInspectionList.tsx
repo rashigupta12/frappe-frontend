@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { useInspectionStore } from "../../store/inspectionStore";
 import { Button } from "../ui/button";
 import { useNavigate } from "react-router-dom";
+import { PasswordResetLoader } from "../../common/Loader";
 
 const statusFilters = [
   { id: "all", label: "All" },
@@ -340,11 +341,7 @@ const MobileSiteInspectionList = ({ userEmail }: InspectionListProps) => {
   }
 
   if (loading) {
-    return (
-      <div className="flex justify-center items-center h-32">
-        <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-blue-500"></div>
-      </div>
-    );
+    return <PasswordResetLoader/>
   }
 
   if (error) {

@@ -18,8 +18,9 @@ import { JobCardProvider } from "./context/JobCardContext";
 import HomePage from "./components/pages/Homepage";
 import { JobCardOtherProvider } from "./context/JobCardOtherContext";
 import AccountUser from "./components/pages/AccountUser";
-import { Loader } from "lucide-react";
+
 import { FirstTimePasswordReset } from "./components/auth/NewPassword";
+import { PasswordResetLoader } from "./common/Loader";
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -67,7 +68,7 @@ const PublicRoute = ({ children }: { children: ReactNode }) => {
   const { isAuthenticated, loading, user } = useAuth();
 
   if (loading) {
-    return <Loader />;
+    return <PasswordResetLoader />;
   }
 
   if (isAuthenticated && user && !window.location.pathname.includes('first-time-password-reset')) {

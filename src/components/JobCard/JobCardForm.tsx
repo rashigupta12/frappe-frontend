@@ -480,7 +480,7 @@ useEffect(() => {
   // Load existing job card data when editing
   useEffect(() => {
     if (jobCard) {
-      console.log("Loading job card data:", jobCard); // Debug log
+      
       setFormData({
         date: jobCard.date || new Date().toISOString().split("T")[0],
         building_name: jobCard.building_name || "",

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useInspectionStore } from "../../store/inspectionStore";
 import { Button } from "../ui/button";
 import { useNavigate } from "react-router-dom";
+import { PasswordResetLoader } from "../../common/Loader";
 
 interface InspectionListProps {
   userEmail: string;
@@ -110,7 +111,7 @@ const MobileInspectionList = ({ userEmail }: InspectionListProps) => {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-32">
-        <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-blue-500"></div>
+        <PasswordResetLoader />
       </div>
     );
   }

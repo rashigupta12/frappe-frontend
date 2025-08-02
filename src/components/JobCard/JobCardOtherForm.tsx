@@ -475,7 +475,7 @@ useEffect(() => {
         setJobTypes(response.data || []);
       } catch (error) {
         console.error("Failed to fetch job types:", error);
-        toast.error("Failed to load job types");
+        
       } finally {
         setLoadingJobTypes(false);
       }
@@ -1089,7 +1089,7 @@ useEffect(() => {
                               <SelectValue
                                 placeholder={
                                   addressLoading
-                                    ? "Loading..."
+                                    ? <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
                                     : "Select emirate"
                                 }
                               />
@@ -1122,7 +1122,7 @@ useEffect(() => {
                                   !selectedEmirate
                                     ? "Select emirate first"
                                     : addressLoading
-                                    ? "Loading..."
+                                    ? <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
                                     : "Select city"
                                 }
                               />
@@ -1157,7 +1157,7 @@ useEffect(() => {
                                   !selectedCity
                                     ? "Select city first"
                                     : addressLoading
-                                    ? "Loading..."
+                                    ? <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
                                     : "Select area"
                                 }
                               />
@@ -1323,7 +1323,7 @@ useEffect(() => {
                               <div className="flex items-center gap-2">
                                 <Loader2 className="animate-spin h-4 w-4" />
                                 <span className="text-sm">
-                                  Loading work types...
+                                  Loading job types...
                                 </span>
                               </div>
                             ) : (

@@ -15,6 +15,7 @@ import { Button } from "../ui/button";
 import { Dialog } from "../ui/dialog";
 import PaymentDetails from "./PaymentDetails";
 import { Link } from "react-router-dom";
+import { PasswordResetLoader } from "../../common/Loader";
 
 export interface Payment {
   custom_account_number: string | undefined;
@@ -139,11 +140,7 @@ const PaymentSummary: React.FC<Props> = ({
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center p-8">
-        <div className="animate-spin h-6 w-6 border-2 border-emerald-600 border-t-transparent rounded-full" />
-      </div>
-    );
+    return <PasswordResetLoader/>
   }
 
   return (
