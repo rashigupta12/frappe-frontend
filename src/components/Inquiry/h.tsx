@@ -5,7 +5,7 @@ import {
   Calendar,
   Edit,
   FileText,
-  Filter,
+  // Filter,
   Home,
   MapPin,
   Phone,
@@ -28,13 +28,13 @@ import { Alert, AlertDescription } from "../ui/alert";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../ui/select";
+// import {
+//   Select,
+//   SelectContent,
+//   SelectItem,
+//   SelectTrigger,
+//   SelectValue,
+// } from "../ui/select";
 import InquiryForm from "./InquiryForm";
 import IspectionDialog from "./IspectionDialog";
 
@@ -43,7 +43,7 @@ const InquiryPage = () => {
     leads,
     error,
     fetchLeads,
-    jobTypes,
+    // jobTypes,
     fetchJobTypes,
     fetchProjectUrgency,
     fetchUtmSource,
@@ -52,7 +52,6 @@ const InquiryPage = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [viewInquiry, setViewInquiry] = useState<Lead | null>(null);
-  const [selectedJobType, setSelectedJobType] = useState<string>("All");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedInquiryForDialog, setSelectedInquiryForDialog] =
     useState<Lead | null>(null);
@@ -112,13 +111,9 @@ const InquiryPage = () => {
     setViewInquiry(null);
   };
 
-  // Updated filtering logic
+  // Updated filtering logic - removed duplicate job type filter and added job type to search
   const filteredInquiries = leads
     .filter((inquiry: Lead) => inquiry.status === "Lead")
-    .filter(
-      (inquiry: Lead) =>
-        selectedJobType === "All" || inquiry.custom_job_type === selectedJobType
-    )
     .filter(
       (inquiry: Lead) =>
         (inquiry.lead_name?.toLowerCase() || "").includes(
@@ -129,9 +124,11 @@ const InquiryPage = () => {
         ) ||
         (inquiry.mobile_no?.toLowerCase() || "").includes(
           searchTerm.toLowerCase()
+        ) ||
+        (inquiry.custom_job_type?.toLowerCase() || "").includes(
+          searchTerm.toLowerCase()
         )
-
-    )
+    );
 
   return (
     <div className="w-full pb-20">
@@ -152,32 +149,13 @@ const InquiryPage = () => {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
                   type="text"
-                  placeholder="Search by customer name "
+                  placeholder="Search by customer name, email, phone, or job type"
                   className="pl-10 w-full bg-white border border-gray-300"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
 
-              <div className="flex items-center gap-2 flex-[3]">
-                <Filter className="h-5 w-5 text-gray-500" />
-                <Select
-                  value={selectedJobType}
-                  onValueChange={setSelectedJobType}
-                >
-                  <SelectTrigger className="w-full bg-white border border-gray-300">
-                    <SelectValue placeholder="Select job type" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white border border-gray-300 ">
-                    <SelectItem value="All">All Job Types</SelectItem>
-                    {jobTypes.map((jobType) => (
-                      <SelectItem key={jobType.name} value={jobType.name}>
-                        {jobType.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
               <Button
                 onClick={openNewInquiryForm}
                 className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white shadow-md hover:shadow-lg transition-all duration-300 "
@@ -189,44 +167,16 @@ const InquiryPage = () => {
 
             {/* Mobile View */}
             <div className="md:hidden flex items-center gap-2 w-full">
-              <div className="relative w-[80%]">
+              <div className="relative w-full">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
                   type="text"
-                  placeholder="Search..."
+                  placeholder="Search by name, email, phone, job type"
                   className="pl-10 w-full bg-white border border-gray-300"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
-
-              {/* <div className="w-[20%] flex justify-end">
-                <Select
-                  value={selectedJobType}
-                  onValueChange={setSelectedJobType}
-                >
-                  <SelectTrigger className="w-full px-2 bg-white border border-gray-300 justify-center">
-                    <Filter className="h-4 w-4 text-gray-600" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white border border-gray-300 shadow-md w-[200px]">
-                    <SelectItem
-                      value="All"
-                      className="hover:bg-gray-100 focus:bg-gray-100"
-                    >
-                      All Job Types
-                    </SelectItem>
-                    {jobTypes.map((jobType) => (
-                      <SelectItem
-                        key={jobType.name}
-                        value={jobType.name}
-                        className="hover:bg-gray-100 focus:bg-gray-100"
-                      >
-                        {jobType.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div> */}
             </div>
           </div>
         </div>
@@ -240,7 +190,7 @@ const InquiryPage = () => {
               <FileText className="h-6 w-6 lg:h-7 lg:w-7 text-emerald-500" />
             </div>
             <h3 className="text-base lg:text-lg font-medium text-gray-700 mb-1">
-              No inquiries found for {selectedJobType}
+              No inquiries found
             </h3>
             <p className="text-xs lg:text-sm text-gray-500 mb-4">
               Start by creating your first inquiry

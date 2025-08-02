@@ -272,7 +272,6 @@ export const LeadsProvider: React.FC<LeadsProviderProps> = ({ children }) => {
 
         
         const response = await frappeAPI.createLead(processedData);
-        toast.success("Inquiry created successfully!");
 
         await fetchLeads();
 

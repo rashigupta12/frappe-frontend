@@ -60,11 +60,8 @@ export default function InspectionDialog({
         inspector: todoData.allocated_to,
         priority: todoData.priority,
         status: todoData.status,
-        inspectionDate: todoData.inquiry_data?.custom_preferred_inspection_date
-          ? format(
-              new Date(todoData.inquiry_data.custom_preferred_inspection_date),
-              "yyyy-MM-dd"
-            )
+        inspectionDate: todoData.date
+          ? format(new Date(todoData.date), "yyyy-MM-dd")
           : "",
         inspectionTime:
           todoData.inquiry_data?.custom_preferred_inspection_time || "",

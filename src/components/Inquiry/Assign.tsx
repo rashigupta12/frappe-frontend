@@ -6,7 +6,7 @@ import {
   ClipboardList,
   Edit,
   FileText,
-  Filter,
+  // Filter,
   MapPin,
   Search,
   User,
@@ -19,13 +19,13 @@ import { Alert, AlertDescription } from "../ui/alert";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../ui/select";
+// import {
+//   Select,
+//   SelectContent,
+//   SelectItem,
+//   SelectTrigger,
+//   SelectValue,
+// } from "../ui/select";
 import InspectionDialog from "./InspectionDialogEdit";
 
 export default function TodoPage() {
@@ -41,10 +41,10 @@ export default function TodoPage() {
   } = useAssignStore();
 
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedStatus, setSelectedStatus] = useState("All");
-  const [selectedPriority, setSelectedPriority] = useState("All");
-  const [selectedInspector, setSelectedInspector] = useState("All");
-  const [showMobileFilters, setShowMobileFilters] = useState(false);
+  // const [selectedStatus, setSelectedStatus] = useState("All");
+  // const [selectedPriority, setSelectedPriority] = useState("All");
+  // const [selectedInspector, setSelectedInspector] = useState("All");
+  // const [showMobileFilters, setShowMobileFilters] = useState(false);
 
   // State for inspection dialog
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -94,25 +94,27 @@ export default function TodoPage() {
       todo.inquiry_data?.lead_name
         ?.toLowerCase()
         .includes(searchTerm.toLowerCase()) ||
-      todo.reference_name?.toLowerCase().includes(searchTerm.toLowerCase());
+      todo.reference_name?.toLowerCase().includes(searchTerm.toLowerCase()) || todo.allocated_to?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      todo.status?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      todo.priority?.toLowerCase().includes(searchTerm.toLowerCase());
 
-    const matchesStatus =
-      selectedStatus === "All" ||
-      (selectedStatus === "Open" && todo.status === "Open") ||
-      (selectedStatus === "Completed" && todo.status === "Completed")||
-      (selectedStatus === "Cancelled" && todo.status === "Cancelled");
+    // const matchesStatus =
+    //   selectedStatus === "All" ||
+    //   (selectedStatus === "Open" && todo.status === "Open") ||
+    //   (selectedStatus === "Completed" && todo.status === "Completed")||
+    //   (selectedStatus === "Cancelled" && todo.status === "Cancelled");
 
-    const matchesPriority =
-      selectedPriority === "All" || todo.priority === selectedPriority;
+    // const matchesPriority =
+    //   selectedPriority === "All" || todo.priority === selectedPriority;
 
-    const matchesInspector =
-      selectedInspector === "All" ||
-      todo.allocated_to
-        ?.toLowerCase()
-        .includes(selectedInspector.toLowerCase());
+    // const matchesInspector =
+    //   selectedInspector === "All" ||
+    //   todo.allocated_to
+    //     ?.toLowerCase()
+    //     .includes(selectedInspector.toLowerCase());
 
     return (
-      matchesSearch && matchesStatus && matchesPriority && matchesInspector
+      matchesSearch 
     );
   });
 
@@ -152,7 +154,7 @@ export default function TodoPage() {
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
-              <div className="flex items-center gap-2 flex-[2]">
+              {/* <div className="flex items-center gap-2 flex-[2]">
                 <Select
                   value={selectedPriority}
                   onValueChange={setSelectedPriority}
@@ -167,7 +169,7 @@ export default function TodoPage() {
                     <SelectItem value="High">High</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
+              </div> */}
             </div>
 
             {/* Mobile View */}
@@ -183,7 +185,7 @@ export default function TodoPage() {
                 />
               </div>
 
-              <Button
+              {/* <Button
                 variant="outline"
                 className="w-full flex items-center justify-center gap-2"
                 onClick={() => setShowMobileFilters(!showMobileFilters)}
@@ -243,7 +245,7 @@ export default function TodoPage() {
                     </SelectContent>
                   </Select>
                 </div>
-              )}
+              )} */}
             </div>
           </div>
         </div>
@@ -266,7 +268,7 @@ export default function TodoPage() {
             <p className="text-xs md:text-sm text-gray-500 mb-3 md:mb-4">
               Try adjusting your search or filters
             </p>
-            <Button
+            {/* <Button
               onClick={() => {
                 setSearchTerm("");
                 setSelectedStatus("All");
@@ -278,7 +280,7 @@ export default function TodoPage() {
               size="sm"
             >
               Clear Filters
-            </Button>
+            </Button> */}
           </div>
         ) : (
           <div className="space-y-3 p-2 lg:grid lg:grid-cols-3 lg:gap-4 lg:space-y-0">

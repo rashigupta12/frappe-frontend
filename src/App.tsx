@@ -1,5 +1,5 @@
 // src/App.tsx
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import { Toaster } from "react-hot-toast";
 import {
   Navigate,
@@ -21,31 +21,36 @@ import AccountUser from "./components/pages/AccountUser";
 
 import { FirstTimePasswordReset } from "./components/auth/NewPassword";
 import { PasswordResetLoader } from "./common/Loader";
+import { frappeAPI } from "./api/frappeClient";
 
 interface ProtectedRouteProps {
   children: ReactNode;
   allowedRoles?: string[];
 }
 
+// In your App.tsx
 const ProtectedRoute = ({
   children,
   allowedRoles = [],
 }: ProtectedRouteProps) => {
   const { isAuthenticated, user, loading } = useAuth();
 
+  useEffect(() => {
+    // Check if password reset is required
+    const checkPasswordReset = async () => {
+      if (user?.username) {
+        const firstLoginCheck = await frappeAPI.checkFirstLogin(user.username);
+        if (firstLoginCheck.requiresPasswordReset) {
+          window.location.href = `/first-time-password-reset?email=${encodeURIComponent(user.username)}`;
+        }
+      }
+    };
+    
+    checkPasswordReset();
+  }, [user]);
+
   if (loading) {
-    return (
-      <div
-        style={{
-          minHeight: "100vh",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <div>Loading...</div>
-      </div>
-    );
+    return <PasswordResetLoader />;
   }
 
   if (!isAuthenticated) {
@@ -67,16 +72,35 @@ const ProtectedRoute = ({
 const PublicRoute = ({ children }: { children: ReactNode }) => {
   const { isAuthenticated, loading, user } = useAuth();
 
+  useEffect(() => {
+    // Check if password reset is required
+    const checkPasswordReset = async () => {
+      if (user?.username && isAuthenticated) {
+        const firstLoginCheck = await frappeAPI.checkFirstLogin(user.username);
+        if (firstLoginCheck.requiresPasswordReset) {
+          window.location.href = `/first-time-password-reset?email=${encodeURIComponent(user.username)}`;
+        }
+      }
+    };
+    
+    checkPasswordReset();
+  }, [user, isAuthenticated]);
+
   if (loading) {
     return <PasswordResetLoader />;
   }
 
   if (isAuthenticated && user && !window.location.pathname.includes('first-time-password-reset')) {
-    // Redirect based on role
+    // Check if password reset is required first
+    if (user.requiresPasswordReset) {
+      return <Navigate to={`/first-time-password-reset?email=${encodeURIComponent(user.username)}`} replace />;
+    }
+    
+    // Normal role-based redirect
     switch (user.role) {
       case "EITS_Sale_Representative":
         return <Navigate to="/sales" replace />;
-      case "project_manager":
+      case "EITS_Project_Manager":
         return <Navigate to="/project_manager" replace />;
       case "EITS_Site_Inspector":
         return <Navigate to="/inspector" replace />;
@@ -91,7 +115,6 @@ const PublicRoute = ({ children }: { children: ReactNode }) => {
 
   return <>{children}</>;
 };
-
 // If user is authenticated, redirect to appropriate dashboard
 
 // Dashboard Router - routes users to appropriate dashboard based on role
@@ -271,7 +294,7 @@ function AppRoutes() {
         <Route
           path="/project_manager"
           element={
-            <ProtectedRoute allowedRoles={["project_manager"]}>
+            <ProtectedRoute allowedRoles={["EITS_Project_Manager"]}>
               <JobCardProvider>
                 <JobCardOtherProvider>
                   <ProjectManagerDashboard />

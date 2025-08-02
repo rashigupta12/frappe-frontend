@@ -5,6 +5,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { frappeAPI } from '../api/frappeClient';
 
 interface AuthUser {
+  requiresPasswordReset: any;
   username: string;
   full_name: string;
   role: string;
@@ -58,6 +59,7 @@ const mapUserToRole = (username: string, fullName: string, frappeRoles?: any[]):
     const frappeRoleMap: Record<string, string> = {
       'EITS_Sale_Representative': 'EITS_Sale_Representative',
       'EITS_Site_Inspector': 'EITS_Site_Inspector',
+      'EITS_Project_Manager': 'project_manager', // Map to project_manager
       'System Manager': 'admin',
       'Administrator': 'admin',
       'Sales User': 'EITS_Sale_Representative',
@@ -92,7 +94,7 @@ const mapUserToRole = (username: string, fullName: string, frappeRoles?: any[]):
       if (lowerRole.includes('inspector') || lowerRole.includes('quality') || lowerRole.includes('site')) {
         return 'EITS_Site_Inspector';
       }
-      if (lowerRole.includes('project')) {
+      if (lowerRole.includes('project') || lowerRole.includes('manager')) { // Added manager check
         return 'project_manager';
       }
       if (lowerRole.includes('account') || lowerRole.includes('finance')) {
@@ -113,10 +115,10 @@ const mapUserToRole = (username: string, fullName: string, frappeRoles?: any[]):
       'Administrator': 'admin',
       'Customer': 'user',
       'Client': 'user',
-      'Inspector': 'inspector',
-      'Site Inspector': 'inspector',
-      'Quality Inspector': 'inspector',
-      'Field Inspector': 'inspector',
+      'Inspector': 'EITS_Site_Inspector', // Changed to match type
+      'Site Inspector': 'EITS_Site_Inspector',
+      'Quality Inspector': 'EITS_Site_Inspector',
+      'Field Inspector': 'EITS_Site_Inspector',
       'Project': 'project_manager',
       'Project Manager': 'project_manager',
       'PM': 'project_manager',
@@ -145,9 +147,13 @@ const mapUserToRole = (username: string, fullName: string, frappeRoles?: any[]):
       return 'EITS_Sale_Representative';
     }
     if (normalizedName.includes('admin')) return 'admin';
-    if (normalizedName.includes('inspector')) return 'inspector';
-    if (normalizedName.includes('project')) return 'project_manager';
-    if (normalizedName.includes('account') || normalizedName.includes('finance')) return 'accountUser';
+    if (normalizedName.includes('inspector')) return 'EITS_Site_Inspector'; // Changed to match type
+    if (normalizedName.includes('project') || normalizedName.includes('manager')) {
+      return 'project_manager';
+    }
+    if (normalizedName.includes('account') || normalizedName.includes('finance')) {
+      return 'accountUser';
+    }
   }
   
   // Enhanced username-based mapping
@@ -160,11 +166,11 @@ const mapUserToRole = (username: string, fullName: string, frappeRoles?: any[]):
     'admin': 'admin',
     'user@eits.com': 'user',
     'user': 'user',
-    'site_inspector@eits.com': 'inspector',
-    'quality_inspector@eits.com': 'inspector',
-    'field_inspector@eits.com': 'inspector',
-    'inspector@eits.com': 'inspector',
-    'inspector': 'inspector',
+    'site_inspector@eits.com': 'EITS_Site_Inspector', // Changed to match type
+    'quality_inspector@eits.com': 'EITS_Site_Inspector',
+    'field_inspector@eits.com': 'EITS_Site_Inspector',
+    'inspector@eits.com': 'EITS_Site_Inspector',
+    'inspector': 'EITS_Site_Inspector',
     'project_manager@eits.com': 'project_manager',
     'pm@eits.com': 'project_manager',
     'project_manager': 'project_manager',
@@ -173,6 +179,8 @@ const mapUserToRole = (username: string, fullName: string, frappeRoles?: any[]):
     'finance@eits.com': 'accountUser',
     'account_user@eits.com': 'accountUser',
     'account': 'accountUser',
+    'eits_project_manager@eits.com': 'project_manager', // Added
+    'projectmanager@eits.com': 'project_manager' // Added
   };
   
   // Try exact username match first
@@ -192,10 +200,10 @@ const mapUserToRole = (username: string, fullName: string, frappeRoles?: any[]):
   }
   
   if (lowerUsername.includes('inspector') || lowerUsername.includes('inspection')) {
-    return 'inspector';
+    return 'EITS_Site_Inspector'; // Changed to match type
   }
   
-  if (lowerUsername.includes('project') || lowerUsername.includes('pm')) {
+  if (lowerUsername.includes('project') || lowerUsername.includes('pm') || lowerUsername.includes('manager')) {
     return 'project_manager';
   }
   
@@ -224,59 +232,57 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     checkAuthStatus();
   }, []);
 
-  const checkAuthStatus = async () => {
-    try {
-      setLoading(true);
-      setError(null);
+// In your AuthContext.tsx
+const checkAuthStatus = async () => {
+  try {
+    setLoading(true);
+    setError(null);
+    
+    const sessionCheck = await frappeAPI.checkSession();
+    console.log('Session Check Result:', sessionCheck);
+    
+    if (sessionCheck.authenticated) {
+      const username = sessionCheck.user?.username || sessionCheck.user || '';
+      const fullName = sessionCheck.user?.full_name || username.split('@')[0] || 'User';
+      const email = sessionCheck.user?.email || username;
+      const frappeRoles = sessionCheck.user?.roles || [];
+      const requiresPasswordReset = sessionCheck.user?.requiresPasswordReset || false;
       
-      const sessionCheck = await frappeAPI.checkSession();
-      console.log('Session Check Result:', sessionCheck);
-      
-      if (sessionCheck.authenticated) {
-        const username = sessionCheck.user?.username || sessionCheck.user || '';
-        // Provide a default full_name if not available
-        const fullName = sessionCheck.user?.full_name || username.split('@')[0] || 'User';
-        const email = sessionCheck.user?.email || username;
-        const frappeRoles = sessionCheck.user?.roles || [];
-        
-        // Extract role names from Frappe roles array
-        const roleNames = frappeRoles.map((r: any) => r.role || r).filter(Boolean);
-        
-        const mappedRole = mapUserToRole(username, fullName, frappeRoles);
-        
-        const userData: AuthUser = {
-          username: username,
-          full_name: fullName,
-          email: email,
-          role: mappedRole,
-          roles: roleNames
+      // If password reset is required, don't set the user and redirect to reset page
+      if (requiresPasswordReset) {
+        return {
+          authenticated: false,
+          requiresPasswordReset: true
         };
-        
-        console.log('Auth Status Check:', userData);
-        
-        setUser(userData);
-      } else {
-        setUser(null);
-        if (sessionCheck.error && !sessionCheck.error.includes('No stored user data')) {
-          console.warn('Session check warning:', sessionCheck.error);
-        }
       }
-    } catch (error) {
-      console.error('Auth check failed:', error);
-      setUser(null);
-      setError('Authentication check failed');
-    } finally {
-      setLoading(false);
+      
+      const roleNames = frappeRoles.map((r: any) => r.role || r).filter(Boolean);
+      const mappedRole = mapUserToRole(username, fullName, frappeRoles);
+      
+      const userData: AuthUser = {
+        username: username,
+        full_name: fullName,
+        email: email,
+        role: mappedRole,
+        roles: roleNames,
+        requiresPasswordReset: undefined
+      };
+      
+      setUser(userData);
+      return { authenticated: true, user: userData };
     }
-  };
+    
+    return { authenticated: false };
+  } catch (error) {
+    console.error('Auth check failed:', error);
+    return { authenticated: false, error: 'Authentication check failed' };
+  } finally {
+    setLoading(false);
+  }
+};
 
 // In your AuthContext.tsx
-const login = async (username: string, password: string): Promise<{
-  success: boolean;
-  user?: AuthUser;
-  error?: string;
-  requiresPasswordReset?: boolean;
-}> => {
+const login = async (username: string, password: string) => {
   try {
     setLoading(true);
     setError(null);
@@ -286,30 +292,23 @@ const login = async (username: string, password: string): Promise<{
     if (response.success && response.user) {
       const firstLoginCheck = await frappeAPI.checkFirstLogin(username);
       
-      if (firstLoginCheck.requiresPasswordReset) {
-        return { 
-          success: true, 
-          requiresPasswordReset: true,
-          user: {
-            username: username,
-            full_name: response.user.full_name || username.split('@')[0] || 'User',
-            email: response.user.email || username,
-            role: mapUserToRole(username, response.user.full_name || '', response.user.roles || []),
-            roles: response.user.roles || []
-          }
-        };
-      }
-      
       const userData: AuthUser = {
         username: username,
         full_name: response.user.full_name || username.split('@')[0] || 'User',
         email: response.user.email || username,
         role: mapUserToRole(username, response.user.full_name || '', response.user.roles || []),
-        roles: response.user.roles || []
+        roles: response.user.roles || [],
+        requiresPasswordReset: firstLoginCheck.requiresPasswordReset || false
       };
 
+      console.log('User data after login:', userData);
       setUser(userData);
-      return { success: true, user: userData };
+      
+      return { 
+        success: true, 
+        user: userData,
+        requiresPasswordReset: firstLoginCheck.requiresPasswordReset
+      };
     }
     
     return { 
@@ -343,7 +342,8 @@ const login = async (username: string, password: string): Promise<{
           full_name: userDetails.data?.full_name || username.split('@')[0] || 'User',
           email: userDetails.data?.email || username,
           role: mapUserToRole(username, userDetails.data?.full_name || '', userDetails.data?.roles || []),
-          roles: userDetails.data?.roles?.map((r: any) => r.role || r) || []
+          roles: userDetails.data?.roles?.map((r: any) => r.role || r) || [],
+          requiresPasswordReset: undefined
         };
 
         setUser(userData);

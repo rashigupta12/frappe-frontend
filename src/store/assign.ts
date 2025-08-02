@@ -279,6 +279,7 @@ export const useAssignStore = create<AssignStore>((set, get) => ({
         );
         
         const userDetails = userDetailsResponse.data;
+        console.log(`Fetched details for user ${user.name}:`, userDetails);
         
         return {
           name: userDetails.name || userDetails.email,

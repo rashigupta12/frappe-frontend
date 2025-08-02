@@ -17,8 +17,8 @@ import { Eye, EyeOff, LockKeyhole, RefreshCw } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { toast } from "react-hot-toast";
 
-import { useState } from "react";
-import { Link, Navigate, useSearchParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { FormError } from "../form/form-error";
 import { FormSuccess } from "../form/form-success";
 
@@ -46,6 +46,8 @@ export function FirstTimePasswordReset() {
   const [searchParams] = useSearchParams();
   const email = searchParams.get('email');
   const { resetPassword} = useAuth();
+  const navigate = useNavigate();
+
 
   const form = useForm<PasswordResetFormValues>({
     resolver: zodResolver(passwordResetSchema),
@@ -62,6 +64,15 @@ export function FirstTimePasswordReset() {
   const toggleConfirmPasswordVisibility = () => {
     setShowConfirmPassword(!showConfirmPassword);
   };
+
+  useEffect(() => {
+    return () => {
+      // Clear session when component unmounts (user navigates away)
+      localStorage.removeItem('frappe_user');
+      localStorage.removeItem('frappe_session');
+      localStorage.removeItem('frappe_csrf_token');
+    };
+  }, []);
 
   const onSubmit = async (values: PasswordResetFormValues) => {
     if (!email) {
@@ -83,9 +94,10 @@ export function FirstTimePasswordReset() {
       if (result.success) {
         toast.success("Password updated successfully!");
         setSuccess("Password updated successfully!");
-        form.reset();
-        <Navigate to="/login" replace />;
         
+        
+        // Use replace to prevent back navigation
+        navigate("/login", { replace: true });
       } else {
         toast.error("Failed to update password. Please try again.");
         setError(result.error || "Failed to update password");
@@ -94,10 +106,16 @@ export function FirstTimePasswordReset() {
       console.error("Password reset error:", err);
       toast.error("Failed to update password. Please try again.");
       setError("Failed to update password");
+      
+      // Clear session on error
+      localStorage.removeItem('frappe_user');
+      localStorage.removeItem('frappe_session');
+      localStorage.removeItem('frappe_csrf_token');
     } finally {
       setIsPending(false);
     }
   };
+
 
 //  if (isAuthenticated) {
 //   return <Navigate to="/dashboard" replace />;

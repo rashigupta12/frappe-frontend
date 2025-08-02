@@ -17,7 +17,7 @@ export const roleMiddleware = (userRole: string, allowedRoles: string | string[]
 };
 
 // Enhanced middleware with permission checking
-export type Role = 'user' | 'EITS_Sale_Representative' | 'EITS_Site_Inspector' | 'project_manager' | 'accountUser' | 'admin';
+export type Role = 'user' | 'EITS_Sale_Representative' | 'EITS_Site_Inspector' | 'EITS_Project_Manager' | 'accountUser' | 'admin';
 export type Resource =
   | 'dashboard'
   | 'profile'
@@ -132,7 +132,7 @@ const permissions: Record<Role, Record<Resource, Action[]>> = {
     inventory: ['read'],
     products: ['read']
   },
-  project_manager: {
+  EITS_Project_Manager: {
     dashboard: ['read'],
     profile: ['read', 'update'],
     orders: ['read', 'create', 'update'],
@@ -198,7 +198,7 @@ const roleHierarchy: Record<Role, number> = {
   EITS_Sale_Representative: 2,
   EITS_Site_Inspector: 2, // Same level as sales but with different permissions
   accountUser: 2, // Same level as sales and inspector but with financial permissions
-  project_manager: 3, // Higher level with project management capabilities
+  EITS_Project_Manager: 3, // Higher level with project management capabilities
   admin: 4
 };
 
@@ -358,18 +358,18 @@ export const createPermissionMiddleware = (resource: Resource, action: Action) =
 // Route validation helper
 export const validateRouteAccess = (userRole: string, routePath: string): boolean => {
   const routeRoleMap: Record<string, Role[]> = {
-    '/dashboard': ['user', 'EITS_Sale_Representative', 'EITS_Site_Inspector', 'accountUser', 'project_manager', 'admin'],
+    '/dashboard': ['user', 'EITS_Sale_Representative', 'EITS_Site_Inspector', 'accountUser', 'EITS_Project_Manager', 'admin'],
     '/sales': ['EITS_Sale_Representative', 'admin'],
     '/sales/orders': ['EITS_Sale_Representative', 'admin'],
     '/sales/customers': ['EITS_Sale_Representative', 'admin'],
     '/sales/quotations': ['EITS_Sale_Representative', 'admin'],
     '/sales/leads': ['EITS_Sale_Representative', 'admin'],
-    '/projects': ['project_manager', 'admin'],
-    '/projects/tasks': ['project_manager', 'admin'],
+    '/projects': ['EITS_Project_Manager', 'admin'],
+    '/projects/tasks': ['EITS_Project_Manager', 'admin'],
     '/accounting': ['accountUser', 'admin'],
     '/accounting/invoices': ['accountUser', 'admin'],
     '/accounting/payments': ['accountUser', 'admin'],
-    '/reports': ['EITS_Site_Inspector', 'EITS_Sale_Representative', 'accountUser', 'project_manager', 'admin'],
+    '/reports': ['EITS_Site_Inspector', 'EITS_Sale_Representative', 'accountUser', 'EITS_Project_Manager', 'admin'],
     '/admin': ['admin'],
     '/admin/users': ['admin'],
     '/admin/settings': ['admin']

@@ -148,118 +148,9 @@ export const frappeAPI = {
     }
   },
 
-  // Check if user is logging in for the first time
-  // checkFirstLogin: async (username: string) => {
-  //   try {
-  //     const response = await frappeClient.get(
-  //       `/api/resource/User Settings?filters=[["user","=","${username}"]]&fields=["user","first_password"]`
-  //     );
-      
-  //     if (response.data && response.data.data && response.data.data.length > 0) {
-  //       const userSettings = response.data.data[0];
-  //       const requiresPasswordReset = userSettings.first_password === 1;
-        
-  //       console.log('First login check:', {
-  //         username,
-  //         first_password: userSettings.first_password,
-  //         requiresPasswordReset
-  //       });
-        
-  //       return {
-  //         success: true,
-  //         requiresPasswordReset,
-  //         userSettings
-  //       };
-  //     }
-      
-  //     // If no user settings found, assume it's not a first login
-  //     return {
-  //       success: true,
-  //       requiresPasswordReset: false
-  //     };
-  //   } catch (error) {
-  //     console.error('Error checking first login:', error);
-  //     return {
-  //       success: false,
-  //       requiresPasswordReset: false,
-  //       error: axios.isAxiosError(error) ? 
-  //         (error.response?.data?.message || error.message) : 
-  //         (error as Error).message
-  //     };
-  //   }
-  // },
-
-  // // Reset password for first-time login
-  // resetFirstTimePassword: async (username: string, newPassword: string) => {
-  //   try {
-  //     // Step 1: Update the user's password
-  //     const passwordUpdateResponse = await frappeClient.put(
-  //       `/api/resource/User/${username}`,
-  //       {
-  //         new_password: newPassword
-  //       }
-  //     );
-
-  //     if (passwordUpdateResponse.status === 200) {
-  //       // Step 2: Update the first_password flag to 0
-  //       try {
-  //         const flagUpdateResponse = await frappeClient.put(
-  //           `/api/resource/User Settings/${username}`,
-  //           {
-  //             first_password: 0
-  //           }
-  //         );
-
-  //         console.log('Password reset successful:', {
-  //           username,
-  //           passwordUpdate: passwordUpdateResponse.status,
-  //           flagUpdate: flagUpdateResponse.status
-  //         });
-
-  //         return {
-  //           success: true,
-  //           message: 'Password updated successfully'
-  //         };
-  //       } catch (flagError) {
-  //         console.warn('Password updated but failed to update flag:', flagError);
-  //         // Password was updated successfully, but flag update failed
-  //         // This is still considered a success since the password was changed
-  //         return {
-  //           success: true,
-  //           message: 'Password updated successfully',
-  //           warning: 'Flag update failed but password was changed'
-  //         };
-  //       }
-  //     }
-
-  //     return {
-  //       success: false,
-  //       error: 'Failed to update password'
-  //     };
-  //   } catch (error) {
-  //     console.error('Password reset error:', error);
-  //     return {
-  //       success: false,
-  //       error: axios.isAxiosError(error) ? 
-  //         (error.response?.data?.message || error.message) : 
-  //         (error as Error).message
-  //     };
-  //   }
-  // },
 
   // Test connection first
-  testConnection: async () => {
-    try {
-      const response = await frappeClient.get('/api/method/ping');
-      return { success: true, data: response.data };
-    } catch (error) {
-      return {
-        success: false,
-        error: axios.isAxiosError(error) ? (error.response?.data?.message || error.message) : (error as Error).message,
-        status: axios.isAxiosError(error) ? error.response?.status : undefined
-      };
-    }
-  },
+  
 
   // Enhanced login with better session handling
   // Enhanced login method
@@ -579,6 +470,19 @@ resetFirstTimePassword: async (username: string, newPassword: string) => {
         throw new Error('Session expired. Please login again.');
       }
       throw error;
+    }
+  },
+
+  testConnection: async () => {
+    try {
+      const response = await frappeClient.get('/api/method/ping');
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: axios.isAxiosError(error) ? (error.response?.data?.message || error.message) : (error as Error).message,
+        status: axios.isAxiosError(error) ? error.response?.status : undefined
+      };
     }
   },
 
@@ -991,9 +895,7 @@ resetFirstTimePassword: async (username: string, newPassword: string) => {
   getFeedbackByUserId: async (userId: string) => {
     return await frappeAPI.makeAuthenticatedRequest('GET', `/api/resource/Issue?filters=[["customer","=","${userId}"]]`);
   },
-  getFeedbackById: async (feedbackId: string) => {
-    return await frappeAPI.makeAuthenticatedRequest('GET', `/api/resource/Issue/${feedbackId}`);
-  },
+  
   upload: async (file: File, options: {
     is_private?: boolean;
     folder?: string;

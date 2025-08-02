@@ -450,7 +450,6 @@ const getCurrentTime = () => {
 
     try {
       await saveLead();
-      toast.success("Inquiry created successfully!");
       onClose();
     } catch (err) {
       console.error("Form submission error:", err);
@@ -1528,7 +1527,7 @@ const Section: React.FC<SectionProps> = ({
                         value={inspector.name ?? ""}
                       >
                         <div className="flex items-center gap-2">
-                          <span>{inspector.full_name ?? inspector.name}</span>
+                          <span>{inspector.full_name}</span>
                         </div>
                       </SelectItem>
                     ))}
