@@ -15,7 +15,7 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import { LeadsProvider } from "./context/LeadContext";
 import { roleMiddleware } from "./middleware/roleMiddleware";
 import { JobCardProvider } from "./context/JobCardContext";
-import HomePage from "./components/pages/Homepage";
+// import HomePage from "./components/pages/Homepage";
 import { JobCardOtherProvider } from "./context/JobCardOtherContext";
 import AccountUser from "./components/pages/AccountUser";
 
@@ -244,7 +244,7 @@ function AppRoutes() {
     <Router>
       <Routes>
         {/* Root redirect to login */}
-        <Route path="/" element={<LoginForm />} />
+        <Route path="/login" element={<LoginForm />} />
         <Route
           path="/first-time-password-reset"
           element={
