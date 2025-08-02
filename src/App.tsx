@@ -15,14 +15,13 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import { LeadsProvider } from "./context/LeadContext";
 import { roleMiddleware } from "./middleware/roleMiddleware";
 import { JobCardProvider } from "./context/JobCardContext";
-// import HomePage from "./components/pages/Homepage";
+import HomePage from "./components/pages/Homepage";
 import { JobCardOtherProvider } from "./context/JobCardOtherContext";
 import AccountUser from "./components/pages/AccountUser";
 
 import { FirstTimePasswordReset } from "./components/auth/NewPassword";
 import { PasswordResetLoader } from "./common/Loader";
 import { frappeAPI } from "./api/frappeClient";
-import LoginForm from "./components/form/LoginForm";
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -244,7 +243,7 @@ function AppRoutes() {
     <Router>
       <Routes>
         {/* Root redirect to login */}
-        <Route path="/login" element={<LoginForm />} />
+        <Route path="/" element={<HomePage />} />
         <Route
           path="/first-time-password-reset"
           element={
