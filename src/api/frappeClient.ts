@@ -2,8 +2,6 @@
 // src/api/frappeClient.ts
 import axios from 'axios';
 
-
-
 // Use different base URLs for development and production
 const isDevelopment = import.meta.env.DEV;
 
@@ -12,7 +10,6 @@ const isDevelopment = import.meta.env.DEV;
 const FRAPPE_BASE_URL = isDevelopment
   ? '' // Direct backend URL for development
   : ''; // Use relative URLs in production
-
 
 // Create axios instance with default config
 const frappeClient = axios.create({
@@ -39,7 +36,6 @@ frappeFileClient.interceptors.request.use(
   (config) => {
     // Log file upload requests
 
-
     // For development, add CORS headers
     if (isDevelopment) {
       config.headers['Access-Control-Allow-Origin'] = 'http://localhost:3000';
@@ -62,7 +58,6 @@ frappeFileClient.interceptors.request.use(
 
 frappeFileClient.interceptors.response.use(
   (response) => {
-
     if (response.headers['set-cookie']) {
       console.log('Cookies received:', response.headers['set-cookie']);
     }
@@ -89,8 +84,6 @@ frappeFileClient.interceptors.response.use(
 // Add request interceptor
 frappeClient.interceptors.request.use(
   (config) => {
-
-
     // For development, add CORS headers
     if (isDevelopment) {
       config.headers['Access-Control-Allow-Origin'] = 'http://localhost:3000';
@@ -110,7 +103,6 @@ frappeClient.interceptors.request.use(
 frappeClient.interceptors.response.use(
   (response) => {
     // Log successful responses
-
     if (response.headers['set-cookie']) {
       console.log('Cookies received:', response.headers['set-cookie']);
     }
@@ -136,25 +128,125 @@ frappeClient.interceptors.response.use(
 
 export const frappeAPI = {
 
-  // Add this to your frappeAPI object
-getUserDetails: async (username: string) => {
-  try {
-    const response = await frappeClient.get(`/api/resource/User/${username}`);
-    return {
-      success: true,
-      data: response.data.data,
-      roles: response.data.data.roles || []
-    };
-  } catch (error) {
-    console.error('Error fetching user details:', error);
-    return {
-      success: false,
-      error: axios.isAxiosError(error) ? 
-        (error.response?.data?.message || error.message) : 
-        (error as Error).message
-    };
-  }
-},
+  // Get user details from Frappe
+  getUserDetails: async (username: string) => {
+    try {
+      const response = await frappeClient.get(`/api/resource/User/${username}`);
+      return {
+        success: true,
+        data: response.data.data,
+        roles: response.data.data.roles || []
+      };
+    } catch (error) {
+      console.error('Error fetching user details:', error);
+      return {
+        success: false,
+        error: axios.isAxiosError(error) ? 
+          (error.response?.data?.message || error.message) : 
+          (error as Error).message
+      };
+    }
+  },
+
+  // Check if user is logging in for the first time
+  // checkFirstLogin: async (username: string) => {
+  //   try {
+  //     const response = await frappeClient.get(
+  //       `/api/resource/User Settings?filters=[["user","=","${username}"]]&fields=["user","first_password"]`
+  //     );
+      
+  //     if (response.data && response.data.data && response.data.data.length > 0) {
+  //       const userSettings = response.data.data[0];
+  //       const requiresPasswordReset = userSettings.first_password === 1;
+        
+  //       console.log('First login check:', {
+  //         username,
+  //         first_password: userSettings.first_password,
+  //         requiresPasswordReset
+  //       });
+        
+  //       return {
+  //         success: true,
+  //         requiresPasswordReset,
+  //         userSettings
+  //       };
+  //     }
+      
+  //     // If no user settings found, assume it's not a first login
+  //     return {
+  //       success: true,
+  //       requiresPasswordReset: false
+  //     };
+  //   } catch (error) {
+  //     console.error('Error checking first login:', error);
+  //     return {
+  //       success: false,
+  //       requiresPasswordReset: false,
+  //       error: axios.isAxiosError(error) ? 
+  //         (error.response?.data?.message || error.message) : 
+  //         (error as Error).message
+  //     };
+  //   }
+  // },
+
+  // // Reset password for first-time login
+  // resetFirstTimePassword: async (username: string, newPassword: string) => {
+  //   try {
+  //     // Step 1: Update the user's password
+  //     const passwordUpdateResponse = await frappeClient.put(
+  //       `/api/resource/User/${username}`,
+  //       {
+  //         new_password: newPassword
+  //       }
+  //     );
+
+  //     if (passwordUpdateResponse.status === 200) {
+  //       // Step 2: Update the first_password flag to 0
+  //       try {
+  //         const flagUpdateResponse = await frappeClient.put(
+  //           `/api/resource/User Settings/${username}`,
+  //           {
+  //             first_password: 0
+  //           }
+  //         );
+
+  //         console.log('Password reset successful:', {
+  //           username,
+  //           passwordUpdate: passwordUpdateResponse.status,
+  //           flagUpdate: flagUpdateResponse.status
+  //         });
+
+  //         return {
+  //           success: true,
+  //           message: 'Password updated successfully'
+  //         };
+  //       } catch (flagError) {
+  //         console.warn('Password updated but failed to update flag:', flagError);
+  //         // Password was updated successfully, but flag update failed
+  //         // This is still considered a success since the password was changed
+  //         return {
+  //           success: true,
+  //           message: 'Password updated successfully',
+  //           warning: 'Flag update failed but password was changed'
+  //         };
+  //       }
+  //     }
+
+  //     return {
+  //       success: false,
+  //       error: 'Failed to update password'
+  //     };
+  //   } catch (error) {
+  //     console.error('Password reset error:', error);
+  //     return {
+  //       success: false,
+  //       error: axios.isAxiosError(error) ? 
+  //         (error.response?.data?.message || error.message) : 
+  //         (error as Error).message
+  //     };
+  //   }
+  // },
+
   // Test connection first
   testConnection: async () => {
     try {
@@ -170,7 +262,8 @@ getUserDetails: async (username: string) => {
   },
 
   // Enhanced login with better session handling
-  login: async (username: string, password: string) => {
+  // Enhanced login method
+login: async (username: string, password: string) => {
   try {
     // Clear any existing session data
     localStorage.removeItem('frappe_user');
@@ -183,6 +276,9 @@ getUserDetails: async (username: string) => {
 
     // Check for successful login
     if (response.data.message === 'Logged In' || response.status === 200) {
+      // First check if this is a first-time login
+      const firstLoginCheck = await frappeAPI.checkFirstLogin(username);
+      
       // Fetch user details after successful login
       const userDetails = await frappeAPI.getUserDetails(username);
       
@@ -193,7 +289,8 @@ getUserDetails: async (username: string) => {
         role: userDetails.data?.role || '',
         roles: userDetails.data?.roles || [],
         authenticated: true,
-        loginTime: Date.now()
+        loginTime: Date.now(),
+        requiresPasswordReset: firstLoginCheck.requiresPasswordReset || false
       };
 
       // Store user data
@@ -203,22 +300,161 @@ getUserDetails: async (username: string) => {
         success: true, 
         data: response.data, 
         user: userData,
-        details: userDetails.data 
+        details: userDetails.data,
+        requiresPasswordReset: firstLoginCheck.requiresPasswordReset
       };
     }
 
-    return { success: false, data: response.data, error: 'Login failed' };
+    return { 
+      success: false, 
+      data: response.data, 
+      error: response.data.message || 'Login failed' 
+    };
   } catch (error) {
     console.error('Login error details:', error);
 
+    let errorMessage = 'Login failed';
     if (axios.isAxiosError(error)) {
-      const errorMessage = error.response?.data?.message ||
+      errorMessage = error.response?.data?.message ||
         error.response?.data?.exc ||
         `Login failed: ${error.response?.status} ${error.response?.statusText}`;
-      throw new Error(errorMessage);
-    } else {
-      throw error;
+    } else if (error instanceof Error) {
+      errorMessage = error.message;
     }
+
+    return { 
+      success: false, 
+      error: errorMessage 
+    };
+  }
+},
+
+// Improved checkFirstLogin method
+checkFirstLogin: async (username: string) => {
+  try {
+    // First check User Settings
+    const response = await frappeClient.get(
+      `/api/resource/User Settings?filters=[["user","=","${username}"]]&fields=["user","first_password"]`
+    );
+    
+    if (response.data && response.data.data && response.data.data.length > 0) {
+      const userSettings = response.data.data[0];
+      const requiresPasswordReset = userSettings.first_password === 1;
+      
+      console.log('First login check:', {
+        username,
+        first_password: userSettings.first_password,
+        requiresPasswordReset
+      });
+      
+      return {
+        success: true,
+        requiresPasswordReset,
+        userSettings
+      };
+    }
+    
+    // If no user settings found, try checking the user's last_login
+    const userResponse = await frappeClient.get(
+      `/api/resource/User/${username}?fields=["last_login"]`
+    );
+    
+    if (userResponse.data && userResponse.data.data) {
+      const requiresPasswordReset = !userResponse.data.data.last_login;
+      
+      return {
+        success: true,
+        requiresPasswordReset,
+        lastLogin: userResponse.data.data.last_login
+      };
+    }
+    
+    // Default case - assume not first login
+    return {
+      success: true,
+      requiresPasswordReset: false
+    };
+  } catch (error) {
+    console.error('Error checking first login:', error);
+    
+    let errorMessage = 'Error checking first login status';
+    if (axios.isAxiosError(error)) {
+      errorMessage = error.response?.data?.message || error.message;
+    } else if (error instanceof Error) {
+      errorMessage = error.message;
+    }
+    
+    return {
+      success: false,
+      requiresPasswordReset: false,
+      error: errorMessage
+    };
+  }
+},
+
+// Robust resetFirstTimePassword method
+resetFirstTimePassword: async (username: string, newPassword: string) => {
+  try {
+    // Validate password strength
+    if (!newPassword || newPassword.length < 8) {
+      throw new Error('Password must be at least 8 characters long');
+    }
+
+    // Step 1: Update the user's password
+    const passwordUpdateResponse = await frappeClient.put(
+      `/api/resource/User/${encodeURIComponent(username)}`,
+      {
+        new_password: newPassword
+      }
+    );
+
+    if (passwordUpdateResponse.status !== 200) {
+      throw new Error('Failed to update password');
+    }
+
+    // Step 2: Update the first_password flag to 0
+    try {
+      const flagUpdateResponse = await frappeClient.put(
+        `/api/resource/User Settings/${encodeURIComponent(username)}`,
+        {
+          first_password: 0
+        }
+      );
+
+      console.log('Password reset successful:', {
+        username,
+        passwordUpdate: passwordUpdateResponse.status,
+        flagUpdate: flagUpdateResponse.status
+      });
+
+      return {
+        success: true,
+        message: 'Password updated successfully'
+      };
+    } catch (flagError) {
+      console.warn('Password updated but failed to update flag:', flagError);
+      // Password was updated successfully, but flag update failed
+      // This is still considered a success since the password was changed
+      return {
+        success: true,
+        message: 'Password updated successfully',
+        warning: 'Flag update failed but password was changed'
+      };
+    }
+  } catch (error) {
+    console.error('Password reset error:', error);
+    
+    let errorMessage = 'Password reset failed';
+    if (axios.isAxiosError(error)) {
+      errorMessage = error.response?.data?.message || error.message;
+    } else if (error instanceof Error) {
+      errorMessage = error.message;
+    }
+    
+    return {
+      success: false,
+      error: errorMessage
+    };
   }
 },
 
@@ -240,95 +476,96 @@ getUserDetails: async (username: string) => {
   },
 
   checkSession: async () => {
-  try {
-    // First check if we have stored user data
-    const storedUser = localStorage.getItem('frappe_user');
-    if (!storedUser) {
-      return { authenticated: false, error: 'No stored user data' };
-    }
-
-    let userData;
     try {
-      userData = JSON.parse(storedUser);
-    } catch {
-      localStorage.removeItem('frappe_user');
-      return { authenticated: false, error: 'Invalid stored user data' };
-    }
-
-    try {
-      // Verify session with Frappe
-      const response = await frappeClient.get('/api/method/frappe.auth.get_logged_user');
-      
-      if (response.data && response.data.message && response.data.message !== 'Guest') {
-        // Fetch fresh user details
-        const userDetails = await frappeAPI.getUserDetails(response.data.message);
-        
-        const updatedUserData = {
-          ...userData,
-          full_name: userDetails.data?.full_name || userData.full_name,
-          email: userDetails.data?.email || userData.email,
-          role: userDetails.data?.role || userData.role,
-          roles: userDetails.data?.roles || userData.roles
-        };
-
-        // Update stored user data
-        localStorage.setItem('frappe_user', JSON.stringify(updatedUserData));
-
-        return { 
-          authenticated: true, 
-          user: updatedUserData,
-          details: userDetails.data 
-        };
+      // First check if we have stored user data
+      const storedUser = localStorage.getItem('frappe_user');
+      if (!storedUser) {
+        return { authenticated: false, error: 'No stored user data' };
       }
+
+      let userData;
+      try {
+        userData = JSON.parse(storedUser);
+      } catch {
+        localStorage.removeItem('frappe_user');
+        return { authenticated: false, error: 'Invalid stored user data' };
+      }
+
+      try {
+        // Verify session with Frappe
+        const response = await frappeClient.get('/api/method/frappe.auth.get_logged_user');
+        
+        if (response.data && response.data.message && response.data.message !== 'Guest') {
+          // Fetch fresh user details
+          const userDetails = await frappeAPI.getUserDetails(response.data.message);
+          
+          const updatedUserData = {
+            ...userData,
+            full_name: userDetails.data?.full_name || userData.full_name,
+            email: userDetails.data?.email || userData.email,
+            role: userDetails.data?.role || userData.role,
+            roles: userDetails.data?.roles || userData.roles
+          };
+
+          // Update stored user data
+          localStorage.setItem('frappe_user', JSON.stringify(updatedUserData));
+
+          return { 
+            authenticated: true, 
+            user: updatedUserData,
+            details: userDetails.data 
+          };
+        }
+      } catch (error) {
+        console.warn('Session verification failed:', error);
+      }
+
+      // Fallback to stored data with time check
+      const loginTime = userData.loginTime || 0;
+      const now = Date.now();
+      const sessionAge = now - loginTime;
+      const maxSessionAge = 24 * 60 * 60 * 1000; // 24 hours
+
+      if (sessionAge > maxSessionAge) {
+        localStorage.removeItem('frappe_user');
+        localStorage.removeItem('frappe_csrf_token');
+        return { authenticated: false, error: 'Session expired' };
+      }
+
+      return { authenticated: true, user: userData };
     } catch (error) {
-      console.warn('Session verification failed:', error);
-    }
-
-    // Fallback to stored data with time check
-    const loginTime = userData.loginTime || 0;
-    const now = Date.now();
-    const sessionAge = now - loginTime;
-    const maxSessionAge = 24 * 60 * 60 * 1000; // 24 hours
-
-    if (sessionAge > maxSessionAge) {
+      console.error('Session check failed:', error);
       localStorage.removeItem('frappe_user');
+      localStorage.removeItem('frappe_session');
       localStorage.removeItem('frappe_csrf_token');
-      return { authenticated: false, error: 'Session expired' };
+      return {
+        authenticated: false,
+        error: axios.isAxiosError(error) ? 
+          (error.response?.data?.message || error.message) : 
+          (error as Error).message
+      };
     }
+  },
 
-    return { authenticated: true, user: userData };
-  } catch (error) {
-    console.error('Session check failed:', error);
-    localStorage.removeItem('frappe_user');
-    localStorage.removeItem('frappe_session');
-    localStorage.removeItem('frappe_csrf_token');
-    return {
-      authenticated: false,
-      error: axios.isAxiosError(error) ? 
-        (error.response?.data?.message || error.message) : 
-        (error as Error).message
-    };
-  }
-},
-// Add this to your frappeAPI object
-getUserRoles: async (username: string) => {
-  try {
-    const response = await frappeClient.get(`/api/resource/User/${username}?fields=["roles"]`);
-    return {
-      success: true,
-      roles: response.data.data.roles || []
-    };
-  } catch (error) {
-    console.error('Error fetching user roles:', error);
-    return {
-      success: false,
-      error: axios.isAxiosError(error) ? 
-        (error.response?.data?.message || error.message) : 
-        (error as Error).message,
-      roles: []
-    };
-  }
-},
+  // Get user roles
+  getUserRoles: async (username: string) => {
+    try {
+      const response = await frappeClient.get(`/api/resource/User/${username}?fields=["roles"]`);
+      return {
+        success: true,
+        roles: response.data.data.roles || []
+      };
+    } catch (error) {
+      console.error('Error fetching user roles:', error);
+      return {
+        success: false,
+        error: axios.isAxiosError(error) ? 
+          (error.response?.data?.message || error.message) : 
+          (error as Error).message,
+        roles: []
+      };
+    }
+  },
 
   getUserInfo: async () => {
     try {

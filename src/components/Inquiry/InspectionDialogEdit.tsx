@@ -30,6 +30,7 @@ export default function InspectionDialog({
   todoData,
   mode,
 }: InspectionDialogProps) {
+  console.log("todoData", todoData);
   const { fetchInspectors, inspectors , updateTodo} = useAssignStore();
   const [showPropertyInfo, setShowPropertyInfo] = useState(false);
   const [formData, setFormData] = useState({
@@ -233,7 +234,7 @@ export default function InspectionDialog({
                         Building Type:
                       </span>
                       <span className="ml-2 text-gray-900">
-                        {todoData?.inquiry_data?.custom_building_type || "N/A"}
+                        {todoData?.inquiry_data?.custom_type_of_building|| "N/A"}
                       </span>
                     </div>
                   </div>
@@ -263,7 +264,7 @@ export default function InspectionDialog({
                         Location:
                       </span>
                       <span className="ml-2 text-gray-900">
-                        {todoData?.inquiry_data?.custom_location || "N/A"}
+                        {todoData?.inquiry_data?.custom_property_area || "N/A"}
                       </span>
                     </div>
                   </div>

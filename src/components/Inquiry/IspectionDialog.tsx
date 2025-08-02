@@ -6,6 +6,7 @@ import {
   X,
   ChevronDown,
   ChevronRight,
+  CalendarIcon,
 } from "lucide-react";
 // import { Calendar } from "../ui/calendar";
 import { Button } from "../ui/button";
@@ -24,6 +25,8 @@ import { useAuth } from "../../context/AuthContext";
 import { format } from "date-fns";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
+import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
+import { Calendar } from "../ui/calendar";
 // import { cn } from "../../lib/utils";
 
 type PriorityLevel = "Low" | "Medium" | "High";
@@ -39,6 +42,7 @@ const IspectionDialog: React.FC<IspectionDialogProps> = ({
   onClose,
   inquiry,
 }) => {
+  console.log("inquiry", inquiry);
   const { user } = useAuth();
   const {
     fetchInspectors,
@@ -295,7 +299,7 @@ const IspectionDialog: React.FC<IspectionDialogProps> = ({
           )}
 
           {/* Inspector Selection */}
-          <div className="space-y-2 px-4">
+          <div className="space-y-2 p-4">
             <Label className="text-gray-700 text-sm font-medium">
               Select Inspector <span className="text-red-500">*</span>
             </Label>
@@ -330,8 +334,8 @@ const IspectionDialog: React.FC<IspectionDialogProps> = ({
           </div>
 
           {/* Date and Priority Selection */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 px-4">
-            {/* <div className="space-y-2">
+          <div className="grid grid-cols-2 sm:grid-cols-2 gap-4 px-4 py-1">
+            <div className="space-y-2">
               <Label className="text-gray-700 text-sm font-medium">
                 Inspection Date <span className="text-red-500">*</span>
               </Label>
@@ -339,10 +343,10 @@ const IspectionDialog: React.FC<IspectionDialogProps> = ({
                 <PopoverTrigger asChild>
                   <Button
                     variant={"outline"}
-                    className={cn(
-                      "w-full justify-start text-left font-normal bg-white border border-gray-300 text-sm",
-                      !date && "text-muted-foreground"
-                    )}
+                    className={
+                      "w-full justify-start text-left font-normal bg-white border border-gray-300 text-sm" +
+                      (!date && " text-muted-foreground")
+                    }
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
                     {date ? format(date, "PP") : <span>Pick date</span>}
@@ -360,7 +364,7 @@ const IspectionDialog: React.FC<IspectionDialogProps> = ({
                   />
                 </PopoverContent>
               </Popover>
-            </div> */}
+            </div>
 
             <div className="space-y-2 ">
               <Label className="text-gray-700 text-sm font-medium">

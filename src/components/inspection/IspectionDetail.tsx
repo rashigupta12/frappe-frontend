@@ -615,7 +615,7 @@ const CreateInspection = () => {
                                       </PopoverTrigger>
                                       {!isReadOnly && (
                                         <PopoverContent
-                                          className="w-auto p-0"
+                                          className="w-auto p-0  bg-white"
                                           align="start"
                                         >
                                           <Calendar
@@ -626,7 +626,7 @@ const CreateInspection = () => {
                                               date < new Date("1900-01-01")
                                             }
                                             initialFocus
-                                            className="rounded-md border"
+                                            className="rounded-md border bg-white"
                                           />
                                         </PopoverContent>
                                       )}

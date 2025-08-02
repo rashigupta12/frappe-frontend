@@ -19,6 +19,7 @@ import HomePage from "./components/pages/Homepage";
 import { JobCardOtherProvider } from "./context/JobCardOtherContext";
 import AccountUser from "./components/pages/AccountUser";
 import { Loader } from "lucide-react";
+import { FirstTimePasswordReset } from "./components/auth/NewPassword";
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -69,7 +70,7 @@ const PublicRoute = ({ children }: { children: ReactNode }) => {
     return <Loader />;
   }
 
-  if (isAuthenticated && user) {
+  if (isAuthenticated && user && !window.location.pathname.includes('first-time-password-reset')) {
     // Redirect based on role
     switch (user.role) {
       case "EITS_Sale_Representative":
@@ -202,6 +203,14 @@ function AppRoutes() {
       <Routes>
         {/* Root redirect to login */}
         <Route path="/" element={<HomePage />} />
+         <Route 
+          path="/first-time-password-reset" 
+          element={
+            <PublicRoute>
+              <FirstTimePasswordReset />
+            </PublicRoute>
+          } 
+        />
 
         {/* Public Routes */}
         <Route

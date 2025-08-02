@@ -14,10 +14,16 @@ interface AuthUser {
 
 interface AuthContextType {
   user: AuthUser | null;
-  login: (username: string, password: string) => Promise<{ success: boolean; user?: AuthUser; error?: string }>;
+  login: (username: string, password: string) => Promise<{
+    success: boolean;
+    user?: AuthUser;
+    error?: string;
+    requiresPasswordReset?: boolean;
+  }>;
   logout: () => Promise<void>;
   refreshAuth: () => Promise<void>;
   clearError: () => void;
+  resetPassword?: (username: string, newPassword: string) => Promise<{ success: boolean; error?: string }>;
   loading: boolean;
   error: string | null;
   isAuthenticated: boolean;
@@ -43,8 +49,7 @@ const AuthContext = createContext<AuthContextType>({
 });
 
 // Enhanced role mapping function
-  // First check if user has specific Frappe roles
- const mapUserToRole = (username: string, fullName: string, frappeRoles?: any[]): string => {
+const mapUserToRole = (username: string, fullName: string, frappeRoles?: any[]): string => {
   // First check if user has specific Frappe roles
   if (frappeRoles && Array.isArray(frappeRoles)) {
     const roleNames = frappeRoles.map(r => r.role || r).filter(Boolean);
@@ -95,7 +100,6 @@ const AuthContext = createContext<AuthContextType>({
       }
     }
   }
-  
   
   // Then try to map from full_name if it exists
   if (fullName && fullName.trim() !== '') {
@@ -221,107 +225,136 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const checkAuthStatus = async () => {
-  try {
-    setLoading(true);
-    setError(null);
-    
-    const sessionCheck = await frappeAPI.checkSession();
-    console.log('Session Check Result:', sessionCheck);
-    
-    if (sessionCheck.authenticated) {
-      const username = sessionCheck.user?.username || sessionCheck.user || '';
-      // Provide a default full_name if not available
-      const fullName = sessionCheck.user?.full_name || username.split('@')[0] || 'User';
-      const email = sessionCheck.user?.email || username;
-      const frappeRoles = sessionCheck.user?.roles || [];
-      
-      // Extract role names from Frappe roles array
-      const roleNames = frappeRoles.map((r: any) => r.role || r).filter(Boolean);
-      
-      const mappedRole = mapUserToRole(username, fullName, frappeRoles);
-      
-      const userData: AuthUser = {
-        username: username,
-        full_name: fullName,
-        email: email,
-        role: mappedRole,
-        roles: roleNames
-      };
-      
-      console.log('Auth Status Check:', userData);
-      
-      setUser(userData);
-    } else {
-      setUser(null);
-      if (sessionCheck.error && !sessionCheck.error.includes('No stored user data')) {
-        console.warn('Session check warning:', sessionCheck.error);
-      }
-    }
-  } catch (error) {
-    console.error('Auth check failed:', error);
-    setUser(null);
-    setError('Authentication check failed');
-  } finally {
-    setLoading(false);
-  }
-};
-
-  const login = async (username: string, password: string) => {
     try {
       setLoading(true);
       setError(null);
       
-      const response = await frappeAPI.login(username, password);
+      const sessionCheck = await frappeAPI.checkSession();
+      console.log('Session Check Result:', sessionCheck);
       
-      if (response.success && response.user) {
-        // Get username and full_name from response
-        const responseUsername = response.user.username || username;
-        const fullName = response.data?.full_name || response.user.full_name || '';
-        const email = (response.user && 'email' in response.user ? (response.user as any).email : undefined) || response.data?.email || responseUsername;
-        const frappeRoles = response.data?.roles || (response.user && 'roles' in response.user ? (response.user as any).roles : []) || [];
+      if (sessionCheck.authenticated) {
+        const username = sessionCheck.user?.username || sessionCheck.user || '';
+        // Provide a default full_name if not available
+        const fullName = sessionCheck.user?.full_name || username.split('@')[0] || 'User';
+        const email = sessionCheck.user?.email || username;
+        const frappeRoles = sessionCheck.user?.roles || [];
         
         // Extract role names from Frappe roles array
         const roleNames = frappeRoles.map((r: any) => r.role || r).filter(Boolean);
         
-        // Use our enhanced mapping function
-        const mappedRole = mapUserToRole(responseUsername, fullName, frappeRoles);
+        const mappedRole = mapUserToRole(username, fullName, frappeRoles);
         
         const userData: AuthUser = {
-          username: responseUsername,
+          username: username,
           full_name: fullName,
           email: email,
           role: mappedRole,
           roles: roleNames
         };
-
-        console.log('Login Success:', {
-          username: responseUsername,
-          fullName,
-          frappeRoles: roleNames,
-          mappedRole,
-          userData
-        });
-
+        
+        console.log('Auth Status Check:', userData);
+        
         setUser(userData);
-        return { success: true, user: userData };
       } else {
-        throw new Error(response.error || 'Login failed');
-      }
-    } catch (error) {
-      console.error('Login error:', error);
-      let errorMessage = 'Login failed. Please check your credentials.';
-      
-      if (error instanceof Error) {
-        errorMessage = error.message;
-      } else if (typeof error === 'object' && error !== null) {
-        const err = error as any;
-        if (err.response?.data?.message) {
-          errorMessage = err.response.data.message;
-        } else if (err.message) {
-          errorMessage = err.message;
+        setUser(null);
+        if (sessionCheck.error && !sessionCheck.error.includes('No stored user data')) {
+          console.warn('Session check warning:', sessionCheck.error);
         }
       }
+    } catch (error) {
+      console.error('Auth check failed:', error);
+      setUser(null);
+      setError('Authentication check failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+// In your AuthContext.tsx
+const login = async (username: string, password: string): Promise<{
+  success: boolean;
+  user?: AuthUser;
+  error?: string;
+  requiresPasswordReset?: boolean;
+}> => {
+  try {
+    setLoading(true);
+    setError(null);
+    
+    const response = await frappeAPI.login(username, password);
+    
+    if (response.success && response.user) {
+      const firstLoginCheck = await frappeAPI.checkFirstLogin(username);
       
+      if (firstLoginCheck.requiresPasswordReset) {
+        return { 
+          success: true, 
+          requiresPasswordReset: true,
+          user: {
+            username: username,
+            full_name: response.user.full_name || username.split('@')[0] || 'User',
+            email: response.user.email || username,
+            role: mapUserToRole(username, response.user.full_name || '', response.user.roles || []),
+            roles: response.user.roles || []
+          }
+        };
+      }
+      
+      const userData: AuthUser = {
+        username: username,
+        full_name: response.user.full_name || username.split('@')[0] || 'User',
+        email: response.user.email || username,
+        role: mapUserToRole(username, response.user.full_name || '', response.user.roles || []),
+        roles: response.user.roles || []
+      };
+
+      setUser(userData);
+      return { success: true, user: userData };
+    }
+    
+    return { 
+      success: false, 
+      error: response.error || 'Login failed' 
+    };
+  } catch (error) {
+    console.error('Login error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Login failed';
+    
+    setError(errorMessage);
+    return { success: false, error: errorMessage };
+  } finally {
+    setLoading(false);
+  }
+};
+
+  const resetPassword = async (username: string, newPassword: string) => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const result = await frappeAPI.resetFirstTimePassword(username, newPassword);
+      
+      if (result.success) {
+        // After successful password reset, log the user in normally
+        const userDetails = await frappeAPI.getUserDetails(username);
+        
+        const userData: AuthUser = {
+          username: username,
+          full_name: userDetails.data?.full_name || username.split('@')[0] || 'User',
+          email: userDetails.data?.email || username,
+          role: mapUserToRole(username, userDetails.data?.full_name || '', userDetails.data?.roles || []),
+          roles: userDetails.data?.roles?.map((r: any) => r.role || r) || []
+        };
+
+        setUser(userData);
+        return { success: true };
+      } else {
+        setError(result.error || 'Password reset failed');
+        return { success: false, error: result.error || 'Password reset failed' };
+      }
+    } catch (error) {
+      console.error('Password reset error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Password reset failed';
       setError(errorMessage);
       return { success: false, error: errorMessage };
     } finally {
@@ -380,6 +413,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     logout,
     refreshAuth,
     clearError,
+    resetPassword,
     loading,
     error,
     isAuthenticated: !!user,
