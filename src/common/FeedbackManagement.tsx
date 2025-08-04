@@ -23,6 +23,7 @@ import {
   DialogTitle,
 } from "../components/ui/dialog";
 import { useAuth } from "../context/AuthContext";
+import { format } from "date-fns";
 
 // Types
 interface ImageAttachment {
@@ -166,7 +167,7 @@ const FeedbackForm: React.FC<{
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.subject.trim() || !formData.description.trim()) {
+    if (!formData.subject.trim() ) {
       toast.error("Please fill in all required fields");
       return;
     }
@@ -487,17 +488,17 @@ const FeedbackList: React.FC<{
     }
   };
 
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return "N/A";
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
+  // const formatDate = (dateString?: string) => {
+  //   if (!dateString) return "N/A";
+  //   const date = new Date(dateString);
+  //   return date.toLocaleDateString("en-US", {
+  //     year: "numeric",
+  //     month: "short",
+  //     day: "numeric",
+  //     hour: "2-digit",
+  //     minute: "2-digit",
+  //   });
+  // };
 
   if (!isOpen) return null;
 
@@ -675,7 +676,12 @@ const FeedbackList: React.FC<{
                       <div className="flex flex-wrap items-center gap-2 text-xs">
                         <div className="flex items-center gap-1 text-emerald-600">
                           <Calendar className="h-3 w-3" />
-                          {formatDate(feedback.creation)}
+                          <span>
+                            {feedback.opening_date
+                              ? format(new Date(feedback.opening_date), "dd/MM/yyyy")
+                              : "No date"}
+                            {feedback.opening_time && ` at ${feedback.opening_time}`}
+                          </span>
                         </div>
 
                         <div className="flex items-center gap-3">
