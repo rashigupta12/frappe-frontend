@@ -22,6 +22,7 @@ import AccountUser from "./components/pages/AccountUser";
 import { FirstTimePasswordReset } from "./components/auth/NewPassword";
 import { PasswordResetLoader } from "./common/Loader";
 import { frappeAPI } from "./api/frappeClient";
+import "./App.css";
 
 interface ProtectedRouteProps {
   children: ReactNode;

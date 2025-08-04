@@ -1,7 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "../ui/button";
 
+import { format } from "date-fns";
+import { X } from "lucide-react";
+import toast from "react-hot-toast";
+import { useAssignStore } from "../../store/assign";
+import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import {
   Select,
@@ -11,11 +16,6 @@ import {
   SelectValue,
 } from "../ui/select";
 import { Textarea } from "../ui/textarea";
-import { format } from "date-fns";
-import { X, ChevronDown, ChevronRight } from "lucide-react";
-import { useAssignStore } from "../../store/assign";
-import { Input } from "../ui/input";
-import toast from "react-hot-toast";
 
 interface InspectionDialogProps {
   isOpen: boolean;
@@ -31,8 +31,8 @@ export default function InspectionDialog({
   mode,
 }: InspectionDialogProps) {
   console.log("todoData", todoData);
-  const { fetchInspectors, inspectors , updateTodo} = useAssignStore();
-  const [showPropertyInfo, setShowPropertyInfo] = useState(false);
+  const { fetchInspectors, inspectors, updateTodo } = useAssignStore();
+  // const [showPropertyInfo, setShowPropertyInfo] = useState(false);
   const [formData, setFormData] = useState({
     leadName: "",
     inspector: "",
@@ -110,10 +110,10 @@ export default function InspectionDialog({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 ">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg w-full max-w-2xl shadow-xl relative max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="bg-gradient-to-r from-emerald-600 to-blue-600 p-4 text-white rounded-t-lg sticky top-0 z-10">
+        <div className="bg-emerald-600 p-4 text-white rounded-t-lg sticky top-0 z-10">
           <div className="flex justify-between items-center">
             <h2 className="text-xl font-semibold">
               {mode === "edit" ? "Edit Inspection" : "Inspection Details"}
@@ -130,181 +130,102 @@ export default function InspectionDialog({
         </div>
 
         {/* Content */}
-        <div className="p-4 ">
-          {/* Basic Information - Static */}
-          {/* <div className="bg-gray-50 p-4 rounded-lg">
-            <h3 className="font-medium text-gray-900 mb-3">
-              Basic Information
-            </h3>
-            <div className="grid grid-cols-2 sm:grid-cols-2 gap-3 text-sm">
-              <div className="break-words">
-                <Label className="font-medium text-gray-600">Name:</Label>
-                <div className="ml-2 text-gray-900 mt-1 p-2 bg-white rounded border border-gray-200">
-                  {formData.leadName || "N/A"}
+        <div className="p-4 space-y-2">
+          {/* Customer Details */}
+          <div className="bg-gray-50 p-4 py-2 rounded-lg">
+            <h3 className="font-medium text-gray-900">Customer Details</h3>
+            <div className="text-sm">
+              {todoData?.inquiry_data?.lead_name ||
+              todoData?.inquiry_data?.mobile_no ||
+              todoData?.inquiry_data?.email ? (
+                <div className="break-words">
+                  <span className="text-gray-900">
+                    {[
+                      todoData?.inquiry_data?.lead_name,
+                      todoData?.inquiry_data?.mobile_no,
+                      todoData?.inquiry_data?.email,
+                    ]
+                      .filter(Boolean)
+                      .join(" | ")}
+                  </span>
                 </div>
-              </div>
-              <div className="break-words">
-                <Label className="font-medium text-gray-600">Phone:</Label>
-                <div className="ml-2 text-gray-900 mt-1 p-2 bg-white rounded border border-gray-200">
-                  {formData.phone || "N/A"}
-                </div>
-              </div>
-              <div className="break-words">
-                <Label className="font-medium text-gray-600">Job Type:</Label>
-                <div className="ml-2 text-gray-900 mt-1 p-2 bg-white rounded border border-gray-200">
-                  {formData.jobType || "N/A"}
-                </div>
-              </div>
-              <div className="break-words">
-                <Label className="font-medium text-gray-600">
-                  Budget Range:
-                </Label>
-                <div className="ml-2 text-gray-900 mt-1 p-2 bg-white rounded border border-gray-200">
-                  {formData.budgetRange || "N/A"}
-                </div>
-              </div>
-            </div>
-          </div> */}
-
-          <div className="bg-gray-50 p-4  rounded-lg">
-            <h3 className="font-medium text-gray-900 ">
-              Basic Information
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2  text-sm">
-              <div className="break-words">
-                <span className="font-medium text-gray-600">Name:</span>
-                <span className="ml-2 text-gray-900">
-                  {todoData?.inquiry_data?.lead_name || "N/A"}
-                </span>
-              </div>
-              <div className="break-words">
-                <span className="font-medium text-gray-600">Phone:</span>
-                <span className="ml-2 text-gray-900">
-                  {todoData?.inquiry_data?.mobile_no || "N/A"}
-                </span>
-              </div>
-              <div className="break-words">
-                <span className="font-medium text-gray-600">Job Type:</span>
-                <span className="ml-2 text-gray-900">
-                  {todoData?.inquiry_data?.custom_job_type || "N/A"}
-                </span>
-              </div>
-            </div>
-            <div className="break-words">
-              <span className="font-medium text-gray-600">Budget Range:</span>
-              <span className="ml-2 text-gray-900">
-                {todoData?.inquiry_data?.custom_budget_range || "N/A"}
-              </span>
-            </div>
-          </div>
-
-          {/* Property Information - Static */}
-          <div className="bg-gray-50 rounded-lg">
-            <button
-              onClick={() => setShowPropertyInfo(!showPropertyInfo)}
-              className="w-full px-4 flex items-center justify-between hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <h3 className="font-medium text-gray-900">
-                Property & Project Details
-              </h3>
-              {showPropertyInfo ? (
-                <ChevronDown className="h-4 w-4 text-gray-600" />
               ) : (
-                <ChevronRight className="h-4 w-4 text-gray-600" />
-              )}
-            </button>
-
-            {showPropertyInfo && (
-              <div className="px-4 pb-4 border-t border-gray-200">
-                <div className="grid grid-cols-1 gap-3 text-sm mt-3">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="break-words">
-                      <span className="font-medium text-gray-600">
-                        Property Type:
-                      </span>
-                      <span className="ml-2 text-gray-900">
-                        {todoData?.inquiry_data?.custom_property_type || "N/A"}
-                      </span>
-                    </div>
-                    <div className="break-words">
-                      <span className="font-medium text-gray-600">
-                        Building Type:
-                      </span>
-                      <span className="ml-2 text-gray-900">
-                        {todoData?.inquiry_data?.custom_type_of_building|| "N/A"}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="break-words">
-                      <span className="font-medium text-gray-600">
-                        Budget Range:
-                      </span>
-                      <span className="ml-2 text-gray-900">
-                        {todoData?.inquiry_data?.custom_budget_range || "N/A"}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="break-words">
-                      <span className="font-medium text-gray-600">
-                        Project Urgency:
-                      </span>
-                      <span className="ml-2 text-gray-900">
-                        {todoData?.inquiry_data?.custom_project_urgency || "N/A"}
-                      </span>
-                    </div>
-                    <div className="break-words">
-                      <span className="font-medium text-gray-600">
-                        Location:
-                      </span>
-                      <span className="ml-2 text-gray-900">
-                        {todoData?.inquiry_data?.custom_property_area || "N/A"}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="break-words">
-                      <span className="font-medium text-gray-600">
-                        Preferred Date:
-                      </span>
-                      <span className="ml-2 text-gray-900">
-                        {todoData?.inquiry_data?.custom_preferred_inspection_date || "N/A"}
-                      </span>
-                    </div>
-                    <div className="break-words">
-                      <span className="font-medium text-gray-600">
-                        Preferred Time:
-                      </span>
-                      <span className="ml-2 text-gray-900">
-                        {todoData?.inquiry_data?.custom_preferred_inspection_time || "N/A"}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* {formData. && (
-                    <div className="break-words">
-                      <span className="font-medium text-gray-600">
-                        Building Name:
-                      </span>
-                      <span className="ml-2 text-gray-900">
-                        {inquiry.custom_building_name}
-                      </span>
-                    </div>
-                  )} */}
+                <div className="text-gray-500">
+                  No customer details available
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
 
-          {/* Editable Todo Information */}
-          <div className="space-y-4 mt-4">
-           
-            {/* Inspector */}
-            <div className="space-y-2 px-4">
+          {/* Job Details */}
+          <div className="bg-gray-50 p-4 py-2 rounded-lg">
+            <h3 className="font-medium text-gray-900">Job Details</h3>
+            <div className="text-sm">
+              {todoData?.inquiry_data?.custom_job_type ||
+              todoData?.inquiry_data?.custom_project_urgency ||
+              todoData?.inquiry_data?.custom_budget_range ? (
+                <div className="break-words">
+                  <span className="text-gray-900">
+                    {[
+                      todoData?.inquiry_data?.custom_job_type,
+                      todoData?.inquiry_data?.custom_project_urgency,
+                      todoData?.inquiry_data?.custom_budget_range,
+                    ]
+                      .filter(Boolean)
+                      .join(" | ")}
+                  </span>
+                </div>
+              ) : (
+                <span className="text-gray-500">N/A</span>
+              )}
+            </div>
+          </div>
+
+          {/* Property Information */}
+          <div className="bg-gray-50 p-4 py-2 rounded-lg">
+            <h3 className="font-medium text-gray-900">Property Information</h3>
+            <div className="text-sm">
+              <div className="break-words">
+                <span className="text-gray-900">
+                  {[
+                    todoData?.inquiry_data?.custom_building_name,
+                    todoData?.inquiry_data?.custom_property_area,
+                    todoData?.inquiry_data?.custom_property_type,
+                    todoData?.inquiry_data?.custom_type_of_building,
+                  ]
+                    .filter(Boolean)
+                    .join(" | ")}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Inspection Schedule */}
+          <div className="bg-gray-50 p-4 py-2 rounded-lg">
+            <h3 className="font-medium text-gray-900">Inspection Schedule</h3>
+            <div className="text-sm">
+              {todoData?.inquiry_data?.custom_preferred_inspection_date ||
+              todoData?.inquiry_data?.custom_preferred_inspection_time ? (
+                <div className="break-words">
+                  <span className="text-gray-900">
+                    {[
+                      todoData?.inquiry_data?.custom_preferred_inspection_date,
+                      todoData?.inquiry_data?.custom_preferred_inspection_time,
+                    ]
+                      .filter(Boolean)
+                      .join(" | ")}
+                  </span>
+                </div>
+              ) : (
+                <span className="text-gray-500">N/A</span>
+              )}
+            </div>
+          </div>
+
+          {/* Editable Fields */}
+          <div className="space-y-2">
+            {/* Inspector Selection */}
+            <div className="space-y-2 p-4 py-2 bg-gray-50 rounded-lg">
               <Label className="text-gray-700 text-sm font-medium">
                 Inspector <span className="text-red-500">*</span>
               </Label>
@@ -325,39 +246,19 @@ export default function InspectionDialog({
                       className="break-words"
                     >
                       <div className="flex items-center gap-2">
-                        <div>
-                          <span className="font-medium">{inspector.full_name}</span>
-                          
-                        </div>
+                        <span className="font-medium">
+                          {inspector.full_name}
+                        </span>
                       </div>
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              {formData.inspector && (
-                <div className="flex items-center gap-2 text-sm text-gray-600 mt-1">
-                  <span>Current:</span>
-                  <span className="font-medium">{formData.inspector}</span>
-                </div>
-              )}
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-2 gap-4 ">
-              {/* Inspection Date - Uncomment if needed */}
-              <div className="space-y-2">
-                <Label className="text-gray-700 text-sm font-medium">
-                  Inspection Date <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  type="date"
-                  value={formData.inspectionDate}
-                  onChange={(e) => handleChange(e)}
-                  name="inspectionDate"
-                />
-              </div>
-
-              {/* Priority Selector */}
-              <div className="space-y-2">
+            {/* Date and Priority */}
+            <div className="grid grid-cols-1 gap-2 px-4 bg-gray-50 rounded-lg">
+              <div >
                 <Label className="text-gray-700 text-sm font-medium">
                   Priority
                 </Label>
@@ -375,42 +276,41 @@ export default function InspectionDialog({
                       <div className="flex items-center gap-2">
                         <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                         <span>Low</span>
-                        {formData.priority === "Low" && (
-                          <span className="ml-auto text-xs text-gray-500">
-                            Current
-                          </span>
-                        )}
                       </div>
                     </SelectItem>
                     <SelectItem value="Medium">
                       <div className="flex items-center gap-2">
                         <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
                         <span>Medium</span>
-                        {formData.priority === "Medium" && (
-                          <span className="ml-auto text-xs text-gray-500">
-                            Current
-                          </span>
-                        )}
                       </div>
                     </SelectItem>
                     <SelectItem value="High">
                       <div className="flex items-center gap-2">
                         <div className="w-2 h-2 bg-red-500 rounded-full"></div>
                         <span>High</span>
-                        {formData.priority === "High" && (
-                          <span className="ml-auto text-xs text-gray-500">
-                            Current
-                          </span>
-                        )}
                       </div>
                     </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
+              <div >
+                <Label className="text-gray-700 text-sm font-medium">
+                  Inspection Date <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  type="date"
+                  value={formData.inspectionDate}
+                  onChange={(e) => handleChange(e)}
+                  name="inspectionDate"
+                  className="bg-white border border-gray-300"
+                />
+              </div>
+
+              
             </div>
 
             {/* Special Requirements */}
-            <div className="space-y-2">
+            <div className="space-y-2 p-4 py-2 bg-gray-50 rounded-lg">
               <Label className="text-gray-700 text-sm font-medium">
                 Notes/Special Requirements
               </Label>
@@ -420,18 +320,18 @@ export default function InspectionDialog({
                 name="specialRequirements"
                 placeholder="Enter any special requirements or notes..."
                 rows={3}
-                className="w-full border border-gray-300 rounded-md"
+                className="w-full border border-gray-300 rounded-md bg-white"
               />
             </div>
           </div>
 
           {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t border-gray-200 mt-4">
+          <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
             <Button
               type="button"
               variant="outline"
               onClick={onClose}
-              className="px-6 w-full sm:w-auto"
+              className="px-6"
             >
               Cancel
             </Button>
@@ -439,7 +339,7 @@ export default function InspectionDialog({
               <Button
                 type="submit"
                 onClick={handleSubmit}
-                className="px-6 bg-gradient-to-r from-emerald-600 to-blue-600 hover:from-emerald-700 hover:to-blue-700 w-full sm:w-auto"
+                className="px-6 bg-emerald-700 text-white hover:bg-emerald-800"
               >
                 Save Changes
               </Button>

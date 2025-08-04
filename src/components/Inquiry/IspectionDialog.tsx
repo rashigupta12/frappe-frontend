@@ -1,13 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useState, useEffect } from "react";
 import {
+  CalendarIcon,
   // Calendar as CalendarIcon,
   Loader2,
-  X,
-  ChevronDown,
-  ChevronRight,
-  CalendarIcon,
+  X
 } from "lucide-react";
+import React, { useEffect, useState } from "react";
 // import { Calendar } from "../ui/calendar";
 import { Button } from "../ui/button";
 import { Label } from "../ui/label";
@@ -19,14 +17,14 @@ import {
   SelectValue,
 } from "../ui/select";
 // import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
-import { Textarea } from "../ui/textarea";
-import { useAssignStore } from "../../store/assign";
-import { useAuth } from "../../context/AuthContext";
 import { format } from "date-fns";
-import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
-import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
+import { useAssignStore } from "../../store/assign";
 import { Calendar } from "../ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
+import { Textarea } from "../ui/textarea";
 // import { cn } from "../../lib/utils";
 
 type PriorityLevel = "Low" | "Medium" | "High";
@@ -60,7 +58,7 @@ const IspectionDialog: React.FC<IspectionDialogProps> = ({
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [description, setDescription] = useState("");
   const [hasFetchedInspectors, setHasFetchedInspectors] = useState(false);
-  const [showPropertyInfo, setShowPropertyInfo] = useState(false);
+  // const [showPropertyInfo, setShowPropertyInfo] = useState(false);
   const navigate = useNavigate();
 
   // Fetch inspectors when dialog opens
@@ -78,7 +76,7 @@ const IspectionDialog: React.FC<IspectionDialogProps> = ({
       setPriority("Medium");
       setDate(new Date());
       setDescription("");
-      setShowPropertyInfo(false);
+      // setShowPropertyInfo(false);
     }
   }, [open]);
 
@@ -118,9 +116,8 @@ const IspectionDialog: React.FC<IspectionDialogProps> = ({
       });
       toast.success("Inspector assigned successfully!");
 
-      
       onClose();
-      navigate("/sales?tab=assign")
+      navigate("/sales?tab=assign");
     } catch (error) {
       console.error("Error assigning inspector:", error);
       alert("Failed to assign inspector. Please try again.");
@@ -133,7 +130,7 @@ const IspectionDialog: React.FC<IspectionDialogProps> = ({
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg w-full max-w-2xl shadow-xl relative max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="bg-gradient-to-r from-emerald-600 to-blue-600 p-4 text-white rounded-t-lg sticky top-0 z-10">
+        <div className="bg-emerald-600  p-4 text-white rounded-t-lg sticky top-0 z-10">
           <div className="flex justify-between items-center">
             <h2 className="text-xl font-semibold">Assign Inspector</h2>
             <Button
@@ -149,139 +146,111 @@ const IspectionDialog: React.FC<IspectionDialogProps> = ({
 
         {/* Content */}
         <div className="p-4 ">
-          {/* Basic Inquiry Info */}
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <h3 className="font-medium text-gray-900 mb-3">
-              Basic Information
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 text-sm">
-              <div className="break-words">
-                <span className="font-medium text-gray-600">Name:</span>
-                <span className="ml-2 text-gray-900">
-                  {inquiry?.lead_name || "N/A"}
-                </span>
-              </div>
-              <div className="break-words">
-                <span className="font-medium text-gray-600">Phone:</span>
-                <span className="ml-2 text-gray-900">
-                  {inquiry?.mobile_no || "N/A"}
-                </span>
-              </div>
+          {/* Customer Details */}
+          <div className="bg-gray-50 p-4 py-2 rounded-lg">
+            <h3 className="font-medium text-gray-900 ">Customer Details</h3>
+            <div className="text-sm">
+              {inquiry?.lead_name || inquiry?.mobile_no || inquiry?.email ? (
+                <div className="break-words">
+                  <span className="text-gray-900">
+                    {[inquiry.lead_name, inquiry.mobile_no, inquiry.email]
+                      .filter(Boolean) // Remove empty values
+                      .join(" | ")}{" "}
+                    {/* Join with pipes only between existing values */}
+                  </span>
+                </div>
+              ) : (
+                <div className="text-gray-500">
+                  No customer details available
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Job Details */}
+          <div className="bg-gray-50 p-4 py-2 rounded-lg">
+            <h3 className="font-medium text-gray-900">Job Details</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-sm">
               <div className="break-words">
                 <span className="font-medium text-gray-600">Job Type:</span>
                 <span className="ml-2 text-gray-900">
                   {inquiry?.custom_job_type || "N/A"}
                 </span>
               </div>
-            </div>
-            <div className="break-words">
-              <span className="font-medium text-gray-600">Budget Range:</span>
-              <span className="ml-2 text-gray-900 text-sm">
-                {inquiry?.custom_budget_range || "N/A"}
-              </span>
+              <div className="break-words text-sm">
+                {inquiry?.custom_project_urgency ||
+                inquiry?.custom_budget_range ? (
+                  <span className="text-gray-900">
+                    {[
+                      inquiry?.custom_project_urgency,
+                      inquiry?.custom_budget_range,
+                    ]
+                      .filter(Boolean)
+                      .join(" | ")}
+                  </span>
+                ) : (
+                  <span className="text-gray-500">N/A</span>
+                )}
+              </div>
             </div>
           </div>
 
-          {/* Expandable Property Information */}
-          <div className="bg-gray-50 rounded-lg">
-            <button
-              onClick={() => setShowPropertyInfo(!showPropertyInfo)}
-              className="w-full px-4 flex items-center justify-between hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <h3 className="font-medium text-gray-900">
-                Property & Project Details
-              </h3>
-              {showPropertyInfo ? (
-                <ChevronDown className="h-4 w-4 text-gray-600" />
-              ) : (
-                <ChevronRight className="h-4 w-4 text-gray-600" />
-              )}
-            </button>
-
-            {showPropertyInfo && (
-              <div className="px-4 pb-4 border-t border-gray-200">
-                <div className="grid grid-cols-1 gap-3 text-sm mt-3">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="break-words">
-                      <span className="font-medium text-gray-600">
-                        Property Type:
-                      </span>
-                      <span className="ml-2 text-gray-900">
-                        {inquiry?.custom_property_type || "N/A"}
-                      </span>
-                    </div>
-                    <div className="break-words">
-                      <span className="font-medium text-gray-600">
-                        Building Type:
-                      </span>
-                      <span className="ml-2 text-gray-900">
-                        {inquiry?.custom_type_of_building || "N/A"}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="break-words">
-                      <span className="font-medium text-gray-600">
-                        Budget Range:
-                      </span>
-                      <span className="ml-2 text-gray-900">
-                        {inquiry?.custom_budget_range || "N/A"}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="break-words">
-                      <span className="font-medium text-gray-600">
-                        Project Urgency:
-                      </span>
-                      <span className="ml-2 text-gray-900">
-                        {inquiry?.custom_project_urgency || "N/A"}
-                      </span>
-                    </div>
-                    <div className="break-words">
-                      <span className="font-medium text-gray-600">
-                        Location:
-                      </span>
-                      <span className="ml-2 text-gray-900">
-                        {inquiry?.custom_property_area || "N/A"}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="break-words">
-                      <span className="font-medium text-gray-600">
-                        Preferred Date:
-                      </span>
-                      <span className="ml-2 text-gray-900">
-                        {inquiry?.custom_preferred_inspection_date || "N/A"}
-                      </span>
-                    </div>
-                    <div className="break-words">
-                      <span className="font-medium text-gray-600">
-                        Preferred Time:
-                      </span>
-                      <span className="ml-2 text-gray-900">
-                        {inquiry?.custom_preferred_inspection_time || "N/A"}
-                      </span>
-                    </div>
-                  </div>
-
-                  {inquiry?.custom_building_name && (
-                    <div className="break-words">
-                      <span className="font-medium text-gray-600">
-                        Building Name:
-                      </span>
-                      <span className="ml-2 text-gray-900">
-                        {inquiry.custom_building_name}
-                      </span>
-                    </div>
-                  )}
-                </div>
+          {/* Property Information */}
+          <div className="bg-gray-50 p-4 py-2 rounded-lg">
+            <h3 className="font-medium text-gray-900 ">Property Information</h3>
+            <div className="text-sm">
+              <div className="break-words">
+                <span className="font-medium text-gray-600">Address:</span>
+                <span className="ml-2 text-gray-900">
+                  {[
+                    inquiry?.custom_building_name,
+                    inquiry?.custom_property_area,
+                  ]
+                    .filter(Boolean)
+                    .join(", ") || "N/A"}
+                </span>
               </div>
-            )}
+              {/* <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+                <div className="break-words">
+                  <span className="font-medium text-gray-600">
+                    Property Type:
+                  </span>
+                  <span className="ml-2 text-gray-900">
+                    {inquiry?.custom_property_type || "N/A"}
+                  </span>
+                </div>
+                <div className="break-words">
+                  <span className="font-medium text-gray-600">
+                    Building Type:
+                  </span>
+                  <span className="ml-2 text-gray-900">
+                    {inquiry?.custom_type_of_building || "N/A"}
+                  </span>
+                </div>
+              </div> */}
+            </div>
+          </div>
+
+          {/* Inspection Schedule */}
+          <div className="bg-gray-50 p-4 py-2 rounded-lg">
+            <h3 className="font-medium text-gray-900 ">Inspection Schedule</h3>
+            <div className="text-sm">
+              {inquiry?.custom_preferred_inspection_date ||
+              inquiry?.custom_preferred_inspection_time ? (
+                <div className="break-words">
+                  <span className="text-gray-900">
+                    {[
+                      inquiry?.custom_preferred_inspection_date,
+                      inquiry?.custom_preferred_inspection_time,
+                    ]
+                      .filter(Boolean)
+                      .join(" | ")}
+                  </span>
+                </div>
+              ) : (
+                <span className="text-gray-500">N/A</span>
+              )}
+            </div>
           </div>
 
           {/* Error/Success Messages */}
@@ -299,7 +268,7 @@ const IspectionDialog: React.FC<IspectionDialogProps> = ({
           )}
 
           {/* Inspector Selection */}
-          <div className="space-y-2 p-4">
+          <div className="space-y-2 p-4 py-2 bg-gray-50 rounded-lg">
             <Label className="text-gray-700 text-sm font-medium">
               Select Inspector <span className="text-red-500">*</span>
             </Label>
@@ -334,7 +303,7 @@ const IspectionDialog: React.FC<IspectionDialogProps> = ({
           </div>
 
           {/* Date and Priority Selection */}
-          <div className="grid grid-cols-2 sm:grid-cols-2 gap-4 px-4 py-1">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 py-2 bg-gray-50 rounded-lg">
             <div className="space-y-2">
               <Label className="text-gray-700 text-sm font-medium">
                 Inspection Date <span className="text-red-500">*</span>
@@ -349,7 +318,11 @@ const IspectionDialog: React.FC<IspectionDialogProps> = ({
                     }
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {date ? format(date, "PP") : <span>Pick date</span>}
+                    {date ? (
+                      format(date, "dd/MM/yyyy")
+                    ) : (
+                      <span>Select date</span>
+                    )}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0 bg-white border border-gray-200 shadow-md">
@@ -366,43 +339,45 @@ const IspectionDialog: React.FC<IspectionDialogProps> = ({
               </Popover>
             </div>
 
-            <div className="space-y-2 ">
+            <div className="space-y-2">
               <Label className="text-gray-700 text-sm font-medium">
                 Priority
               </Label>
-              <Select
-                value={priority}
-                onValueChange={(value) => setPriority(value as PriorityLevel)}
-              >
-                <SelectTrigger className="w-full bg-white border border-gray-300">
-                  <SelectValue placeholder="Priority" />
-                </SelectTrigger>
-                <SelectContent className="bg-white border border-gray-300">
-                  <SelectItem value="Low">
-                    <span className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                      Low
-                    </span>
-                  </SelectItem>
-                  <SelectItem value="Medium">
-                    <span className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-                      Medium
-                    </span>
-                  </SelectItem>
-                  <SelectItem value="High">
-                    <span className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                      High
-                    </span>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="flex items-center gap-2">
+                <Select
+                  value={priority}
+                  onValueChange={(value) => setPriority(value as PriorityLevel)}
+                >
+                  <SelectTrigger className="w-full bg-white border border-gray-300">
+                    <SelectValue placeholder="Select priority" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white border border-gray-300">
+                    <SelectItem value="Low">
+                      <span className="flex items-center gap-2">
+                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                        Low
+                      </span>
+                    </SelectItem>
+                    <SelectItem value="Medium">
+                      <span className="flex items-center gap-2">
+                        <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                        Medium
+                      </span>
+                    </SelectItem>
+                    <SelectItem value="High">
+                      <span className="flex items-center gap-2">
+                        <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                        High
+                      </span>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
 
           {/* Description */}
-          <div className="space-y-2 px-4">
+          <div className="space-y-2 p-4 bg-gray-50 rounded-lg">
             <Label className="text-gray-700 text-sm font-medium">
               Description/Special Requirements
             </Label>
@@ -415,14 +390,14 @@ const IspectionDialog: React.FC<IspectionDialogProps> = ({
             />
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t border-gray-200">
+          {/* Action Buttons - Reversed order */}
+          <div className="flex  justify-end gap-2 pt-4 border-t border-gray-200">
             <Button
               type="button"
               variant="outline"
               onClick={onClose}
               disabled={createTodoLoading}
-              className="px-6 w-full sm:w-auto"
+              className="px-6"
             >
               Cancel
             </Button>
@@ -435,7 +410,7 @@ const IspectionDialog: React.FC<IspectionDialogProps> = ({
                 !inspectorEmail ||
                 !date
               }
-              className="px-6 bg-gradient-to-r from-emerald-600 to-blue-600 hover:from-emerald-700 hover:to-blue-700 w-full sm:w-auto"
+              className="px-6 bg-emerald-700 text-white hover:bg-emerald-800 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {createTodoLoading ? (
                 <>

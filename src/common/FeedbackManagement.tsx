@@ -1,18 +1,14 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import {
-  AlertTriangle,
   Bug,
   Calendar,
-  // ChevronDown,
-  // Filter,
-  Lightbulb,
+  CheckCircle,
   MessageCircle,
   Paperclip,
   Plus,
   PlusCircle,
   Send,
-  X,
-  CheckCircle,
+  X
 } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
@@ -62,8 +58,6 @@ interface FeedbackItem {
     | "Bug Report"
     | "Feature Request"
     | "General Feedback"
-    | "Complaint"
-    | "Suggestion";
   description: string;
   resolution_details?: string;
   opening_date: string;
@@ -216,11 +210,11 @@ const FeedbackForm: React.FC<{
       });
       setImages([]);
       onClose();
-      toast.success(
-        editingFeedback
-          ? "Feedback updated successfully!"
-          : "Feedback submitted successfully!"
-      );
+      // toast.success(
+      //   editingFeedback
+      //     ? "Feedback updated successfully!"
+      //     : "Feedback submitted successfully!"
+      // );
     } catch (error) {
       console.error("Error submitting feedback:", error);
       toast.error("Failed to submit feedback. Please try again.");
@@ -324,8 +318,7 @@ const FeedbackForm: React.FC<{
                 <option value="General Feedback">General Feedback</option>
                 <option value="Bug Report">Bug Report</option>
                 <option value="Feature Request">Feature Request</option>
-                <option value="Complaint">Complaint</option>
-                <option value="Suggestion">Suggestion</option>
+          
               </select>
             </div>
 
@@ -488,10 +481,7 @@ const FeedbackList: React.FC<{
         return <PlusCircle className="h-4 w-4" />;
       case "General Feedback":
         return <MessageCircle className="h-4 w-4" />;
-      case "Complaint":
-        return <AlertTriangle className="h-4 w-4" />;
-      case "Suggestion":
-        return <Lightbulb className="h-4 w-4" />;
+  
       default:
         return <MessageCircle className="h-4 w-4" />;
     }

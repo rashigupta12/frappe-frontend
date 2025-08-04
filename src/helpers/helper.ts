@@ -1,5 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+import type { LeadFormData } from "../context/LeadContext";
+
 
 // Date Formatting Helpers
 export const formatDate = (date?: Date | string): string => {
@@ -314,3 +316,37 @@ export const getPriorityColor = (priority: string) => {
     border: "#9CA3AF",
   };
 };
+
+export type FormSection = {
+  id: string;
+  title: string;
+  icon: React.ReactNode;
+  completed: boolean;
+};
+
+
+
+export const defaultFormData: LeadFormData = {
+  lead_name: "",
+  email_id: "",
+  mobile_no: "",
+  custom_job_type: "",
+  custom_property_type: "Residential",
+  custom_type_of_building: "Villa",
+  custom_building_name: "",
+  custom_budget_range: "",
+  custom_project_urgency: "",
+  custom_preferred_inspection_date: null,
+  custom_alternative_inspection_date: null,
+  custom_preferred_inspection_time: "",
+  custom_special_requirements: "",
+  custom_property_area: "",
+  custom_bulding__apartment__villa__office_number: "",
+  custom_reference_name: "",
+  custom_alternative_inspection_time: "",
+  utm_source: "",
+  customer_id: "",
+  lead_id: "",
+};
+
+export type PriorityLevel = "Low" | "Medium" | "High";

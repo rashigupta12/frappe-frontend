@@ -148,7 +148,7 @@ export default function TodoPage() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
                   type="text"
-                  placeholder="Search inspections..."
+                  placeholder="Search by customer name, inspector, status..."
                   className="pl-10 w-full bg-white border border-gray-300"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -178,7 +178,7 @@ export default function TodoPage() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
                   type="text"
-                  placeholder="Search inspections..."
+                  placeholder="Search by customer name, inspector, status..."
                   className="pl-10 w-full bg-white border border-gray-300"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -294,7 +294,7 @@ export default function TodoPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2 w-full">
                       {/* Lead name with truncation */}
-                      <h4 className="font-semibold text-sm text-gray-800 truncate flex-1">
+                      <h4 className="font-semibold text-sm text-gray-800 truncate flex-1 mb-2">
                         {todo.inquiry_data?.lead_name || todo.reference_name}
                       </h4>
 
@@ -322,20 +322,7 @@ export default function TodoPage() {
                         </Badge>
                       </div>
                     </div>
-
-                    {/* Additional details below */}
-                    <div className="mt-2 space-y-1.5 text-xs">
-                      <div className="flex items-center gap-2">
-                        <User className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
-                        <span className="text-gray-600 truncate">
-                          Inspector:{" "}
-                          <span className="font-medium">
-                            {todo.allocated_to}
-                          </span>
-                        </span>
-                      </div>
-
-                      <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 text-xs">
                         <CalendarIcon className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
                         <span className="text-gray-600">
                           Due:{" "}
@@ -346,6 +333,20 @@ export default function TodoPage() {
                           </span>
                         </span>
                       </div>
+
+                    {/* Additional details below */}
+                    <div className=" space-y-1.5 text-xs">
+                      <div className="flex items-center gap-2">
+                        <User className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
+                        <span className="text-gray-600 truncate">
+                          Inspector:{" "}
+                          <span className="font-medium">
+                            {todo.allocated_to}
+                          </span>
+                        </span>
+                      </div>
+
+                      
                       {todo.inquiry_data?.custom_property_area && (
                         <div className="flex items-center gap-2">
                           <MapPin className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />

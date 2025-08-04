@@ -20,7 +20,6 @@ import TodoPage from "../Inquiry/Assign";
 import InquiryForm from "../Inquiry/InquiryForm";
 import FeedbackComponent from "../../common/FeedbackManagement";
 
-
 export default function SalesDashboard() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedInquiry, setSelectedInquiry] = useState(null);
@@ -147,7 +146,7 @@ export default function SalesDashboard() {
           {/* User Menu */}
           <div className="flex items-center gap-1 sm:gap-2">
             {/* Mobile Feedback Button */}
-            <FeedbackComponent className="lg:hidden" >
+            <FeedbackComponent className="lg:hidden">
               <Button
                 variant="ghost"
                 size="icon"
@@ -198,7 +197,7 @@ export default function SalesDashboard() {
                       Feedback
                     </Button>
                   </FeedbackComponent>
-                  
+
                   {/* Logout Button */}
                   <Button
                     variant="ghost"
@@ -244,7 +243,7 @@ export default function SalesDashboard() {
               onClick={() => handleTabChange("inquiry-form")}
               className={`w-full justify-start gap-3 rounded-xl p-3 text-left transition-all duration-200 ${
                 activeTab === "inquiry-form"
-                  ? "bg-gradient-to-r from-emerald-500 to-blue-500 text-white shadow-lg transform scale-105 hover:from-emerald-600 hover:to-blue-600"
+                  ? "bg-gradient-to-r from-emerald-500 to-blue-500 text-white shadow-lg transform scale-105 hover:from-emerald-900 hover:to-blue-600 border border-emerald-600"
                   : "text-emerald-700 hover:bg-emerald-50 hover:shadow-md"
               }`}
             >
@@ -278,13 +277,19 @@ export default function SalesDashboard() {
 
           {/* Footer - Sticky at bottom */}
           <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-30 safe-area-pb lg:hidden">
-            <div className="flex items-center justify-center px-4 py-2">
+            <div className="flex items-center justify-center">
               {/* Home Button */}
               <Link
                 to="/sales?tab=inquiry-form"
                 className="flex-1 max-w-xs flex justify-center"
               >
-                <button className="flex flex-col items-center justify-center w-full py-1 group">
+                <button
+                  className={`flex flex-col items-center justify-center w-full py-1 group border-b-4 ${
+                    activeTab === "inquiry-form"
+                      ? "border-emerald-600 bg-emerald-50"
+                      : "border-transparent"
+                  }`}
+                >
                   <div className="w-10 h-6 flex items-center justify-center group-active:scale-95 transition-transform">
                     <Home
                       className={`h-5 w-5 ${
@@ -305,10 +310,15 @@ export default function SalesDashboard() {
                   </span>
                 </button>
               </Link>
+
               <div className="flex-1 max-w-xs flex justify-center">
                 <button
                   onClick={openInquiryForm}
-                  className="flex flex-col items-center justify-center w-full py-1 group"
+                  className={`flex flex-col items-center justify-center w-full py-1 group border-b-4 ${
+                    isFormOpen
+                      ? "border-emerald-600 bg-emerald-50"
+                      : "border-transparent"
+                  }`}
                 >
                   <div className="w-10 h-6 flex items-center justify-center group-active:scale-95 transition-transform">
                     <Plus
@@ -332,12 +342,18 @@ export default function SalesDashboard() {
                 to="/sales?tab=assign"
                 className="flex-1 max-w-xs flex justify-center"
               >
-                <button className="flex flex-col items-center justify-center w-full py-1 group">
+                <button
+                  className={`flex flex-col items-center justify-center w-full py-1 group  ${
+                    activeTab === "assign"
+                      ? "border-emerald-600 bg-emerald-50"
+                      : "border-transparent"
+                  }`}
+                >
                   <div className="w-10 h-6 flex items-center justify-center group-active:scale-95 transition-transform">
                     <UserPlus
                       className={`h-5 w-5 ${
                         activeTab === "assign"
-                          ? "text-emerald-600 "
+                          ? "text-emerald-600"
                           : "text-gray-500"
                       }`}
                     />
