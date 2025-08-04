@@ -284,7 +284,7 @@ export default function SalesDashboard() {
                 className="flex-1 max-w-xs flex justify-center"
               >
                 <button
-                  className={`flex flex-col items-center justify-center w-full py-1 group border-b-4 ${
+                  className={`flex flex-col items-center justify-center w-full py-1 group  ${
                     activeTab === "inquiry-form"
                       ? "border-emerald-600 bg-emerald-50"
                       : "border-transparent"

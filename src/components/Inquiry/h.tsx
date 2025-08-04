@@ -271,7 +271,7 @@ const InquiryPage = () => {
                   </div>
                 </div>
 
-               <div className="mt-2 space-y-2">
+                <div className="mt-2 space-y-2">
                   {(inquiry.custom_project_urgency ||
                     inquiry.custom_budget_range) && (
                     <div className="flex items-center justify-between gap-2">
@@ -389,203 +389,164 @@ const InquiryPage = () => {
 
       {/* View Modal */}
       {viewModalOpen && viewInquiry && (
-        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="bg-gradient-to-r from-emerald-600 to-blue-600 p-4 text-white rounded-t-xl">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg w-full max-w-2xl shadow-xl relative max-h-[90vh] overflow-y-auto">
+            {/* Header */}
+            <div className="bg-emerald-600 p-4 text-white rounded-t-lg sticky top-0 z-10">
               <div className="flex justify-between items-center">
-                <h3 className="text-xl font-semibold">Inquiry Details</h3>
-
-                {/* Fixed: Updated modal dialog logic */}
-                <div className="flex items-center gap-2">
-                  {/* {viewInquiry.status === "Open" ? (
-                    <span className="text-sm bg-emerald-100 text-emerald-800 px-2 py-1 rounded-full">
-                      Assigned
-                    </span>
-                  ) : (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-8 px-3 text-xs bg-white text-emerald-600 hover:bg-emerald-50"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleOpenDialog(viewInquiry);
-                      }}
-                    >
-                      Assign
-                    </Button>
-                  )} */}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 w-8 p-0 rounded-full text-white hover:bg-white/10"
-                    onClick={closeViewModal}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
+                <h2 className="text-xl font-semibold">Inquiry Details</h2>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0 rounded-full text-white hover:bg-white/10"
+                  onClick={closeViewModal}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
               </div>
             </div>
 
-            <div className="p-6 space-y-6">
+            {/* Content */}
+            <div className="p-4 space-y-4">
               {/* Customer Details */}
-              <div>
-                <h4 className="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
+              <div className="bg-gray-50 p-4 py-2 rounded-lg">
+                <h3 className="font-medium text-gray-900 flex items-center gap-2">
                   <Phone className="h-5 w-5 text-emerald-600" />
                   Contact Details
-                </h4>
-                <div className="grid grid-cols-1 gap-3">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Full Name:</span>
-                    <span className="font-medium">
-                      {viewInquiry.lead_name || "-"}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Email:</span>
-                    <a
-                      href={`mailto:${viewInquiry.email_id}`}
-                      className="font-medium text-blue-600 hover:underline"
-                    >
-                      {viewInquiry.email_id || "-"}
-                    </a>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Mobile:</span>
-                    <a
-                      href={`tel:${viewInquiry.mobile_no}`}
-                      className="font-medium text-blue-600 hover:underline"
-                    >
-                      {viewInquiry.mobile_no || "-"}
-                    </a>
-                  </div>
-                </div>
-              </div>
-
-              {/* Job Details */}
-              <div>
-                <h4 className="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                  <Home className="h-5 w-5 text-emerald-600" />
-                  Job Details
-                </h4>
-                <div className="grid grid-cols-1 gap-3">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Job Type:</span>
-                    <span className="font-medium">
-                      {viewInquiry.custom_job_type || "-"}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Budget Range:</span>
-                    <span className="font-medium">
-                      {viewInquiry.custom_budget_range || "-"}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Project Urgency:</span>
-                    <span className="font-medium">
-                      {viewInquiry.custom_project_urgency || "-"}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Property Information */}
-              <div>
-                <h4 className="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                  <Building className="h-5 w-5 text-emerald-600" />
-                  Property Information
-                </h4>
-                <div className="grid grid-cols-1 gap-3">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Property Type:</span>
-                    <span className="font-medium">
-                      {viewInquiry.custom_property_type || "-"}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Building Type:</span>
-                    <span className="font-medium">
-                      {viewInquiry.custom_type_of_building || "-"}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Building Name:</span>
-                    <span className="font-medium">
-                      {viewInquiry.custom_building_name || "-"}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Building Number:</span>
-                    <span className="font-medium">
-                      {viewInquiry.custom_bulding__apartment__villa__office_number ||
-                        "-"}
-                    </span>
-                  </div>
-                  {viewInquiry.custom_property_area && (
-                    <div>
-                      <span className="text-gray-600">Location:</span>
-                      <p className="text-sm text-gray-800 mt-1">
-                        {viewInquiry.custom_property_area}
-                      </p>
+                </h3>
+                <div className="text-sm">
+                  {viewInquiry.lead_name ||
+                  viewInquiry.email_id ||
+                  viewInquiry.mobile_no ? (
+                    <div className="break-words">
+                      <span className="text-gray-900">
+                        {[
+                          viewInquiry.lead_name,
+                          viewInquiry.mobile_no,
+                          viewInquiry.email_id,
+                        ]
+                          .filter(Boolean)
+                          .join(" | ")}
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="text-gray-500">
+                      No contact details available
                     </div>
                   )}
                 </div>
               </div>
 
-              {/* Inspection Schedule */}
-              <div>
-                <h4 className="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                  <Calendar className="h-5 w-5 text-emerald-600" />
-                  Inspection Schedule
-                </h4>
-                <div className="grid grid-cols-1 gap-3">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Preferred Date:</span>
-                    <span className="font-medium">
-                      {formatDate(viewInquiry.custom_preferred_inspection_date)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Preferred Time:</span>
-                    <span className="font-medium">
-                      {viewInquiry.custom_preferred_inspection_time || "-"}
+              {/* Job Details */}
+              <div className="bg-gray-50 p-4 py-2 rounded-lg">
+                <h3 className="font-medium text-gray-900 flex items-center gap-2">
+                  <Home className="h-5 w-5 text-emerald-600" />
+                  Job Details
+                </h3>
+                <div className="text-sm">
+                  {viewInquiry.custom_job_type ||
+                  viewInquiry.custom_budget_range ||
+                  viewInquiry.custom_project_urgency ? (
+                    <div className="break-words">
+                      <span className="text-gray-900">
+                        {[
+                          viewInquiry.custom_job_type,
+                          viewInquiry.custom_budget_range,
+                          viewInquiry.custom_project_urgency,
+                        ]
+                          .filter(Boolean)
+                          .join(" | ")}
+                      </span>
+                    </div>
+                  ) : (
+                    <span className="text-gray-500">N/A</span>
+                  )}
+                </div>
+              </div>
+
+              {/* Property Information */}
+              <div className="bg-gray-50 p-4 py-2 rounded-lg">
+                <h3 className="font-medium text-gray-900 flex items-center gap-2">
+                  <Building className="h-5 w-5 text-emerald-600" />
+                  Property Information
+                </h3>
+                <div className="text-sm">
+                  <div className="break-words">
+                    <span className="text-gray-900">
+                      {[
+                        viewInquiry.custom_property_type,
+                        viewInquiry.custom_type_of_building,
+                        viewInquiry.custom_building_name,
+                        viewInquiry.custom_bulding__apartment__villa__office_number,
+                        viewInquiry.custom_property_area,
+                      ]
+                        .filter(Boolean)
+                        .join(" | ")}
                     </span>
                   </div>
                 </div>
               </div>
 
-              {/* Additional Information */}
+              {/* Inspection Schedule */}
+              <div className="bg-gray-50 p-4 py-2 rounded-lg">
+                <h3 className="font-medium text-gray-900 flex items-center gap-2">
+                  <Calendar className="h-5 w-5 text-emerald-600" />
+                  Inspection Schedule
+                </h3>
+                <div className="text-sm">
+                  {viewInquiry.custom_preferred_inspection_date ||
+                  viewInquiry.custom_preferred_inspection_time ? (
+                    <div className="break-words">
+                      <span className="text-gray-900">
+                        {[
+                          formatDate(
+                            viewInquiry.custom_preferred_inspection_date
+                          ),
+                          viewInquiry.custom_preferred_inspection_time,
+                        ]
+                          .filter(Boolean)
+                          .join(" | ")}
+                      </span>
+                    </div>
+                  ) : (
+                    <span className="text-gray-500">N/A</span>
+                  )}
+                </div>
+              </div>
+
+              {/* Special Requirements */}
               {viewInquiry.custom_special_requirements && (
-                <div>
-                  <h4 className="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                <div className="bg-gray-50 p-4 py-2 rounded-lg">
+                  <h3 className="font-medium text-gray-900 flex items-center gap-2">
                     <FileText className="h-5 w-5 text-emerald-600" />
                     Special Requirements
-                  </h4>
-                  <p className="text-gray-700 bg-gray-50 p-3 rounded-lg">
+                  </h3>
+                  <div className="text-sm text-gray-900 mt-1">
                     {viewInquiry.custom_special_requirements}
-                  </p>
+                  </div>
                 </div>
               )}
-            </div>
 
-            <div className="p-6 pt-0 flex gap-3">
-              <Button
-                onClick={() => {
-                  closeViewModal();
-                  openEditInquiryForm(viewInquiry);
-                }}
-                className="flex-1 bg-gradient-to-r from-emerald-600 to-blue-600 hover:from-emerald-700 hover:to-blue-700 text-white"
-              >
-                <Edit className="h-4 w-4 mr-2" />
-                Edit
-              </Button>
-              <Button
-                variant="outline"
-                onClick={closeViewModal}
-                className="flex-1"
-              >
-                Close
-              </Button>
+              {/* Action Buttons */}
+              <div className="flex justify-end gap-2 pt-4 border-t border-gray-200">
+                <Button
+                  variant="outline"
+                  onClick={closeViewModal}
+                  className="px-6"
+                >
+                  Close
+                </Button>
+                <Button
+                  onClick={() => {
+                    closeViewModal();
+                    openEditInquiryForm(viewInquiry);
+                  }}
+                  className="px-6 bg-emerald-700 text-white hover:bg-emerald-800"
+                >
+                  <Edit className="h-4 w-4 mr-2" />
+                  Edit
+                </Button>
+              </div>
             </div>
           </div>
         </div>
