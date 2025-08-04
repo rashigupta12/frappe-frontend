@@ -248,7 +248,16 @@ export default function SalesDashboard() {
               }`}
             >
               <HomeIcon className="h-5 w-5" />
-              <span className="font-medium">Inquiry Form</span>
+              <span className="font-medium">Inquiries</span>
+            </Button>
+            <Button 
+              variant="ghost"
+              onClick={openInquiryForm}
+              className="w-full justify-start gap-3 rounded-xl p-3 text-left transition-all duration-200 text-emerald-700 hover:bg-emerald-50 hover:shadow-md"
+              
+              >
+              <Plus className="h-4 w-4" />
+              Add Inquiry
             </Button>
             <Button
               variant={activeTab === "assign" ? "default" : "ghost"}
@@ -260,7 +269,7 @@ export default function SalesDashboard() {
               }`}
             >
               <Users className="h-5 w-5" />
-              <span className="font-medium">Assign</span>
+              <span className="font-medium">Assigned Inquires</span>
             </Button>
           </nav>
         </aside>

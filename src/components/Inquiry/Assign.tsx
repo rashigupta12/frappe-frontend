@@ -380,7 +380,7 @@ export default function TodoPage() {
                       className="h-6 flex items-center gap-1 text-xs  border-emerald-900 text-emerald-800 hover:bg-emerald-900 hover:border-emerald-900 hover:text-emerald-900 transition-all duration-200"
                     >
                       <Edit className="h-3 w-3 text-emerald-900" />
-                      <span className="hidden sm:inline">Edit</span>
+                      {/* <span className="hidden sm:inline">Edit</span> */}
                     </Button>
                   </div>
                 )}
