@@ -209,7 +209,12 @@ export default function InspectionDialog({
                 <div className="break-words">
                   <span className="text-gray-900">
                     {[
-                      todoData?.inquiry_data?.custom_preferred_inspection_date,
+                      todoData?.inquiry_data?.custom_preferred_inspection_date
+                        ? format(
+                            new Date(todoData.inquiry_data.custom_preferred_inspection_date),
+                            "dd/MM/yyyy"
+                          )
+                        : null,
                       todoData?.inquiry_data?.custom_preferred_inspection_time,
                     ]
                       .filter(Boolean)

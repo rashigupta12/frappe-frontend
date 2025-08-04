@@ -3,7 +3,7 @@ import {
   CalendarIcon,
   // Calendar as CalendarIcon,
   Loader2,
-  X
+  X,
 } from "lucide-react";
 import React, { useEffect, useState } from "react";
 // import { Calendar } from "../ui/calendar";
@@ -240,7 +240,12 @@ const IspectionDialog: React.FC<IspectionDialogProps> = ({
                 <div className="break-words">
                   <span className="text-gray-900">
                     {[
-                      inquiry?.custom_preferred_inspection_date,
+                      inquiry?.custom_preferred_inspection_date
+                        ? format(
+                            new Date(inquiry.custom_preferred_inspection_date),
+                            "dd/MM/yyyy"
+                          )
+                        : null,
                       inquiry?.custom_preferred_inspection_time,
                     ]
                       .filter(Boolean)
