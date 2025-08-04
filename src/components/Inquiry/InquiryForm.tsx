@@ -1460,7 +1460,7 @@ const Section: React.FC<SectionProps> = ({
                 {/* Date Field */}
                 <div className="col-span-6">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Date
+                    Preferred Date
                   </label>
                   <div className="relative">
                     <Input
