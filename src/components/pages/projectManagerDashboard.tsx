@@ -266,7 +266,7 @@ export default function ProjectManagerDashboard() {
               variant={activeTab === "veneer-pressing" ? "default" : "ghost"}
               onClick={() => handleTabChange("veneer-pressing")}
               className={`w-full justify-start gap-3 rounded-xl p-3 text-left transition-all duration-200 ${activeTab === "veneer-pressing"
-                  ? "bg-gradient-to-r from-emerald-500 to-green-500 text-white shadow-lg transform scale-105 hover:from-emerald-600 hover:to-green-600"
+                  ? "bg-emerald-500 text-white shadow-lg transform scale-105 hover:from-emerald-600 hover:to-green-600"
                   : "text-emerald-700 hover:bg-emerald-50 hover:shadow-md"
                 }`}
             >
@@ -278,7 +278,7 @@ export default function ProjectManagerDashboard() {
               variant={activeTab === "other-services" ? "default" : "ghost"}
               onClick={() => handleTabChange("other-services")}
               className={`w-full justify-start gap-3 rounded-xl p-3 text-left transition-all duration-200 ${activeTab === "other-services"
-                  ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg transform scale-105 hover:from-blue-600 hover:to-purple-600"
+                  ? "bg-cyan-500  text-white shadow-lg transform scale-105 hover:bg-cyan-600 "
                   : "text-blue-700 hover:bg-blue-50 hover:shadow-md"
                 }`}
             >

@@ -231,12 +231,12 @@ export default function InspectorDashboard() {
                 to="/inspector?tab=todos"
                 className="flex-1 max-w-xs flex justify-center"
               >
-                <button className="flex flex-col items-center justify-center w-full py-1 group">
-                  <div className="w-10 h-6 flex items-center justify-center group-active:scale-95 transition-transform">
+                <button className={`flex flex-col items-center justify-center w-full py-1 group ${activeTab === "todos" ? "bg-emerald-50 border-emerald-600" : ""}`}>
+                  <div className="w-10 h-6 flex items-center justify-center group-active:scale-95 transition-transform ">
                     <ListTodo
                       className={`h-5 w-5 ${
                         activeTab === "todos"
-                          ? "text-emerald-600"
+                          ? "border-emerald-600 bg-emerald-50 "
                           : "text-gray-500"
                       }`}
                     />
@@ -258,12 +258,12 @@ export default function InspectorDashboard() {
                 to="/inspector?tab=inspections"
                 className="flex-1 max-w-xs flex justify-center"
               >
-                <button className="flex flex-col items-center justify-center w-full py-1 group">
+                <button className={`flex flex-col items-center justify-center w-full py-1 group ${activeTab === "inspections" ? "bg-emerald-50 border-emerald-600" : ""}`}>
                   <div className="w-10 h-6 flex items-center justify-center group-active:scale-95 transition-transform">
                     <ClipboardList
                       className={`h-5 w-5 ${
                         activeTab === "inspections"
-                          ? "text-emerald-600"
+                          ? "border-emerald-600 bg-emerald-50 "
                           : "text-gray-500"
                       }`}
                     />
