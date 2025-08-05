@@ -23,7 +23,7 @@ interface MediaUploadProps {
   maxFiles?: number;
   maxSizeMB?: number;
   inspectionStatus?: string;
-  isReadOnly?: boolean; // Add this line
+  isReadOnly?: boolean;
 }
 
 const MediaPreviewModal: React.FC<{
@@ -467,6 +467,241 @@ const CameraOptionsModal: React.FC<{
   );
 };
 
+// Video Recording Dialog Component
+const VideoRecordingDialog: React.FC<{
+  isOpen: boolean;
+  onClose: () => void;
+  onComplete: (videoFile: File) => void;
+}> = ({ isOpen, onClose, onComplete }) => {
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const [recordedVideo, setRecordedVideo] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const videoChunksRef = useRef<Blob[]>([]);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: "environment",
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+        },
+        audio: true,
+      });
+
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        streamRef.current = stream;
+      }
+
+      const options = { mimeType: 'video/webm' };
+      const mediaRecorder = new MediaRecorder(stream, options);
+      mediaRecorderRef.current = mediaRecorder;
+      videoChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) {
+          videoChunksRef.current.push(e.data);
+        }
+      };
+
+      mediaRecorder.onstop = () => {
+        if (videoChunksRef.current.length === 0) {
+          toast.error("No video data recorded");
+          return;
+        }
+
+        const videoBlob = new Blob(videoChunksRef.current, { type: 'video/webm' });
+        const videoUrl = URL.createObjectURL(videoBlob);
+        setRecordedVideo(videoUrl);
+        setIsRecording(false);
+        
+        if (intervalRef.current) {
+          clearInterval(intervalRef.current);
+          intervalRef.current = null;
+        }
+      };
+
+      mediaRecorder.start(100);
+      setIsRecording(true);
+
+      intervalRef.current = setInterval(() => {
+        setRecordingTime((prev) => prev + 1);
+      }, 1000);
+
+    } catch (error) {
+      console.error("Video recording error:", error);
+      toast.error("Could not start video recording");
+      onClose();
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stop();
+    }
+  };
+
+  const retakeVideo = async () => {
+    // Clean up previous recording
+    if (recordedVideo) {
+      URL.revokeObjectURL(recordedVideo);
+      setRecordedVideo(null);
+    }
+    setRecordingTime(0);
+    
+    // Restart camera and recording
+    await startRecording();
+  };
+
+  const useVideo = async () => {
+    if (!recordedVideo) return;
+
+    setIsUploading(true);
+    try {
+      const response = await fetch(recordedVideo);
+      const blob = await response.blob();
+      const file = new File([blob], `recording-${Date.now()}.webm`, {
+        type: 'video/webm',
+        lastModified: Date.now(),
+      });
+
+      onComplete(file);
+    } catch (error) {
+      console.error("Video processing error:", error);
+      toast.error("Failed to process recorded video");
+    } finally {
+      setIsUploading(false);
+      cleanup();
+      onClose();
+    }
+  };
+
+  const cleanup = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+    if (recordedVideo) {
+      URL.revokeObjectURL(recordedVideo);
+      setRecordedVideo(null);
+    }
+    setIsRecording(false);
+    setRecordingTime(0);
+    videoChunksRef.current = [];
+  };
+
+  const handleClose = () => {
+    cleanup();
+    onClose();
+  };
+
+  useEffect(() => {
+    if (isOpen && !isRecording && !recordedVideo) {
+      startRecording();
+    }
+    
+    return () => {
+      cleanup();
+    };
+  }, [isOpen]);
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black z-50 flex flex-col">
+      {/* Video Preview */}
+      <div className="flex-1 relative">
+        {recordedVideo ? (
+          <video
+            src={recordedVideo}
+            controls
+            className="absolute inset-0 w-full h-full object-contain"
+          />
+        ) : (
+          <video
+            ref={videoRef}
+            autoPlay
+            playsInline
+            muted
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+        )}
+
+        {/* Recording indicator */}
+        {isRecording && (
+          <div className="absolute top-4 left-4 bg-red-500 text-white px-3 py-1 rounded-full flex items-center gap-2">
+            <div className="w-3 h-3 bg-white rounded-full animate-pulse"></div>
+            <span className="font-mono">{formatTime(recordingTime)}</span>
+          </div>
+        )}
+
+        {/* Controls */}
+        <div className="absolute bottom-8 left-0 right-0 flex justify-center">
+          {recordedVideo ? (
+            <div className="flex gap-4">
+              <button
+                onClick={retakeVideo}
+                disabled={isUploading}
+                className="px-6 py-2 bg-gray-600 text-white rounded-lg disabled:opacity-50"
+              >
+                Retake
+              </button>
+              <button
+                onClick={useVideo}
+                disabled={isUploading}
+                className="px-6 py-2 bg-blue-600 text-white rounded-lg flex items-center gap-2 disabled:opacity-50"
+              >
+                {isUploading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Uploading...
+                  </>
+                ) : (
+                  "Use Video"
+                )}
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={stopRecording}
+              disabled={!isRecording}
+              className="w-16 h-16 bg-red-500 rounded-full border-4 border-white shadow-lg flex items-center justify-center disabled:opacity-50"
+            >
+              <div className="w-5 h-5 bg-white rounded-sm"></div>
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Close button */}
+      <button
+        onClick={handleClose}
+        disabled={isUploading}
+        className="absolute top-4 right-4 p-2 bg-black/50 rounded-full text-white disabled:opacity-50"
+      >
+        <X className="h-6 w-6" />
+      </button>
+    </div>
+  );
+};
+
 const MediaUpload: React.FC<MediaUploadProps> = ({
   label,
   multiple = false,
@@ -476,7 +711,7 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
   maxFiles,
   maxSizeMB = 10,
   inspectionStatus,
-  isReadOnly, // <-- add this line
+  isReadOnly,
 }) => {
   const imageurl = "https://eits.thebigocommunity.org";
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -484,126 +719,21 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedMedia, setSelectedMedia] = useState<MediaItem | null>(null);
   const [showRecordingDialog, setShowRecordingDialog] = useState(false);
+  const [showVideoRecordingDialog, setShowVideoRecordingDialog] = useState(false);
   const [showRemarksDialog, setShowRemarksDialog] = useState(false);
   const [showCameraOptions, setShowCameraOptions] = useState(false);
-  const [pendingMediaItem, setPendingMediaItem] = useState<MediaItem | null>(
-    null
-  );
+  const [pendingMediaItem, setPendingMediaItem] = useState<MediaItem | null>(null);
   const [editingRemark, setEditingRemark] = useState<string | null>(null);
   const [showCameraPreview, setShowCameraPreview] = useState(false);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [mediaToDelete, setMediaToDelete] = useState<string | null>(null);
   const [currentMediaItems, setCurrentMediaItems] = useState<MediaItem[]>([]);
+  
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-// Add these state variables
-const [isRecordingVideo, setIsRecordingVideo] = useState(false);
-const [recordedVideo, setRecordedVideo] = useState<string | null>(null);
-const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-const videoChunksRef = useRef<Blob[]>([]);
-
-// Add these functions
-const startVideoRecording = async () => {
-  try {
-    setShowCameraOptions(false);
-    setShowCameraPreview(true);
-    setIsRecordingVideo(true);
-
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: {
-        facingMode: "environment",
-        width: { ideal: 1280 },
-        height: { ideal: 720 },
-      },
-      audio: true,
-    });
-
-    if (videoRef.current) {
-      videoRef.current.srcObject = stream;
-      streamRef.current = stream;
-    }
-
-    const options = { mimeType: 'video/webm' };
-    const mediaRecorder = new MediaRecorder(stream, options);
-    mediaRecorderRef.current = mediaRecorder;
-
-    mediaRecorder.ondataavailable = (e) => {
-      if (e.data.size > 0) {
-        videoChunksRef.current.push(e.data);
-      }
-    };
-
-    mediaRecorder.start(100); // Collect data every 100ms
-  } catch (error) {
-    console.error("Video recording error:", error);
-    toast.error("Could not start video recording");
-    stopVideoRecording();
-  }
-};
-
-const stopVideoRecording = () => {
-  if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-    mediaRecorderRef.current.stop();
-  }
-  
-  if (streamRef.current) {
-    streamRef.current.getTracks().forEach(track => track.stop());
-    streamRef.current = null;
-  }
-  
-  setIsRecordingVideo(false);
-};
-
-const handleVideoRecordingComplete = async () => {
-  if (videoChunksRef.current.length === 0) {
-    toast.error("No video data recorded");
-    return;
-  }
-
-  const videoBlob = new Blob(videoChunksRef.current, { type: 'video/webm' });
-  const videoUrl = URL.createObjectURL(videoBlob);
-  setRecordedVideo(videoUrl);
-  videoChunksRef.current = [];
-};
-
-const uploadRecordedVideo = async () => {
-  if (!recordedVideo) return;
-
-  setIsUploading(true);
-  setUploadProgress(0);
-
-  try {
-    const response = await fetch(recordedVideo);
-    const blob = await response.blob();
-    const file = new File([blob], `recording-${Date.now()}.webm`, {
-      type: 'video/webm',
-      lastModified: Date.now(),
-    });
-
-    const fileUrl = await uploadFile(file, setUploadProgress);
-
-    const mediaItem: MediaItem = {
-      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      url: fileUrl,
-      type: "video",
-      remarks: "Recorded Video",
-    };
-
-    setPendingMediaItem(mediaItem);
-    setShowRemarksDialog(true);
-  } catch (error) {
-    console.error("Video upload error:", error);
-    toast.error("Failed to upload recorded video");
-  } finally {
-    setIsUploading(false);
-    setUploadProgress(0);
-    setRecordedVideo(null);
-    setShowCameraPreview(false);
-  }
-};
 
   // Sync with external value changes
   useEffect(() => {
@@ -627,10 +757,8 @@ const uploadRecordedVideo = async () => {
         (item) => item.id !== mediaToDelete
       );
 
-      // Optimistically update local state
       setCurrentMediaItems(updatedItems);
 
-      // Update parent component
       if (multiple) {
         onChange(updatedItems.length > 0 ? updatedItems : undefined);
       } else {
@@ -647,7 +775,6 @@ const uploadRecordedVideo = async () => {
   };
 
   const handleCancelDelete = () => {
-    // Revert to original state if user cancels
     if (value) {
       setCurrentMediaItems(Array.isArray(value) ? [...value] : [value]);
     }
@@ -657,7 +784,6 @@ const uploadRecordedVideo = async () => {
 
   const handleRemoveFromModal = () => {
     if (selectedMedia) {
-      // Optimistically update UI
       const tempItems = currentMediaItems.filter(
         (item) => item.id !== selectedMedia.id
       );
@@ -711,6 +837,12 @@ const uploadRecordedVideo = async () => {
         streamRef.current = null;
       }
     }
+  };
+
+  const retakeImage = async () => {
+    setCapturedImage(null);
+    // Restart camera
+    await startCamera();
   };
 
   const uploadCapturedImage = async () => {
@@ -793,111 +925,108 @@ const uploadRecordedVideo = async () => {
     }
   };
 
- const handleFileChange = async (
-  event: React.ChangeEvent<HTMLInputElement>
-) => {
-  const files = event.target.files;
-  if (!files || files.length === 0) return;
+  const handleFileChange = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
 
-  const filesToUpload = Array.from(files);
+    const filesToUpload = Array.from(files);
 
-  if (!multiple && filesToUpload.length > 1) {
-    toast.error(`Only one ${label.toLowerCase()} file is allowed.`);
-    return;
-  }
-
-  if (
-    multiple &&
-    maxFiles &&
-    currentMediaItems.length + filesToUpload.length > maxFiles
-  ) {
-    toast.error(`You can only upload a maximum of ${maxFiles} files.`);
-    return;
-  }
-
-  const validFiles: File[] = [];
-  for (const file of filesToUpload) {
-    const type = getMediaType(file);
-    if (type === "unknown" || !allowedTypes.includes(type)) {
-      toast.error(
-        `File "${
-          file.name
-        }" has an unsupported format. Allowed: ${allowedTypes.join(", ")}`
-      );
-      continue;
+    if (!multiple && filesToUpload.length > 1) {
+      toast.error(`Only one ${label.toLowerCase()} file is allowed.`);
+      return;
     }
 
-    if (file.size > maxSizeMB * 1024 * 1024) {
-      toast.error(`File "${file.name}" exceeds ${maxSizeMB}MB limit.`);
-      continue;
+    if (
+      multiple &&
+      maxFiles &&
+      currentMediaItems.length + filesToUpload.length > maxFiles
+    ) {
+      toast.error(`You can only upload a maximum of ${maxFiles} files.`);
+      return;
     }
-    validFiles.push(file);
-  }
 
-  if (validFiles.length === 0) return;
-
-  setIsUploading(true);
-  setUploadProgress(0);
-
-  try {
-    const uploadedItems: MediaItem[] = [];
-    
-    for (let i = 0; i < validFiles.length; i++) {
-      const file = validFiles[i];
-      const fileProgressStart = (i / validFiles.length) * 100;
-
-      try {
-        const fileUrl = await uploadFile(file, (progress: number) => {
-          setUploadProgress(fileProgressStart + progress / validFiles.length);
-        });
-
-        const mediaItem: MediaItem = {
-          id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          url: fileUrl,
-          type: getMediaType(file) as "image" | "video" | "audio",
-          remarks: file.name,
-        };
-
-        uploadedItems.push(mediaItem);
-      } catch (error) {
-        console.error(`Error uploading ${file.name}:`, error);
-        const errorMsg =
-          error instanceof Error ? error.message : "Upload failed";
-        toast.error(`Failed to upload ${file.name}: ${errorMsg}`);
+    const validFiles: File[] = [];
+    for (const file of filesToUpload) {
+      const type = getMediaType(file);
+      if (type === "unknown" || !allowedTypes.includes(type)) {
+        toast.error(
+          `File "${
+            file.name
+          }" has an unsupported format. Allowed: ${allowedTypes.join(", ")}`
+        );
+        continue;
       }
-    }
 
-    // Handle uploaded items
-    if (uploadedItems.length > 0) {
-      // For single file uploads, show remarks dialog first (don't update state yet)
-      if (uploadedItems.length === 1) {
-        setPendingMediaItem(uploadedItems[0]);
-        setShowRemarksDialog(true);
-      } else {
-        // For multiple files, update state immediately and skip remarks dialog
-        const updatedItems = [...currentMediaItems, ...uploadedItems];
-        setCurrentMediaItems(updatedItems);
-        
-        if (multiple) {
-          onChange(updatedItems);
-        } else {
-          onChange(updatedItems[0]);
-        }
-
-        toast.success(`${uploadedItems.length} files uploaded successfully!`);
+      if (file.size > maxSizeMB * 1024 * 1024) {
+        toast.error(`File "${file.name}" exceeds ${maxSizeMB}MB limit.`);
+        continue;
       }
+      validFiles.push(file);
     }
-  } catch (error) {
-    console.error("Batch upload error:", error);
-    toast.error("An error occurred during upload.");
-  } finally {
-    setIsUploading(false);
+
+    if (validFiles.length === 0) return;
+
+    setIsUploading(true);
     setUploadProgress(0);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
+
+    try {
+      const uploadedItems: MediaItem[] = [];
+      
+      for (let i = 0; i < validFiles.length; i++) {
+        const file = validFiles[i];
+        const fileProgressStart = (i / validFiles.length) * 100;
+
+        try {
+          const fileUrl = await uploadFile(file, (progress: number) => {
+            setUploadProgress(fileProgressStart + progress / validFiles.length);
+          });
+
+          const mediaItem: MediaItem = {
+            id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            url: fileUrl,
+            type: getMediaType(file) as "image" | "video" | "audio",
+            remarks: file.name,
+          };
+
+          uploadedItems.push(mediaItem);
+        } catch (error) {
+          console.error(`Error uploading ${file.name}:`, error);
+          const errorMsg =
+            error instanceof Error ? error.message : "Upload failed";
+          toast.error(`Failed to upload ${file.name}: ${errorMsg}`);
+        }
+      }
+
+      if (uploadedItems.length > 0) {
+        if (uploadedItems.length === 1) {
+          setPendingMediaItem(uploadedItems[0]);
+          setShowRemarksDialog(true);
+        } else {
+          const updatedItems = [...currentMediaItems, ...uploadedItems];
+          setCurrentMediaItems(updatedItems);
+          
+          if (multiple) {
+            onChange(updatedItems);
+          } else {
+            onChange(updatedItems[0]);
+          }
+
+          toast.success(`${uploadedItems.length} files uploaded successfully!`);
+        }
+      }
+    } catch (error) {
+      console.error("Batch upload error:", error);
+      toast.error("An error occurred during upload.");
+    } finally {
+      setIsUploading(false);
+      setUploadProgress(0);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
     }
-  }
-};
+  };
 
   const handleAudioRecordingComplete = async (audioFile: File) => {
     setShowRecordingDialog(false);
@@ -932,30 +1061,44 @@ const uploadRecordedVideo = async () => {
     }
   };
 
+  const handleVideoRecordingComplete = async (videoFile: File) => {
+    setShowVideoRecordingDialog(false);
+    setIsUploading(true);
+
+    try {
+      if (!videoFile || videoFile.size === 0) {
+        throw new Error("Invalid video file generated");
+      }
+
+      if (videoFile.size > maxSizeMB * 1024 * 1024) {
+        throw new Error(`Video file exceeds ${maxSizeMB}MB limit`);
+      }
+
+      const fileUrl = await uploadFile(videoFile, setUploadProgress);
+      const mediaItem: MediaItem = {
+        id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        url: fileUrl,
+        type: "video",
+        remarks: "Recorded Video",
+      };
+
+      setPendingMediaItem(mediaItem);
+      setShowRemarksDialog(true);
+    } catch (error) {
+      console.error("Video upload error:", error);
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      toast.error(`Failed to upload video recording: ${errorMsg}`);
+    } finally {
+      setIsUploading(false);
+      setUploadProgress(0);
+    }
+  };
+
   const handleEditRemark = (mediaId: string) => {
     setEditingRemark(mediaId);
     setShowRemarksDialog(true);
   };
 
-  // const handleClearAll = () => {
-  //   if (currentMediaItems.length === 0) {
-  //     toast.error("No media files to clear.");
-  //     return;
-  //   }
-  //   if (
-  //     !window.confirm(
-  //       "Are you sure you want to clear all media files? This action cannot be undone."
-  //     )
-  //   ) {
-  //     return;
-  //   }
-
-  //   setCurrentMediaItems([]);
-  //   if (multiple) {
-  //     onChange([]);
-  //     toast.success("All media files cleared.");
-  //   }
-  // };
   const handleClearAll = () => {
     if (inspectionStatus === "Completed") {
       toast.error("Cannot clear media for a completed inspection.");
@@ -981,6 +1124,7 @@ const uploadRecordedVideo = async () => {
       toast.success("All media files cleared.");
     }
   };
+
   const openMediaModal = (media: MediaItem) => {
     setSelectedMedia(media);
     setModalOpen(true);
@@ -1110,7 +1254,8 @@ const uploadRecordedVideo = async () => {
         multiple={multiple}
       />
 
-{currentMediaItems.length > 0 && (
+      {/* Media Items Display - Horizontal Scroll for more than 2 items */}
+    {currentMediaItems.length > 0 && (
         <div className="bg-white rounded-2xl p-4 border border-gray-200 shadow-sm">
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
             {currentMediaItems.map((media) => (
@@ -1185,120 +1330,71 @@ const uploadRecordedVideo = async () => {
 
       {/* Camera Preview Modal */}
       {showCameraPreview && (
-  <div className="fixed inset-0 bg-black z-50 flex flex-col">
-    {/* Camera Preview */}
-    <div className="flex-1 relative">
-      {!capturedImage && !recordedVideo ? (
-        <>
-          <video
-            ref={videoRef}
-            autoPlay
-            playsInline
-            muted={!isRecordingVideo}
-            className="absolute inset-0 w-full h-full object-cover"
-          />
-          <div className="absolute bottom-8 left-0 right-0 flex justify-center">
-            {isRecordingVideo ? (
-              <button
-                onClick={() => {
-                  stopVideoRecording();
-                  handleVideoRecordingComplete();
-                }}
-                className="w-16 h-16 bg-red-500 rounded-full border-4 border-white shadow-lg flex items-center justify-center"
-              >
-                <div className="w-5 h-5 bg-white rounded-sm"></div>
-              </button>
+        <div className="fixed inset-0 bg-black z-50 flex flex-col">
+          <div className="flex-1 relative">
+            {capturedImage ? (
+              <div className="absolute inset-0 flex flex-col">
+                <img
+                  src={capturedImage}
+                  alt="Captured"
+                  className="flex-1 object-contain"
+                />
+                <div className="flex justify-between p-4 bg-black/50">
+                  <button
+                    onClick={retakeImage}
+                    disabled={isUploading}
+                    className="px-6 py-2 bg-gray-600 text-white rounded-lg disabled:opacity-50"
+                  >
+                    Retake
+                  </button>
+                  <button
+                    onClick={uploadCapturedImage}
+                    disabled={isUploading}
+                    className="px-6 py-2 bg-blue-600 text-white rounded-lg flex items-center gap-2 disabled:opacity-50"
+                  >
+                    {isUploading ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        Uploading...
+                      </>
+                    ) : (
+                      "Use Photo"
+                    )}
+                  </button>
+                </div>
+              </div>
             ) : (
-              <button
-                onClick={captureImage}
-                className="w-16 h-16 bg-white rounded-full border-4 border-white shadow-lg"
-              >
-                <div className="w-full h-full bg-white rounded-full"></div>
-              </button>
+              <>
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  playsInline
+                  muted
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
+                <div className="absolute bottom-8 left-0 right-0 flex justify-center">
+                  <button
+                    onClick={captureImage}
+                    className="w-16 h-16 bg-white rounded-full border-4 border-white shadow-lg"
+                  >
+                    <div className="w-full h-full bg-white rounded-full"></div>
+                  </button>
+                </div>
+              </>
             )}
           </div>
-        </>
-      ) : recordedVideo ? (
-        <div className="absolute inset-0 flex flex-col">
-          <video
-            src={recordedVideo}
-            controls
-            className="flex-1 object-contain"
-          />
-          <div className="flex justify-between p-4 bg-black/50">
-            <button
-              onClick={() => {
-                setRecordedVideo(null);
-                startVideoRecording();
-              }}
-              className="px-6 py-2 bg-gray-600 text-white rounded-lg"
-            >
-              Retake
-            </button>
-            <button
-              onClick={uploadRecordedVideo}
-              disabled={isUploading}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg flex items-center gap-2"
-            >
-              {isUploading ? (
-                <>
-                  <span>Uploading...</span>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                </>
-              ) : (
-                "Use Video"
-              )}
-            </button>
-          </div>
-        </div>
-      ) : (
-        <div className="absolute inset-0 flex flex-col">
-          <img
-            src={capturedImage ?? undefined}
-            alt="Captured"
-            className="flex-1 object-contain"
-          />
-          <div className="flex justify-between p-4 bg-black/50">
-            <button
-              onClick={() => setCapturedImage(null)}
-              className="px-6 py-2 bg-gray-600 text-white rounded-lg"
-            >
-              Retake
-            </button>
-            <button
-              onClick={uploadCapturedImage}
-              disabled={isUploading}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg flex items-center gap-2"
-            >
-              {isUploading ? (
-                <>
-                  <span>Uploading...</span>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                </>
-              ) : (
-                "Use Photo"
-              )}
-            </button>
-          </div>
+
+          <button
+            onClick={cancelCamera}
+            disabled={isUploading}
+            className="absolute top-4 right-4 p-2 bg-black/50 rounded-full text-white disabled:opacity-50"
+          >
+            <X className="h-6 w-6" />
+          </button>
+
+          <canvas ref={canvasRef} className="hidden" />
         </div>
       )}
-    </div>
-
-    {/* Cancel Button */}
-    <button
-      onClick={() => {
-        if (isRecordingVideo) stopVideoRecording();
-        cancelCamera();
-      }}
-      className="absolute top-4 right-4 p-2 bg-black/50 rounded-full text-white"
-    >
-      <X className="h-6 w-6" />
-    </button>
-
-    {/* Hidden canvas for capturing images */}
-    <canvas ref={canvasRef} className="hidden" />
-  </div>
-)}
 
       <DeleteConfirmationDialog
         isOpen={showDeleteConfirm}
@@ -1339,13 +1435,22 @@ const uploadRecordedVideo = async () => {
         onComplete={handleAudioRecordingComplete}
       />
 
+      <VideoRecordingDialog
+        isOpen={showVideoRecordingDialog}
+        onClose={() => setShowVideoRecordingDialog(false)}
+        onComplete={handleVideoRecordingComplete}
+      />
+
       <CameraOptionsModal
-  isOpen={showCameraOptions}
-  onClose={() => setShowCameraOptions(false)}
-  onSelectImage={startCamera}
-  onSelectVideo={startVideoRecording} // Add this new function
-  allowedTypes={allowedTypes}
-/>
+        isOpen={showCameraOptions}
+        onClose={() => setShowCameraOptions(false)}
+        onSelectImage={startCamera}
+        onSelectVideo={() => {
+          setShowCameraOptions(false);
+          setShowVideoRecordingDialog(true);
+        }}
+        allowedTypes={allowedTypes}
+      />
     </div>
   );
 };
