@@ -8,21 +8,20 @@ import {
   Routes,
 } from "react-router-dom";
 import LoginPage from "./components/auth/Login";
+import AccountUser from "./components/pages/AccountUser";
 import SalesDashboard from "./components/pages/Dashboard";
-import ProjectManagerDashboard from "./components/pages/projectManagerDashboard";
 import InspectorDashboard from "./components/pages/InspectorDashboard";
+import ProjectManagerDashboard from "./components/pages/projectManagerDashboard";
 import { AuthProvider, useAuth } from "./context/AuthContext";
+import { JobCardProvider } from "./context/JobCardContext";
+import { JobCardOtherProvider } from "./context/JobCardOtherContext";
 import { LeadsProvider } from "./context/LeadContext";
 import { roleMiddleware } from "./middleware/roleMiddleware";
-import { JobCardProvider } from "./context/JobCardContext";
-import HomePage from "./components/pages/Homepage";
-import { JobCardOtherProvider } from "./context/JobCardOtherContext";
-import AccountUser from "./components/pages/AccountUser";
 
-import { FirstTimePasswordReset } from "./components/auth/NewPassword";
-import { PasswordResetLoader } from "./common/Loader";
 import { frappeAPI } from "./api/frappeClient";
 import "./App.css";
+import { PasswordResetLoader } from "./common/Loader";
+import { FirstTimePasswordReset } from "./components/auth/NewPassword";
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -244,7 +243,15 @@ function AppRoutes() {
     <Router>
       <Routes>
         {/* Root redirect to login */}
-        <Route path="/" element={<HomePage />} />
+        <Route
+          path="/"
+          element={
+            <PublicRoute>
+              <Navigate to="/login" replace />
+            </PublicRoute>
+          }
+        />
+
         <Route
           path="/first-time-password-reset"
           element={
