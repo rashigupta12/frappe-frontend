@@ -1,21 +1,18 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-// /* eslint-disable @typescript-eslint/no-explicit-any */
 import {
   Calendar,
-  Check,
   Edit,
   Filter,
   Plus,
   Search,
-  Trash2,
+  Trash2
 } from "lucide-react";
 import React, { useEffect, useMemo, useState } from "react";
+import DeleteConfirmation from "../../common/DeleteComfirmation";
+import { PasswordResetLoader } from "../../common/Loader";
 import { useJobCards, type JobCard } from "../../context/JobCardContext";
 import { Button } from "../ui/button";
 import { Dialog } from "../ui/dialog";
 import JobCardDetails from "./JobCardDetails";
-import DeleteConfirmation from "../../common/DeleteComfirmation";
-import { PasswordResetLoader } from "../../common/Loader";
 
 interface Props {
   onEdit: (jobCard: JobCard) => void;
@@ -104,10 +101,10 @@ const JobCardList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
     const normalizedFrom = normalizeDate(fromDate);
     const normalizedTo = normalizeDate(toDate);
 
-    // Check if there's any overlap between card date range and filter date range
+    // Check if card dates fall completely within the selected date range
     return (
-      normalizedCardStart <= normalizedTo &&
-      normalizedCardFinish >= normalizedFrom
+      normalizedCardStart >= normalizedFrom &&
+      normalizedCardFinish <= normalizedTo
     );
   };
 
@@ -189,19 +186,6 @@ const JobCardList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
     }
   };
 
-  const applyFilters = () => {
-    setShowFilters(false);
-    // Mark as custom filter if dates are different from today or other filters are applied
-    const today = new Date().toISOString().split("T")[0];
-    const hasCustomFilters =
-      searchQuery !== "" ||
-      purposeFilter !== "all" ||
-      fromDate !== today ||
-      toDate !== today;
-
-    setIsDefaultFilter(!hasCustomFilters);
-  };
-
   const clearFilters = () => {
     const today = new Date().toISOString().split("T")[0];
     setFromDate(today);
@@ -211,13 +195,16 @@ const JobCardList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
     setIsDefaultFilter(true);
   };
 
-  // Handle date changes
+  // Handle date changes - Apply filter immediately
   const handleFromDateChange = (value: string) => {
     setFromDate(value);
     // If from date is greater than to date, adjust to date
     if (value > toDate) {
       setToDate(value);
     }
+    // Mark as custom filter
+    const today = new Date().toISOString().split("T")[0];
+    setIsDefaultFilter(value === today && toDate === today && searchQuery === "" && purposeFilter === "all");
   };
 
   const handleToDateChange = (value: string) => {
@@ -226,6 +213,9 @@ const JobCardList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
     if (value < fromDate) {
       setFromDate(value);
     }
+    // Mark as custom filter
+    const today = new Date().toISOString().split("T")[0];
+    setIsDefaultFilter(fromDate === today && value === today && searchQuery === "" && purposeFilter === "all");
   };
 
   const handleDeleteClick = (id: string, e: React.MouseEvent) => {
@@ -261,9 +251,9 @@ const JobCardList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
     <div className="pb-10 max-w-7xl mx-auto">
       {/* Compact Header */}
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-xl font-bold text-emerald-800 flex items-center gap-2">
+        <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
           Job Cards
-          <span className="bg-emerald-50 text-emerald-700 text-sm font-medium px-2 py-0.5 rounded-full border border-emerald-200">
+          <span className="bg-slate-100 text-slate-700 text-sm font-medium px-2 py-0.5 rounded-full border border-slate-300">
             {filteredJobCards.length}
           </span>
           {isDefaultFilter && (
@@ -389,44 +379,114 @@ const JobCardList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
                   <label className="text-xs font-medium text-gray-600 mb-1 block">
                     From Date
                   </label>
-                  <input
-                    type="date"
-                    value={fromDate}
-                    onChange={(e) => handleFromDateChange(e.target.value)}
-                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                  />
+                  <div className="relative">
+                    <input
+                      type="date"
+                      value={fromDate}
+                      onChange={(e) => handleFromDateChange(e.target.value)}
+                      className="w-full rounded-md border border-gray-300 px-3 py-2 pr-10 text-sm text-black shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      style={
+                        {
+                          // Hide browser default icons
+                          WebkitAppearance: "none",
+                          MozAppearance: "textfield",
+                        } as React.CSSProperties
+                      }
+                    />
+                    {/* Custom Calendar Icon - Clickable */}
+                    <div
+                      className="absolute inset-y-0 right-3 flex items-center text-gray-400 cursor-pointer"
+                      onClick={() => {
+                        // Focus and click the input to trigger date picker
+                        const inputs = document.querySelectorAll(
+                          'input[type="date"]'
+                        ) as NodeListOf<HTMLInputElement>;
+                        const fromInput = inputs[0]; // First date input (From Date)
+                        if (fromInput) {
+                          fromInput.focus();
+                          if (
+                            "showPicker" in fromInput &&
+                            typeof fromInput.showPicker === "function"
+                          ) {
+                            fromInput.showPicker();
+                          }
+                        }
+                      }}
+                    >
+                      <svg
+                        className="h-5 w-5"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                        />
+                      </svg>
+                    </div>
+                  </div>
                 </div>
 
                 <div>
                   <label className="text-xs font-medium text-gray-600 mb-1 block">
                     To Date
                   </label>
-                  <input
-                    type="date"
-                    value={toDate}
-                    onChange={(e) => handleToDateChange(e.target.value)}
-                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                  />
+                  <div className="relative">
+                    <input
+                      type="date"
+                      value={toDate}
+                      onChange={(e) => handleToDateChange(e.target.value)}
+                      className="w-full rounded-md border border-gray-300 px-3 py-2 pr-10 text-sm text-black shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      style={
+                        {
+                          // Hide browser default icons
+                          WebkitAppearance: "none",
+                          MozAppearance: "textfield",
+                        } as React.CSSProperties
+                      }
+                    />
+                    {/* Custom Calendar Icon - Clickable */}
+                    <div
+                      className="absolute inset-y-0 right-3 flex items-center text-gray-400 cursor-pointer"
+                      onClick={() => {
+                        // Focus and click the input to trigger date picker
+                        const inputs = document.querySelectorAll(
+                          'input[type="date"]'
+                        ) as NodeListOf<HTMLInputElement>;
+                        const toInput = inputs[1]; // Second date input (To Date)
+                        if (toInput) {
+                          toInput.focus();
+                          if (
+                            "showPicker" in toInput &&
+                            typeof toInput.showPicker === "function"
+                          ) {
+                            toInput.showPicker();
+                          }
+                        }
+                      }}
+                    >
+                      <svg
+                        className="h-5 w-5"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                        />
+                      </svg>
+                    </div>
+                  </div>
                 </div>
               </div>
-
-              {/* Purpose Filter */}
-              {/* <div>
-                <label className="text-xs font-medium text-gray-600 mb-1 block">
-                  Job Type
-                </label>
-                <select
-                  value={purposeFilter}
-                  onChange={(e) => setPurposeFilter(e.target.value as any)}
-                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                >
-                  <option value="all">All Types</option>
-                  <option value="pressing">Pressing Only</option>
-                  <option value="material">Material Only</option>
-                  <option value="both">Both</option>
-                  <option value="submitted">Submitted</option>
-                </select>
-              </div> */}
             </div>
 
             <div className="flex justify-between items-center">
@@ -445,14 +505,6 @@ const JobCardList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
                   className="px-3 py-1.5 text-xs"
                 >
                   Reset to Today
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={applyFilters}
-                  className="bg-emerald-600 hover:bg-emerald-700 px-3 py-1.5 text-xs"
-                >
-                  <Check className="h-3 w-3 mr-1" />
-                  Apply
                 </Button>
               </div>
             </div>

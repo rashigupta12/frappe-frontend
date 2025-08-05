@@ -96,7 +96,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
     lead_id: "",
     customer_id: "",
   });
- const [selectedEmirate, setSelectedEmirate] = useState<string>("");
+  const [selectedEmirate, setSelectedEmirate] = useState<string>("");
   const [selectedCity, setSelectedCity] = useState<string>("");
   const [selectedArea, setSelectedArea] = useState<string>("");
   const [showOtherAreaInput, setShowOtherAreaInput] = useState(false);
@@ -105,7 +105,6 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
   const [hasPrefilled, setHasPrefilled] = useState(false);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   // Add address state variables
- 
 
   const [services, setServices] = useState<Services[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -148,113 +147,117 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
   );
 
   // Parse and prefill address components when formData.area changes
-// Replace the existing address parsing useEffect with this corrected version
+  // Replace the existing address parsing useEffect with this corrected version
 
-useEffect(() => {
-  if (formData.area && !hasPrefilled && emirates.length > 0) {
-    const parts = formData.area.split(",").map((part: string) => part.trim());
+  useEffect(() => {
+    if (formData.area && !hasPrefilled && emirates.length > 0) {
+      const parts = formData.area.split(",").map((part: string) => part.trim());
 
-    // Address format: "area, city, emirate" (Al Satwa, Dubai, Dubai)
-    if (parts.length >= 3) {
-      const area = parts[0]; // First part is area (Al Satwa)
-      const city = parts[1]; // Second part is city (Dubai)
-      const emirate = parts[2]; // Third part is emirate (Dubai)
+      // Address format: "area, city, emirate" (Al Satwa, Dubai, Dubai)
+      if (parts.length >= 3) {
+        const area = parts[0]; // First part is area (Al Satwa)
+        const city = parts[1]; // Second part is city (Dubai)
+        const emirate = parts[2]; // Third part is emirate (Dubai)
 
-      console.log("Parsed address:", { area, city, emirate });
+        console.log("Parsed address:", { area, city, emirate });
 
-      // Set the emirate if it exists in the emirates list
-      const foundEmirate = emirates.find(
-        (e) => e.name.toLowerCase() === emirate.toLowerCase()
-      );
-      
-      if (foundEmirate) {
-        setSelectedEmirate(foundEmirate.name);
+        // Set the emirate if it exists in the emirates list
+        const foundEmirate = emirates.find(
+          (e) => e.name.toLowerCase() === emirate.toLowerCase()
+        );
 
-        // Fetch cities for this emirate and then process
-        fetchCities(foundEmirate.name).then(() => {
-          // Use a longer timeout to ensure cities are loaded
-          setTimeout(() => {
-            const foundCity = cities.find(
-              (c) => c.name.toLowerCase() === city.toLowerCase()
-            );
-            
-            if (foundCity) {
-              setSelectedCity(foundCity.name);
+        if (foundEmirate) {
+          setSelectedEmirate(foundEmirate.name);
 
-              // Fetch areas for this city and then process
-              fetchAreas(foundCity.name).then(() => {
-                // Use a longer timeout to ensure areas are loaded
-                setTimeout(() => {
-                  const foundArea = areas.find(
-                    (a) => a.name.toLowerCase() === area.toLowerCase()
-                  );
-                  
-                  if (foundArea) {
-                    setSelectedArea(foundArea.name);
-                    setShowOtherAreaInput(false);
-                    setNewAreaName("");
-                  } else if (area) {
-                    // If area doesn't exist in dropdown but has a value, show "other" input
-                    setShowOtherAreaInput(true);
-                    setNewAreaName(area);
-                    setSelectedArea("");
-                  }
+          // Fetch cities for this emirate and then process
+          fetchCities(foundEmirate.name)
+            .then(() => {
+              // Use a longer timeout to ensure cities are loaded
+              setTimeout(() => {
+                const foundCity = cities.find(
+                  (c) => c.name.toLowerCase() === city.toLowerCase()
+                );
+
+                if (foundCity) {
+                  setSelectedCity(foundCity.name);
+
+                  // Fetch areas for this city and then process
+                  fetchAreas(foundCity.name)
+                    .then(() => {
+                      // Use a longer timeout to ensure areas are loaded
+                      setTimeout(() => {
+                        const foundArea = areas.find(
+                          (a) => a.name.toLowerCase() === area.toLowerCase()
+                        );
+
+                        if (foundArea) {
+                          setSelectedArea(foundArea.name);
+                          setShowOtherAreaInput(false);
+                          setNewAreaName("");
+                        } else if (area) {
+                          // If area doesn't exist in dropdown but has a value, show "other" input
+                          setShowOtherAreaInput(true);
+                          setNewAreaName(area);
+                          setSelectedArea("");
+                        }
+                        setHasPrefilled(true);
+                        setIsInitialLoad(false);
+                      }, 500); // Increased timeout to 500ms
+                    })
+                    .catch((error) => {
+                      console.error("Error fetching areas:", error);
+                      setHasPrefilled(true);
+                      setIsInitialLoad(false);
+                    });
+                } else {
+                  console.log("City not found:", city);
                   setHasPrefilled(true);
                   setIsInitialLoad(false);
-                }, 500); // Increased timeout to 500ms
-              }).catch((error) => {
-                console.error("Error fetching areas:", error);
-                setHasPrefilled(true);
-                setIsInitialLoad(false);
-              });
-            } else {
-              console.log("City not found:", city);
+                }
+              }, 300); // Increased timeout to 300ms
+            })
+            .catch((error) => {
+              console.error("Error fetching cities:", error);
               setHasPrefilled(true);
               setIsInitialLoad(false);
-            }
-          }, 300); // Increased timeout to 300ms
-        }).catch((error) => {
-          console.error("Error fetching cities:", error);
+            });
+        } else {
+          console.log("Emirate not found:", emirate);
           setHasPrefilled(true);
           setIsInitialLoad(false);
-        });
+        }
       } else {
-        console.log("Emirate not found:", emirate);
+        console.log("Address format not recognized:", formData.area);
         setHasPrefilled(true);
         setIsInitialLoad(false);
       }
-    } else {
-      console.log("Address format not recognized:", formData.area);
+    } else if (!formData.area) {
       setHasPrefilled(true);
       setIsInitialLoad(false);
     }
-  } else if (!formData.area) {
-    setHasPrefilled(true);
-    setIsInitialLoad(false);
-  }
-}, [
-  formData.area,
-  emirates,
-  cities,
-  areas,
-  fetchCities,
-  fetchAreas,
-  hasPrefilled,
-]);
+  }, [
+    formData.area,
+    emirates,
+    cities,
+    areas,
+    fetchCities,
+    fetchAreas,
+    hasPrefilled,
+  ]);
 
-// Also add this useEffect to reset hasPrefilled when jobCard changes
-useEffect(() => {
-  if (jobCard) {
-    setHasPrefilled(false);
-    setIsInitialLoad(true);
-    // Reset address selection states when loading a new job card
-    setSelectedEmirate("");
-    setSelectedCity("");
-    setSelectedArea("");
-    setShowOtherAreaInput(false);
-    setNewAreaName("");
-  }
-}, [jobCard?.name]); // Only trigger when the job card ID changes
+  // Also add this useEffect to reset hasPrefilled when jobCard changes
+  useEffect(() => {
+    if (jobCard) {
+      setHasPrefilled(false);
+      setIsInitialLoad(true);
+      // Reset address selection states when loading a new job card
+      setSelectedEmirate("");
+      setSelectedCity("");
+      setSelectedArea("");
+      setShowOtherAreaInput(false);
+      setNewAreaName("");
+    }
+  }, [jobCard?.name]); // Only trigger when the job card ID changes
   // Update combined address whenever any address component changes
   useEffect(() => {
     if (!isInitialLoad) {
@@ -475,7 +478,6 @@ useEffect(() => {
         setJobTypes(response.data || []);
       } catch (error) {
         console.error("Failed to fetch job types:", error);
-        
       } finally {
         setLoadingJobTypes(false);
       }
@@ -710,17 +712,15 @@ useEffect(() => {
               area: lead.custom_property_area || "",
               lead_id: lead.name,
             }));
-            toast.success("Customer and property details loaded!");
+            
           }
         } catch (error) {
           console.error("Failed to fetch lead data:", error);
-          toast.error("Loaded customer but failed to fetch property details");
+          
         } finally {
           setFetchingLeadDetails(false);
         }
-      } else {
-        toast.success("Customer loaded (no property details found)");
-      }
+      } 
     } finally {
       setFetchingCustomerDetails(false);
     }
@@ -870,7 +870,7 @@ useEffect(() => {
         style={{ transform: isOpen ? "translateX(0)" : "translateX(100%)" }}
       >
         {/* Header */}
-        <div className="bg-gradient-to-r from-emerald-500 to-blue-500 text-white shadow-lg transform scale-105 hover:from-emerald-600 hover:to-blue-600 p-4 sm:rounded-t-xl">
+        <div className="bg-cyan-500 text-white shadow-lg transform scale-105  hover:blue-600 p-4 sm:rounded-t-xl">
           <div className="flex justify-between items-start">
             <div className="flex items-start space-x-4">
               <div className="bg-white/20 p-2 rounded-lg mt-1">
@@ -923,7 +923,7 @@ useEffect(() => {
               {/* Basic Information Card */}
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                 <div
-                  className="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b border-gray-200 cursor-pointer hover:bg-blue-50 transition-colors"
+                  className="bg-blue-50  px-6 py-4 border-b border-gray-200 cursor-pointer hover:bg-blue-50 transition-colors"
                   onClick={() => setIsBasicInfoExpanded(!isBasicInfoExpanded)}
                 >
                   <div className="flex items-center justify-between">
@@ -1088,9 +1088,11 @@ useEffect(() => {
                             <SelectTrigger className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                               <SelectValue
                                 placeholder={
-                                  addressLoading
-                                    ? <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
-                                    : "Select emirate"
+                                  addressLoading ? (
+                                    <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
+                                  ) : (
+                                    "Select emirate"
+                                  )
                                 }
                               />
                             </SelectTrigger>
@@ -1119,11 +1121,13 @@ useEffect(() => {
                             <SelectTrigger className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                               <SelectValue
                                 placeholder={
-                                  !selectedEmirate
-                                    ? "Select emirate first"
-                                    : addressLoading
-                                    ? <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
-                                    : "Select city"
+                                  !selectedEmirate ? (
+                                    "Select emirate first"
+                                  ) : addressLoading ? (
+                                    <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
+                                  ) : (
+                                    "Select city"
+                                  )
                                 }
                               />
                             </SelectTrigger>
@@ -1140,75 +1144,75 @@ useEffect(() => {
                             </SelectContent>
                           </Select>
                         </div>
-
-                       
                       </div>
-                       {/* Area */}
-                        <div className="space-y-2">
-                          <Label>Area</Label>
-                          <Select
-                            value={showOtherAreaInput ? "other" : selectedArea}
-                            onValueChange={handleAreaChange}
-                            disabled={!selectedCity || addressLoading}
-                          >
-                            <SelectTrigger className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                              <SelectValue
-                                placeholder={
-                                  !selectedCity
-                                    ? "Select city first"
-                                    : addressLoading
-                                    ? <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
-                                    : "Select area"
-                                }
-                              />
-                            </SelectTrigger>
-                            <SelectContent className="bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
-                              {areas.map((area) => (
-                                <SelectItem
-                                  key={area.name}
-                                  value={area.name}
-                                  className="px-4 py-2 text-sm text-gray-700 hover:bg-blue-100 focus:bg-blue-100 cursor-pointer"
-                                >
-                                  {area.name}
-                                </SelectItem>
-                              ))}
+                      {/* Area */}
+                      <div className="space-y-2">
+                        <Label>Area</Label>
+                        <Select
+                          value={showOtherAreaInput ? "other" : selectedArea}
+                          onValueChange={handleAreaChange}
+                          disabled={!selectedCity || addressLoading}
+                        >
+                          <SelectTrigger className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <SelectValue
+                              placeholder={
+                                !selectedCity ? (
+                                  "Select city first"
+                                ) : addressLoading ? (
+                                  <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
+                                ) : (
+                                  "Select area"
+                                )
+                              }
+                            />
+                          </SelectTrigger>
+                          <SelectContent className="bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                            {areas.map((area) => (
                               <SelectItem
-                                value="other"
+                                key={area.name}
+                                value={area.name}
                                 className="px-4 py-2 text-sm text-gray-700 hover:bg-blue-100 focus:bg-blue-100 cursor-pointer"
                               >
-                                Other (Not listed)
+                                {area.name}
                               </SelectItem>
-                            </SelectContent>
-                          </Select>
+                            ))}
+                            <SelectItem
+                              value="other"
+                              className="px-4 py-2 text-sm text-gray-700 hover:bg-blue-100 focus:bg-blue-100 cursor-pointer"
+                            >
+                              Other (Not listed)
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
 
-                          {/* Other Area Input */}
-                          {showOtherAreaInput && (
-                            <div className="mt-2 flex gap-2">
-                              <Input
-                                type="text"
-                                value={newAreaName}
-                                onChange={(e) => setNewAreaName(e.target.value)}
-                                placeholder="Enter new area name"
-                                className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                              />
-                              <Button
-                                type="button"
-                                onClick={handleAddNewArea}
-                                disabled={isAddingArea || !newAreaName.trim()}
-                                className="bg-blue-600 hover:bg-blue-700 text-white"
-                              >
-                                {isAddingArea ? (
-                                  <>
-                                    <span className="animate-spin mr-2">↻</span>
-                                    Adding...
-                                  </>
-                                ) : (
-                                  "Add Area"
-                                )}
-                              </Button>
-                            </div>
-                          )}
-                        </div>
+                        {/* Other Area Input */}
+                        {showOtherAreaInput && (
+                          <div className="mt-2 flex gap-2">
+                            <Input
+                              type="text"
+                              value={newAreaName}
+                              onChange={(e) => setNewAreaName(e.target.value)}
+                              placeholder="Enter new area name"
+                              className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                            <Button
+                              type="button"
+                              onClick={handleAddNewArea}
+                              disabled={isAddingArea || !newAreaName.trim()}
+                              className="bg-blue-600 hover:bg-blue-700 text-white"
+                            >
+                              {isAddingArea ? (
+                                <>
+                                  <span className="animate-spin mr-2">↻</span>
+                                  Adding...
+                                </>
+                              ) : (
+                                "Add Area"
+                              )}
+                            </Button>
+                          </div>
+                        )}
+                      </div>
 
                       {/* Combined Address Display */}
                       <div className="mt-4">
@@ -1229,60 +1233,96 @@ useEffect(() => {
 
                     {/* Date Range - Full width on mobile, spans 2 cols on larger screens */}
                     <div className="grid grid-cols-2 sm:grid-cols-2 gap-4 col-span-1 md:col-span-2 lg:col-span-3">
-                      <div className="space-y-1">
+                      {/* Start Date */}
+                      <div className="space-y-2">
                         <Label
                           htmlFor="start_date"
-                          className="flex items-center space-x-1"
+                          className="flex items-center space-x-2"
                         >
                           <Calendar className="h-4 w-4 text-gray-500" />
                           <span>
                             Start Date <span className="text-red-500">*</span>
                           </span>
                         </Label>
-                        <Input
-                          id="start_date"
-                          name="start_date"
-                          type="date"
-                          readOnly
-                          value={formData.start_date}
-                          onChange={handleInputChange}
-                          required
-                          className="pl-0.5 w-full"
-                        />
+                        <div className="relative">
+                          <Input
+                            id="start_date"
+                            name="start_date"
+                            type="date"
+                            value={formData.start_date}
+                            onChange={(e) => {
+                              const selectedDate = e.target.value;
+                              if (
+                                new Date(selectedDate) <
+                                new Date(new Date().toISOString().split("T")[0])
+                              ) {
+                                toast.error("Start date cannot be in the past");
+                                return;
+                              }
+                              setFormData((prev) => ({
+                                ...prev,
+                                start_date: selectedDate,
+                                // Clear finish date if it's now invalid
+                                ...(formData.finish_date &&
+                                new Date(formData.finish_date) <
+                                  new Date(selectedDate)
+                                  ? { finish_date: "" }
+                                  : {}),
+                              }));
+                            }}
+                            min={new Date().toISOString().split("T")[0]}
+                            required
+                            className="w-full rounded-md border border-gray-300 px-3 py-2 pr-10 text-sm text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                          />
+                          <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                        </div>
                       </div>
 
-                      <div className="space-y-1">
+                      {/* Finish Date */}
+                      <div className="space-y-2">
                         <Label
                           htmlFor="finish_date"
-                          className="flex items-center space-x-1"
+                          className="flex items-center space-x-2"
                         >
                           <Calendar className="h-4 w-4 text-gray-500" />
                           <span>
                             Finish Date <span className="text-red-500">*</span>
                           </span>
                         </Label>
-                        <Input
-                          id="finish_date"
-                          name="finish_date"
-                          type="date"
-                          value={formData.finish_date || ""}
-                          onChange={(e) => {
-                            if (
-                              formData.start_date &&
-                              new Date(e.target.value) <
-                                new Date(formData.start_date)
-                            ) {
-                              toast.error(
-                                "Finish date cannot be before start date"
-                              );
-                              return;
+                        <div className="relative">
+                          <Input
+                            id="finish_date"
+                            name="finish_date"
+                            type="date"
+                            value={
+                              formData.finish_date || formData.start_date || ""
                             }
-                            handleInputChange(e);
-                          }}
-                          min={formData.start_date}
-                          required
-                          className="w-full -px-1"
-                        />
+                            onChange={(e) => {
+                              const selectedDate = e.target.value;
+                              if (
+                                formData.start_date &&
+                                new Date(selectedDate) <
+                                  new Date(formData.start_date)
+                              ) {
+                                toast.error(
+                                  "Finish date cannot be before start date"
+                                );
+                                return;
+                              }
+                              setFormData((prev) => ({
+                                ...prev,
+                                finish_date: selectedDate,
+                              }));
+                            }}
+                            min={
+                              formData.start_date ||
+                              new Date().toISOString().split("T")[0]
+                            }
+                            required
+                            className="w-full rounded-md border border-gray-300 px-3 py-2 pr-10 text-sm text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                          />
+                          <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1358,34 +1398,38 @@ useEffect(() => {
 
                           {/* Date Range - Side by side on desktop */}
                           <div className="grid grid-cols-2 sm:grid-cols-2 gap-4">
-                            <div className="space-y-1">
+                            {/* Service Start Date */}
+                            <div className="space-y-2">
                               <Label className="text-sm font-medium text-gray-600">
                                 Start Date
                               </Label>
-                              <Input
-                                type="date"
-                                value={service.start_date}
-                                onChange={(e) => {
-                                  if (
-                                    formData.finish_date &&
-                                    new Date(e.target.value) >
-                                      new Date(formData.finish_date)
-                                  ) {
-                                    toast.error(
-                                      "Service start date cannot be after job finish date"
+                              <div className="relative">
+                                <Input
+                                  type="date"
+                                  value={service.start_date}
+                                  onChange={(e) => {
+                                    if (
+                                      formData.finish_date &&
+                                      new Date(e.target.value) >
+                                        new Date(formData.finish_date)
+                                    ) {
+                                      toast.error(
+                                        "Service start date cannot be after job finish date"
+                                      );
+                                      return;
+                                    }
+                                    updateService(
+                                      index,
+                                      "start_date",
+                                      e.target.value
                                     );
-                                    return;
-                                  }
-                                  updateService(
-                                    index,
-                                    "start_date",
-                                    e.target.value
-                                  );
-                                }}
-                                min={formData.start_date}
-                                max={formData.finish_date}
-                                className="h-10 pl-0.5"
-                              />
+                                  }}
+                                  min={formData.start_date}
+                                  max={formData.finish_date}
+                                  className="w-full rounded-md border border-gray-300 px-3 py-2 pr-10 text-sm text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                />
+                                <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                              </div>
                               {service.start_date &&
                                 !isDateInRange(service.start_date) && (
                                   <p className="text-xs text-red-500">
@@ -1394,44 +1438,50 @@ useEffect(() => {
                                 )}
                             </div>
 
-                            <div className="space-y-1">
+                            {/* Service Finish Date */}
+                            <div className="space-y-2">
                               <Label className="text-sm font-medium text-gray-600">
                                 Finish Date
                               </Label>
-                              <Input
-                                type="date"
-                                value={service.finish_date}
-                                onChange={(e) => {
-                                  if (
-                                    formData.start_date &&
-                                    new Date(e.target.value) <
-                                      new Date(formData.start_date)
-                                  ) {
-                                    toast.error(
-                                      "Service finish date cannot be before job start date"
+                              <div className="relative">
+                                <Input
+                                  type="date"
+                                  value={service.finish_date || service.start_date || ""}
+                                  onChange={(e) => {
+                                    if (
+                                      formData.start_date &&
+                                      new Date(e.target.value) <
+                                        new Date(formData.start_date)
+                                    ) {
+                                      toast.error(
+                                        "Service finish date cannot be before job start date"
+                                      );
+                                      return;
+                                    }
+                                    if (
+                                      service.start_date &&
+                                      new Date(e.target.value) <
+                                        new Date(service.start_date)
+                                    ) {
+                                      toast.error(
+                                        "Finish date cannot be before start date"
+                                      );
+                                      return;
+                                    }
+                                    updateService(
+                                      index,
+                                      "finish_date",
+                                      e.target.value
                                     );
-                                    return;
+                                  }}
+                                  min={
+                                    formData.start_date || service.start_date
                                   }
-                                  if (
-                                    service.start_date &&
-                                    new Date(e.target.value) <
-                                      new Date(service.start_date)
-                                  ) {
-                                    toast.error(
-                                      "Finish date cannot be before start date"
-                                    );
-                                    return;
-                                  }
-                                  updateService(
-                                    index,
-                                    "finish_date",
-                                    e.target.value
-                                  );
-                                }}
-                                min={formData.start_date || service.start_date}
-                                max={formData.finish_date}
-                                className="h-10 pl-0.5 "
-                              />
+                                  max={formData.finish_date}
+                                  className="w-full rounded-md border border-gray-300 px-3 py-2 pr-10 text-sm text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                />
+                                <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                              </div>
                               {service.finish_date &&
                                 !isDateInRange(service.finish_date) && (
                                   <p className="text-xs text-red-500">
@@ -1518,29 +1568,31 @@ useEffect(() => {
 
               {/* Action Buttons */}
               <div className="sticky bottom-0 bg-white border-t border-gray-200 p-4 shadow-lg">
-                <div className="flex flex-col sm:flex-row justify-end gap-3">
+                <div className="flex flex-row justify-end gap-3 w-full">
                   <Button
                     type="button"
                     variant="outline"
                     onClick={handleCancelClick}
-                    className="px-8 py-3 order-2 sm:order-1"
+                    className="px-4 py-2 sm:px-8 sm:py-3 text-sm sm:text-base min-w-[120px]"
                   >
                     Cancel
                   </Button>
                   <Button
                     type="submit"
                     disabled={loading}
-                    className="px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg order-1 sm:order-2"
+                    className="px-4 py-2 sm:px-8 sm:py-3 bg-cyan-600 hover:bg-cyan-700 text-white shadow-lg text-sm sm:text-base min-w-[160px]"
                   >
                     {loading ? (
-                      <div className="flex items-center gap-2">
-                        <Loader2 className="animate-spin h-5 w-5" />
-                        Saving...
+                      <div className="flex items-center justify-center gap-2">
+                        <Loader2 className="animate-spin h-4 w-4 sm:h-5 sm:w-5" />
+                        <span className="whitespace-nowrap">Saving...</span>
                       </div>
                     ) : (
-                      <div className="flex items-center gap-2">
-                        <Save className="h-5 w-5" />
-                        {jobCard ? "Update Job Card" : "Create Job Card"}
+                      <div className="flex items-center justify-center gap-2">
+                        <Save className="h-4 w-4 sm:h-5 sm:w-5" />
+                        <span className="whitespace-nowrap">
+                          {jobCard ? "Update Job Card" : "Create Job Card"}
+                        </span>
                       </div>
                     )}
                   </Button>

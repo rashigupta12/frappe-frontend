@@ -1,13 +1,5 @@
-import React, { useEffect, useMemo, useState } from "react";
-import {
-  useJobCardsOther,
-  type JobCardOther,
-} from "../../context/JobCardOtherContext";
-import { Button } from "../ui/button";
-import { Dialog } from "../ui/dialog";
 import {
   Calendar,
-  Check,
   Edit,
   Filter,
   Plus,
@@ -15,9 +7,16 @@ import {
   Trash2,
   Wrench,
 } from "lucide-react";
-import JobCardOtherDetails from "./JobCardOtherDetails";
+import React, { useEffect, useMemo, useState } from "react";
 import DeleteConfirmation from "../../common/DeleteComfirmation";
 import { PasswordResetLoader } from "../../common/Loader";
+import {
+  useJobCardsOther,
+  type JobCardOther,
+} from "../../context/JobCardOtherContext";
+import { Button } from "../ui/button";
+import { Dialog } from "../ui/dialog";
+import JobCardOtherDetails from "./JobCardOtherDetails";
 
 interface Props {
   onEdit: (jobCard: JobCardOther) => void;
@@ -36,7 +35,9 @@ const JobCardOtherList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
   const [toDate, setToDate] = useState(todayString);
   const [searchQuery, setSearchQuery] = useState("");
   const [serviceTypeFilter, setServiceTypeFilter] = useState<string>("all");
-  const [statusFilter, setStatusFilter] = useState<"all" | "submitted" | "draft">("all");
+  const [statusFilter, setStatusFilter] = useState<
+    "all" | "submitted" | "draft"
+  >("all");
   const [isDefaultFilter, setIsDefaultFilter] = useState(true);
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -128,8 +129,12 @@ const JobCardOtherList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
         card.party_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (card.services || []).some(
           (service) =>
-            service.work_type?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            service.work_description?.toLowerCase().includes(searchQuery.toLowerCase())
+            service.work_type
+              ?.toLowerCase()
+              .includes(searchQuery.toLowerCase()) ||
+            service.work_description
+              ?.toLowerCase()
+              .includes(searchQuery.toLowerCase())
         );
 
       const matchesServiceType =
@@ -143,7 +148,9 @@ const JobCardOtherList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
         (statusFilter === "submitted" && card.docstatus === 1) ||
         (statusFilter === "draft" && card.docstatus !== 1);
 
-      return isInDateRange && matchesSearch && matchesServiceType && matchesStatus;
+      return (
+        isInDateRange && matchesSearch && matchesServiceType && matchesStatus
+      );
     });
   }, [
     jobCardsOther,
@@ -167,20 +174,9 @@ const JobCardOtherList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
 
   const getServicesSummary = (card: JobCardOther) => {
     if (!card.services || card.services.length === 0) return "No services";
-    if (card.services.length === 1) return card.services[0].work_type || "Service";
+    if (card.services.length === 1)
+      return card.services[0].work_type || "Service";
     return `${card.services.length} Services`;
-  };
-
-  const applyFilters = () => {
-    setShowFilters(false);
-    const today = new Date().toISOString().split("T")[0];
-    const hasCustomFilters =
-      searchQuery !== "" ||
-      serviceTypeFilter !== "all" ||
-      statusFilter !== "all" ||
-      fromDate !== today ||
-      toDate !== today;
-    setIsDefaultFilter(!hasCustomFilters);
   };
 
   const clearFilters = () => {
@@ -196,11 +192,13 @@ const JobCardOtherList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
   const handleFromDateChange = (value: string) => {
     setFromDate(value);
     if (value > toDate) setToDate(value);
+    setIsDefaultFilter(false);
   };
 
   const handleToDateChange = (value: string) => {
     setToDate(value);
     if (value < fromDate) setFromDate(value);
+    setIsDefaultFilter(false);
   };
 
   const handleDeleteClick = (id: string, e: React.MouseEvent) => {
@@ -228,20 +226,20 @@ const JobCardOtherList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
   };
 
   if (loading) {
-   return <PasswordResetLoader/>
+    return <PasswordResetLoader />;
   }
 
   return (
     <div className="pb-10 max-w-7xl mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-xl font-bold text-blue-800 flex items-center gap-2">
+        <h2 className="text-xl font-bold text-cyan-800 flex items-center gap-2">
           Job Cards
-          <span className="bg-blue-50 text-blue-700 text-sm font-medium px-2 py-0.5 rounded-full border border-blue-200">
+          <span className="bg-gray-100 text-gray-700 text-sm font-medium px-2 py-0.5 rounded-full border border-gray-200">
             {filteredJobCards.length}
           </span>
           {isDefaultFilter && (
-            <span className="text-xs bg-purple-50 text-purple-700 px-2 py-0.5 rounded-full border border-purple-200">
+            <span className="text-xs bg-purple-50 text-cyan-700 px-2 py-0.5 rounded-full border border-purple-200">
               Today's Jobs
             </span>
           )}
@@ -249,7 +247,7 @@ const JobCardOtherList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
         <Button
           onClick={onOpenForm}
           size="sm"
-          className="bg-blue-600 hover:bg-blue-700 text-white rounded-md px-3 py-2"
+          className="bg-cyan-800 hover:bg-cyan-700 text-white rounded-md px-3 py-2"
         >
           <Plus className="h-4 w-4 mr-1" />
           Add
@@ -275,7 +273,7 @@ const JobCardOtherList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
                     toDate === todayString
                 );
               }}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
             />
           </div>
           <Button
@@ -284,7 +282,7 @@ const JobCardOtherList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
             onClick={() => setShowFilters(!showFilters)}
             className={`px-3 py-2 border rounded-md ${
               showFilters
-                ? "bg-blue-50 border-blue-300 text-blue-700"
+                ? "bg-gray-100 border-gray-300 text-gray-700"
                 : "border-gray-300"
             }`}
           >
@@ -294,21 +292,25 @@ const JobCardOtherList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
 
         {/* Quick Filter Buttons */}
         <div className="flex gap-2 mt-2">
-         
           <Button
             variant={statusFilter === "submitted" ? "default" : "outline"}
             size="sm"
-            onClick={() => setStatusFilter(statusFilter === "submitted" ? "all" : "submitted")}
+            onClick={() =>
+              setStatusFilter(
+                statusFilter === "submitted" ? "all" : "submitted"
+              )
+            }
             className="h-8 px-3 text-xs bg-green-50 hover:bg-green-100 text-green-700 data-[state=on]:bg-green-100"
           >
             Paid
           </Button>
-          
         </div>
 
         {/* Active Filters Indicator */}
-        {(serviceTypeFilter !== "all" || statusFilter !== "all" || !isDefaultFilter) && (
-          <div className="text-xs text-gray-500  flex items-center gap-2">
+        {(serviceTypeFilter !== "all" ||
+          statusFilter !== "all" ||
+          !isDefaultFilter) && (
+          <div className="text-xs text-gray-500 flex items-center gap-2 mt-2">
             <span>Filters:</span>
             {!isDefaultFilter && (
               <span className="bg-gray-100 text-gray-800 px-1.5 py-0.5 rounded">
@@ -316,7 +318,7 @@ const JobCardOtherList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
               </span>
             )}
             {serviceTypeFilter !== "all" && (
-              <span className="bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded">
+              <span className="bg-gray-100 text-gray-800 px-1.5 py-0.5 rounded">
                 {serviceTypeFilter}
               </span>
             )}
@@ -342,23 +344,46 @@ const JobCardOtherList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
                   <label className="text-xs font-medium text-gray-600 mb-1 block">
                     From Date
                   </label>
-                  <input
-                    type="date"
-                    value={fromDate}
-                    onChange={(e) => handleFromDateChange(e.target.value)}
-                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  />
+                  <div className="relative">
+                    <input
+                      type="date"
+                      value={fromDate}
+                      onChange={(e) => handleFromDateChange(e.target.value)}
+                      className="w-full rounded-md border border-gray-300 px-3 py-2 pr-10 text-sm text-gray-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-500"
+                      style={{
+                        // Hide browser default icons
+                        WebkitAppearance: "none",
+                        MozAppearance: "textfield",
+                      }}
+                    />
+                    {/* Custom Calendar Icon */}
+                    <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-gray-400">
+                      <Calendar className="h-4 w-4" />
+                    </div>
+                  </div>
                 </div>
+
                 <div>
                   <label className="text-xs font-medium text-gray-600 mb-1 block">
                     To Date
                   </label>
-                  <input
-                    type="date"
-                    value={toDate}
-                    onChange={(e) => handleToDateChange(e.target.value)}
-                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  />
+                  <div className="relative">
+                    <input
+                      type="date"
+                      value={toDate}
+                      onChange={(e) => handleToDateChange(e.target.value)}
+                      className="w-full rounded-md border border-gray-300 px-3 py-2 pr-10 text-sm text-gray-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-500"
+                      style={{
+                        // Hide browser default icons
+                        WebkitAppearance: "none",
+                        MozAppearance: "textfield",
+                      }}
+                    />
+                    {/* Custom Calendar Icon */}
+                    <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-gray-400">
+                      <Calendar className="h-4 w-4" />
+                    </div>
+                  </div>
                 </div>
               </div>
               <div>
@@ -367,8 +392,11 @@ const JobCardOtherList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
                 </label>
                 <select
                   value={serviceTypeFilter}
-                  onChange={(e) => setServiceTypeFilter(e.target.value)}
-                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  onChange={(e) => {
+                    setServiceTypeFilter(e.target.value);
+                    setIsDefaultFilter(false);
+                  }}
+                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-gray-500"
                 >
                   <option value="all">All Services</option>
                   {getUniqueServiceTypes.map((type) => (
@@ -378,13 +406,14 @@ const JobCardOtherList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
                   ))}
                 </select>
               </div>
-              
             </div>
             <div className="flex justify-between items-center">
               <div className="text-xs text-gray-500">
                 {isDefaultFilter
                   ? "Showing today's job cards by default"
-                  : `Custom filter: ${formatDate(fromDate)} to ${formatDate(toDate)}`}
+                  : `Custom filter: ${formatDate(fromDate)} to ${formatDate(
+                      toDate
+                    )}`}
               </div>
               <div className="flex gap-2">
                 <Button
@@ -394,14 +423,6 @@ const JobCardOtherList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
                   className="px-3 py-1.5 text-xs"
                 >
                   Reset to Today
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={applyFilters}
-                  className="bg-blue-600 hover:bg-blue-700 px-3 py-1.5 text-xs"
-                >
-                  <Check className="h-3 w-3 mr-1" />
-                  Apply
                 </Button>
               </div>
             </div>
@@ -435,14 +456,15 @@ const JobCardOtherList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
             <Button
               onClick={onOpenForm}
               size="sm"
-              className="bg-blue-600 hover:bg-blue-700"
+              className="bg-cyan-800 hover:bg-cyan-700 text-white rounded-md px-3 py-2"
             >
+              <Plus className="h-4 w-4 mr-1" />
               Create Service Job Card
             </Button>
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 ">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
           {filteredJobCards.map((card) => {
             const totalAmount = calculateTotalAmount(card);
             const servicesSummary = getServicesSummary(card);
@@ -469,7 +491,7 @@ const JobCardOtherList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
                       </p>
                     </div>
                     {totalAmount > 0 && (
-                      <span className="font-medium text-blue-700 text-sm whitespace-nowrap">
+                      <span className="font-medium text-gray-700 text-sm whitespace-nowrap">
                         {totalAmount} AED
                       </span>
                     )}
@@ -483,8 +505,7 @@ const JobCardOtherList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
 
                   <div className="flex items-center justify-between gap-1">
                     <div className="flex items-center gap-1 text-xs">
-                      
-                      <span className="text-blue-700 font-medium truncate">
+                      <span className="text-gray-700 font-medium truncate">
                         {servicesSummary}
                       </span>
                     </div>
@@ -495,9 +516,9 @@ const JobCardOtherList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
                             variant="ghost"
                             size="sm"
                             onClick={(e) => handleEdit(card, e)}
-                            className="h-5 w-5 p-0 hover:bg-blue-50"
+                            className="h-5 w-5 p-0 hover:bg-gray-100"
                           >
-                            <Edit className="h-3 w-3 text-blue-700" />
+                            <Edit className="h-3 w-3 text-gray-700" />
                           </Button>
                           <Button
                             variant="ghost"

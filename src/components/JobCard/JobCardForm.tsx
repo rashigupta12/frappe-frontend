@@ -427,7 +427,6 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
         setPressingItems(formattedItems);
       } catch (error) {
         console.error("Failed to fetch pressing items:", error);
-        toast.error("Failed to load pressing items");
       } finally {
         setLoadingPressingItems(false);
       }
@@ -624,7 +623,6 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
       console.error("Search error:", error);
       setSearchResults([]);
       setShowDropdown(true);
-      toast.error("Failed to search customers. Please try again.");
     } finally {
       setIsSearching(false);
     }
@@ -721,11 +719,6 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
       }
     } catch (error) {
       console.error("Error creating customer:", error);
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "Failed to create customer. Please try again."
-      );
     } finally {
       setCreatingCustomer(false);
     }
@@ -759,16 +752,12 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
               area: lead.custom_property_area || "",
               lead_id: lead.name,
             }));
-            toast.success("Customer and property details loaded!");
           }
         } catch (error) {
           console.error("Failed to fetch lead data:", error);
-          toast.error("Loaded customer but failed to fetch property details");
         } finally {
           setFetchingLeadDetails(false);
         }
-      } else {
-        toast.success("Customer loaded (no property details found)");
       }
     } finally {
       setFetchingCustomerDetails(false);
@@ -788,7 +777,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
       work_type: "",
       size: "",
       thickness: "",
-      uom: "",
+      uom: "mm",
       no_of_sides: "",
       price: 0,
       amount: 0,
@@ -831,7 +820,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
         );
       } catch (error) {
         console.error("Failed to fetch item details:", error);
-        toast.error("Failed to load item details");
+
         // Fallback to basic item data if API fails
         const selectedItem = pressingItems.find((item) => item.name === value);
         setPressingCharges((prev) =>
@@ -882,7 +871,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
       work_type: "",
       size: "",
       thickness: "",
-      uom: "",
+      uom: "mm",
 
       no_of_sides: "",
       price: 0,
@@ -927,7 +916,6 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
         );
       } catch (error) {
         console.error("Failed to fetch material sold item details:", error);
-        toast.error("Failed to load material sold item details");
         // Fallback to basic item data if API fails
         const selectedItem = materialSoldItems.find(
           (item) => item.name === value
@@ -1108,7 +1096,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
         style={{ transform: isOpen ? "translateX(0)" : "translateX(100%)" }}
       >
         {/* Header */}
-        <div className="bg-gradient-to-r from-emerald-500 to-blue-500 text-white shadow-lg transform scale-105 hover:from-emerald-600 hover:to-blue-600 p-4 sm:rounded-t-xl">
+        <div className="bg-emerald-500  text-white shadow-lg transform scale-105 hover:emerald-600 hover:blue-600 p-4 sm:rounded-t-xl">
           <div className="flex justify-between items-start">
             <div className="flex items-start space-x-4">
               <div className="bg-white/20 p-2 rounded-lg mt-1">
@@ -1357,7 +1345,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                           <Select
                             value={selectedCity}
                             onValueChange={handleCityChange}
-                            disabled={!selectedEmirate }
+                            disabled={!selectedEmirate}
                           >
                             <SelectTrigger className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                               <SelectValue
@@ -1466,61 +1454,100 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                       </div>
                     </div>
 
+                    {/* Date inputs with proper functionality and calendar icons */}
                     <div className="grid grid-cols-2 sm:grid-cols-2 gap-4 col-span-1 md:col-span-2 lg:col-span-3">
-                      <div className="space-y-1">
+                      {/* Start Date Input */}
+                      <div className="space-y-2">
                         <Label
                           htmlFor="start_date"
-                          className="flex items-center space-x-1"
+                          className="flex items-center space-x-2"
                         >
                           <Calendar className="h-4 w-4 text-gray-500" />
                           <span>
                             Start Date <span className="text-red-500">*</span>
                           </span>
                         </Label>
-                        <Input
-                          id="start_date"
-                          name="start_date"
-                          type="date"
-                          readOnly
-                          value={formData.start_date}
-                          onChange={handleInputChange}
-                          required
-                          className="pl-0.5 w-full"
-                        />
+                        <div className="relative">
+                          <Input
+                            id="start_date"
+                            name="start_date"
+                            type="date"
+                            value={formData.start_date || ""}
+                            onChange={(e) => {
+                              const selectedDate = e.target.value;
+                              if (
+                                new Date(selectedDate) <
+                                new Date(new Date().toISOString().split("T")[0])
+                              ) {
+                                toast.error("Start date cannot be in the past");
+                                return;
+                              }
+                              setFormData((prev) => ({
+                                ...prev,
+                                start_date: selectedDate,
+                                // Clear finish date if it's now invalid
+                                ...(formData.finish_date &&
+                                new Date(formData.finish_date) <
+                                  new Date(selectedDate)
+                                  ? { finish_date: "" }
+                                  : {}),
+                              }));
+                            }}
+                            min={new Date().toISOString().split("T")[0]}
+                            required
+                            disabled={isReadOnly}
+                            className="w-full rounded-md border border-gray-300 px-3 py-2 pr-10 text-sm text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 disabled:bg-gray-50 disabled:text-gray-500"
+                          />
+                          <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                        </div>
                       </div>
 
-                      <div className="space-y-1">
+                      {/* Finish Date Input */}
+                      <div className="space-y-2">
                         <Label
                           htmlFor="finish_date"
-                          className="flex items-center space-x-1"
+                          className="flex items-center space-x-2"
                         >
                           <Calendar className="h-4 w-4 text-gray-500" />
                           <span>
                             Finish Date <span className="text-red-500">*</span>
                           </span>
                         </Label>
-                        <Input
-                          id="finish_date"
-                          name="finish_date"
-                          type="date"
-                          value={formData.finish_date || ""}
-                          onChange={(e) => {
-                            if (
-                              formData.start_date &&
-                              new Date(e.target.value) <
-                                new Date(formData.start_date)
-                            ) {
-                              toast.error(
-                                "Finish date cannot be before start date"
-                              );
-                              return;
+                        <div className="relative">
+                          <Input
+                            id="finish_date"
+                            name="finish_date"
+                            type="date"
+                            value={
+                              formData.finish_date || formData.start_date || ""
                             }
-                            handleInputChange(e);
-                          }}
-                          min={formData.start_date}
-                          required
-                          className="w-full -px-1"
-                        />
+                            onChange={(e) => {
+                              const selectedDate = e.target.value;
+                              if (
+                                formData.start_date &&
+                                new Date(selectedDate) <
+                                  new Date(formData.start_date)
+                              ) {
+                                toast.error(
+                                  "Finish date cannot be before start date"
+                                );
+                                return;
+                              }
+                              setFormData((prev) => ({
+                                ...prev,
+                                finish_date: selectedDate,
+                              }));
+                            }}
+                            min={
+                              formData.start_date ||
+                              new Date().toISOString().split("T")[0]
+                            }
+                            required
+                            disabled={isReadOnly}
+                            className="w-full rounded-md border border-gray-300 px-3 py-2 pr-10 text-sm text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 disabled:bg-gray-50 disabled:text-gray-500"
+                          />
+                          <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1544,10 +1571,10 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                         </h4>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <span className="font-medium">
+                        {/* <span className="font-medium">
                           {calculatePressingTotal(pressingCharges).toFixed(2)}{" "}
                           AED
-                        </span>
+                        </span> */}
                         <ChevronDown
                           className={`h-5 w-5 text-gray-500 transition-transform duration-200 ${
                             isPressingChargesExpanded ? "rotate-180" : ""
@@ -1683,7 +1710,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                               </div> */}
 
                               <div className="flex gap-2">
-                                <div className="w-[50%] space-y-2">
+                                <div className="w-[40%] space-y-2">
                                   <Label className="text-xs font-medium text-gray-600">
                                     Size
                                   </Label>
@@ -1704,7 +1731,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
 
                                 <div className="w-[30%] space-y-2">
                                   <Label className="text-xs font-medium text-gray-600">
-                                    Thickness
+                                    Thickness (mm)
                                   </Label>
                                   <Input
                                     placeholder="Thickness"
@@ -1721,7 +1748,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                                   />
                                 </div>
 
-                                <div className="w-[20%] space-y-2">
+                                {/* <div className="w-[20%] space-y-2">
                                   <Label className="text-xs font-medium text-gray-600">
                                     UOM
                                   </Label>
@@ -1738,11 +1765,31 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                                     disabled={isReadOnly}
                                     className="h-9 text-sm w-full"
                                   />
+                                </div> */}
+                                <div className="w-[30%] space-y-2">
+                                  <Label className="text-xs font-medium text-gray-600">
+                                    Sides
+                                  </Label>
+                                  <Input
+                                    placeholder="Sides"
+                                    type="number"
+                                    min="1"
+                                    value={charge.no_of_sides || ""}
+                                    onChange={(e) =>
+                                      updatePressingCharge(
+                                        index,
+                                        "no_of_sides",
+                                        e.target.value
+                                      )
+                                    }
+                                    disabled={isReadOnly}
+                                    className="h-9 text-sm w-full"
+                                  />
                                 </div>
                               </div>
 
                               {/* No of Sides and Price - Side by side */}
-                              <div className="grid grid-cols-2 gap-3">
+                              {/* <div className="grid grid-cols-2 gap-3">
                                 <div className="space-y-2">
                                   <Label className="text-xs font-medium text-gray-600">
                                     No of Sides
@@ -1788,31 +1835,20 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                                     </span>
                                   </div>
                                 </div>
-
-                              </div>
-                               <div className="flex justify-end items-end pt-2">
+                              </div> */}
+                              {/* <div className="flex justify-end items-end pt-2">
                                 <Label className="text-xs font-medium text-gray-600">
                                   Total Amount: {charge.amount} AED
                                 </Label>
-                                {/* {!isReadOnly && (
-                                  <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="sm"
-                                    className="text-red-500 hover:text-red-700"
-                                    onClick={() => removePressingCharge(index)}
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                )} */}
-                              </div>
+                               
+                              </div> */}
 
                               {/* Remarks - Full width */}
                               <div className="space-y-2">
                                 <Label className="text-xs font-medium text-gray-600">
                                   Remarks
                                 </Label>
-                                <Input
+                                <textarea
                                   placeholder="Enter remarks"
                                   value={charge.remarks}
                                   onChange={(e) =>
@@ -1823,7 +1859,8 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                                     )
                                   }
                                   disabled={isReadOnly}
-                                  className="h-9 text-sm w-full"
+                                  className="min-h-[72px] w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-y"
+                                  rows={3}
                                 />
                               </div>
 
@@ -2066,30 +2103,30 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
 
               {/* Action Buttons */}
               {!isReadOnly && (
-                <div className="sticky bottom-0 bg-white border-t border-gray-200 p-6 shadow-lg">
-                  <div className="flex flex-col sm:flex-row justify-end gap-3">
+                <div className="sticky bottom-0 bg-white border-t border-gray-200 p-4 shadow-lg">
+                  <div className="flex flex-row justify-end gap-3 w-full">
                     <Button
                       type="button"
                       variant="outline"
                       onClick={handleCancelClick}
-                      className="px-8 py-3 order-2 sm:order-1"
+                      className="px-4 py-2 text-sm min-w-[100px]"
                     >
                       Cancel
                     </Button>
                     <Button
                       type="submit"
                       disabled={loading}
-                      className="px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg order-1 sm:order-2"
+                      className="px-4 py-2 text-sm bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg min-w-[140px]"
                     >
                       {loading ? (
-                        <div className="flex items-center gap-2">
-                          <Loader2 className="animate-spin h-5 w-5" />
+                        <div className="flex items-center justify-center gap-2">
+                          <Loader2 className="animate-spin h-4 w-4" />
                           Saving...
                         </div>
                       ) : (
-                        <div className="flex items-center gap-2">
-                          <Save className="h-5 w-5" />
-                          {jobCard ? "Update Job Card" : "Create Job Card"}
+                        <div className="flex items-center justify-center gap-2">
+                          <Save className="h-4 w-4" />
+                          {jobCard ? "Update" : "Create"}
                         </div>
                       )}
                     </Button>

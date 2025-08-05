@@ -313,7 +313,7 @@ const fetchJobCards = useCallback(async () => {
       setError(null);
      
       try {
-        console.log("📝 Creating job card with data:", jobCardData);
+
        
         // Process dates
         const processedData = {
@@ -397,7 +397,7 @@ const fetchJobCards = useCallback(async () => {
         await fetchJobCards();
       } catch (err) {
         console.error(`❌ Error deleting job card ${jobCardId}:`, err);
-        toast.error("Failed to delete job card. Please try again.");
+        
         const errorMessage = err instanceof Error ? err.message : "Failed to delete job card";
         setError(errorMessage);
         throw err;
