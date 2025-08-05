@@ -712,15 +712,13 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
               area: lead.custom_property_area || "",
               lead_id: lead.name,
             }));
-            
           }
         } catch (error) {
           console.error("Failed to fetch lead data:", error);
-          
         } finally {
           setFetchingLeadDetails(false);
         }
-      } 
+      }
     } finally {
       setFetchingCustomerDetails(false);
     }
@@ -1446,7 +1444,11 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                               <div className="relative">
                                 <Input
                                   type="date"
-                                  value={service.finish_date || service.start_date || ""}
+                                  value={
+                                    service.finish_date ||
+                                    service.start_date ||
+                                    ""
+                                  }
                                   onChange={(e) => {
                                     if (
                                       formData.start_date &&
@@ -1530,8 +1532,14 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                                 target.style.height = "auto";
                                 target.style.height = `${target.scrollHeight}px`;
                               }}
-                              className="min-h-[40px] text-md resize-none overflow-hidden w-full"
-                              rows={1}
+                              className="min-h-[100px] text-md resize-none overflow-hidden w-full" // Increased min-height
+                              rows={3} // Set default rows to 3
+                              onKeyDown={(e) => {
+                                // Allow Enter key to create new lines
+                                if (e.key === "Enter" && !e.shiftKey) {
+                                  e.preventDefault();
+                                }
+                              }}
                             />
                           </div>
 
