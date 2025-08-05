@@ -2,7 +2,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import {
   Calendar,
-  Check,
   Filter,
   Plus,
   Search,
@@ -12,10 +11,10 @@ import React, { useMemo, useState } from "react";
 import DeleteConfirmation from "../../common/DeleteComfirmation";
 import ReceiptDetails from "./ReceiptDetails";
 
-import { Button } from "../ui/button";
-import { Dialog } from "../ui/dialog";
 import { Link } from "react-router-dom";
 import { PasswordResetLoader } from "../../common/Loader";
+import { Button } from "../ui/button";
+import { Dialog } from "../ui/dialog";
 
 export interface Receipt {
   name: string;
@@ -84,6 +83,29 @@ const ReceiptSummary: React.FC<Props> = ({
     },
     [fromDate, toDate]
   );
+
+  const handleFromDateChange = (newFromDate: string) => {
+    setFromDate(newFromDate);
+    if (newFromDate > toDate) {
+      setToDate(newFromDate);
+    }
+    // Update filter state immediately
+    updateFilterState(searchQuery, modeFilter, newFromDate, newFromDate > toDate ? newFromDate : toDate);
+  };
+
+  const handleToDateChange = (newToDate: string) => {
+    setToDate(newToDate);
+    if (newToDate < fromDate) {
+      setFromDate(newToDate);
+    }
+    // Update filter state immediately
+    updateFilterState(searchQuery, modeFilter, newToDate < fromDate ? newToDate : fromDate, newToDate);
+  };
+
+  const updateFilterState = (query: string, mode: string, from: string, to: string) => {
+    const isDefault = query === "" && mode === "all" && from === todayStr && to === todayStr;
+    setIsDefaultFilter(isDefault);
+  };
 
   const filteredReceipts = useMemo(() => {
     return receipts.filter((r) => {
@@ -177,12 +199,7 @@ const ReceiptSummary: React.FC<Props> = ({
               value={searchQuery}
               onChange={(e) => {
                 setSearchQuery(e.target.value);
-                setIsDefaultFilter(
-                  e.target.value === "" &&
-                    modeFilter === "all" &&
-                    fromDate === todayStr &&
-                    toDate === todayStr
-                );
+                updateFilterState(e.target.value, modeFilter, fromDate, toDate);
               }}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
             />
@@ -208,7 +225,11 @@ const ReceiptSummary: React.FC<Props> = ({
               key={m}
               variant={modeFilter === m ? "default" : "outline"}
               size="sm"
-              onClick={() => setModeFilter(modeFilter === m ? "all" : m)}
+              onClick={() => {
+                const newMode = modeFilter === m ? "all" : m;
+                setModeFilter(newMode);
+                updateFilterState(searchQuery, newMode, fromDate, toDate);
+              }}
               className="h-8 px-3 text-xs"
             >
               {m === "card" ? "Credit Card" : m.charAt(0).toUpperCase() + m.slice(1)}
@@ -219,76 +240,141 @@ const ReceiptSummary: React.FC<Props> = ({
         {/* collapsible advanced filters */}
         {showFilters && (
           <div className="mt-3 pt-3 border-t border-gray-200">
-            <div className="grid grid-cols-2 gap-3 mb-3">
+            <div className="col-span-1 md:col-span-2 grid grid-cols-2 gap-3">
               <div>
                 <label className="text-xs font-medium text-gray-600 mb-1 block">
-                  From
+                  From Date
                 </label>
-                <input
-                  type="date"
-                  value={fromDate}
-                  onChange={(e) => {
-                    setFromDate(e.target.value);
-                    if (e.target.value > toDate) setToDate(e.target.value);
-                  }}
-                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                />
+                <div className="relative">
+                  <input
+                    type="date"
+                    value={fromDate}
+                    onChange={(e) => handleFromDateChange(e.target.value)}
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 pr-10 text-sm text-black shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    style={
+                      {
+                        // Hide browser default icons
+                        WebkitAppearance: "none",
+                        MozAppearance: "textfield",
+                      } as React.CSSProperties
+                    }
+                  />
+                  {/* Custom Calendar Icon - Clickable */}
+                  <div
+                    className="absolute inset-y-0 right-3 flex items-center text-gray-400 cursor-pointer"
+                    onClick={() => {
+                      // Focus and click the input to trigger date picker
+                      const inputs = document.querySelectorAll(
+                        'input[type="date"]'
+                      ) as NodeListOf<HTMLInputElement>;
+                      const fromInput = inputs[0]; // First date input (From Date)
+                      if (fromInput) {
+                        fromInput.focus();
+                        if (
+                          "showPicker" in fromInput &&
+                          typeof fromInput.showPicker === "function"
+                        ) {
+                          fromInput.showPicker();
+                        }
+                      }
+                    }}
+                  >
+                    <svg
+                      className="h-5 w-5"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                      />
+                    </svg>
+                  </div>
+                </div>
               </div>
+
               <div>
                 <label className="text-xs font-medium text-gray-600 mb-1 block">
-                  To
+                  To Date
                 </label>
-                <input
-                  type="date"
-                  value={toDate}
-                  onChange={(e) => {
-                    setToDate(e.target.value);
-                    if (e.target.value < fromDate) setFromDate(e.target.value);
-                  }}
-                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                />
+                <div className="relative">
+                  <input
+                    type="date"
+                    value={toDate}
+                    onChange={(e) => handleToDateChange(e.target.value)}
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 pr-10 text-sm text-black shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    style={
+                      {
+                        // Hide browser default icons
+                        WebkitAppearance: "none",
+                        MozAppearance: "textfield",
+                      } as React.CSSProperties
+                    }
+                  />
+                  {/* Custom Calendar Icon - Clickable */}
+                  <div
+                    className="absolute inset-y-0 right-3 flex items-center text-gray-400 cursor-pointer"
+                    onClick={() => {
+                      // Focus and click the input to trigger date picker
+                      const inputs = document.querySelectorAll(
+                        'input[type="date"]'
+                      ) as NodeListOf<HTMLInputElement>;
+                      const toInput = inputs[1]; // Second date input (To Date)
+                      if (toInput) {
+                        toInput.focus();
+                        if (
+                          "showPicker" in toInput &&
+                          typeof toInput.showPicker === "function"
+                        ) {
+                          toInput.showPicker();
+                        }
+                      }
+                    }}
+                  >
+                    <svg
+                      className="h-5 w-5"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                      />
+                    </svg>
+                  </div>
+                </div>
               </div>
             </div>
 
-            <div className="flex justify-between items-center">
+            <div className="flex justify-between items-center mt-3">
               <div className="text-xs text-gray-500">
                 {isDefaultFilter
                   ? "Showing today's receipts"
                   : `Custom: ${formatDate(fromDate)}–${formatDate(toDate)}`}
               </div>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setFromDate(todayStr);
-                    setToDate(todayStr);
-                    setModeFilter("all");
-                    setSearchQuery("");
-                    setIsDefaultFilter(true);
-                    setShowFilters(false);
-                  }}
-                  className="px-3 py-1.5 text-xs"
-                >
-                  Reset to Today
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={() => {
-                    setShowFilters(false);
-                    const custom =
-                      searchQuery !== "" ||
-                      modeFilter !== "all" ||
-                      fromDate !== todayStr ||
-                      toDate !== todayStr;
-                    setIsDefaultFilter(!custom);
-                  }}
-                  className="bg-emerald-600 hover:bg-emerald-700 px-3 py-1.5 text-xs"
-                >
-                  <Check className="h-3 w-3 mr-1" />
-                  Apply
-                </Button>
-              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setFromDate(todayStr);
+                  setToDate(todayStr);
+                  setModeFilter("all");
+                  setSearchQuery("");
+                  setIsDefaultFilter(true);
+                  setShowFilters(false);
+                }}
+                className="px-3 py-1.5 text-xs"
+              >
+                Reset to Today
+              </Button>
             </div>
           </div>
         )}
