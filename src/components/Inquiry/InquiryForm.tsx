@@ -177,6 +177,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
               !!formData.email_id &&
               !!formData.mobile_no &&
               (!showReferenceInput || !!formData.custom_reference_name),
+
           };
         case "job":
           return { ...section, completed: !!formData.custom_job_type };
@@ -279,7 +280,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
         ...inquiry,
         custom_job_type: inquiry.custom_job_type || "",
         custom_project_urgency: inquiry.custom_project_urgency || "",
-        utm_source: inquiry.utm_source || "",
+        source: inquiry.source || "",
         custom_preferred_inspection_date:
           inquiry.custom_preferred_inspection_date
             ? new Date(inquiry.custom_preferred_inspection_date)
@@ -297,8 +298,8 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
           : new Date()
       );
       setShowReferenceInput(
-        inquiry.utm_source === "Reference" ||
-          inquiry.utm_source === "Supplier Reference"
+        inquiry.source === "Reference" ||
+          inquiry.source === "Supplier Reference"
       );
     }
   }, [inquiry, hasFetchedInitialData, jobTypes, projectUrgency, utmSource]);
@@ -331,9 +332,9 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     setFormData((prev) => ({
       ...prev,
       [name]: value,
-      ...(name === "utm_source" && { custom_reference_name: "" }),
+      ...(name === "source" && { custom_reference_name: "" }),
     }));
-    if (name === "utm_source") {
+    if (name === "source") {
       setShowReferenceInput(
         value === "Reference" || value === "Supplier Reference"
       );
@@ -384,25 +385,38 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
 
   const validateForm = (): boolean => {
     if (!formData.lead_name) {
-      alert("Name is required");
+      toast("Name is required");
       return false;
     }
     if (!formData.mobile_no) {
-      alert("Mobile number is required");
+      toast("Mobile number is required");
       return false;
     }
     if (!formData.custom_job_type) {
-      alert("Job type is required");
+      toast("Job type is required");
+      return false;
+    }
+    if(!formData.custom_budget_range){
+      toast("Budget range is required");
+      return false;
+    }
+    if (!formData.custom_project_urgency){
+      toast("Project urgency is required");
+      return false;
+    }
+    if(!formData.source){
+      toast("Source of inquiry is required");
       return false;
     }
     if (
-      (formData.utm_source === "Reference" ||
-        formData.utm_source === "Supplier Reference") &&
+      (formData.source === "Reference" ||
+        formData.source === "Supplier Reference") &&
       !formData.custom_reference_name
     ) {
-      alert("Reference name is required");
+      toast("Reference name is required");
       return false;
     }
+    
     return true;
   };
 
@@ -451,6 +465,19 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     if (!date) {
       toast.error("Please select an inspection date");
       return;
+    }
+    if (!priority) {
+      toast.error("Please select a priority");
+      return;
+    }
+    if (!formData.custom_preferred_inspection_time) {
+      toast.error("Please select a preferred inspection time");
+      return;
+    }
+    if(!formData.custom_property_area && !formData.custom_building__apartment__villa__office_number ){
+      toast.error("Please provide property area or building number");
+      return;
+
     }
 
     try {
@@ -1174,23 +1201,6 @@ const Section: React.FC<SectionProps> = ({
 
               {formData.lead_name && (
                 <>
-                  {/* <div>
-                    <label
-                      htmlFor="lead_name"
-                      className="block text-sm font-medium text-gray-700 mb-1"
-                    >
-                      Name <span className="text-red-500">*</span>
-                    </label>
-                    <Input
-                      type="text"
-                      id="lead_name"
-                      name="lead_name"
-                      value={formData.lead_name || ""}
-                      onChange={handleInputChange}
-                      required
-                      placeholder="Enter Name"
-                    />
-                  </div> */}
                   <div>
                     <label
                       htmlFor="phone"
@@ -1232,22 +1242,23 @@ const Section: React.FC<SectionProps> = ({
               )}
               <div>
                 <label
-                  htmlFor="utm_source"
+                  htmlFor="source"
                   className="block text-sm font-medium text-gray-700 mb-1"
                 >
                   Source Of Inquiry <span className="text-red-500">*</span>
                 </label>
 
                 <Select
-                  value={formData.utm_source || ""}
+                  value={formData.source || ""}
                   onValueChange={(value) => {
-                    handleSelectChange("utm_source", value);
+                    handleSelectChange("source", value);
                   }}
                 >
                   <SelectTrigger
                     className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                    id="utm_source"
+                    id="source"
                   >
+
                     <SelectValue placeholder="Select source" />
                   </SelectTrigger>
 
@@ -1400,60 +1411,6 @@ const Section: React.FC<SectionProps> = ({
               getPropertyArea={formData.custom_property_area || ""} // Use formData directly
             />
           )}
-
-          {/* {section.id === "inspection" && (
-            <div className="grid grid-cols-12 gap-4">
-              <div className="col-span-8">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Date
-                </label>
-                <Input
-                  type="date"
-                  min={new Date().toISOString().split("T")[0]}
-                  value={
-                    date
-                      ? format(date, "yyyy-MM-dd")
-                      : formData.custom_preferred_inspection_date
-                      ? new Date(formData.custom_preferred_inspection_date)
-                          .toISOString()
-                          .split("T")[0]
-                      : ""
-                  }
-                  onChange={(e) => {
-                    const selectedDate = e.target.value
-                      ? new Date(e.target.value)
-                      : undefined;
-                    setDate(selectedDate);
-                    handleDateChange(
-                      "custom_preferred_inspection_date",
-                      selectedDate
-                    );
-                  }}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-black shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                />
-              </div>
-
-              <div className="col-span-4">
-                <label
-                  htmlFor="custom_preferred_inspection_time"
-                  className="block text-sm font-medium text-gray-700 mb-1"
-                >
-                  Time
-                </label>
-                <Input
-                  type="time"
-                  id="custom_preferred_inspection_time"
-                  name="custom_preferred_inspection_time"
-                  value={
-                    formData.custom_preferred_inspection_time ||
-                    getCurrentTime()
-                  }
-                  onChange={handleInputChange}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-black shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                />
-              </div>
-            </div>
-          )} */}
           {section.id === "additional" && (
             <div>
               <div className="grid grid-cols-12 gap-4 mb-2">
@@ -1746,6 +1703,13 @@ const Section: React.FC<SectionProps> = ({
                     !formData.mobile_no ||
                     !formData.custom_job_type ||
                     (showReferenceInput && !formData.custom_reference_name)
+                    || !formData.custom_budget_range ||
+                    !formData.custom_project_urgency ||
+                    !formData.source ||
+                    (formData.source === "Reference" &&
+                      !formData.custom_reference_name)
+                    || !formData.custom_property_area
+                    || !formData.custom_preferred_inspection_time
                   }
                   className="bg-gradient-to-r from-emerald-400 to-teal-500 hover:from-emerald-700 hover:to-teal-600 text-white"
                 >

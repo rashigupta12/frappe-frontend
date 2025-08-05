@@ -126,26 +126,31 @@ export const getBudgetColor = (budget: string) => {
 
 export const getUrgencyColor = (urgency: string) => {
   const colors: Record<string, { bg: string; text: string; border: string }> = {
-    "1. Normal : 2-3 days": {
+    "2. Normal : 2-3 days": {
       bg: "#FECACA",
       text: "#991B1B",
       border: "#EF4444",
     },
-    "2. Relaxed : 4-7 days": {
+    "3. Relaxed : 4-7 days": {
       bg: "#FDE68A",
       text: "#92400E",
       border: "#F59E0B",
     },
-    "3. Planned : 1 - 2 week": {
+    "4. Planned : 1 - 2 week": {
       bg: "#BFDBFE",
       text: "#1E40AF",
       border: "#3B82F6",
     },
-    "4. Planned : 1 month & above": {
+    "5. Planned : 1 month & above": {
       bg: "#DDD6FE",
       text: "#5B21B6",
       border: "#8B5CF6",
-    }
+    },
+    "1. Urgent": {
+      bg: "#FEE2E2",
+      text: "#991B1B",
+      border: "#EF4444",
+    },
   };
 
   return colors[urgency] || {
@@ -158,10 +163,11 @@ export const getUrgencyColor = (urgency: string) => {
 // Label Shortening Helpers
 export const getUrgencyShortLabel = (urgency: string) => {
   const labels: Record<string, string> = {
-    "1. Normal : 2-3 days": "Normal (2-3 days)",
-    "2. Relaxed : 4-7 days": "Relaxed (4-7 days)",
-    "3. Planned : 1 - 2 week": "Planned (1-2 weeks)",
-    "4. Planned : 1 month & above": "Planned (1 month+)"
+    "1. Urgent": "Urgent",
+    "2. Normal : 2-3 days": "Normal (2-3 days)",
+    "3. Relaxed : 4-7 days": "Relaxed (4-7 days)",
+    "4. Planned : 1 - 2 week": "Planned (1-2 weeks)",
+    "5. Planned : 1 month & above": "Planned (1 month+)"
   };
   return labels[urgency] || urgency;
 };
@@ -344,7 +350,7 @@ export const defaultFormData: LeadFormData = {
   custom_bulding__apartment__villa__office_number: "",
   custom_reference_name: "",
   custom_alternative_inspection_time: "",
-  utm_source: "",
+  source: "",
   customer_id: "",
   lead_id: "",
 };

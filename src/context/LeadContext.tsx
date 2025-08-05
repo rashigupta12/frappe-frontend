@@ -57,7 +57,7 @@ export interface Lead {
   custom_bulding__apartment__villa__office_number: string;
   custom_alternative_inspection_time: string;
   notes: any[];
-  utm_source: string;
+  source: string;
   custom_property_area?: string;
   custom_reference_name: string; // New field for reference name
 }
@@ -87,7 +87,7 @@ export interface LeadFormData {
   status?: string;
   qualification_status?: string;
   custom_alternative_inspection_time?: string;
-  utm_source?: string;
+  source?: string;
   custom_property_area?: string; // Combined address field
   [key: string]: any;
   custom_reference_name: string; // New field for reference name
