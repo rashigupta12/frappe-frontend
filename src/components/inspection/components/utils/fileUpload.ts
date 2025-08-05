@@ -27,6 +27,7 @@ export const formSchema = z.object({
       entity: z.string().optional(),
       area_name: z.string(),
       dimensionsunits: z.string(),
+      notes: z.string().optional(),
       images: z.array(
         z.object({
           id: z.string(),
@@ -133,7 +134,7 @@ export const uploadFile = async (
 export const recordAudio = async (): Promise<File | null> => {
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    
+
     // Find supported MIME type
     const mimeTypes = [
       'audio/webm;codecs=opus',
@@ -141,7 +142,7 @@ export const recordAudio = async (): Promise<File | null> => {
       'audio/mp4',
       'audio/wav'
     ];
-    
+
     const mimeType = mimeTypes.find(MediaRecorder.isTypeSupported) || '';
     if (!mimeType) {
       throw new Error("No supported audio format available");
@@ -160,8 +161,8 @@ export const recordAudio = async (): Promise<File | null> => {
         }
 
         const blob = new Blob(chunks, { type: mimeType });
-        const extension = mimeType.includes('wav') ? 'wav' : 
-                         mimeType.includes('mp4') ? 'm4a' : 'webm';
+        const extension = mimeType.includes('wav') ? 'wav' :
+          mimeType.includes('mp4') ? 'm4a' : 'webm';
         const file = new File([blob], `recording-${Date.now()}.${extension}`, {
           type: mimeType,
           lastModified: Date.now()
@@ -205,11 +206,11 @@ export const recordAudio = async (): Promise<File | null> => {
  * @returns Media type or 'unknown'
  */
 export const getMediaType = (file: File | string): "image" | "video" | "audio" | "unknown" => {
- 
+
   if (typeof file === 'string') {
     const ext = file.split('.').pop()?.toLowerCase();
     if (!ext) return "unknown";
-    
+
     if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) return "image";
     if (['mp4', 'webm', 'mov', 'avi'].includes(ext)) return "video";
     if (['mp3', 'wav', 'ogg', 'm4a'].includes(ext)) return "audio";
@@ -238,10 +239,10 @@ export const getMediaType = (file: File | string): "image" | "video" | "audio" |
 export const hasCameraSupport = async (type: 'image' | 'video'): Promise<boolean> => {
   try {
     if (!navigator.mediaDevices?.enumerateDevices) return false;
-    
+
     const devices = await navigator.mediaDevices.enumerateDevices();
     const hasCamera = devices.some(device => device.kind === 'videoinput');
-    
+
     if (type === 'video') {
       return hasCamera && typeof MediaRecorder !== 'undefined';
     }
@@ -259,7 +260,7 @@ export const hasCameraSupport = async (type: 'image' | 'video'): Promise<boolean
 export const hasMicrophoneSupport = async (): Promise<boolean> => {
   try {
     if (!navigator.mediaDevices?.getUserMedia) return false;
-    
+
     const devices = await navigator.mediaDevices.enumerateDevices();
     return devices.some(device => device.kind === 'audioinput');
   } catch (error) {
@@ -281,24 +282,24 @@ export const validateFile = (
   maxSizeMB: number
 ): string | null => {
   const type = getMediaType(file);
-  
+
   if (type === "unknown") {
     return `File "${file.name}" has an unsupported format.`;
   }
-  
+
   if (!allowedTypes.includes(type)) {
     return `File "${file.name}" type (${type}) is not allowed.`;
   }
-  
+
   if (file.size > maxSizeMB * 1024 * 1024) {
     return `File "${file.name}" exceeds ${maxSizeMB}MB size limit.`;
   }
-  
+
   // Special validation for videos
   if (type === "video" && file.size > 50 * 1024 * 1024) {
     return "Video files must be smaller than 50MB";
   }
-  
+
   return null;
 };
 
@@ -312,11 +313,11 @@ const captureMediaFromCamera = async (
       const input = document.createElement("input");
       input.type = "file";
       input.accept = type === "image" ? "image/*" : "video/*";
-      
+
       // Remove capture attribute for laptop compatibility
       // The capture attribute forces mobile camera, which doesn't work on laptops
       // input.setAttribute("capture", "environment"); // Remove this line
-      
+
       input.style.display = "none";
       document.body.appendChild(input);
 
@@ -329,18 +330,18 @@ const captureMediaFromCamera = async (
       // Add timeout to prevent hanging
       const timeout = setTimeout(() => {
         cleanup();
-        
+
         resolve(null);
       }, 60000); // 60 second timeout
 
       input.onchange = async (event: Event) => {
         clearTimeout(timeout);
         const target = event.target as HTMLInputElement;
-        
+
         if (target.files && target.files.length > 0) {
           const file = target.files[0];
-        
-          
+
+
           // Validate file
           if (file.size > 0) {
             resolve(file);
@@ -349,7 +350,7 @@ const captureMediaFromCamera = async (
             resolve(null);
           }
         } else {
-         
+
           resolve(null);
         }
         cleanup();
@@ -364,7 +365,7 @@ const captureMediaFromCamera = async (
 
       // Trigger file dialog
       input.click();
-      
+
     } catch (error) {
       console.error("Camera capture setup error:", error);
       resolve(null);
@@ -399,7 +400,7 @@ const captureFromWebRTCCamera = async (
     }
   } catch (error) {
     console.error("WebRTC camera error:", error);
-    
+
     // Provide user-friendly error messages
     if (error instanceof DOMException) {
       switch (error.name) {
@@ -415,7 +416,7 @@ const captureFromWebRTCCamera = async (
           throw new Error(`Camera error: ${error.message}`);
       }
     }
-    
+
     throw error;
   }
 };
@@ -427,7 +428,7 @@ const captureImageFromStream = async (stream: MediaStream): Promise<File | null>
     video.srcObject = stream;
     video.autoplay = true;
     video.muted = true;
-    
+
     // Wait for video to load
     await new Promise((resolve) => {
       video.onloadedmetadata = () => resolve(void 0);
@@ -436,19 +437,19 @@ const captureImageFromStream = async (stream: MediaStream): Promise<File | null>
     // Create canvas and capture frame
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d");
-    
+
     if (!ctx) {
       throw new Error("Could not get canvas context");
     }
 
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
-    
+
     ctx.drawImage(video, 0, 0);
-    
+
     // Stop the stream
     stream.getTracks().forEach(track => track.stop());
-    
+
     // Convert canvas to blob
     return new Promise((resolve) => {
       canvas.toBlob((blob) => {
@@ -463,7 +464,7 @@ const captureImageFromStream = async (stream: MediaStream): Promise<File | null>
         }
       }, "image/jpeg", 0.8); // 80% quality
     });
-    
+
   } catch (error) {
     console.error("Image capture error:", error);
     // Stop stream if it exists
@@ -486,7 +487,7 @@ const captureVideoFromStream = async (stream: MediaStream): Promise<File | null>
       'video/webm',
       'video/mp4'
     ];
-    
+
     let selectedMimeType = '';
     for (const mimeType of mimeTypes) {
       if (MediaRecorder.isTypeSupported(mimeType)) {
@@ -494,7 +495,7 @@ const captureVideoFromStream = async (stream: MediaStream): Promise<File | null>
         break;
       }
     }
-    
+
     if (!selectedMimeType) {
       throw new Error("No supported video format found");
     }
@@ -505,7 +506,7 @@ const captureVideoFromStream = async (stream: MediaStream): Promise<File | null>
     });
 
     const chunks: Blob[] = [];
-    
+
     recorder.ondataavailable = (event) => {
       if (event.data.size > 0) {
         chunks.push(event.data);
@@ -526,7 +527,7 @@ const captureVideoFromStream = async (stream: MediaStream): Promise<File | null>
       recorder.onstop = () => {
         clearTimeout(recordingTimer);
         stream.getTracks().forEach(track => track.stop());
-        
+
         if (chunks.length === 0) {
           resolve(null);
           return;
@@ -538,7 +539,7 @@ const captureVideoFromStream = async (stream: MediaStream): Promise<File | null>
           type: selectedMimeType,
           lastModified: Date.now()
         });
-        
+
         resolve(file);
       };
 
@@ -563,7 +564,7 @@ export const uploadFileFixed = async (
   onProgress?: (progress: number) => void,
   retries = 3
 ): Promise<string> => {
-  
+
 
   if (!file || file.size === 0) {
     throw new Error("Invalid file selected");
@@ -575,24 +576,24 @@ export const uploadFileFixed = async (
   }
 
   let lastError: Error | null = null;
-  
+
   for (let attempt = 0; attempt < retries; attempt++) {
     try {
-      
-      
+
+
       if (onProgress) onProgress(5);
 
       // Create FormData
       const formData = new FormData();
       formData.append('file', file);
-      
+
       // Add additional fields if needed
       formData.append('is_private', '0');
       formData.append('folder', 'Home');
 
       // Use XMLHttpRequest for better progress tracking
       const xhr = new XMLHttpRequest();
-      
+
       const uploadPromise = new Promise<any>((resolve, reject) => {
         xhr.upload.onprogress = (event) => {
           if (event.lengthComputable && onProgress) {
@@ -626,13 +627,13 @@ export const uploadFileFixed = async (
       // Configure request
       xhr.timeout = 60000; // 60 seconds timeout
       xhr.open('POST', '/api/method/upload_file', true);
-      
+
       // Add authentication headers if needed
       // xhr.setRequestHeader('Authorization', 'Bearer ' + token);
-      
+
       // Start upload
       xhr.send(formData);
-      
+
       const response = await uploadPromise;
 
       if (onProgress) onProgress(97);
@@ -650,7 +651,7 @@ export const uploadFileFixed = async (
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
       console.error(`Upload attempt ${attempt + 1} failed:`, lastError);
-      
+
       if (attempt < retries - 1) {
         const delay = Math.min(1000 * Math.pow(2, attempt), 5000); // Exponential backoff
 
@@ -664,8 +665,8 @@ export const uploadFileFixed = async (
 
 // Helper function to extract file URL from response
 const extractFileUrl = (data: any): string => {
- 
-  
+
+
   // Try different response formats
   if (data?.message?.file_url) return data.message.file_url;
   if (data?.message?.file_name) return data.message.file_name;
@@ -679,7 +680,7 @@ const extractFileUrl = (data: any): string => {
       if (match) return match[1];
     }
   }
-  
+
   console.error("Could not extract file URL from response:", data);
   return "";
 };
@@ -700,7 +701,7 @@ export const hasEnhancedCameraSupport = async (): Promise<{
     // Check WebRTC support
     if (navigator.mediaDevices && typeof navigator.mediaDevices.getUserMedia === "function") {
       result.hasWebRTC = true;
-      
+
       // Get available cameras
       const devices = await navigator.mediaDevices.enumerateDevices();
       result.cameras = devices.filter(device => device.kind === 'videoinput');

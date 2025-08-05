@@ -1,22 +1,21 @@
 import {
   ClipboardList,
-  FileText,
   ListTodo,
   LogOut,
   Menu,
   MessageCircle,
-  X,
+  X
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
+import FeedbackComponent from "../../common/FeedbackManagement";
 import { useAuth } from "../../context/AuthContext";
 import MobileSiteInspectionList from "../inspection/CompletedInspectionList";
 import MobileInspectionList from "../inspection/InspectionList";
 import CreateInspection from "../inspection/IspectionDetail";
 import { Button } from "../ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
-import FeedbackComponent from "../../common/FeedbackManagement";
 
 export default function InspectorDashboard() {
   const navigate = useNavigate();
@@ -97,9 +96,9 @@ export default function InspectorDashboard() {
           </div>
 
           {/* Title - Visible on all screens */}
-          <h1 className="text-center text-lg sm:text-xl font-bold text-emerald-800">
-            Inspector Dashboard
-          </h1>
+          {/* <h1 className="text-center text-lg sm:text-xl font-bold text-emerald-800">
+            Inspector
+          </h1> */}
 
           {/* User Menu */}
           <div className="flex items-center gap-1 sm:gap-2">
@@ -192,7 +191,7 @@ export default function InspectorDashboard() {
               onClick={() => handleTabChange("todos")}
               className={`w-full justify-start gap-3 rounded-xl p-3 text-left transition-all duration-200 ${
                 activeTab === "todos"
-                  ? "bg-gradient-to-r from-emerald-500 to-blue-500 text-white shadow-lg transform scale-105 hover:from-emerald-600 hover:to-blue-600"
+                  ? "bg-emerald-500 text-white shadow-lg transform scale-105 hover:from-emerald-600"
                   : "text-emerald-700 hover:bg-emerald-50 hover:shadow-md"
               }`}
             >
@@ -204,7 +203,7 @@ export default function InspectorDashboard() {
               onClick={() => handleTabChange("inspections")}
               className={`w-full justify-start gap-3 rounded-xl p-3 text-left transition-all duration-200 ${
                 activeTab === "inspections"
-                  ? "bg-gradient-to-r from-emerald-500 to-blue-500 text-white shadow-lg transform scale-105 hover:from-emerald-600 hover:to-blue-600"
+                  ? "bg-emerald-500 text-white shadow-lg transform scale-105 hover:from-emerald-600"
                   : "text-emerald-700 hover:bg-emerald-50 hover:shadow-md"
               }`}
             >
@@ -282,7 +281,7 @@ export default function InspectorDashboard() {
               </Link>
 
               {/* Details Button */}
-              <Link
+              {/* <Link
                 to="/inspector?tab=details"
                 className="flex-1 max-w-xs flex justify-center"
               >
@@ -306,7 +305,7 @@ export default function InspectorDashboard() {
                     Details
                   </span>
                 </button>
-              </Link>
+              </Link> */}
             </div>
           </div>
         </div>

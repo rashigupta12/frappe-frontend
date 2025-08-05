@@ -596,7 +596,7 @@ resetFirstTimePassword: async (username: string, newPassword: string) => {
 
     return await frappeAPI.makeAuthenticatedRequest(
       'GET',
-      `/api/resource/SiteInspection?filters=${filterString}&order_by=creation%20asc`
+      `/api/resource/SiteInspection?filters=${filterString}&order_by=creation%20desc`
     );
   },
   UpdateInspection: async (inspectionName: string, inspectionData: Record<string, unknown>) => {

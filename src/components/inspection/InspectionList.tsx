@@ -137,14 +137,14 @@ const MobileInspectionList = ({ userEmail }: InspectionListProps) => {
         <div className="px-3 py-3   w-full lg:mx-auto">
           <div className="flex items-center justify-between mb-3">
             <h1 className="text-lg lg:text-xl font-bold text-gray-900">
-              Open Inspections
+              To Do's
             </h1>
             <div className="flex items-center space-x-2 text-xs lg:text-sm">
               <span className="px-2 py-1 bg-orange-100 text-orange-800 rounded-full font-medium">
-                {openTodosCount} Open
+                 Open {openTodosCount}
               </span>
               <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full">
-                {todos.length} Total
+                Total {todos.length}
               </span>
             </div>
           </div>
@@ -152,11 +152,26 @@ const MobileInspectionList = ({ userEmail }: InspectionListProps) => {
           {/* Search and Filters */}
           <div className="flex flex-col lg:flex-row lg:items-center lg:space-x-4">
             {/* Search Bar */}
-            <div className="lg:flex-1 mb-3 lg:mb-0">
+            <div className="lg:flex-1 mb-3 lg:mb-0 relative">
+              <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M21 21l-4.35-4.35M10 18a8 8 0 100-16 8 8 0 000 16z"
+                  />
+                </svg>
+              </span>
               <input
                 type="text"
                 placeholder="Search by name, job type, or description"
-                className="w-full px-3 py-2 text-sm lg:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full pl-10 pr-3 py-2 text-sm lg:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -190,7 +205,6 @@ const MobileInspectionList = ({ userEmail }: InspectionListProps) => {
             <h3 className="text-sm lg:text-base font-medium text-gray-900 mb-1">
               No open inspections
             </h3>
-           
           </div>
         ) : (
           <div className="space-y-2 lg:grid lg:grid-cols-3 lg:gap-2 lg:space-y-0">

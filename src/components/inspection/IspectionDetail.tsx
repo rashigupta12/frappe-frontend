@@ -4,7 +4,6 @@ import { format } from "date-fns";
 import { parseISO } from "date-fns/parseISO";
 import {
   CalendarIcon,
-  CheckCheckIcon,
   FileText,
   Info,
   Plus,
@@ -26,6 +25,7 @@ import {
   type MediaItem,
 } from "./components/utils/fileUpload";
 
+import { PasswordResetLoader } from "../../common/Loader";
 import {
   Accordion,
   AccordionContent,
@@ -48,7 +48,6 @@ import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { Textarea } from "../ui/textarea";
 import InspectionHeader from "./components/InspectionHeader";
 import MediaUpload from "./components/MediaUpload/MediaUpload";
-import { PasswordResetLoader } from "../../common/Loader";
 
 // Helper function to get current date and time - memoized
 const getCurrentDateTime = () => {
@@ -70,10 +69,6 @@ const CreateInspection = () => {
   // Extract state once and memoize
   const locationState = useMemo(() => location.state || {}, [location.state]);
   const { todo, inspection } = locationState;
-  console.log("CreateInspection location state:", locationState);
-  console.log("CreateInspection todo:", todo);
-  console.log("CreateInspection inspection:", inspection);
-
   const [loading, setLoading] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [isUpdateMode, setIsUpdateMode] = useState(false);
@@ -140,66 +135,67 @@ const CreateInspection = () => {
   }, []);
 
   // Memoize formatDimensionsData to prevent recreation
-const formatDimensionsData = useCallback((siteDimensions: any[]) => {
-  return siteDimensions.map((dim: any) => {
-    let images = [];
-    
-    try {
-      // Handle cases where media might already be an array or a JSON string
-      if (typeof dim.media === 'string') {
-        images = dim.media ? JSON.parse(dim.media) : [];
-      } else if (Array.isArray(dim.media)) {
-        images = dim.media;
-      }
-    } catch (error) {
-      console.error('Error parsing media:', error);
-      images = [];
-    }
+  const formatDimensionsData = useCallback((siteDimensions: any[]) => {
+    return siteDimensions.map((dim: any) => {
+      let images = [];
 
-    const formattedImages = images
-      .map((img: any) => {
-        // Handle cases where img might be an object with image_url or just a string
-        const imageUrl = typeof img === 'string' ? img : img?.image_url;
-        if (!imageUrl) return null;
-
-        const mediaType = getMediaType(imageUrl);
-        // Ensure only image or video types
-        if (mediaType !== "image" && mediaType !== "video") {
-          return null;
+      try {
+        // Handle cases where media might already be an array or a JSON string
+        if (typeof dim.media === "string") {
+          images = dim.media ? JSON.parse(dim.media) : [];
+        } else if (Array.isArray(dim.media)) {
+          images = dim.media;
         }
-        return {
-          id: `${imageUrl.split("/").pop()}-${Math.random()
-            .toString(36)
-            .substr(2, 9)}`,
-          url: imageUrl,
-          type: mediaType as "image" | "video", // Explicit type
-          remarks: imageUrl.split("/").pop(),
-        };
-      })
-      .filter((img: any) => img !== null);
+      } catch (error) {
+        console.error("Error parsing media:", error);
+        images = [];
+      }
 
-    const media2Type = dim.media_2 ? getMediaType(dim.media_2) : null;
-    return {
-      floor: dim.floor || "",
-      room: dim.room || "",
-      entity: dim.entity || "",
-      area_name: dim.area_name || "",
-      dimensionsunits: dim.dimensionsunits || "",
-      images: formattedImages,
-      media_2:
-        dim.media_2 && media2Type === "audio"
-          ? {
-              id: `${dim.media_2.split("/").pop()}-${Math.random()
-                .toString(36)
-                .substr(2, 9)}`,
-              url: typeof dim.media_2 === "string" ? dim.media_2 : "",
-              type: "audio" as const, // Explicit audio type
-              remarks: dim.media_2.split("/").pop(),
-            }
-          : undefined,
-    };
-  });
-}, []);
+      const formattedImages = images
+        .map((img: any) => {
+          // Handle cases where img might be an object with image_url or just a string
+          const imageUrl = typeof img === "string" ? img : img?.image_url;
+          if (!imageUrl) return null;
+
+          const mediaType = getMediaType(imageUrl);
+          // Ensure only image or video types
+          if (mediaType !== "image" && mediaType !== "video") {
+            return null;
+          }
+          return {
+            id: `${imageUrl.split("/").pop()}-${Math.random()
+              .toString(36)
+              .substr(2, 9)}`,
+            url: imageUrl,
+            type: mediaType as "image" | "video", // Explicit type
+            remarks: imageUrl.split("/").pop(),
+          };
+        })
+        .filter((img: any) => img !== null);
+
+      const media2Type = dim.media_2 ? getMediaType(dim.media_2) : null;
+      return {
+        floor: dim.floor || "",
+        room: dim.room || "",
+        entity: dim.entity || "",
+        area_name: dim.area_name || "",
+        dimensionsunits: dim.dimensionsunits || "",
+        notes: dim.notes || "",
+        images: formattedImages,
+        media_2:
+          dim.media_2 && media2Type === "audio"
+            ? {
+                id: `${dim.media_2.split("/").pop()}-${Math.random()
+                  .toString(36)
+                  .substr(2, 9)}`,
+                url: typeof dim.media_2 === "string" ? dim.media_2 : "",
+                type: "audio" as const, // Explicit audio type
+                remarks: dim.media_2.split("/").pop(),
+              }
+            : undefined,
+      };
+    });
+  }, []);
 
   // Memoize formatCustomImages to prevent recreation
   const formatCustomImages = useCallback((customSiteImages: any[]) => {
@@ -396,6 +392,7 @@ const formatDimensionsData = useCallback((siteDimensions: any[]) => {
           entity: dim.entity || "",
           area_name: dim.area_name,
           dimensionsunits: dim.dimensionsunits,
+          notes: dim.notes || "",
           media: JSON.stringify(
             dim.images?.map((img) => ({ image_url: img.url })) || "[]"
           ), // Convert to JSON string
@@ -557,18 +554,6 @@ const formatDimensionsData = useCallback((siteDimensions: any[]) => {
           storeError={storeError}
           isSubmitted={isSubmitted}
         />
-
-        {isReadOnly && (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-3 ">
-            <div className="flex items-center gap-2">
-              <CheckCheckIcon className="h-4 w-4 text-green-600" />
-              <span className="text-green-800 font-medium">
-                This inspection is submitted and cannot be edited.
-              </span>
-            </div>
-          </div>
-        )}
-
         <CardContent className="p-0 m-0">
           <div className="flex flex-col">
             <div className="flex-1">
@@ -618,7 +603,10 @@ const formatDimensionsData = useCallback((siteDimensions: any[]) => {
                                           >
                                             {field.value ? (
                                               <span className="text-gray-900">
-                                                {format(field.value, "PPP")}
+                                                {format(
+                                                  field.value,
+                                                  "dd/MM/yyyy"
+                                                )}
                                               </span>
                                             ) : (
                                               <span className="text-gray-500">
@@ -631,18 +619,33 @@ const formatDimensionsData = useCallback((siteDimensions: any[]) => {
                                       </PopoverTrigger>
                                       {!isReadOnly && (
                                         <PopoverContent
-                                          className="w-auto p-0  bg-white"
+                                          className="w-auto p-0 bg-white"
                                           align="start"
                                         >
                                           <Calendar
                                             mode="single"
                                             selected={field.value}
                                             onSelect={field.onChange}
-                                            disabled={(date) =>
-                                              date < new Date("1900-01-01")
-                                            }
+                                            disabled={(date) => {
+                                              // Disable dates before today
+                                              const today = new Date();
+                                              today.setHours(0, 0, 0, 0);
+                                              return date < today;
+                                            }}
+                                            modifiers={{
+                                              highlighted: field.value
+                                                ? field.value
+                                                : undefined,
+                                            }}
+                                            modifiersStyles={{
+                                              highlighted: {
+                                                backgroundColor: "#3b82f6", // blue-500
+                                                color: "white",
+                                                borderRadius: "4px",
+                                              },
+                                            }}
                                             initialFocus
-                                            className="rounded-md border bg-white"
+                                            className="rounded-md border bg-white *:focus:outline-none focus:ring-2 focus:ring-emerald-500"
                                           />
                                         </PopoverContent>
                                       )}
@@ -711,7 +714,7 @@ const formatDimensionsData = useCallback((siteDimensions: any[]) => {
                                     <span className="text-xs text-gray-500">
                                       {form.watch(
                                         `site_dimensions.${index}.room`
-                                      ) || "Untitled"}
+                                      ) || ""}
                                     </span>
                                   </div>
                                   <Button
@@ -731,18 +734,18 @@ const formatDimensionsData = useCallback((siteDimensions: any[]) => {
                                 {/* Compact Form Grid */}
                                 <div className="space-y-3">
                                   {/* Row 1: Floor and Room */}
-                                  <div className="grid grid-cols-2 gap-3">
+                                  <div className="grid grid-cols-1 gap-3">
                                     <FormField
                                       control={form.control}
                                       name={`site_dimensions.${index}.floor`}
                                       render={({ field: floorField }) => (
                                         <FormItem>
                                           <FormLabel className="text-gray-700 text-xs font-medium">
-                                            Floor
+                                            Line 1
                                           </FormLabel>
                                           <FormControl>
                                             <Input
-                                              placeholder="1st Floor"
+                                              placeholder="Line 1"
                                               disabled={isReadOnly}
                                               className="bg-white border-gray-300 h-8 text-sm"
                                               {...floorField}
@@ -758,11 +761,11 @@ const formatDimensionsData = useCallback((siteDimensions: any[]) => {
                                       render={({ field: roomField }) => (
                                         <FormItem>
                                           <FormLabel className="text-gray-700 text-xs font-medium">
-                                            Room
+                                            Line 2
                                           </FormLabel>
                                           <FormControl>
                                             <Input
-                                              placeholder="Bedroom"
+                                              placeholder="Line 2"
                                               disabled={isReadOnly}
                                               className="bg-white border-gray-300 h-8 text-sm"
                                               {...roomField}
@@ -775,14 +778,14 @@ const formatDimensionsData = useCallback((siteDimensions: any[]) => {
                                   </div>
 
                                   {/* Row 2: Entity and Area Name */}
-                                  <div className="grid grid-cols-2 gap-3">
+                                  <div className="grid grid-cols-1 gap-3">
                                     <FormField
                                       control={form.control}
                                       name={`site_dimensions.${index}.area_name`}
                                       render={({ field: areaNameField }) => (
                                         <FormItem>
                                           <FormLabel className="text-gray-700 text-xs font-medium">
-                                            Area Name{" "}
+                                            Item Name{" "}
                                             <span className="text-red-500">
                                               *
                                             </span>
@@ -811,10 +814,11 @@ const formatDimensionsData = useCallback((siteDimensions: any[]) => {
                                             </span>
                                           </FormLabel>
                                           <FormControl>
-                                            <Input
+                                            <textarea
                                               placeholder="e.g., 10x12 ft"
                                               disabled={isReadOnly}
-                                              className="bg-white border-gray-300 h-8 text-sm"
+                                              className="w-full bg-white border border-gray-300 rounded-md p-2 text-sm min-h-[80px] focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                                              rows={3}
                                               {...dimensionsField}
                                             />
                                           </FormControl>
@@ -880,6 +884,26 @@ const formatDimensionsData = useCallback((siteDimensions: any[]) => {
                                               "inspection_status"
                                             )}
                                             isReadOnly={isReadOnly}
+                                          />
+                                          <FormMessage className="text-xs" />
+                                        </FormItem>
+                                      )}
+                                    />
+                                  </div>
+                                  <div className="mt-2">
+                                    <FormField
+                                      control={form.control}
+                                      name={`site_dimensions.${index}.notes`}
+                                      render={({ field }) => (
+                                        <FormItem>
+                                          <FormLabel className="text-gray-700 text-xs font-medium">
+                                            📝 Notes
+                                          </FormLabel>
+                                          <textarea
+                                            className="flex h-20 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                            placeholder="Enter any notes"
+                                            {...field}
+                                            disabled={isReadOnly}
                                           />
                                           <FormMessage className="text-xs" />
                                         </FormItem>

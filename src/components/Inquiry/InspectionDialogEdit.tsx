@@ -3,11 +3,12 @@ import { useEffect, useState } from "react";
 import { Button } from "../ui/button";
 
 import { format } from "date-fns";
-import { X } from "lucide-react";
+import { CalendarIcon, X } from "lucide-react";
 import toast from "react-hot-toast";
 import { useAssignStore } from "../../store/assign";
-import { Input } from "../ui/input";
+import { Calendar } from "../ui/calendar";
 import { Label } from "../ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import {
   Select,
   SelectContent,
@@ -211,7 +212,9 @@ export default function InspectionDialog({
                     {[
                       todoData?.inquiry_data?.custom_preferred_inspection_date
                         ? format(
-                            new Date(todoData.inquiry_data.custom_preferred_inspection_date),
+                            new Date(
+                              todoData.inquiry_data.custom_preferred_inspection_date
+                            ),
                             "dd/MM/yyyy"
                           )
                         : null,
@@ -263,7 +266,7 @@ export default function InspectionDialog({
 
             {/* Date and Priority */}
             <div className="grid grid-cols-1 gap-2 px-4 bg-gray-50 rounded-lg">
-              <div >
+              <div>
                 <Label className="text-gray-700 text-sm font-medium">
                   Priority
                 </Label>
@@ -298,20 +301,73 @@ export default function InspectionDialog({
                   </SelectContent>
                 </Select>
               </div>
-              <div >
+              <div className="space-y-2 relative">
                 <Label className="text-gray-700 text-sm font-medium">
                   Inspection Date <span className="text-red-500">*</span>
                 </Label>
-                <Input
-                  type="date"
-                  value={formData.inspectionDate}
-                  onChange={(e) => handleChange(e)}
-                  name="inspectionDate"
-                  className="bg-white border border-gray-300"
-                />
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="w-full justify-between text-left font-normal bg-white border border-gray-300 text-sm h-10"
+                    >
+                      {formData.inspectionDate ? (
+                        <>
+                          <span className="text-gray-900">
+                            {format(
+                              new Date(formData.inspectionDate),
+                              "dd/MM/yyyy"
+                            )}
+                          </span>
+                          <CalendarIcon className="h-4 w-4 text-gray-500" />
+                        </>
+                      ) : (
+                        <>
+                          <span className="text-gray-500">Select date</span>
+                          <CalendarIcon className="h-4 w-4 text-gray-500" />
+                        </>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0 bg-white border border-gray-200 shadow-md">
+                    <Calendar
+                      mode="single"
+                      selected={
+                        formData.inspectionDate
+                          ? new Date(formData.inspectionDate)
+                          : undefined
+                      }
+                      onSelect={(selectedDate) => {
+                        if (selectedDate) {
+                          handleSelectChange(
+                            "inspectionDate",
+                            selectedDate.toISOString().split("T")[0] // yyyy-mm-dd
+                          );
+                        }
+                      }}
+                      initialFocus
+                      disabled={(date) => {
+                        // Disable dates before today
+                        const today = new Date();
+                        today.setHours(0, 0, 0, 0);
+                        return date < today;
+                      }}
+                      modifiers={{
+                        highlighted: formData.inspectionDate
+                          ? new Date(formData.inspectionDate)
+                          : undefined,
+                      }}
+                      modifiersStyles={{
+                        highlighted: {
+                          backgroundColor: "#3b82f6", // blue-500
+                          color: "white",
+                          borderRadius: "4px",
+                        },
+                      }}
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
-
-              
             </div>
 
             {/* Special Requirements */}

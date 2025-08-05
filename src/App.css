@@ -56,3 +56,18 @@ input[type="time"]::-webkit-inner-spin-button {
   -webkit-appearance: none;
   display: none;
 }
+
+/* For WebKit browsers */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* For IE, Edge and Firefox */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.scrollbar-hide {
+  scrollbar-width: none; /* Firefox */
+}

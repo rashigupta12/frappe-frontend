@@ -499,6 +499,111 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+// Add these state variables
+const [isRecordingVideo, setIsRecordingVideo] = useState(false);
+const [recordedVideo, setRecordedVideo] = useState<string | null>(null);
+const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+const videoChunksRef = useRef<Blob[]>([]);
+
+// Add these functions
+const startVideoRecording = async () => {
+  try {
+    setShowCameraOptions(false);
+    setShowCameraPreview(true);
+    setIsRecordingVideo(true);
+
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        facingMode: "environment",
+        width: { ideal: 1280 },
+        height: { ideal: 720 },
+      },
+      audio: true,
+    });
+
+    if (videoRef.current) {
+      videoRef.current.srcObject = stream;
+      streamRef.current = stream;
+    }
+
+    const options = { mimeType: 'video/webm' };
+    const mediaRecorder = new MediaRecorder(stream, options);
+    mediaRecorderRef.current = mediaRecorder;
+
+    mediaRecorder.ondataavailable = (e) => {
+      if (e.data.size > 0) {
+        videoChunksRef.current.push(e.data);
+      }
+    };
+
+    mediaRecorder.start(100); // Collect data every 100ms
+  } catch (error) {
+    console.error("Video recording error:", error);
+    toast.error("Could not start video recording");
+    stopVideoRecording();
+  }
+};
+
+const stopVideoRecording = () => {
+  if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+    mediaRecorderRef.current.stop();
+  }
+  
+  if (streamRef.current) {
+    streamRef.current.getTracks().forEach(track => track.stop());
+    streamRef.current = null;
+  }
+  
+  setIsRecordingVideo(false);
+};
+
+const handleVideoRecordingComplete = async () => {
+  if (videoChunksRef.current.length === 0) {
+    toast.error("No video data recorded");
+    return;
+  }
+
+  const videoBlob = new Blob(videoChunksRef.current, { type: 'video/webm' });
+  const videoUrl = URL.createObjectURL(videoBlob);
+  setRecordedVideo(videoUrl);
+  videoChunksRef.current = [];
+};
+
+const uploadRecordedVideo = async () => {
+  if (!recordedVideo) return;
+
+  setIsUploading(true);
+  setUploadProgress(0);
+
+  try {
+    const response = await fetch(recordedVideo);
+    const blob = await response.blob();
+    const file = new File([blob], `recording-${Date.now()}.webm`, {
+      type: 'video/webm',
+      lastModified: Date.now(),
+    });
+
+    const fileUrl = await uploadFile(file, setUploadProgress);
+
+    const mediaItem: MediaItem = {
+      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      url: fileUrl,
+      type: "video",
+      remarks: "Recorded Video",
+    };
+
+    setPendingMediaItem(mediaItem);
+    setShowRemarksDialog(true);
+  } catch (error) {
+    console.error("Video upload error:", error);
+    toast.error("Failed to upload recorded video");
+  } finally {
+    setIsUploading(false);
+    setUploadProgress(0);
+    setRecordedVideo(null);
+    setShowCameraPreview(false);
+  }
+};
 
   // Sync with external value changes
   useEffect(() => {
@@ -1005,7 +1110,7 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
         multiple={multiple}
       />
 
-      {currentMediaItems.length > 0 && (
+{currentMediaItems.length > 0 && (
         <div className="bg-white rounded-2xl p-4 border border-gray-200 shadow-sm">
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
             {currentMediaItems.map((media) => (
@@ -1080,72 +1185,120 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
 
       {/* Camera Preview Modal */}
       {showCameraPreview && (
-        <div className="fixed inset-0 bg-black z-50 flex flex-col">
-          {/* Camera Preview */}
-          <div className="flex-1 relative">
-            {!capturedImage ? (
-              <>
-                <video
-                  ref={videoRef}
-                  autoPlay
-                  playsInline
-                  muted
-                  className="absolute inset-0 w-full h-full object-cover"
-                />
-                <div className="absolute bottom-8 left-0 right-0 flex justify-center">
-                  <button
-                    onClick={captureImage}
-                    className="w-16 h-16 bg-white rounded-full border-4 border-white shadow-lg"
-                  >
-                    <div className="w-full h-full bg-white rounded-full"></div>
-                  </button>
-                </div>
-              </>
+  <div className="fixed inset-0 bg-black z-50 flex flex-col">
+    {/* Camera Preview */}
+    <div className="flex-1 relative">
+      {!capturedImage && !recordedVideo ? (
+        <>
+          <video
+            ref={videoRef}
+            autoPlay
+            playsInline
+            muted={!isRecordingVideo}
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+          <div className="absolute bottom-8 left-0 right-0 flex justify-center">
+            {isRecordingVideo ? (
+              <button
+                onClick={() => {
+                  stopVideoRecording();
+                  handleVideoRecordingComplete();
+                }}
+                className="w-16 h-16 bg-red-500 rounded-full border-4 border-white shadow-lg flex items-center justify-center"
+              >
+                <div className="w-5 h-5 bg-white rounded-sm"></div>
+              </button>
             ) : (
-              <div className="absolute inset-0 flex flex-col">
-                <img
-                  src={capturedImage}
-                  alt="Captured"
-                  className="flex-1 object-contain"
-                />
-                <div className="flex justify-between p-4 bg-black/50">
-                  <button
-                    onClick={() => setCapturedImage(null)}
-                    className="px-6 py-2 bg-gray-600 text-white rounded-lg"
-                  >
-                    Retake
-                  </button>
-                  <button
-                    onClick={uploadCapturedImage}
-                    disabled={isUploading}
-                    className="px-6 py-2 bg-blue-600 text-white rounded-lg flex items-center gap-2"
-                  >
-                    {isUploading ? (
-                      <>
-                        <span>Uploading...</span>
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      </>
-                    ) : (
-                      "Use Photo"
-                    )}
-                  </button>
-                </div>
-              </div>
+              <button
+                onClick={captureImage}
+                className="w-16 h-16 bg-white rounded-full border-4 border-white shadow-lg"
+              >
+                <div className="w-full h-full bg-white rounded-full"></div>
+              </button>
             )}
           </div>
-
-          {/* Cancel Button */}
-          <button
-            onClick={cancelCamera}
-            className="absolute top-4 right-4 p-2 bg-black/50 rounded-full text-white"
-          >
-            <X className="h-6 w-6" />
-          </button>
-
-          {/* Hidden canvas for capturing images */}
-          <canvas ref={canvasRef} className="hidden" />
+        </>
+      ) : recordedVideo ? (
+        <div className="absolute inset-0 flex flex-col">
+          <video
+            src={recordedVideo}
+            controls
+            className="flex-1 object-contain"
+          />
+          <div className="flex justify-between p-4 bg-black/50">
+            <button
+              onClick={() => {
+                setRecordedVideo(null);
+                startVideoRecording();
+              }}
+              className="px-6 py-2 bg-gray-600 text-white rounded-lg"
+            >
+              Retake
+            </button>
+            <button
+              onClick={uploadRecordedVideo}
+              disabled={isUploading}
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg flex items-center gap-2"
+            >
+              {isUploading ? (
+                <>
+                  <span>Uploading...</span>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                </>
+              ) : (
+                "Use Video"
+              )}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="absolute inset-0 flex flex-col">
+          <img
+            src={capturedImage ?? undefined}
+            alt="Captured"
+            className="flex-1 object-contain"
+          />
+          <div className="flex justify-between p-4 bg-black/50">
+            <button
+              onClick={() => setCapturedImage(null)}
+              className="px-6 py-2 bg-gray-600 text-white rounded-lg"
+            >
+              Retake
+            </button>
+            <button
+              onClick={uploadCapturedImage}
+              disabled={isUploading}
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg flex items-center gap-2"
+            >
+              {isUploading ? (
+                <>
+                  <span>Uploading...</span>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                </>
+              ) : (
+                "Use Photo"
+              )}
+            </button>
+          </div>
         </div>
       )}
+    </div>
+
+    {/* Cancel Button */}
+    <button
+      onClick={() => {
+        if (isRecordingVideo) stopVideoRecording();
+        cancelCamera();
+      }}
+      className="absolute top-4 right-4 p-2 bg-black/50 rounded-full text-white"
+    >
+      <X className="h-6 w-6" />
+    </button>
+
+    {/* Hidden canvas for capturing images */}
+    <canvas ref={canvasRef} className="hidden" />
+  </div>
+)}
 
       <DeleteConfirmationDialog
         isOpen={showDeleteConfirm}
@@ -1187,12 +1340,12 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
       />
 
       <CameraOptionsModal
-        isOpen={showCameraOptions}
-        onClose={() => setShowCameraOptions(false)}
-        onSelectImage={startCamera}
-        onSelectVideo={() => {}} // Empty function since we're only doing photos
-        allowedTypes={allowedTypes}
-      />
+  isOpen={showCameraOptions}
+  onClose={() => setShowCameraOptions(false)}
+  onSelectImage={startCamera}
+  onSelectVideo={startVideoRecording} // Add this new function
+  allowedTypes={allowedTypes}
+/>
     </div>
   );
 };

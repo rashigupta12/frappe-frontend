@@ -243,7 +243,7 @@ export default function SalesDashboard() {
               onClick={() => handleTabChange("inquiry-form")}
               className={`w-full justify-start gap-3 rounded-xl p-3 text-left transition-all duration-200 ${
                 activeTab === "inquiry-form"
-                  ? "bg-gradient-to-r from-emerald-500 to-blue-500 text-white shadow-lg transform scale-105 hover:from-emerald-900 hover:to-blue-600 border border-emerald-600"
+                  ? "bg-emerald-500  text-white shadow-lg transform scale-105 hover:emerald-900  border border-emerald-600"
                   : "text-emerald-700 hover:bg-emerald-50 hover:shadow-md"
               }`}
             >
@@ -264,7 +264,7 @@ export default function SalesDashboard() {
               onClick={() => handleTabChange("assign")}
               className={`w-full justify-start gap-3 rounded-xl p-3 text-left transition-all duration-200 ${
                 activeTab === "assign" // Changed from "inquiry-form" to "assign"
-                  ? "bg-gradient-to-r from-emerald-500 to-blue-500 text-white shadow-lg transform scale-105 hover:from-emerald-600 hover:to-blue-600"
+                  ? "bg-emerald-500 text-white shadow-lg transform scale-105 hover:emerald-600"
                   : "text-emerald-700 hover:bg-emerald-50 hover:shadow-md"
               }`}
             >

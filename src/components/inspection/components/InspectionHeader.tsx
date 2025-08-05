@@ -16,13 +16,14 @@ const InspectionHeader = ({
   isSubmitted,
 }: InspectionHeaderProps) => {
   // Handle null displayData case
+  console.log("displayData", displayData);
   if (!displayData) {
     return (
-      <CardHeader className="bg-gradient-to-r from-emerald-500 to-blue-500 text-white px-4 py-1">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+      <CardHeader className="bg-emerald-500 text-white px-4 py-1">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between ">
           <div className="flex flex-col">
-            <CardTitle className="flex items-center gap-2 text-lg m-0 p-0">
-              {isUpdateMode ? (
+            <CardTitle className="flex items-center  text-lg m-0 p-0">
+              {isUpdateMode  ? (
                 <>
                   <Edit className="h-4 w-4" />
                   <span>Update Inspection</span>
@@ -52,7 +53,7 @@ const InspectionHeader = ({
   }
 
   return (
-    <CardHeader className="bg-gradient-to-r from-emerald-500 to-blue-500 text-white px-4 pt-4 relative">
+    <CardHeader className="bg-emerald-500 text-white px-4 pt-2 relative">
   {/* Close button at absolute top-right */}
   <button
     className="absolute top-4 right-4 text-gray-200 hover:text-white z-10"
@@ -66,26 +67,29 @@ const InspectionHeader = ({
     <div className="flex flex-col w-full">
       <CardTitle className="flex flex-col sm:flex-row sm:items-center gap-1 text-lg m-0 p-0">
         <div className="flex items-center gap-1">
-          {isUpdateMode ? (
-            <>
-              <Edit className="h-4 w-4" />
-              <span>Update Inspection</span>
-            </>
-          ) : (
-            <span>Create Inspection</span>
-          )}
-        </div>
+  {isSubmitted ? (
+    <span className=" font-medium">Submitted ✅</span>
+  ) : isUpdateMode ? (
+    <>
+      <Edit className="h-4 w-4 text-blue-600" />
+      <span>Update Inspection</span>
+    </>
+  ) : (
+    <span>Create Inspection</span>
+  )}
+</div>
+
         
         <span className="text-sm text-gray-200 truncate max-w-[280px] sm:max-w-[400px] md:max-w-[500px]">
           {displayData.inspectionName ||
             displayData.leadDetails?.name ||
             "New Inspection"}
         </span>
-        {isSubmitted && (
+        {/* {isSubmitted && (
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
             Submitted
           </span>
-        )}
+        )} */}
       </CardTitle>
 
       <div className="flex flex-wrap items-center gap-x-4 mt-1 text-sm">
