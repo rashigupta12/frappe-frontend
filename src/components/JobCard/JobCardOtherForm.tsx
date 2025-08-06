@@ -2,21 +2,19 @@
 "use client";
 
 import {
-  Building,
   Calendar,
+  ChevronDown,
   Loader2,
   Mail,
-  MapPin,
   Phone,
   Plus,
   Save,
   Trash2,
   User,
   Wrench,
-  X,
+  X
 } from "lucide-react";
 import React, { useCallback, useEffect, useState } from "react";
-import { ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { frappeAPI } from "../../api/frappeClient";
 import {
@@ -25,7 +23,8 @@ import {
   type JobCardOtherFormData,
   type Services,
 } from "../../context/JobCardOtherContext";
-import { useLeads } from "../../context/LeadContext"; // Import LeadContext for address functionality
+
+import PropertyAddressSection from "../Inquiry/PropertyAddress";
 import { Button } from "../ui/button";
 import {
   Dialog,
@@ -67,20 +66,19 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
   const { createJobCardOther, updateJobCardOther, loading, fetchEmployees } =
     useJobCardsOther();
 
-  // Add address-related hooks from LeadContext
-  const {
-    emirates,
-    cities,
-    areas,
-    fetchEmirates,
-    fetchCities,
-    fetchAreas,
-    addressLoading,
-  } = useLeads();
+
 
   const [serviceToDelete, setServiceToDelete] = useState<number | null>(null);
 
-  const [formData, setFormData] = useState<JobCardOtherFormData>({
+  const [formData, setFormData] = useState<JobCardOtherFormData & {
+    custom_property_category?: string;
+    custom_emirate?: string;
+    custom_area?: string;
+    custom_community?: string;
+    custom_street_name?: string;
+    custom_property_name__number?: string;
+    custom_property_area?: string;
+  }>({
     date: new Date().toISOString().split("T")[0],
     building_name: "",
     property_no: "",
@@ -95,16 +93,17 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
     services: [],
     lead_id: "",
     customer_id: "",
+    custom_total_amount: "",
+    custom_property_category: "",
+    custom_emirate: "",
+    custom_area: "",
+    custom_community: "",
+    custom_street_name: "",
+    custom_property_name__number: "",
+    custom_property_area: "",
   });
-  const [selectedEmirate, setSelectedEmirate] = useState<string>("");
-  const [selectedCity, setSelectedCity] = useState<string>("");
-  const [selectedArea, setSelectedArea] = useState<string>("");
-  const [showOtherAreaInput, setShowOtherAreaInput] = useState(false);
-  const [newAreaName, setNewAreaName] = useState("");
-  const [isAddingArea, setIsAddingArea] = useState(false);
-  const [hasPrefilled, setHasPrefilled] = useState(false);
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
-  // Add address state variables
+
+
 
   const [services, setServices] = useState<Services[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -129,243 +128,8 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
     null
   );
 
-  // Load emirates on component mount
-  useEffect(() => {
-    fetchEmirates();
-  }, [fetchEmirates]);
 
-  // Function to combine address components into a single string
-  const combineAddress = useCallback(
-    (emirate: string, city: string, area: string): string => {
-      const addressParts = [area, city, emirate].filter(
-        (part) => part && part.trim() !== ""
-      );
 
-      return addressParts.join(", ");
-    },
-    []
-  );
-
-  // Parse and prefill address components when formData.area changes
-  // Replace the existing address parsing useEffect with this corrected version
-
-  useEffect(() => {
-    if (formData.area && !hasPrefilled && emirates.length > 0) {
-      const parts = formData.area.split(",").map((part: string) => part.trim());
-
-      // Address format: "area, city, emirate" (Al Satwa, Dubai, Dubai)
-      if (parts.length >= 3) {
-        const area = parts[0]; // First part is area (Al Satwa)
-        const city = parts[1]; // Second part is city (Dubai)
-        const emirate = parts[2]; // Third part is emirate (Dubai)
-
-        console.log("Parsed address:", { area, city, emirate });
-
-        // Set the emirate if it exists in the emirates list
-        const foundEmirate = emirates.find(
-          (e) => e.name.toLowerCase() === emirate.toLowerCase()
-        );
-
-        if (foundEmirate) {
-          setSelectedEmirate(foundEmirate.name);
-
-          // Fetch cities for this emirate and then process
-          fetchCities(foundEmirate.name)
-            .then(() => {
-              // Use a longer timeout to ensure cities are loaded
-              setTimeout(() => {
-                const foundCity = cities.find(
-                  (c) => c.name.toLowerCase() === city.toLowerCase()
-                );
-
-                if (foundCity) {
-                  setSelectedCity(foundCity.name);
-
-                  // Fetch areas for this city and then process
-                  fetchAreas(foundCity.name)
-                    .then(() => {
-                      // Use a longer timeout to ensure areas are loaded
-                      setTimeout(() => {
-                        const foundArea = areas.find(
-                          (a) => a.name.toLowerCase() === area.toLowerCase()
-                        );
-
-                        if (foundArea) {
-                          setSelectedArea(foundArea.name);
-                          setShowOtherAreaInput(false);
-                          setNewAreaName("");
-                        } else if (area) {
-                          // If area doesn't exist in dropdown but has a value, show "other" input
-                          setShowOtherAreaInput(true);
-                          setNewAreaName(area);
-                          setSelectedArea("");
-                        }
-                        setHasPrefilled(true);
-                        setIsInitialLoad(false);
-                      }, 500); // Increased timeout to 500ms
-                    })
-                    .catch((error) => {
-                      console.error("Error fetching areas:", error);
-                      setHasPrefilled(true);
-                      setIsInitialLoad(false);
-                    });
-                } else {
-                  console.log("City not found:", city);
-                  setHasPrefilled(true);
-                  setIsInitialLoad(false);
-                }
-              }, 300); // Increased timeout to 300ms
-            })
-            .catch((error) => {
-              console.error("Error fetching cities:", error);
-              setHasPrefilled(true);
-              setIsInitialLoad(false);
-            });
-        } else {
-          console.log("Emirate not found:", emirate);
-          setHasPrefilled(true);
-          setIsInitialLoad(false);
-        }
-      } else {
-        console.log("Address format not recognized:", formData.area);
-        setHasPrefilled(true);
-        setIsInitialLoad(false);
-      }
-    } else if (!formData.area) {
-      setHasPrefilled(true);
-      setIsInitialLoad(false);
-    }
-  }, [
-    formData.area,
-    emirates,
-    cities,
-    areas,
-    fetchCities,
-    fetchAreas,
-    hasPrefilled,
-  ]);
-
-  // Also add this useEffect to reset hasPrefilled when jobCard changes
-  useEffect(() => {
-    if (jobCard) {
-      setHasPrefilled(false);
-      setIsInitialLoad(true);
-      // Reset address selection states when loading a new job card
-      setSelectedEmirate("");
-      setSelectedCity("");
-      setSelectedArea("");
-      setShowOtherAreaInput(false);
-      setNewAreaName("");
-    }
-  }, [jobCard?.name]); // Only trigger when the job card ID changes
-  // Update combined address whenever any address component changes
-  useEffect(() => {
-    if (!isInitialLoad) {
-      const combinedAddress = combineAddress(
-        selectedEmirate,
-        selectedCity,
-        showOtherAreaInput ? newAreaName : selectedArea
-      );
-
-      // Only update if there's a change to avoid infinite loops
-      if (combinedAddress !== formData.area) {
-        setFormData((prev) => ({ ...prev, area: combinedAddress }));
-      }
-    }
-  }, [
-    selectedArea,
-    selectedCity,
-    selectedEmirate,
-    combineAddress,
-    formData.area,
-    showOtherAreaInput,
-    newAreaName,
-    isInitialLoad,
-  ]);
-
-  // Handle emirate selection
-  const handleEmirateChange = useCallback(
-    (value: string) => {
-      setSelectedEmirate(value);
-      setSelectedCity(""); // Reset city when emirate changes
-      setSelectedArea(""); // Reset area when emirate changes
-      setShowOtherAreaInput(false); // Reset other area input
-      setNewAreaName(""); // Reset new area name
-      fetchCities(value);
-    },
-    [fetchCities]
-  );
-
-  // Handle city selection
-  const handleCityChange = useCallback(
-    (value: string) => {
-      setSelectedCity(value);
-      setSelectedArea(""); // Reset area when city changes
-      setShowOtherAreaInput(false); // Reset other area input
-      setNewAreaName(""); // Reset new area name
-      fetchAreas(value);
-    },
-    [fetchAreas]
-  );
-
-  // Handle area selection
-  const handleAreaChange = useCallback((value: string) => {
-    if (value === "other") {
-      setShowOtherAreaInput(true);
-      setSelectedArea(""); // Clear selected area when choosing "other"
-    } else {
-      setSelectedArea(value);
-      setShowOtherAreaInput(false);
-      setNewAreaName(""); // Clear new area name when selecting from dropdown
-    }
-  }, []);
-
-  // Handle adding a new area
-  const handleAddNewArea = async () => {
-    if (!newAreaName.trim()) {
-      toast.error("Please enter an area name");
-      return;
-    }
-
-    if (!selectedCity) {
-      toast.error("Please select a city first");
-      return;
-    }
-
-    setIsAddingArea(true);
-    try {
-      // Create the new area in the database
-      const response = await frappeAPI.createArea({
-        area_name: newAreaName.trim(),
-        city: selectedCity,
-      });
-
-      if (response.data) {
-        toast.success("Area added successfully!");
-
-        // Refresh areas for the current city
-        await fetchAreas(selectedCity);
-
-        // Wait a moment for the areas to be updated, then select the newly added area
-        setTimeout(() => {
-          setSelectedArea(newAreaName.trim());
-          setShowOtherAreaInput(false);
-          setNewAreaName("");
-        }, 100);
-      } else {
-        throw new Error("Failed to create area");
-      }
-    } catch (error) {
-      console.error("Error creating area:", error);
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "Failed to create area. Please try again."
-      );
-    } finally {
-      setIsAddingArea(false);
-    }
-  };
 
   // Calculate totals
   const calculateServiceTotal = () => {
@@ -435,6 +199,14 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
         customer_id: (jobCard as any).customer_id || "",
         start_date:
           jobCard.start_date || new Date().toISOString().split("T")[0],
+        finish_date: jobCard.finish_date || "",
+        custom_area: jobCard.custom_area || "",
+        custom_emirate: jobCard.custom_emirate || "",
+        custom_property_category: jobCard.custom_property_category || "",
+        custom_community: jobCard.custom_community || "",
+        custom_street_name: jobCard.custom_street_name || "",
+        custom_property_name__number:
+          jobCard.custom_property_name__number || "",
       });
       setSearchQuery(jobCard.party_name || "");
       setServices(jobCard.services || []);
@@ -455,17 +227,17 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
         lead_id: "",
         customer_id: "",
         custom_total_amount: "",
+        custom_property_category: "",
+        custom_emirate: "",
+        custom_area: "",
+        custom_community: "",
+        custom_street_name: "",
+        custom_property_name__number: "",
+        custom_property_area: "",
+
       });
       setSearchQuery("");
       setServices([]);
-      // Reset address state when creating new job card
-      setSelectedEmirate("");
-      setSelectedCity("");
-      setSelectedArea("");
-      setShowOtherAreaInput(false);
-      setNewAreaName("");
-      setHasPrefilled(false);
-      setIsInitialLoad(true);
     }
   }, [jobCard, isOpen]);
 
@@ -830,6 +602,12 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
         lead_id: formData.lead_id || "",
         customer_id: formData.customer_id || "",
         custom_total_amount: calculateServiceTotal().toString(),
+       
+        custom_emirate: formData.custom_emirate || "",
+        custom_property_category: formData.custom_property_category || "",
+        custom_community: formData.custom_community || "",
+        custom_street_name: formData.custom_street_name || "",
+        custom_property_name__number: formData.custom_property_name__number || "",
       };
 
       if (jobCard?.name) {
@@ -853,6 +631,9 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
     setShowCancelDialog(false);
     onClose();
   };
+  const handleSelectChange = useCallback((name: string, value: string) => {
+      setFormData((prev) => ({ ...prev, [name]: value }));
+    }, []);
 
   if (!isOpen) return null;
 
@@ -1037,198 +818,14 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                       )}
                     </div>
 
-                    {/* Building Name */}
-                    <div className="space-y-2">
-                      <Label
-                        htmlFor="building_name"
-                        className="flex items-center space-x-2"
-                      >
-                        <Building className="h-4 w-4 text-gray-500" />
-                        <span>Building Name</span>
-                      </Label>
-                      <Input
-                        id="building_name"
-                        name="building_name"
-                        value={formData.building_name || ""}
-                        onChange={handleInputChange}
-                        placeholder="Enter building name"
-                        className="focus:ring-blue-500 focus:border-blue-500 w-full"
+                 <div className="col-span-1 md:col-span-2 lg:col-span-3">
+                      <PropertyAddressSection
+                        formData={formData}
+                        handleInputChange={handleInputChange}
+                        handleSelectChange={handleSelectChange}
+                        getPropertyArea={formData.area || ""}
                       />
                     </div>
-
-                    {/* Property No */}
-                    <div className="space-y-2">
-                      <Label htmlFor="property_no">Property No</Label>
-                      <Input
-                        id="property_no"
-                        name="property_no"
-                        value={formData.property_no || ""}
-                        onChange={handleInputChange}
-                        placeholder="Enter property number"
-                        className="focus:ring-blue-500 focus:border-blue-500 w-full"
-                      />
-                    </div>
-
-                    {/* Address Section - Emirate, City, Area */}
-                    <div className="col-span-1 md:col-span-2 lg:col-span-3">
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                        {/* Emirate */}
-                        <div className="space-y-2">
-                          <Label className="flex items-center space-x-2">
-                            <MapPin className="h-4 w-4 text-gray-500" />
-                            <span>Emirate</span>
-                          </Label>
-                          <Select
-                            value={selectedEmirate}
-                            onValueChange={handleEmirateChange}
-                            disabled={addressLoading}
-                          >
-                            <SelectTrigger className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                              <SelectValue
-                                placeholder={
-                                  addressLoading ? (
-                                    <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
-                                  ) : (
-                                    "Select emirate"
-                                  )
-                                }
-                              />
-                            </SelectTrigger>
-                            <SelectContent className="bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
-                              {emirates.map((emirate) => (
-                                <SelectItem
-                                  key={emirate.name}
-                                  value={emirate.name}
-                                  className="px-4 py-2 text-sm text-gray-700 hover:bg-blue-100 focus:bg-blue-100 cursor-pointer"
-                                >
-                                  {emirate.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        {/* City */}
-                        <div className="space-y-2">
-                          <Label>City</Label>
-                          <Select
-                            value={selectedCity}
-                            onValueChange={handleCityChange}
-                            disabled={!selectedEmirate || addressLoading}
-                          >
-                            <SelectTrigger className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                              <SelectValue
-                                placeholder={
-                                  !selectedEmirate ? (
-                                    "Select emirate first"
-                                  ) : addressLoading ? (
-                                    <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
-                                  ) : (
-                                    "Select city"
-                                  )
-                                }
-                              />
-                            </SelectTrigger>
-                            <SelectContent className="bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
-                              {cities.map((city) => (
-                                <SelectItem
-                                  key={city.name}
-                                  value={city.name}
-                                  className="px-4 py-2 text-sm text-gray-700 hover:bg-blue-100 focus:bg-blue-100 cursor-pointer"
-                                >
-                                  {city.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                      {/* Area */}
-                      <div className="space-y-2">
-                        <Label>Area</Label>
-                        <Select
-                          value={showOtherAreaInput ? "other" : selectedArea}
-                          onValueChange={handleAreaChange}
-                          disabled={!selectedCity || addressLoading}
-                        >
-                          <SelectTrigger className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            <SelectValue
-                              placeholder={
-                                !selectedCity ? (
-                                  "Select city first"
-                                ) : addressLoading ? (
-                                  <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
-                                ) : (
-                                  "Select area"
-                                )
-                              }
-                            />
-                          </SelectTrigger>
-                          <SelectContent className="bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
-                            {areas.map((area) => (
-                              <SelectItem
-                                key={area.name}
-                                value={area.name}
-                                className="px-4 py-2 text-sm text-gray-700 hover:bg-blue-100 focus:bg-blue-100 cursor-pointer"
-                              >
-                                {area.name}
-                              </SelectItem>
-                            ))}
-                            <SelectItem
-                              value="other"
-                              className="px-4 py-2 text-sm text-gray-700 hover:bg-blue-100 focus:bg-blue-100 cursor-pointer"
-                            >
-                              Other (Not listed)
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-
-                        {/* Other Area Input */}
-                        {showOtherAreaInput && (
-                          <div className="mt-2 flex gap-2">
-                            <Input
-                              type="text"
-                              value={newAreaName}
-                              onChange={(e) => setNewAreaName(e.target.value)}
-                              placeholder="Enter new area name"
-                              className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            />
-                            <Button
-                              type="button"
-                              onClick={handleAddNewArea}
-                              disabled={isAddingArea || !newAreaName.trim()}
-                              className="bg-blue-600 hover:bg-blue-700 text-white"
-                            >
-                              {isAddingArea ? (
-                                <>
-                                  <span className="animate-spin mr-2">↻</span>
-                                  Adding...
-                                </>
-                              ) : (
-                                "Add Area"
-                              )}
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Combined Address Display */}
-                      <div className="mt-4">
-                        <Label className="flex items-center space-x-2 text-sm font-medium text-gray-700 mb-2">
-                          <MapPin className="h-4 w-4 text-gray-500" />
-                          <span>Combined Address</span>
-                        </Label>
-                        <Input
-                          type="text"
-                          value={formData.area || ""}
-                          readOnly
-                          placeholder="Address will be combined automatically"
-                          className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm bg-gray-50 text-gray-600 cursor-not-allowed"
-                          title="This field is automatically generated from the address components above"
-                        />
-                      </div>
-                    </div>
-
                     {/* Date Range - Full width on mobile, spans 2 cols on larger screens */}
                     <div className="grid grid-cols-2 sm:grid-cols-2 gap-4 col-span-1 md:col-span-2 lg:col-span-3">
                       {/* Start Date */}

@@ -45,8 +45,7 @@ export interface MaterialSold {
   work_type: string;
   size: string;
   thickness: string;
-    uom:string;
-
+  uom:string;
   no_of_sides: string;
   price: number;
   amount: number;

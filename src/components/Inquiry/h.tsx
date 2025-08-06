@@ -20,7 +20,7 @@ import {
   getBudgetColor,
   getJobTypeColor,
   getUrgencyColor,
-  getUrgencyShortLabel
+  getUrgencyShortLabel,
 } from "../../helpers/helper";
 import { Alert, AlertDescription } from "../ui/alert";
 import { Badge } from "../ui/badge";
@@ -330,13 +330,16 @@ const InquiryPage = () => {
 
                   <div className="flex items-center justify-between gap-2">
                     {inquiry.custom_preferred_inspection_date && (
-  <div className="flex items-center gap-2">
-    <Calendar className="h-3.5 w-3.5 text-gray-400" />
-    <span className="text-xs text-gray-600">
-      {format(new Date(inquiry.custom_preferred_inspection_date), "dd/MM/yyyy")}
-    </span>
-  </div>
-)}
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-3.5 w-3.5 text-gray-400" />
+                        <span className="text-xs text-gray-600">
+                          {format(
+                            new Date(inquiry.custom_preferred_inspection_date),
+                            "dd/MM/yyyy"
+                          )}
+                        </span>
+                      </div>
+                    )}
 
                     <div className="ml-auto">
                       {/* Fixed: Corrected the status logic */}
@@ -470,13 +473,7 @@ const InquiryPage = () => {
                 <div className="text-sm">
                   <div className="break-words">
                     <span className="text-gray-900">
-                      {[
-                        viewInquiry.custom_property_type,
-                        viewInquiry.custom_type_of_building,
-                        viewInquiry.custom_building_name,
-                        viewInquiry.custom_bulding__apartment__villa__office_number,
-                        viewInquiry.custom_property_area,
-                      ]
+                      {[viewInquiry.custom_property_area]
                         .filter(Boolean)
                         .join(" | ")}
                     </span>
@@ -491,22 +488,27 @@ const InquiryPage = () => {
                   Inspection Schedule
                 </h3>
                 <div className="text-sm">
-  {viewInquiry.custom_preferred_inspection_date ||
-  viewInquiry.custom_preferred_inspection_time ? (
-    <div className="break-words">
-      <span className="text-gray-900">
-        {[
-          format(new Date(viewInquiry.custom_preferred_inspection_date), "dd/MM/yyyy"),
-          viewInquiry.custom_preferred_inspection_time,
-        ]
-          .filter(Boolean)
-          .join(" | ")}
-      </span>
-    </div>
-  ) : (
-    <span className="text-gray-500">N/A</span>
-  )}
-</div>
+                  {viewInquiry.custom_preferred_inspection_date ||
+                  viewInquiry.custom_preferred_inspection_time ? (
+                    <div className="break-words">
+                      <span className="text-gray-900">
+                        {[
+                          format(
+                            new Date(
+                              viewInquiry.custom_preferred_inspection_date
+                            ),
+                            "dd/MM/yyyy"
+                          ),
+                          viewInquiry.custom_preferred_inspection_time,
+                        ]
+                          .filter(Boolean)
+                          .join(" | ")}
+                      </span>
+                    </div>
+                  ) : (
+                    <span className="text-gray-500">N/A</span>
+                  )}
+                </div>
               </div>
 
               {/* Special Requirements */}

@@ -1,19 +1,17 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import {
-  Building,
   Calendar,
   ChevronDown,
   FileText,
   Loader2,
   Mail,
-  MapPin,
   Phone,
   Plus,
   Save,
   Trash2,
   User,
-  X,
+  X
 } from "lucide-react";
 import React, { useCallback, useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
@@ -25,6 +23,7 @@ import {
   type MaterialSold,
   type PressingCharges,
 } from "../../context/JobCardContext";
+import PropertyAddressSection from "../Inquiry/PropertyAddress";
 import { Button } from "../ui/button";
 import {
   Dialog,
@@ -43,7 +42,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
-import { useLeads } from "../../context/LeadContext";
+
 
 interface JobCardFormProps {
   isOpen: boolean;
@@ -65,20 +64,19 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
   const { createJobCard, updateJobCard, loading, fetchEmployees } =
     useJobCards();
 
-  // Add address-related hooks from LeadContext
-  const {
-    emirates,
-    cities,
-    areas,
-    fetchEmirates,
-    fetchCities,
-    fetchAreas,
-    addressLoading,
-  } = useLeads();
   const isReadOnly = jobCard?.docstatus === 1;
   const projectidname = jobCard?.name || jobCard?.project_id_no || "";
 
-  const [formData, setFormData] = useState<JobCardFormData>({
+  const [formData, setFormData] = useState<JobCardFormData & {
+    // Add property address fields to formData type
+    custom_property_category?: string;
+    custom_emirate?: string;
+    custom_area?: string;
+    custom_community?: string;
+    custom_street_name?: string;
+    custom_property_name__number?: string;
+    custom_property_area?: string;
+  }>({
     date: new Date().toISOString().split("T")[0],
     building_name: "",
     property_no: "",
@@ -94,15 +92,15 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
     material_sold: [],
     lead_id: "",
     customer_id: "",
+    // Initialize property address fields
+    custom_property_category: "",
+    custom_emirate: "",
+    custom_area: "",
+    custom_community: "",
+    custom_street_name: "",
+    custom_property_name__number: "",
+    custom_property_area: "",
   });
-  const [selectedEmirate, setSelectedEmirate] = useState<string>("");
-  const [selectedCity, setSelectedCity] = useState<string>("");
-  const [selectedArea, setSelectedArea] = useState<string>("");
-  const [showOtherAreaInput, setShowOtherAreaInput] = useState(false);
-  const [newAreaName, setNewAreaName] = useState("");
-  const [isAddingArea, setIsAddingArea] = useState(false);
-  const [hasPrefilled, setHasPrefilled] = useState(false);
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   const [pressingCharges, setPressingCharges] = useState<PressingCharges[]>([]);
   const [materialsSold, setMaterialsSold] = useState<MaterialSold[]>([]);
@@ -138,7 +136,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
       price?: number;
       remarks?: string;
       thickness?: string;
-      uom?: string; // Added UOM field
+      uom?: string;
     }[]
   >([]);
   const [loadingMaterialSoldItems, setLoadingMaterialSoldItems] =
@@ -153,247 +151,26 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
       price?: number;
       remarks?: string;
       thickness?: string;
-      uom?: string; // Added UOM field
+      uom?: string;
     }[]
   >([]);
   const [loadingPressingItems, setLoadingPressingItems] = useState(false);
 
-  // Load emirates on component mount
-  useEffect(() => {
-    fetchEmirates();
-  }, [fetchEmirates]);
-
-  // Function to combine address components into a single string
-  const combineAddress = useCallback(
-    (emirate: string, city: string, area: string): string => {
-      const addressParts = [area, city, emirate].filter(
-        (part) => part && part.trim() !== ""
-      );
-
-      return addressParts.join(", ");
-    },
-    []
-  );
-  // Replace the existing address parsing useEffect with this corrected version
-
-  useEffect(() => {
-    if (formData.area && !hasPrefilled && emirates.length > 0) {
-      const parts = formData.area.split(",").map((part: string) => part.trim());
-
-      // Address format: "area, city, emirate" (Al Satwa, Dubai, Dubai)
-      if (parts.length >= 3) {
-        const area = parts[0]; // First part is area (Al Satwa)
-        const city = parts[1]; // Second part is city (Dubai)
-        const emirate = parts[2]; // Third part is emirate (Dubai)
-
-        console.log("Parsed address:", { area, city, emirate });
-
-        // Set the emirate if it exists in the emirates list
-        const foundEmirate = emirates.find(
-          (e) => e.name.toLowerCase() === emirate.toLowerCase()
-        );
-
-        if (foundEmirate) {
-          setSelectedEmirate(foundEmirate.name);
-
-          // Fetch cities for this emirate and then process
-          fetchCities(foundEmirate.name)
-            .then(() => {
-              // Use a longer timeout to ensure cities are loaded
-              setTimeout(() => {
-                const foundCity = cities.find(
-                  (c) => c.name.toLowerCase() === city.toLowerCase()
-                );
-
-                if (foundCity) {
-                  setSelectedCity(foundCity.name);
-
-                  // Fetch areas for this city and then process
-                  fetchAreas(foundCity.name)
-                    .then(() => {
-                      // Use a longer timeout to ensure areas are loaded
-                      setTimeout(() => {
-                        const foundArea = areas.find(
-                          (a) => a.name.toLowerCase() === area.toLowerCase()
-                        );
-
-                        if (foundArea) {
-                          setSelectedArea(foundArea.name);
-                          setShowOtherAreaInput(false);
-                          setNewAreaName("");
-                        } else if (area) {
-                          // If area doesn't exist in dropdown but has a value, show "other" input
-                          setShowOtherAreaInput(true);
-                          setNewAreaName(area);
-                          setSelectedArea("");
-                        }
-                        setHasPrefilled(true);
-                        setIsInitialLoad(false);
-                      }, 500); // Increased timeout to 500ms
-                    })
-                    .catch((error) => {
-                      console.error("Error fetching areas:", error);
-                      setHasPrefilled(true);
-                      setIsInitialLoad(false);
-                    });
-                } else {
-                  console.log("City not found:", city);
-                  setHasPrefilled(true);
-                  setIsInitialLoad(false);
-                }
-              }, 300); // Increased timeout to 300ms
-            })
-            .catch((error) => {
-              console.error("Error fetching cities:", error);
-              setHasPrefilled(true);
-              setIsInitialLoad(false);
-            });
-        } else {
-          console.log("Emirate not found:", emirate);
-          setHasPrefilled(true);
-          setIsInitialLoad(false);
-        }
-      } else {
-        console.log("Address format not recognized:", formData.area);
-        setHasPrefilled(true);
-        setIsInitialLoad(false);
-      }
-    } else if (!formData.area) {
-      setHasPrefilled(true);
-      setIsInitialLoad(false);
-    }
-  }, [
-    formData.area,
-    emirates,
-    cities,
-    areas,
-    fetchCities,
-    fetchAreas,
-    hasPrefilled,
-  ]);
-
-  // Also add this useEffect to reset hasPrefilled when jobCard changes
-  useEffect(() => {
-    if (jobCard) {
-      setHasPrefilled(false);
-      setIsInitialLoad(true);
-      // Reset address selection states when loading a new job card
-      setSelectedEmirate("");
-      setSelectedCity("");
-      setSelectedArea("");
-      setShowOtherAreaInput(false);
-      setNewAreaName("");
-    }
-  }, [jobCard?.name]); // Only trigger when the job card ID changes
-
-  // Update combined address whenever any address component changes
-  useEffect(() => {
-    if (!isInitialLoad) {
-      const combinedAddress = combineAddress(
-        selectedEmirate,
-        selectedCity,
-        showOtherAreaInput ? newAreaName : selectedArea
-      );
-
-      // Only update if there's a change to avoid infinite loops
-      if (combinedAddress !== formData.area) {
-        setFormData((prev) => ({ ...prev, area: combinedAddress }));
-      }
-    }
-  }, [
-    selectedArea,
-    selectedCity,
-    selectedEmirate,
-    combineAddress,
-    formData.area,
-    showOtherAreaInput,
-    newAreaName,
-    isInitialLoad,
-  ]);
-
-  // Handle emirate selection
-  const handleEmirateChange = useCallback(
-    (value: string) => {
-      setSelectedEmirate(value);
-      setSelectedCity(""); // Reset city when emirate changes
-      setSelectedArea(""); // Reset area when emirate changes
-      setShowOtherAreaInput(false); // Reset other area input
-      setNewAreaName(""); // Reset new area name
-      fetchCities(value);
-    },
-    [fetchCities]
-  );
-
-  // Handle city selection
-  const handleCityChange = useCallback(
-    (value: string) => {
-      setSelectedCity(value);
-      setSelectedArea(""); // Reset area when city changes
-      setShowOtherAreaInput(false); // Reset other area input
-      setNewAreaName(""); // Reset new area name
-      fetchAreas(value);
-    },
-    [fetchAreas]
-  );
-
-  // Handle area selection
-  const handleAreaChange = useCallback((value: string) => {
-    if (value === "other") {
-      setShowOtherAreaInput(true);
-      setSelectedArea(""); // Clear selected area when choosing "other"
-    } else {
-      setSelectedArea(value);
-      setShowOtherAreaInput(false);
-      setNewAreaName(""); // Clear new area name when selecting from dropdown
-    }
+  // Helper function for property address section
+  const handleSelectChange = useCallback((name: string, value: string) => {
+    setFormData((prev) => ({ ...prev, [name]: value }));
   }, []);
 
-  // Handle adding a new area
-  const handleAddNewArea = async () => {
-    if (!newAreaName.trim()) {
-      toast.error("Please enter an area name");
-      return;
+  // Update the area field whenever custom_property_area changes
+  useEffect(() => {
+    if (formData.custom_property_area !== formData.area) {
+      setFormData((prev) => ({
+        ...prev,
+        area: formData.custom_property_area || "",
+      }));
     }
+  }, [formData.custom_property_area, formData.area]);
 
-    if (!selectedCity) {
-      toast.error("Please select a city first");
-      return;
-    }
-
-    setIsAddingArea(true);
-    try {
-      // Create the new area in the database
-      const response = await frappeAPI.createArea({
-        area_name: newAreaName.trim(),
-        city: selectedCity,
-      });
-
-      if (response.data) {
-        toast.success("Area added successfully!");
-
-        // Refresh areas for the current city
-        await fetchAreas(selectedCity);
-
-        // Wait a moment for the areas to be updated, then select the newly added area
-        setTimeout(() => {
-          setSelectedArea(newAreaName.trim());
-          setShowOtherAreaInput(false);
-          setNewAreaName("");
-        }, 100);
-      } else {
-        throw new Error("Failed to create area");
-      }
-    } catch (error) {
-      console.error("Error creating area:", error);
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "Failed to create area. Please try again."
-      );
-    } finally {
-      setIsAddingArea(false);
-    }
-  };
   // Helper functions
   const calculatePressingTotal = (charges: PressingCharges[]) => {
     return charges.reduce((sum, charge) => sum + (charge.amount || 0), 0);
@@ -409,6 +186,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
     );
     return pressingTotal + materialsTotal;
   };
+
   useEffect(() => {
     const fetchItems = async () => {
       // Fetch pressing items
@@ -500,6 +278,14 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
         material_sold: jobCard.material_sold || [],
         lead_id: jobCard.lead_id || "",
         customer_id: jobCard.customer_id || "",
+        // Initialize property address fields - parse from existing area if available
+        custom_property_category: "",
+        custom_emirate: "",
+        custom_area: "",
+        custom_community: "",
+        custom_street_name: "",
+        custom_property_name__number: "",
+        custom_property_area: jobCard.area || "",
       });
       setSearchQuery(jobCard.party_name || "");
       setPressingCharges(jobCard.pressing_charges || []);
@@ -512,6 +298,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
           building_name: jobCard.building_name || "",
           property_no: jobCard.property_no || "",
           area: jobCard.area || "",
+          custom_property_area: jobCard.area || "",
         }));
       }
     } else {
@@ -532,12 +319,19 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
         material_sold: [],
         lead_id: "",
         customer_id: "",
+        custom_property_category: "",
+        custom_emirate: "",
+        custom_area: "",
+        custom_community: "",
+        custom_street_name: "",
+        custom_property_name__number: "",
+        custom_property_area: "",
       });
       setSearchQuery("");
       setPressingCharges([]);
       setMaterialsSold([]);
     }
-  }, [jobCard]); // Removed isOpen from dependencies
+  }, [jobCard]);
 
   const handleNewCustomerInputChange = (
     e: React.ChangeEvent<HTMLInputElement>
@@ -559,24 +353,19 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
       const params = new URLSearchParams();
 
       if (/^\d+$/.test(query)) {
-        // Search by phone number (only digits)
         params.append("mobile_no", query);
       } else if (/^[a-zA-Z0-9._-]+$/.test(query)) {
-        // Search by email (partial match) OR name
-        // First try email search
         params.append("email_id", query);
         const emailResponse = await frappeAPI.makeAuthenticatedRequest(
           "GET",
           `${endpoint}?${params.toString()}`
         );
 
-        // If no email results, try name search
         if (!emailResponse.message.data?.length) {
           params.delete("email_id");
           params.append("customer_name", query);
         }
       } else {
-        // Search by name
         params.append("customer_name", query);
       }
 
@@ -619,7 +408,6 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
 
       setSearchResults(validCustomers);
     } catch (error) {
-      // Error handling...
       console.error("Search error:", error);
       setSearchResults([]);
       setShowDropdown(true);
@@ -627,6 +415,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
       setIsSearching(false);
     }
   }, []);
+
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value;
     setSearchQuery(query);
@@ -751,6 +540,14 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                 lead.custom_bulding__apartment__villa__office_number || "",
               area: lead.custom_property_area || "",
               lead_id: lead.name,
+              // Update property address fields from lead data
+              custom_property_category: lead.custom_property_category || "",
+              custom_emirate: lead.custom_emirate || "",
+              custom_area: lead.custom_area || "",
+              custom_community: lead.custom_community || "",
+              custom_street_name: lead.custom_street_name || "",
+              custom_property_name__number: lead.custom_property_name__number || "",
+              custom_property_area: lead.custom_property_area || "",
             }));
           }
         } catch (error) {
@@ -797,7 +594,6 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
       value !== "none"
     ) {
       try {
-        // Fetch item details from API
         const response = await frappeAPI.getPressingItemDetails(value);
         const itemDetails = response.data.data;
 
@@ -821,7 +617,6 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
       } catch (error) {
         console.error("Failed to fetch item details:", error);
 
-        // Fallback to basic item data if API fails
         const selectedItem = pressingItems.find((item) => item.name === value);
         setPressingCharges((prev) =>
           prev.map((charge, i) => {
@@ -836,7 +631,6 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                 (selectedItem?.price || 0) * (Number(charge.no_of_sides) || 0),
               thickness: selectedItem?.thickness || "",
               uom: selectedItem?.uom || "",
-
               remarks: selectedItem?.remarks || "",
             };
           })
@@ -872,7 +666,6 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
       size: "",
       thickness: "",
       uom: "mm",
-
       no_of_sides: "",
       price: 0,
       amount: 0,
@@ -892,7 +685,6 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
       value !== "none"
     ) {
       try {
-        // Fetch item details from API for material sold
         const response = await frappeAPI.getMaterialSoldItemDetails(value);
         const itemDetails = response.data.data;
 
@@ -908,15 +700,13 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
               amount:
                 (itemDetails?.price || 0) * (Number(material.no_of_sides) || 0),
               thickness: itemDetails?.thickness || "",
-              uom: itemDetails?.uom || "", // Added UOM field
-
+              uom: itemDetails?.uom || "",
               remarks: itemDetails?.remarks || "",
             };
           })
         );
       } catch (error) {
         console.error("Failed to fetch material sold item details:", error);
-        // Fallback to basic item data if API fails
         const selectedItem = materialSoldItems.find(
           (item) => item.name === value
         );
@@ -933,7 +723,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                 (selectedItem?.price || 0) *
                 (Number(material.no_of_sides) || 0),
               thickness: selectedItem?.thickness || "",
-              uom: selectedItem?.uom || "", // Added UOM field
+              uom: selectedItem?.uom || "",
               remarks: selectedItem?.remarks || "",
             };
           })
@@ -963,7 +753,6 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
   };
 
   const validateForm = (): boolean => {
-    // Basic validation
     if (!formData.party_name) {
       toast.error("Customer name is required");
       return false;
@@ -977,7 +766,6 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
       return false;
     }
 
-    // Check if at least one section has entries
     if (pressingCharges.length === 0 && materialsSold.length === 0) {
       toast.error(
         "At least one entry in Pressing Charges or Materials Sold is required"
@@ -985,7 +773,6 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
       return false;
     }
 
-    // Validate pressing charges
     const hasValidPressingCharges =
       pressingCharges.length > 0
         ? pressingCharges.every(
@@ -999,7 +786,6 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
       return false;
     }
 
-    // Validate materials sold
     const hasValidMaterialsSold =
       materialsSold.length > 0
         ? materialsSold.every(
@@ -1015,7 +801,6 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
       return false;
     }
 
-    // If both sections have entries but none are valid
     if (
       pressingCharges.length > 0 &&
       materialsSold.length > 0 &&
@@ -1043,7 +828,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
         party_name: formData.party_name,
         property_no: formData.property_no,
         building_name: formData.building_name,
-        area: formData.area,
+        area: formData.area, // This will be the combined address from PropertyAddressSection
         start_date: formData.start_date,
         finish_date: formData.finish_date,
         prepared_by: formData.prepared_by || "",
@@ -1096,7 +881,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
         style={{ transform: isOpen ? "translateX(0)" : "translateX(100%)" }}
       >
         {/* Header */}
-        <div className="bg-emerald-500  text-white shadow-lg transform scale-105 hover:emerald-600 hover:blue-600 p-4 sm:rounded-t-xl">
+        <div className="bg-emerald-500 text-white shadow-lg transform scale-105 hover:emerald-600 hover:blue-600 p-4 sm:rounded-t-xl">
           <div className="flex justify-between items-start">
             <div className="flex items-start space-x-4">
               <div className="bg-white/20 p-2 rounded-lg mt-1">
@@ -1241,11 +1026,6 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                                         {customer.email_id}
                                       </span>
                                     )}
-                                    {/* {customer.lead_name && (
-                                      <span className="bg-green-100 text-green-800 px-1.5 py-0.5 rounded text-xs">
-                                        Has Property
-                                      </span>
-                                    )} */}
                                   </div>
                                 </div>
                                 <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
@@ -1274,189 +1054,18 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                         </div>
                       )}
                     </div>
-
-                    <div className="space-y-2">
-                      <Label
-                        htmlFor="building_name"
-                        className="flex items-center space-x-2"
-                      >
-                        <Building className="h-4 w-4 text-gray-500" />
-                        <span>Building Name</span>
-                      </Label>
-                      <Input
-                        id="building_name"
-                        name="building_name"
-                        value={formData.building_name || ""}
-                        onChange={handleInputChange}
-                        placeholder="Enter building name"
-                        className="focus:ring-blue-500 focus:border-blue-500 w-full"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="property_no">Property No</Label>
-                      <Input
-                        id="property_no"
-                        name="property_no"
-                        value={formData.property_no || ""}
-                        onChange={handleInputChange}
-                        placeholder="Enter property number"
-                        className="focus:ring-blue-500 focus:border-blue-500 w-full"
-                      />
-                    </div>
-
+                    {/* Replace the old address section with PropertyAddressSection */}
                     <div className="col-span-1 md:col-span-2 lg:col-span-3">
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                        <div className="space-y-2">
-                          <Label className="flex items-center space-x-2">
-                            <MapPin className="h-4 w-4 text-gray-500" />
-                            <span>Emirate</span>
-                          </Label>
-                          <Select
-                            value={selectedEmirate}
-                            onValueChange={handleEmirateChange}
-                            // disabled={addre}
-                          >
-                            <SelectTrigger className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                              <SelectValue
-                                placeholder={
-                                  addressLoading
-                                    ? "Loading..."
-                                    : "Select emirate"
-                                }
-                              />
-                            </SelectTrigger>
-                            <SelectContent className="bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
-                              {emirates.map((emirate) => (
-                                <SelectItem
-                                  key={emirate.name}
-                                  value={emirate.name}
-                                  className="px-4 py-2 text-sm text-gray-700 hover:bg-blue-100 focus:bg-blue-100 cursor-pointer"
-                                >
-                                  {emirate.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label>City</Label>
-                          <Select
-                            value={selectedCity}
-                            onValueChange={handleCityChange}
-                            disabled={!selectedEmirate}
-                          >
-                            <SelectTrigger className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                              <SelectValue
-                                placeholder={
-                                  !selectedEmirate
-                                    ? "Select emirate first"
-                                    : addressLoading
-                                    ? "Loading..."
-                                    : "Select city"
-                                }
-                              />
-                            </SelectTrigger>
-                            <SelectContent className="bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
-                              {cities.map((city) => (
-                                <SelectItem
-                                  key={city.name}
-                                  value={city.name}
-                                  className="px-4 py-2 text-sm text-gray-700 hover:bg-blue-100 focus:bg-blue-100 cursor-pointer"
-                                >
-                                  {city.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label>Area</Label>
-                        <Select
-                          value={showOtherAreaInput ? "other" : selectedArea}
-                          onValueChange={handleAreaChange}
-                          disabled={!selectedCity || addressLoading}
-                        >
-                          <SelectTrigger className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            <SelectValue
-                              placeholder={
-                                !selectedCity
-                                  ? "Select city first"
-                                  : addressLoading
-                                  ? "Loading..."
-                                  : "Select area"
-                              }
-                            />
-                          </SelectTrigger>
-                          <SelectContent className="bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
-                            {areas.map((area) => (
-                              <SelectItem
-                                key={area.name}
-                                value={area.name}
-                                className="px-4 py-2 text-sm text-gray-700 hover:bg-blue-100 focus:bg-blue-100 cursor-pointer"
-                              >
-                                {area.name}
-                              </SelectItem>
-                            ))}
-                            <SelectItem
-                              value="other"
-                              className="px-4 py-2 text-sm text-gray-700 hover:bg-blue-100 focus:bg-blue-100 cursor-pointer"
-                            >
-                              Other (Not listed)
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-
-                        {showOtherAreaInput && (
-                          <div className="mt-2 flex gap-2">
-                            <Input
-                              type="text"
-                              value={newAreaName}
-                              onChange={(e) => setNewAreaName(e.target.value)}
-                              placeholder="Enter new area name"
-                              className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            />
-                            <Button
-                              type="button"
-                              onClick={handleAddNewArea}
-                              disabled={isAddingArea || !newAreaName.trim()}
-                              className="bg-blue-600 hover:bg-blue-700 text-white"
-                            >
-                              {isAddingArea ? (
-                                <>
-                                  <span className="animate-spin mr-2">↻</span>
-                                  Adding...
-                                </>
-                              ) : (
-                                "Add Area"
-                              )}
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="mt-4">
-                        <Label className="flex items-center space-x-2 text-sm font-medium text-gray-700 mb-2">
-                          <MapPin className="h-4 w-4 text-gray-500" />
-                          <span>Combined Address</span>
-                        </Label>
-                        <Input
-                          type="text"
-                          value={formData.area || ""}
-                          readOnly
-                          placeholder="Address will be combined automatically"
-                          className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm bg-gray-50 text-gray-600 cursor-not-allowed"
-                          title="This field is automatically generated from the address components above"
-                        />
-                      </div>
+                      <PropertyAddressSection
+                        formData={formData}
+                        handleInputChange={handleInputChange}
+                        handleSelectChange={handleSelectChange}
+                        getPropertyArea={formData.area || ""}
+                      />
                     </div>
 
-                    {/* Date inputs with proper functionality and calendar icons */}
+                    {/* Date inputs */}
                     <div className="grid grid-cols-2 sm:grid-cols-2 gap-4 col-span-1 md:col-span-2 lg:col-span-3">
-                      {/* Start Date Input */}
                       <div className="space-y-2">
                         <Label
                           htmlFor="start_date"
@@ -1485,7 +1094,6 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                               setFormData((prev) => ({
                                 ...prev,
                                 start_date: selectedDate,
-                                // Clear finish date if it's now invalid
                                 ...(formData.finish_date &&
                                 new Date(formData.finish_date) <
                                   new Date(selectedDate)
@@ -1502,7 +1110,6 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                         </div>
                       </div>
 
-                      {/* Finish Date Input */}
                       <div className="space-y-2">
                         <Label
                           htmlFor="finish_date"
@@ -1571,10 +1178,6 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                         </h4>
                       </div>
                       <div className="flex items-center space-x-2">
-                        {/* <span className="font-medium">
-                          {calculatePressingTotal(pressingCharges).toFixed(2)}{" "}
-                          AED
-                        </span> */}
                         <ChevronDown
                           className={`h-5 w-5 text-gray-500 transition-transform duration-200 ${
                             isPressingChargesExpanded ? "rotate-180" : ""
@@ -1606,7 +1209,6 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                             className="bg-gray-50 rounded-lg p-4 border border-gray-200"
                           >
                             <div className="grid grid-cols-1 gap-2">
-                              {/* Work Type - Full width */}
                               <div className="space-y-2">
                                 <Label className="text-xs font-medium text-gray-600">
                                   Work Type
@@ -1650,65 +1252,6 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                                 )}
                               </div>
 
-                              {/* Size and Thickness - Side by side */}
-                              {/* <div className="grid grid-cols-3 gap-1">
-                                <div className="space-y-2">
-                                  <Label className="text-xs font-medium text-gray-600">
-                                    Size
-                                  </Label>
-                                  <Input
-                                    placeholder="Size"
-                                    value={charge.size}
-                                    onChange={(e) =>
-                                      updatePressingCharge(
-                                        index,
-                                        "size",
-                                        e.target.value
-                                      )
-                                    }
-                                    disabled={isReadOnly}
-                                    className="h-9 text-sm w-full"
-                                  />
-                                </div>
-
-                                <div className="space-y-2">
-                                  <Label className="text-xs font-medium text-gray-600">
-                                    Thickness
-                                  </Label>
-                                  <Input
-                                    placeholder="Thickness"
-                                    value={charge.thickness}
-                                    onChange={(e) =>
-                                      updatePressingCharge(
-                                        index,
-                                        "thickness",
-                                        e.target.value
-                                      )
-                                    }
-                                    disabled={isReadOnly}
-                                    className="h-9 text-sm w-full"
-                                  />
-                                </div>
-                                <div className="space-y-2">
-                                <Label className="text-xs font-medium text-gray-600">
-                                  UOM
-                                </Label>
-                                <Input
-                                  placeholder="Unit"
-                                  value={charge.uom}
-                                  onChange={(e) =>
-                                    updatePressingCharge(
-                                      index,
-                                      "uom",
-                                      e.target.value
-                                    )
-                                  }
-                                  disabled={isReadOnly}
-                                  className="h-9 text-sm w-full"
-                                />
-                              </div>
-                              </div> */}
-
                               <div className="flex gap-2">
                                 <div className="w-[40%] space-y-2">
                                   <Label className="text-xs font-medium text-gray-600">
@@ -1748,24 +1291,6 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                                   />
                                 </div>
 
-                                {/* <div className="w-[20%] space-y-2">
-                                  <Label className="text-xs font-medium text-gray-600">
-                                    UOM
-                                  </Label>
-                                  <Input
-                                    placeholder="Unit"
-                                    value={charge.uom}
-                                    onChange={(e) =>
-                                      updatePressingCharge(
-                                        index,
-                                        "uom",
-                                        e.target.value
-                                      )
-                                    }
-                                    disabled={isReadOnly}
-                                    className="h-9 text-sm w-full"
-                                  />
-                                </div> */}
                                 <div className="w-[30%] space-y-2">
                                   <Label className="text-xs font-medium text-gray-600">
                                     Sides
@@ -1788,62 +1313,6 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                                 </div>
                               </div>
 
-                              {/* No of Sides and Price - Side by side */}
-                              {/* <div className="grid grid-cols-2 gap-3">
-                                <div className="space-y-2">
-                                  <Label className="text-xs font-medium text-gray-600">
-                                    No of Sides
-                                  </Label>
-                                  <Input
-                                    placeholder="No of Sides"
-                                    type="number"
-                                    min="1"
-                                    value={charge.no_of_sides || ""}
-                                    onChange={(e) =>
-                                      updatePressingCharge(
-                                        index,
-                                        "no_of_sides",
-                                        e.target.value
-                                      )
-                                    }
-                                    disabled={isReadOnly}
-                                    className="h-9 text-sm w-full"
-                                  />
-                                </div>
-
-                                <div className="space-y-2">
-                                  <Label className="text-xs font-medium text-gray-600">
-                                    Price
-                                  </Label>
-                                  <div className="flex rounded-md border border-gray-300 overflow-hidden w-full">
-                                    <Input
-                                      placeholder="0.00"
-                                      type="number"
-                                      value={charge.price || ""}
-                                      onChange={(e) =>
-                                        updatePressingCharge(
-                                          index,
-                                          "price",
-                                          e.target.value
-                                        )
-                                      }
-                                      disabled={isReadOnly}
-                                      className="h-9 text-sm border-none focus:ring-0 rounded-none flex-1"
-                                    />
-                                    <span className="inline-flex items-center px-3 bg-gray-50 text-gray-500 text-sm border-l">
-                                      AED
-                                    </span>
-                                  </div>
-                                </div>
-                              </div> */}
-                              {/* <div className="flex justify-end items-end pt-2">
-                                <Label className="text-xs font-medium text-gray-600">
-                                  Total Amount: {charge.amount} AED
-                                </Label>
-                               
-                              </div> */}
-
-                              {/* Remarks - Full width */}
                               <div className="space-y-2">
                                 <Label className="text-xs font-medium text-gray-600">
                                   Remarks
@@ -1864,11 +1333,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                                 />
                               </div>
 
-                              {/* Total and Delete - Full width */}
                               <div className="flex justify-end items-end pt-1">
-                                {/* <Label className="text-xs font-medium text-gray-600">
-                                  Total Amount: {charge.amount} AED
-                                </Label> */}
                                 {!isReadOnly && (
                                   <Button
                                     type="button"
@@ -1950,7 +1415,6 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                             className="bg-gray-50 rounded-lg p-4 border border-gray-200"
                           >
                             <div className="grid grid-cols-1 gap-4">
-                              {/* Work Type - Full width */}
                               <div className="space-y-2">
                                 <Label className="text-xs font-medium text-gray-600">
                                   Work Type
@@ -1994,14 +1458,13 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                                 )}
                               </div>
 
-                              {/* Unit and Qty - Side by side */}
                               <div className="grid grid-cols-2 gap-3">
                                 <div className="space-y-2">
                                   <Label className="text-xs font-medium text-gray-600">
-                                    Unit
+                                    Size
                                   </Label>
                                   <Input
-                                    placeholder="Unit"
+                                    placeholder="Size"
                                     value={material.size}
                                     onChange={(e) =>
                                       updateMaterialSold(
@@ -2037,7 +1500,6 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                                 </div>
                               </div>
 
-                              {/* Price - Full width */}
                               <div className="space-y-2">
                                 <Label className="text-xs font-medium text-gray-600">
                                   Price
@@ -2063,7 +1525,6 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                                 </div>
                               </div>
 
-                              {/* Total and Delete - Full width */}
                               <div className="flex justify-between items-center pt-2">
                                 <Label className="text-xs font-medium text-gray-600">
                                   Total Amount: {material.amount || 0} AED

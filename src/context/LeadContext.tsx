@@ -29,13 +29,13 @@ export interface Lead {
   type: string;
   request_type: string;
   custom_job_type: string;
-  custom_property_type: string;
-  custom_type_of_building: string;
-  custom_building_name: string;
-  custom_map_data: string;
+  // custom_property_type: string;
+  // custom_type_of_building: string;
+  // custom_building_name: string;
+  // custom_map_data: string;
   custom_preferred_inspection_date: string;
   custom_preferred_inspection_time: string;
-  custom_alternative_inspection_date: string;
+  // custom_alternative_inspection_date: string;
   custom_budget_range: string;
   custom_project_urgency: string;
   custom_special_requirements: string;
@@ -54,12 +54,19 @@ export interface Lead {
   unsubscribed: number;
   blog_subscriber: number;
   doctype: string;
-  custom_bulding__apartment__villa__office_number: string;
-  custom_alternative_inspection_time: string;
+  // custom_bulding__apartment__villa__office_number: string;
+  // custom_alternative_inspection_time: string;
   notes: any[];
   source: string;
   custom_property_area?: string;
   custom_reference_name: string; // New field for reference name
+  custom_emirate?: string; // New field for emirate
+  custom_area?: string; // New field for area
+  custom_property_name__number?: string; // New field for property name or number
+  custom_street_name?: string; // New field for street name
+
+  custom_community?: string; // New field for community
+  custom_property_category?: string; // New field for property category
 }
 
 // Define form data interface for creating/updating leads
@@ -71,26 +78,33 @@ export interface LeadFormData {
   mobile_no?: string;
   phone?: string;
   custom_job_type?: string;
-  custom_property_type?: string;
-  custom_type_of_building?: string;
-  custom_building_name?: string; // Address Line 1
-  custom_bulding__apartment__villa__office_number?: string; // Address Line 2
-  custom_map_data?: string;
+  // custom_property_type?: string;
+  // custom_type_of_building?: string;
+  // custom_building_name?: string; // Address Line 1
+  // custom_bulding__apartment__villa__office_number?: string; // Address Line 2
+  // custom_map_data?: string;
   custom_preferred_inspection_date?: string | Date | null;
   custom_preferred_inspection_time?: string;
-  custom_alternative_inspection_date?: string | Date | null;
+  // custom_alternative_inspection_date?: string | Date | null;
   custom_budget_range?: string;
   custom_project_urgency?: string;
   custom_special_requirements?: string;
-  country?: string;
-  company?: string;
+  // country?: string;
+  // company?: string;
   status?: string;
   qualification_status?: string;
-  custom_alternative_inspection_time?: string;
+  // custom_alternative_inspection_time?: string;
   source?: string;
   custom_property_area?: string; // Combined address field
   [key: string]: any;
   custom_reference_name: string; // New field for reference name
+  custom_emirate?: string; // New field for emirate
+  custom_area?: string; // New field for area
+  custom_property_name__number?: string; // New field for property name or number
+  custom_street_name?: string; // New field for street name
+  custom_community?: string; // New field for community
+  custom_property_category?: string; // New field for property category
+
 }
 
 export interface JobType {
@@ -108,7 +122,6 @@ export interface UTMSource {
 // New interfaces for hierarchical address data
 export interface Emirate {
   name: string;
-
 }
 
 export interface City {
@@ -120,6 +133,10 @@ export interface Area {
   name: string;
   city?: string;
   emirate?: string;
+}
+export interface Community {
+  name: string;
+  area?: string;
 }
 
 // Context state interface
@@ -140,7 +157,7 @@ interface LeadsContextState {
   fetchProjectUrgency?: () => Promise<void>;
   utmSource: UTMSource[];
   fetchUtmSource: () => Promise<void>;
-  
+
   // New address-related state and methods
   emirates: Emirate[];
   cities: City[];
@@ -169,7 +186,7 @@ export const LeadsProvider: React.FC<LeadsProviderProps> = ({ children }) => {
   const [projectUrgency, setProjectUrgency] = useState<ProjectUrgency[]>([]);
   const [jobTypes, setJobTypes] = useState<JobType[]>([]);
   const [utmSource, setUtmSource] = useState<UTMSource[]>([]);
-  
+
   // New state for address data
   const [emirates, setEmirates] = useState<Emirate[]>([]);
   const [cities, setCities] = useState<City[]>([]);
@@ -270,7 +287,6 @@ export const LeadsProvider: React.FC<LeadsProviderProps> = ({ children }) => {
           ),
         };
 
-        
         const response = await frappeAPI.createLead(processedData);
 
         await fetchLeads();
@@ -306,10 +322,7 @@ export const LeadsProvider: React.FC<LeadsProviderProps> = ({ children }) => {
           ),
         };
 
-      
-
         const response = await frappeAPI.updateLead(leadId, processedData);
-       
 
         await fetchLeads();
 
@@ -335,7 +348,6 @@ export const LeadsProvider: React.FC<LeadsProviderProps> = ({ children }) => {
     try {
       const response = await frappeAPI.getJobTypes();
       if (response.data && Array.isArray(response.data)) {
-       
         setJobTypes(response.data);
       } else {
         setJobTypes([]);
@@ -353,7 +365,6 @@ export const LeadsProvider: React.FC<LeadsProviderProps> = ({ children }) => {
     try {
       const response = await frappeAPI.getProjectUrgency();
       if (response.data && Array.isArray(response.data)) {
-        
         setProjectUrgency(response.data);
       } else {
         setProjectUrgency([]);
@@ -371,14 +382,15 @@ export const LeadsProvider: React.FC<LeadsProviderProps> = ({ children }) => {
     try {
       const response = await frappeAPI.GetUtmSoucre();
       if (response.data && Array.isArray(response.data)) {
-        
         setUtmSource(response.data);
       } else {
         setUtmSource([]);
       }
     } catch (err) {
       console.error("Error fetching UTM sources:", err);
-      setError(err instanceof Error ? err.message : "Failed to fetch UTM sources");
+      setError(
+        err instanceof Error ? err.message : "Failed to fetch UTM sources"
+      );
     }
   }, []);
 
@@ -388,7 +400,6 @@ export const LeadsProvider: React.FC<LeadsProviderProps> = ({ children }) => {
     try {
       const response = await frappeAPI.getEmirate();
       if (response.data && Array.isArray(response.data)) {
-        
         setEmirates(response.data);
       } else {
         setEmirates([]);
@@ -412,7 +423,6 @@ export const LeadsProvider: React.FC<LeadsProviderProps> = ({ children }) => {
     try {
       const response = await frappeAPI.getCity({ emirate });
       if (response.data && Array.isArray(response.data)) {
-        
         setCities(response.data);
       } else {
         setCities([]);
@@ -436,7 +446,6 @@ export const LeadsProvider: React.FC<LeadsProviderProps> = ({ children }) => {
     try {
       const response = await frappeAPI.getArea({ city });
       if (response.data && Array.isArray(response.data)) {
-        
         setAreas(response.data);
       } else {
         setAreas([]);
