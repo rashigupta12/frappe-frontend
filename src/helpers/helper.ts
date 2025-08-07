@@ -362,3 +362,42 @@ export const defaultFormData: LeadFormData = {
 };
 
 export type PriorityLevel = "Low" | "Medium" | "High";
+
+
+// --- Type Definitions for better code safety ---
+export interface CustomerDetails {
+  name: string;
+  lead_name: string;
+  mobile_no: string;
+  email_id: string;
+  status: string;
+}
+
+export interface AddressDetails {
+  emirate: string;
+  area: string;
+  community: string;
+  street_name: string;
+  property_number: string;
+  combined_address: string;
+}
+
+export interface SearchResult {
+  customer_name: string;
+  mobile_no: string;
+  email_id: string;
+  is_new_customer?: boolean;
+  name?: string; // For existing customers
+  custom_combined_address?: string;
+  search_type?: string;
+  found_via?: string;
+  address_details?: AddressDetails;
+  lead_name?: string;
+  customer_id?: string;
+  lead_id?: string;
+  custom_emirate?: string;
+  custom_community?: string;
+  custom_area?: string;
+  custom_street_name?: string;
+  custom_property_number?: string;
+}

@@ -4,6 +4,7 @@ import {
   Calendar,
   ChevronDown,
   FileText,
+  Home,
   Loader2,
   Mail,
   Phone,
@@ -11,7 +12,7 @@ import {
   Save,
   Trash2,
   User,
-  X
+  X,
 } from "lucide-react";
 import React, { useCallback, useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
@@ -43,7 +44,6 @@ import {
   SelectValue,
 } from "../ui/select";
 
-
 interface JobCardFormProps {
   isOpen: boolean;
   onClose: () => void;
@@ -67,16 +67,18 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
   const isReadOnly = jobCard?.docstatus === 1;
   const projectidname = jobCard?.name || jobCard?.project_id_no || "";
 
-  const [formData, setFormData] = useState<JobCardFormData & {
-    // Add property address fields to formData type
-    custom_property_category?: string;
-    custom_emirate?: string;
-    custom_area?: string;
-    custom_community?: string;
-    custom_street_name?: string;
-    custom_property_name__number?: string;
-    custom_property_area?: string;
-  }>({
+  const [formData, setFormData] = useState<
+    JobCardFormData & {
+      // Add property address fields to formData type
+      custom_property_category?: string;
+      custom_emirate?: string;
+      custom_area?: string;
+      custom_community?: string;
+      custom_street_name?: string;
+      custom_property_name__number?: string;
+      custom_property_area?: string;
+    }
+  >({
     date: new Date().toISOString().split("T")[0],
     building_name: "",
     property_no: "",
@@ -349,72 +351,265 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
 
     setIsSearching(true);
     try {
-      const endpoint = "/api/method/eits_app.customer_search.search_customers";
-      const params = new URLSearchParams();
+      console.log("🔍 Starting search for query:", query);
 
-      if (/^\d+$/.test(query)) {
-        params.append("mobile_no", query);
-      } else if (/^[a-zA-Z0-9._-]+$/.test(query)) {
-        params.append("email_id", query);
-        const emailResponse = await frappeAPI.makeAuthenticatedRequest(
-          "GET",
-          `${endpoint}?${params.toString()}`
-        );
+      const allResults: any[] = [];
+      const addressEndpoint =
+        "/api/method/eits_app.site_address_search.search_site_addresses";
 
-        if (!emailResponse.message.data?.length) {
-          params.delete("email_id");
-          params.append("customer_name", query);
-        }
-      } else {
-        params.append("customer_name", query);
-      }
+      // Search by all relevant fields
+      const searchFields = [
+        "custom_emirate",
+        "custom_area",
+        "custom_community",
+        "custom_street_name",
+        "custom_property_number",
+        "custom_customer_email",
+        "custom_lead_email",
+        "custom_customer_phone_number",
+        "custom_lead_phone_number",
+        "custom_lead_customer_name",
+      ];
 
-      const response = await frappeAPI.makeAuthenticatedRequest(
-        "GET",
-        `${endpoint}?${params.toString()}`
-      );
-      if (!response.message || !Array.isArray(response.message.data)) {
-        throw new Error("Invalid response format");
-      }
+      // Make API calls for each field
+      for (const field of searchFields) {
+        try {
+          const url = `${addressEndpoint}?${field}=${encodeURIComponent(
+            query
+          )}`;
+          console.log(`📡 Making API call for field ${field}:`, url);
 
-      const customers = response.message.data;
-      setShowDropdown(true);
+          const response = await frappeAPI.makeAuthenticatedRequest("GET", url);
+          console.log(`✅ Response for ${field}:`, response);
 
-      if (customers.length === 0) {
-        setSearchResults([]);
-        return;
-      }
+          if (response && response.message && response.message.data) {
+            const responseData = response.message.data;
+            console.log(`📋 Data for ${field}:`, responseData);
 
-      const detailedCustomers = await Promise.all(
-        customers.map(async (customer: { name: any }) => {
-          try {
-            const customerDetails = await frappeAPI.getCustomerById(
-              customer.name
-            );
-            return customerDetails.data;
-          } catch (error) {
-            console.error(
-              `Failed to fetch details for customer ${customer.name}:`,
-              error
-            );
-            return null;
+            if (Array.isArray(responseData) && responseData.length > 0) {
+              const transformedData = responseData.map((address: any) => {
+                console.log(`🔄 Transforming address:`, address);
+
+                const transformed = {
+                  ...address,
+                  search_type: "address",
+                  found_via: field,
+                  customer_name:
+                    address.custom_lead_customer_name ||
+                    address.lead_details?.lead_name ||
+                    address.customer_details?.customer_name ||
+                    "Unknown Customer",
+                  mobile_no:
+                    address.custom_lead_phone_number ||
+                    address.custom_customer_phone_number ||
+                    address.lead_details?.mobile_no ||
+                    address.customer_details?.mobile_no ||
+                    "",
+                  email_id:
+                    address.custom_lead_email ||
+                    address.custom_customer_email ||
+                    address.lead_details?.email_id ||
+                    address.customer_details?.email_id ||
+                    "",
+                  name:
+                    address.custom_lead_name || address.customer_details?.name,
+                  lead_name: address.custom_lead_name,
+                  address_details: {
+                    emirate: address.custom_emirate,
+                    area: address.custom_area,
+                    community: address.custom_community,
+                    street_name: address.custom_street_name,
+                    property_number: address.custom_property_number,
+                    combined_address:
+                      address.custom_combined_address ||
+                      `${address.custom_emirate || ""}, ${
+                        address.custom_area || ""
+                      }, ${address.custom_community || ""}, ${
+                        address.custom_street_name || ""
+                      }, ${address.custom_property_number || ""}`
+                        .replace(/,\s*,/g, ",")
+                        .replace(/^,\s*|,\s*$/g, ""),
+                  },
+                };
+
+                console.log(`✨ Transformed result:`, transformed);
+                return transformed;
+              });
+
+              allResults.push(...transformedData);
+              console.log(
+                `📊 Added ${transformedData.length} results from ${field}`
+              );
+            }
           }
-        })
+        } catch (error) {
+          console.error(`❌ Error searching field ${field}:`, error);
+        }
+      }
+
+      console.log(
+        `🎯 Total results before deduplication:`,
+        allResults.length,
+        allResults
       );
 
-      const validCustomers = detailedCustomers.filter(
-        (customer) => customer !== null
-      );
+      // Remove duplicates
+      const uniqueResults = allResults.filter((result, index, self) => {
+        const isDuplicate =
+          self.findIndex(
+            (r) =>
+              (r.lead_name &&
+                result.lead_name &&
+                r.lead_name === result.lead_name) ||
+              (r.address_details?.combined_address &&
+                result.address_details?.combined_address &&
+                r.address_details.combined_address ===
+                  result.address_details.combined_address) ||
+              (r.customer_name === result.customer_name &&
+                r.mobile_no === result.mobile_no &&
+                r.email_id === result.email_id)
+          ) !== index;
 
-      setSearchResults(validCustomers);
-    } catch (error) {
-      console.error("Search error:", error);
-      setSearchResults([]);
+        if (isDuplicate) {
+          console.log(`🔄 Removing duplicate:`, result);
+        }
+
+        return !isDuplicate;
+      });
+
+      console.log(`🎯 Unique results:`, uniqueResults.length, uniqueResults);
+
+      // Only add "Add New Customer" option if no results found
+      if (uniqueResults.length === 0) {
+        uniqueResults.push({
+          customer_name: query,
+          mobile_no: /^\d+$/.test(query) ? query : "",
+          email_id: query.includes("@") ? query : "",
+          is_new_customer: true,
+          search_type: "new",
+        });
+        console.log(`➕ No results found, adding new customer option`);
+      }
+
+      console.log(`📋 Final search results:`, uniqueResults);
+      setSearchResults(uniqueResults);
       setShowDropdown(true);
+    } catch (error) {
+      console.error("❌ Overall search error:", error);
+      // On error, show the "Add New Customer" option
+      setSearchResults([
+        {
+          customer_name: query,
+          mobile_no: /^\d+$/.test(query) ? query : "",
+          email_id: query.includes("@") ? query : "",
+          is_new_customer: true,
+          search_type: "new",
+        },
+      ]);
+      setShowDropdown(true);
+      toast.error("Search failed. You can add a new customer instead.");
     } finally {
       setIsSearching(false);
     }
   }, []);
+
+  // Updated handleCustomerSelect function for JobCard
+  const handleCustomerSelect = async (customer: any) => {
+    setFetchingCustomerDetails(true);
+
+    try {
+      if (customer.is_new_customer) {
+        // Handle new customer
+        setFormData((prev) => ({
+          ...prev,
+          party_name: customer.customer_name,
+          customer_id: "",
+          lead_id: "",
+          // Clear address fields for new customers
+          building_name: "",
+          property_no: "",
+          area: "",
+          custom_property_category: "",
+          custom_emirate: "",
+          custom_area: "",
+          custom_community: "",
+          custom_street_name: "",
+          custom_property_name__number: "",
+          custom_property_area: "",
+        }));
+        setSearchQuery(customer.customer_name);
+      } else {
+        // Handle existing customer/lead
+        const customerData = {
+          party_name: customer.customer_name || customer.name || "",
+          customer_id: customer.name || "",
+          lead_id: customer.lead_name || "",
+          // Fill address fields from search result
+          building_name: customer.custom_building_name || "",
+          property_no: customer.address_details?.property_number || "",
+          area: customer.address_details?.combined_address || "",
+          custom_property_category: customer.custom_property_category || "",
+          custom_emirate: customer.address_details?.emirate || "",
+          custom_area: customer.address_details?.area || "",
+          custom_community: customer.address_details?.community || "",
+          custom_street_name: customer.address_details?.street_name || "",
+          custom_property_name__number:
+            customer.address_details?.property_number || "",
+          custom_property_area:
+            customer.address_details?.combined_address || "",
+        };
+
+        setFormData((prev) => ({
+          ...prev,
+          ...customerData,
+        }));
+
+        setSearchQuery(customer.customer_name || customer.name || "");
+      }
+
+      setShowDropdown(false);
+
+      // If there's a lead_name, fetch additional lead details
+      if (customer.lead_name && !customer.is_new_customer) {
+        setFetchingLeadDetails(true);
+        try {
+          const leadResponse = await frappeAPI.getLeadById(customer.lead_name);
+
+          if (leadResponse.data) {
+            const lead = leadResponse.data;
+            setFormData((prev) => ({
+              ...prev,
+              building_name: lead.custom_building_name || prev.building_name,
+              property_no:
+                lead.custom_bulding__apartment__villa__office_number ||
+                prev.property_no,
+              area: lead.custom_property_area || prev.area,
+              lead_id: lead.name,
+              // Update property address fields from lead data
+              custom_property_category:
+                lead.custom_property_category || prev.custom_property_category,
+              custom_emirate: lead.custom_emirate || prev.custom_emirate,
+              custom_area: lead.custom_area || prev.custom_area,
+              custom_community: lead.custom_community || prev.custom_community,
+              custom_street_name:
+                lead.custom_street_name || prev.custom_street_name,
+              custom_property_name__number:
+                lead.custom_property_name__number ||
+                prev.custom_property_name__number,
+              custom_property_area:
+                lead.custom_property_area || prev.custom_property_area,
+            }));
+          }
+        } catch (error) {
+          console.error("Failed to fetch lead data:", error);
+        } finally {
+          setFetchingLeadDetails(false);
+        }
+      }
+    } finally {
+      setFetchingCustomerDetails(false);
+    }
+  };
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value;
@@ -513,53 +708,54 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
     }
   };
 
-  const handleCustomerSelect = async (customer: any) => {
-    setFetchingCustomerDetails(true);
+  // const handleCustomerSelect = async (customer: any) => {
+  //   setFetchingCustomerDetails(true);
 
-    try {
-      setFormData((prev) => ({
-        ...prev,
-        party_name: customer.customer_name || customer.name || "",
-        customer_id: customer.name,
-      }));
+  //   try {
+  //     setFormData((prev) => ({
+  //       ...prev,
+  //       party_name: customer.customer_name || customer.name || "",
+  //       customer_id: customer.name,
+  //     }));
 
-      setSearchQuery(customer.customer_name || customer.name || "");
-      setShowDropdown(false);
+  //     setSearchQuery(customer.customer_name || customer.name || "");
+  //     setShowDropdown(false);
 
-      if (customer.lead_name) {
-        setFetchingLeadDetails(true);
-        try {
-          const leadResponse = await frappeAPI.getLeadById(customer.lead_name);
+  //     if (customer.lead_name) {
+  //       setFetchingLeadDetails(true);
+  //       try {
+  //         const leadResponse = await frappeAPI.getLeadById(customer.lead_name);
 
-          if (leadResponse.data) {
-            const lead = leadResponse.data;
-            setFormData((prev) => ({
-              ...prev,
-              building_name: lead.custom_building_name || "",
-              property_no:
-                lead.custom_bulding__apartment__villa__office_number || "",
-              area: lead.custom_property_area || "",
-              lead_id: lead.name,
-              // Update property address fields from lead data
-              custom_property_category: lead.custom_property_category || "",
-              custom_emirate: lead.custom_emirate || "",
-              custom_area: lead.custom_area || "",
-              custom_community: lead.custom_community || "",
-              custom_street_name: lead.custom_street_name || "",
-              custom_property_name__number: lead.custom_property_name__number || "",
-              custom_property_area: lead.custom_property_area || "",
-            }));
-          }
-        } catch (error) {
-          console.error("Failed to fetch lead data:", error);
-        } finally {
-          setFetchingLeadDetails(false);
-        }
-      }
-    } finally {
-      setFetchingCustomerDetails(false);
-    }
-  };
+  //         if (leadResponse.data) {
+  //           const lead = leadResponse.data;
+  //           setFormData((prev) => ({
+  //             ...prev,
+  //             building_name: lead.custom_building_name || "",
+  //             property_no:
+  //               lead.custom_bulding__apartment__villa__office_number || "",
+  //             area: lead.custom_property_area || "",
+  //             lead_id: lead.name,
+  //             // Update property address fields from lead data
+  //             custom_property_category: lead.custom_property_category || "",
+  //             custom_emirate: lead.custom_emirate || "",
+  //             custom_area: lead.custom_area || "",
+  //             custom_community: lead.custom_community || "",
+  //             custom_street_name: lead.custom_street_name || "",
+  //             custom_property_name__number:
+  //               lead.custom_property_name__number || "",
+  //             custom_property_area: lead.custom_property_area || "",
+  //           }));
+  //         }
+  //       } catch (error) {
+  //         console.error("Failed to fetch lead data:", error);
+  //       } finally {
+  //         setFetchingLeadDetails(false);
+  //       }
+  //     }
+  //   } finally {
+  //     setFetchingCustomerDetails(false);
+  //   }
+  // };
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -840,6 +1036,13 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
         customer_id: formData.customer_id || "",
         lead_id: formData.lead_id || "",
         total_amount: calculateCombinedTotal(),
+        custom_property_category: formData.custom_property_category || "",
+        custom_emirate: formData.custom_emirate || "",
+        custom_area: formData.custom_area || "",
+        custom_community: formData.custom_community || "",
+        custom_street_name: formData.custom_street_name || "",
+        custom_property_name__number:
+          formData.custom_property_name__number || "",
       };
 
       if (jobCard?.name) {
@@ -977,7 +1180,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                         <span>
                           Customer{" "}
                           <span className="text-gray-500">
-                            (name/email/phone)
+                            (name/email/phone/address)
                           </span>
                           <span className="text-red-500 ml-1">*</span>
                         </span>
@@ -991,7 +1194,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                           name="party_name"
                           value={searchQuery}
                           onChange={handleSearchChange}
-                          placeholder="Search by name, phone, or email"
+                          placeholder="Search by name, phone, email or address"
                           disabled={isReadOnly}
                           required
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none pr-10"
@@ -1000,60 +1203,90 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                           <Loader2 className="absolute right-3 top-3 h-4 w-4 animate-spin text-gray-500" />
                         )}
                       </div>
+
                       {showDropdown && (
-                        <div className="absolute z-10 w-full bg-white shadow-lg rounded-md border border-gray-200 max-h-60 overflow-auto mt-1">
+                        <div className="absolute z-10 mt-1 w-full bg-white shadow-lg rounded-md border border-gray-200 max-h-60 overflow-y-auto">
                           {searchResults.length > 0 ? (
-                            searchResults.map((customer) => (
+                            searchResults.map((result, index) => (
                               <div
-                                key={customer.name}
-                                className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center justify-between"
-                                onClick={() => handleCustomerSelect(customer)}
+                                key={
+                                  result.is_new_customer
+                                    ? `new-customer-${index}`
+                                    : result.name ||
+                                      result.custom_combined_address ||
+                                      result.customer_name
+                                }
+                                className={`px-4 py-2 cursor-pointer ${
+                                  result.is_new_customer
+                                    ? "hover:bg-green-50 bg-green-25 border-t border-green-200"
+                                    : "hover:bg-gray-100"
+                                }`}
+                                onClick={() =>
+                                  result.is_new_customer
+                                    ? handleAddNewCustomer()
+                                    : handleCustomerSelect(result)
+                                }
                               >
-                                <div>
-                                  <p className="font-medium">
-                                    {customer.customer_name || customer.name}
-                                  </p>
-                                  <div className="text-xs text-gray-500 flex gap-2 flex-wrap">
-                                    {customer.mobile_no && (
-                                      <span className="flex items-center">
-                                        <Phone className="h-3 w-3 mr-1" />
-                                        {customer.mobile_no}
-                                      </span>
-                                    )}
-                                    {customer.email_id && (
-                                      <span className="flex items-center">
-                                        <Mail className="h-3 w-3 mr-1" />
-                                        {customer.email_id}
-                                      </span>
-                                    )}
+                                {result.is_new_customer ? (
+                                  // "Add New Customer" option
+                                  <div className="flex items-center justify-between">
+                                    <div>
+                                      <p className="font-medium text-green-800">
+                                        No customers found for "
+                                        {result.customer_name}"
+                                      </p>
+                                      <p className="text-xs text-green-600">
+                                        Click to add a new customer
+                                      </p>
+                                    </div>
+                                    <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
+                                      Add New
+                                    </span>
                                   </div>
-                                </div>
-                                <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                                  Select
-                                </span>
+                                ) : (
+                                  // Existing customer option
+                                  <>
+                                    <p className="font-medium truncate">
+                                      {result.customer_name}
+                                    </p>
+                                    {(result.mobile_no || result.email_id) && (
+                                      <div className="text-xs text-gray-500 space-x-2">
+                                        {result.mobile_no && (
+                                          <span className="inline-flex items-center">
+                                            <Phone className="h-3 w-3 mr-1" />
+                                            {result.mobile_no}
+                                          </span>
+                                        )}
+                                        {result.email_id && (
+                                          <span className="inline-flex items-center">
+                                            <Mail className="h-3 w-3 mr-1" />
+                                            {result.email_id}
+                                          </span>
+                                        )}
+                                      </div>
+                                    )}
+                                    {result.custom_combined_address && (
+                                      <div className="text-xs text-gray-500 mt-1 flex items-center">
+                                        <Home className="h-3 w-3 mr-1 flex-shrink-0" />
+                                        <span className="truncate">
+                                          {result.custom_combined_address}
+                                        </span>
+                                      </div>
+                                    )}
+                                  </>
+                                )}
                               </div>
                             ))
                           ) : (
-                            <div
-                              className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center justify-between"
-                              onClick={handleAddNewCustomer}
-                            >
-                              <div>
-                                <p className="font-medium">
-                                  No customers found for "{searchQuery}"
-                                </p>
-                                <p className="text-xs text-gray-500">
-                                  Click to add a new customer
-                                </p>
-                              </div>
-                              <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
-                                Add New
-                              </span>
+                            // This shouldn't happen with the new logic, but keeping as fallback
+                            <div className="px-4 py-2 text-gray-500 text-sm">
+                              No results found
                             </div>
                           )}
                         </div>
                       )}
                     </div>
+
                     {/* Replace the old address section with PropertyAddressSection */}
                     <div className="col-span-1 md:col-span-2 lg:col-span-3">
                       <PropertyAddressSection

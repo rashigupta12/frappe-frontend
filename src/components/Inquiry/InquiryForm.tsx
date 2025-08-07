@@ -445,120 +445,151 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     onClose();
   };
 
-  const handleCustomerSearch = useCallback(async (query: string) => {
-    if (!query.trim()) {
-      setSearchResults([]);
-      setShowDropdown(false);
-      return;
-    }
+const handleCustomerSearch = useCallback(async (query: string) => {
+  if (!query.trim()) {
+    setSearchResults([]);
+    setShowDropdown(false);
+    return;
+  }
 
-    setIsSearching(true);
-    try {
-      const allResults: any[] = [];
-      const addressEndpoint =
-        "/api/method/eits_app.site_address_search.search_site_addresses";
+  setIsSearching(true);
+  try {
+    const allResults: any[] = [];
+    const addressEndpoint = "/api/method/eits_app.site_address_search.search_site_addresses";
 
-      // Search by all relevant fields
-      const searchFields = [
-        "custom_area",
-        "custom_community",
-        "custom_street_name",
-        "custom_property_number",
-        "custom_customer_email",
-        "custom_lead_email",
-        "custom_customer_phone_number",
-        "custom_lead_phone_number",
-        "custom_emirate",
-      ];
+    console.log("🔍 Starting search for query:", query);
 
-      const searchPromises = searchFields.map((field) =>
-        frappeAPI
-          .makeAuthenticatedRequest(
-            "GET",
-            `${addressEndpoint}?${field}=${encodeURIComponent(query)}`
-          )
-          .then((response) => ({
-            type: field,
-            data: response.message?.data || [],
-          }))
-          .catch(() => ({
-            type: field,
-            data: [],
-          }))
-      );
+    // Search by all relevant fields
+    const searchFields = [
+      "custom_emirate",
+      "custom_area", 
+      "custom_community",
+      "custom_street_name",
+      "custom_property_number",
+      "custom_customer_email",
+      "custom_lead_email", 
+      "custom_customer_phone_number",
+      "custom_lead_phone_number",
+      "custom_lead_customer_name"
+    ];
 
-      const searchResults = await Promise.all(searchPromises);
+    // Make API calls for each field
+    for (const field of searchFields) {
+      try {
+        const url = `${addressEndpoint}?${field}=${encodeURIComponent(query)}`;
+        console.log(`📡 Making API call for field ${field}:`, url);
+        
+        const response = await frappeAPI.makeAuthenticatedRequest("GET", url);
+        console.log(`✅ Response for ${field}:`, response);
 
-      // Combine and transform results
-      searchResults.forEach((result) => {
-        if (result.data && Array.isArray(result.data)) {
-          const transformedData = result.data.map((address: any) => ({
-            ...address,
-            search_type: "address",
-            found_via: result.type,
-            customer_name:
-              address.customer_details?.customer_name ||
-              address.lead_details?.lead_name ||
-              "New Customer",
-            mobile_no:
-              address.custom_customer_phone_number ||
-              address.custom_lead_phone_number ||
-              address.customer_details?.mobile_no ||
-              address.lead_details?.mobile_no ||
-              "",
-            email_id:
-              address.custom_customer_email ||
-              address.lead_details?.email_id ||
-              address.customer_details?.email_id ||
-              "",
-            name: address.customer_details?.name || address.custom_lead_name,
-            lead_name: address.custom_lead_name,
-            address_details: {
-              emirate: address.custom_emirate,
-              area: address.custom_area,
-              community: address.custom_community,
-              street_name: address.custom_street_name,
-              property_number: address.custom_property_number,
-              combined_address: address.custom_combined_address,
-            },
-          }));
+        // Check if we have data in the response
+        if (response && response.message && response.message.data) {
+          const responseData = response.message.data;
+          console.log(`📋 Data for ${field}:`, responseData);
 
-          allResults.push(...transformedData);
+          if (Array.isArray(responseData) && responseData.length > 0) {
+            // Transform each result
+            const transformedData = responseData.map((address: any) => {
+              console.log(`🔄 Transforming address:`, address);
+              
+              const transformed = {
+                ...address,
+                search_type: "address",
+                found_via: field,
+                customer_name: 
+                  address.custom_lead_customer_name || 
+                  address.lead_details?.lead_name || 
+                  address.customer_details?.customer_name || 
+                  "Unknown Customer",
+                mobile_no:
+                  address.custom_lead_phone_number ||
+                  address.custom_customer_phone_number ||
+                  address.lead_details?.mobile_no ||
+                  address.customer_details?.mobile_no ||
+                  "",
+                email_id:
+                  address.custom_lead_email ||
+                  address.custom_customer_email ||
+                  address.lead_details?.email_id ||
+                  address.customer_details?.email_id ||
+                  "",
+                name: address.custom_lead_name || address.customer_details?.name,
+                lead_name: address.custom_lead_name,
+                address_details: {
+                  emirate: address.custom_emirate,
+                  area: address.custom_area,
+                  community: address.custom_community,
+                  street_name: address.custom_street_name,
+                  property_number: address.custom_property_number,
+                  combined_address: address.custom_combined_address || 
+                    `${address.custom_emirate || ''}, ${address.custom_area || ''}, ${address.custom_community || ''}, ${address.custom_street_name || ''}, ${address.custom_property_number || ''}`.replace(/,\s*,/g, ',').replace(/^,\s*|,\s*$/g, ''),
+                },
+              };
+              
+              console.log(`✨ Transformed result:`, transformed);
+              return transformed;
+            });
+
+            allResults.push(...transformedData);
+            console.log(`📊 Added ${transformedData.length} results from ${field}`);
+          }
         }
-      });
-
-      // Add a "new customer" option if no results found
-      if (allResults.length === 0) {
-        allResults.push({
-          customer_name: query,
-          mobile_no: "",
-          email_id: "",
-          is_new_customer: true,
-        });
+      } catch (error) {
+        console.error(`❌ Error searching field ${field}:`, error);
       }
-
-      // Remove duplicates
-      const uniqueResults = allResults.filter(
-        (result, index, self) =>
-          index ===
-          self.findIndex(
-            (r) =>
-              (r.name && result.name && r.name === result.name) ||
-              r.custom_combined_address === result.custom_combined_address
-          )
-      );
-
-      setSearchResults(uniqueResults);
-      setShowDropdown(true);
-    } catch (error) {
-      console.error("Search error:", error);
-      setSearchResults([]);
-      setShowDropdown(false);
-      toast.error("Failed to search. Please try again.");
-    } finally {
-      setIsSearching(false);
     }
-  }, []);
+
+    console.log(`🎯 Total results before deduplication:`, allResults.length, allResults);
+
+    // Remove duplicates
+    const uniqueResults = allResults.filter(
+      (result, index, self) => {
+        const isDuplicate = self.findIndex(
+          (r) =>
+            (r.lead_name && result.lead_name && r.lead_name === result.lead_name) ||
+            (r.address_details?.combined_address && 
+             result.address_details?.combined_address && 
+             r.address_details.combined_address === result.address_details.combined_address) ||
+            (r.customer_name === result.customer_name && 
+             r.mobile_no === result.mobile_no && 
+             r.email_id === result.email_id)
+        ) !== index;
+        
+        if (isDuplicate) {
+          console.log(`🔄 Removing duplicate:`, result);
+        }
+        
+        return !isDuplicate;
+      }
+    );
+
+    console.log(`🎯 Unique results:`, uniqueResults.length, uniqueResults);
+
+    // If no results found, add a "new customer" option
+    if (uniqueResults.length === 0) {
+      console.log(`➕ No results found, adding new customer option`);
+      uniqueResults.push({
+        customer_name: query,
+        mobile_no: "",
+        email_id: "",
+        is_new_customer: true,
+        search_type: "new",
+      });
+    }
+
+    console.log(`📋 Final search results:`, uniqueResults);
+    setSearchResults(uniqueResults);
+    setShowDropdown(true);
+
+  } catch (error) {
+    console.error("❌ Overall search error:", error);
+    setSearchResults([]);
+    setShowDropdown(false);
+    toast.error("Failed to search. Please try again.");
+  } finally {
+    setIsSearching(false);
+  }
+}, []);
 
  // In InquiryForm.tsx
 
@@ -594,9 +625,6 @@ const handleCustomerSelect = async (result: any) => {
         custom_street_name: result.custom_street_name || "",
         custom_property_name__number: result.custom_property_number || "",
       };
-
-      // *** THIS IS THE CORRECTED PART ***
-      // We are now directly updating the formData state object
       setFormData((prev) => ({ ...prev, ...customerData }));
 
       // This will ensure the search bar reflects the selected customer's name
