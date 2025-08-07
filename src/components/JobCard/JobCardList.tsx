@@ -583,7 +583,7 @@ const JobCardList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
 
                   {/* Address - More compact */}
                   <p className="text-xs text-gray-600 leading-tight line-clamp-2">
-                    {[card.property_no, card.building_name, card.area]
+                    {[ card.area]
                       .filter(Boolean)
                       .join(", ") || "No Address"}
                   </p>

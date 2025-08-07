@@ -1,10 +1,7 @@
-
 /* eslint-disable @typescript-eslint/no-explicit-any */
-// In PropertyAddressSection.tsx
-
 import debounce from "lodash.debounce";
 import { Loader2, Plus } from "lucide-react";
-import React, { useCallback, useEffect, useState, useRef } from "react"; // Added useRef
+import React, { useCallback, useEffect, useState, useRef } from "react";
 import { toast } from "react-hot-toast";
 import { frappeAPI } from "../../api/frappeClient";
 import { useLeads } from "../../context/LeadContext";
@@ -22,7 +19,16 @@ interface PropertyAddressSectionProps {
   formData: any;
   handleInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleSelectChange: (name: string, value: string) => void;
-  getPropertyArea: string;
+  getPropertyArea?: string;
+  fieldNames?: {
+    emirate?: string;
+    area?: string;
+    community?: string;
+    streetName?: string;
+    propertyNumber?: string;
+    propertyArea?: string;
+    propertyCategory?: string;
+  };
 }
 
 const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
@@ -30,30 +36,38 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
   handleInputChange,
   handleSelectChange,
   getPropertyArea,
+  fieldNames = {},
 }) => {
+  // Destructure field names with defaults
+  const {
+    emirate: emirateField = 'custom_emirate',
+    area: areaField = 'custom_area',
+    community: communityField = 'custom_community',
+    streetName: streetNameField = 'custom_street_name',
+    propertyNumber: propertyNumberField = 'custom_property_name__number',
+    propertyArea: propertyAreaField = 'custom_property_area',
+    propertyCategory: propertyCategoryField = 'custom_property_category',
+  } = fieldNames;
+
   const { emirates, fetchEmirates, addressLoading } = useLeads();
-  // console.log("getPropertyArea:", getPropertyArea); // Console logs removed for cleaner code
-  // console.log("formData:", formData);
 
   // Local state for address components
-  const [selectedEmirate, setSelectedEmirate] = useState<string>("");
-  const [selectedArea, setSelectedArea] = useState<string>("");
-  const [selectedCommunity, setSelectedCommunity] = useState<string>("");
+  const [selectedEmirate, setSelectedEmirate] = useState<string>(formData[emirateField] || "");
+  const [selectedArea, setSelectedArea] = useState<string>(formData[areaField] || "");
+  const [selectedCommunity, setSelectedCommunity] = useState<string>(formData[communityField] || "");
   const [initialGetPropertyArea] = useState(getPropertyArea);
 
   // Area states
-  const [areaSearchQuery, setAreaSearchQuery] = useState("");
+  const [areaSearchQuery, setAreaSearchQuery] = useState(formData[areaField] || "");
   const [areaResults, setAreaResults] = useState<any[]>([]);
   const [isAreaSearching, setIsAreaSearching] = useState(false);
-  // Removed: const [showAddArea, setShowAddArea] = useState(false);
   const [newAreaName, setNewAreaName] = useState("");
   const [isAddingArea, setIsAddingArea] = useState(false);
 
   // Community states
-  const [communitySearchQuery, setCommunitySearchQuery] = useState("");
+  const [communitySearchQuery, setCommunitySearchQuery] = useState(formData[communityField] || "");
   const [communityResults, setCommunityResults] = useState<any[]>([]);
   const [isCommunitySearching, setIsCommunitySearching] = useState(false);
-  // Removed: const [showAddCommunity, setShowAddCommunity] = useState(false);
   const [newCommunityName, setNewCommunityName] = useState("");
   const [isAddingCommunity, setIsAddingCommunity] = useState(false);
 
@@ -91,18 +105,17 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
 
   // Effect hook to dynamically pre-fill address fields from formData or initialGetPropertyArea
   useEffect(() => {
-    setSelectedEmirate(formData.custom_emirate || "");
-    setSelectedArea(formData.custom_area || "");
-    setSelectedCommunity(formData.custom_community || "");
+    setSelectedEmirate(formData[emirateField] || "");
+    setSelectedArea(formData[areaField] || "");
+    setSelectedCommunity(formData[communityField] || "");
 
-    setAreaSearchQuery(formData.custom_area || "");
-    setCommunitySearchQuery(formData.custom_community || "");
+    setAreaSearchQuery(formData[areaField] || "");
+    setCommunitySearchQuery(formData[communityField] || "");
 
     // Handle the initial getPropertyArea for existing leads if formData is empty
-    if (!formData.custom_emirate && initialGetPropertyArea) {
+    if (!formData[emirateField] && initialGetPropertyArea) {
       const parts = initialGetPropertyArea.split(",").map((part) => part.trim());
-      // Ensure there are enough parts before destructuring
-      if (parts.length >= 3) { // Adjusted to check for at least emirate, area, community
+      if (parts.length >= 3) {
         const [emirate, area, community] = parts;
         setSelectedEmirate(emirate);
         setSelectedArea(area);
@@ -111,9 +124,7 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
         setCommunitySearchQuery(community);
       }
     }
-  }, [formData, initialGetPropertyArea]);
-
-  // console.log("selectedEmirate:", selectedEmirate, "selectedArea:", selectedArea, "selectedCommunity:", selectedCommunity); // Console logs removed
+  }, [formData, initialGetPropertyArea, emirateField, areaField, communityField]);
 
   // Non-debounced area search function
   const searchArea = useCallback(
@@ -121,7 +132,6 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
       if (!query.trim() || !selectedEmirate) {
         setAreaResults([]);
         setIsAreaSearching(false);
-        // setShowAddArea(false); // Removed
         return;
       }
 
@@ -140,21 +150,18 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
         if (response.message?.status === "success") {
           const results = response.message.data || [];
           setAreaResults(results);
-          // setShowAddArea(results.length === 0); // Removed
         } else {
           console.warn("Unexpected response format:", response.data);
           setAreaResults([]);
-          // setShowAddArea(true); // Removed
         }
       } catch (error) {
         console.error("Error searching areas:", error);
         setAreaResults([]);
-        // setShowAddArea(true); // Removed
       } finally {
         setIsAreaSearching(false);
       }
     },
-    [selectedEmirate] // Dependencies for searchArea
+    [selectedEmirate]
   );
 
   // Debounced area search ref
@@ -166,7 +173,6 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
       if (!query.trim() || !selectedArea) {
         setCommunityResults([]);
         setIsCommunitySearching(false);
-        // setShowAddCommunity(false); // Removed
         return;
       }
 
@@ -180,20 +186,17 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
 
         if (response.message?.status === "success") {
           setCommunityResults(response.message.data || []);
-          // setShowAddCommunity(response.message.data.length === 0); // Removed
         } else {
           setCommunityResults([]);
-          // setShowAddCommunity(true); // Removed
         }
       } catch (error) {
         console.error("Community search error:", error);
         setCommunityResults([]);
-        // setShowAddCommunity(true); // Removed
       } finally {
         setIsCommunitySearching(false);
       }
     },
-    [selectedArea] // Dependencies for searchCommunity
+    [selectedArea]
   );
 
   // Debounced community search ref
@@ -203,37 +206,33 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
   useEffect(() => {
     if (areaSearchQuery.trim() && selectedEmirate) {
       setIsAreaSearching(true);
-      // setShowAddArea(false); // Removed
       debouncedAreaSearchRef.current(areaSearchQuery);
     } else {
       setAreaResults([]);
-      // setShowAddArea(false); // Removed
       setIsAreaSearching(false);
     }
 
     const debounced = debouncedAreaSearchRef.current;
     return () => {
-      debounced.cancel(); // Cancel any pending debounced calls on unmount or re-render
+      debounced.cancel();
     };
-  }, [areaSearchQuery, selectedEmirate, debouncedAreaSearchRef]);
+  }, [areaSearchQuery, selectedEmirate]);
 
   // Handle community search changes
   useEffect(() => {
     if (communitySearchQuery.trim() && selectedArea) {
       setIsCommunitySearching(true);
-      // setShowAddCommunity(false); // Removed
       debouncedCommunitySearchRef.current(communitySearchQuery);
     } else {
       setCommunityResults([]);
-      // setShowAddCommunity(false); // Removed
       setIsCommunitySearching(false);
     }
 
     const debounced = debouncedCommunitySearchRef.current;
     return () => {
-      debounced.cancel(); // Cancel any pending debounced calls on unmount or re-render
+      debounced.cancel();
     };
-  }, [communitySearchQuery, selectedArea, debouncedCommunitySearchRef]); // Added debouncedCommunitySearchRef to dependencies
+  }, [communitySearchQuery, selectedArea]);
 
   // Function to combine address components
   const combineAddress = useCallback(
@@ -259,70 +258,66 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
   // Update combined address when components change
   useEffect(() => {
     const combinedAddress = combineAddress(
-      formData.custom_emirate || "",
-      formData.custom_area || "",
-      formData.custom_community || "",
-      formData.custom_street_name || "",
-      formData.custom_property_name__number || ""
+      formData[emirateField] || "",
+      formData[areaField] || "",
+      formData[communityField] || "",
+      formData[streetNameField] || "",
+      formData[propertyNumberField] || ""
     );
 
-    if (combinedAddress !== formData.custom_property_area) {
-      handleSelectChange("custom_property_area", combinedAddress);
+    if (combinedAddress !== formData[propertyAreaField]) {
+      handleSelectChange(propertyAreaField, combinedAddress);
     }
   }, [
-    formData.custom_emirate,
-    formData.custom_area,
-    formData.custom_community,
-    formData.custom_street_name,
-    formData.custom_property_name__number,
+    formData,
     combineAddress,
     handleSelectChange,
-    formData.custom_property_area,
+    emirateField,
+    areaField,
+    communityField,
+    streetNameField,
+    propertyNumberField,
+    propertyAreaField,
   ]);
 
   // Handle emirate selection
   const handleEmirateChange = useCallback((value: string) => {
     setSelectedEmirate(value);
-    handleSelectChange("custom_emirate", value);
+    handleSelectChange(emirateField, value);
 
     // Reset dependent fields
     setSelectedArea("");
     setAreaSearchQuery("");
-    handleSelectChange("custom_area", "");
+    handleSelectChange(areaField, "");
 
     setSelectedCommunity("");
     setCommunitySearchQuery("");
-    handleSelectChange("custom_community", "");
+    handleSelectChange(communityField, "");
 
     setAreaResults([]);
     setCommunityResults([]);
-    // setShowAddArea(false); // Removed
-    // setShowAddCommunity(false); // Removed
-  }, [handleSelectChange]);
+  }, [handleSelectChange, emirateField, areaField, communityField]);
 
   // Handle area selection
   const handleAreaSelect = (area: string) => {
     setSelectedArea(area);
     setAreaSearchQuery(area);
-    handleSelectChange("custom_area", area);
+    handleSelectChange(areaField, area);
     setAreaResults([]);
-    // setShowAddArea(false); // Removed
 
     // Reset community when area changes
     setSelectedCommunity("");
     setCommunitySearchQuery("");
-    handleSelectChange("custom_community", "");
+    handleSelectChange(communityField, "");
     setCommunityResults([]);
-    // setShowAddCommunity(false); // Removed
   };
 
   // Handle community selection
   const handleCommunitySelect = (community: string) => {
     setSelectedCommunity(community);
     setCommunitySearchQuery(community);
-    handleSelectChange("custom_community", community);
+    handleSelectChange(communityField, community);
     setCommunityResults([]);
-    // setShowAddCommunity(false); // Removed
   };
 
   // Handle adding new area
@@ -399,7 +394,7 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
 
   // Handle property category change
   const handlePropertyCategoryChange = (value: string) => {
-    handleSelectChange("custom_property_category", value);
+    handleSelectChange(propertyCategoryField, value);
     setShowAddCategory(value === "Other");
   };
 
@@ -423,7 +418,7 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
       if (response.data) {
         toast.success("Property category added successfully!");
         await fetchPropertyCategories();
-        handleSelectChange("custom_property_category", newCategoryName.trim());
+        handleSelectChange(propertyCategoryField, newCategoryName.trim());
         setNewCategoryName("");
         setShowAddCategory(false);
       }
@@ -465,7 +460,7 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
           Property Category
         </label>
         <Select
-          value={formData.custom_property_category || ""}
+          value={formData[propertyCategoryField] || ""}
           onValueChange={handlePropertyCategoryChange}
         >
           <SelectTrigger className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
@@ -565,7 +560,7 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
                 setAreaSearchQuery(e.target.value);
                 if (e.target.value === "") {
                   setSelectedArea("");
-                  handleSelectChange("custom_area", "");
+                  handleSelectChange(areaField, "");
                   setAreaResults([]);
                 }
               }}
@@ -643,7 +638,7 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
                 setCommunitySearchQuery(e.target.value);
                 if (e.target.value === "") {
                   setSelectedCommunity("");
-                  handleSelectChange("custom_community", "");
+                  handleSelectChange(communityField, "");
                   setCommunityResults([]);
                 }
               }}
@@ -705,16 +700,16 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label
-            htmlFor="custom_street_name"
+            htmlFor={streetNameField}
             className="block text-sm font-medium text-gray-700 mb-1"
           >
             Custom Street Name
           </label>
           <Input
             type="text"
-            id="custom_street_name"
-            name="custom_street_name"
-            value={formData.custom_street_name || ""}
+            id={streetNameField}
+            name={streetNameField}
+            value={formData[streetNameField] || ""}
             onChange={handleInputChange}
             placeholder="Enter street name"
             className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
@@ -722,16 +717,16 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
         </div>
         <div>
           <label
-            htmlFor="custom_property_name__number"
+            htmlFor={propertyNumberField}
             className="block text-sm font-medium text-gray-700 mb-1"
           >
             Property Number
           </label>
           <Input
             type="text"
-            id="custom_property_name__number"
-            name="custom_property_name__number"
-            value={formData.custom_property_name__number || ""}
+            id={propertyNumberField}
+            name={propertyNumberField}
+            value={formData[propertyNumberField] || ""}
             onChange={handleInputChange}
             placeholder="Enter property number"
             className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
@@ -746,7 +741,7 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
         </label>
         <Input
           type="text"
-          value={formData.custom_property_area || ""}
+          value={formData[propertyAreaField] || ""}
           readOnly
           placeholder="Address will be combined automatically"
           className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm bg-gray-50 text-gray-600 cursor-not-allowed"

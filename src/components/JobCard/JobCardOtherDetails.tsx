@@ -21,9 +21,9 @@ interface Props {
 const JobCardOtherDetails: React.FC<Props> = ({ card, onClose }) => {
   const fmt = (d?: string) =>
     d ? format(new Date(d), 'dd/MM/yyyy') : 'N/A';
-  const formatAddress = (building?: string, property?: string, area?: string) => {
-    return [building, property, area].filter(Boolean).join(", ");
-  };
+  // const formatAddress = (building?: string, property?: string, area?: string) => {
+  //   return [building, property, area].filter(Boolean).join(", ");
+  // };
 
   return (
     <DialogContent className="max-w-[99vw] sm:max-w-4xl w-full max-h-[90vh] overflow-y-auto bg-white mx-auto">
@@ -42,7 +42,7 @@ const JobCardOtherDetails: React.FC<Props> = ({ card, onClose }) => {
         </div>
 
         {/* Address */}
-        <Field label="Address" value={formatAddress(card.building_name, card.property_no, card.area)} />
+        <Field label="Address" value={ card.area} />
 
         {/* Start Date and Finish Date side by side */}
         <div className="grid grid-cols-2 gap-3 ">

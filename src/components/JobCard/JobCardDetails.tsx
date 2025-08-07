@@ -19,9 +19,9 @@ const JobCardDetails: React.FC<Props> = ({ card, onClose }) => {
   const fmt = (d?: string) =>
     d ? format(new Date(d), 'dd/MM/yyyy') : 'N/A';
 
-     const formatAddress = (building: string, property: string, area: string) => {
-    return [building, property, area].filter(Boolean).join(", ");
-  };
+  //    const formatAddress = (building: string, property: string, area: string) => {
+  //   return [building, property, area].filter(Boolean).join(", ");
+  // };
   return (
     <DialogContent className="max-w-[95vw] sm:max-w-2xl w-full max-h-[90vh] overflow-y-auto bg-white mx-auto overflow-x-hidden">
       <DialogHeader>
@@ -38,7 +38,7 @@ const JobCardDetails: React.FC<Props> = ({ card, onClose }) => {
           <Field label="Customer" value={card.party_name} />
           
         </div>
-        <Field label="Address" value={formatAddress(card.building_name, card.property_no, card.area)} />
+        <Field label="Address" value={card.area} />
 
 
 

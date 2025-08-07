@@ -72,7 +72,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
       // Add property address fields to formData type
       custom_property_category?: string;
       custom_emirate?: string;
-      custom_area?: string;
+      custom_uae_area?: string;
       custom_community?: string;
       custom_street_name?: string;
       custom_property_name__number?: string;
@@ -80,8 +80,8 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
     }
   >({
     date: new Date().toISOString().split("T")[0],
-    building_name: "",
-    property_no: "",
+    // building_name: "",
+    // property_no: "",
     area: "",
     party_name: "",
     start_date: new Date().toISOString().split("T")[0],
@@ -97,7 +97,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
     // Initialize property address fields
     custom_property_category: "",
     custom_emirate: "",
-    custom_area: "",
+    custom_uae_area: "",
     custom_community: "",
     custom_street_name: "",
     custom_property_name__number: "",
@@ -265,8 +265,8 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
     if (jobCard) {
       setFormData({
         date: jobCard.date || new Date().toISOString().split("T")[0],
-        building_name: jobCard.building_name || "",
-        property_no: jobCard.property_no || "",
+        // building_name: jobCard.building_name || "",
+        // property_no: jobCard.property_no || "",
         area: jobCard.area || "",
         party_name: jobCard.party_name || "",
         start_date:
@@ -283,7 +283,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
         // Initialize property address fields - parse from existing area if available
         custom_property_category: "",
         custom_emirate: "",
-        custom_area: "",
+        custom_uae_area: "",
         custom_community: "",
         custom_street_name: "",
         custom_property_name__number: "",
@@ -297,8 +297,8 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
       if (jobCard.customer_id && !jobCard.lead_id) {
         setFormData((prev) => ({
           ...prev,
-          building_name: jobCard.building_name || "",
-          property_no: jobCard.property_no || "",
+          // building_name: jobCard.building_name || "",
+          // property_no: jobCard.property_no || "",
           area: jobCard.area || "",
           custom_property_area: jobCard.area || "",
         }));
@@ -307,8 +307,8 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
       // Reset form for new job card
       setFormData({
         date: new Date().toISOString().split("T")[0],
-        building_name: "",
-        property_no: "",
+        // building_name: "",
+        // property_no: "",
         area: "",
         party_name: "",
         start_date: new Date().toISOString().split("T")[0],
@@ -323,7 +323,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
         customer_id: "",
         custom_property_category: "",
         custom_emirate: "",
-        custom_area: "",
+        custom_uae_area: "",
         custom_community: "",
         custom_street_name: "",
         custom_property_name__number: "",
@@ -341,173 +341,264 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
     const { name, value } = e.target;
     setNewCustomerData((prev) => ({ ...prev, [name]: value }));
   };
-
   const handleCustomerSearch = useCallback(async (query: string) => {
     if (!query.trim()) {
       setSearchResults([]);
       setShowDropdown(false);
       return;
     }
-
     setIsSearching(true);
     try {
-      console.log("🔍 Starting search for query:", query);
-
       const allResults: any[] = [];
       const addressEndpoint =
         "/api/method/eits_app.site_address_search.search_site_addresses";
+      const queryLower = query.toLowerCase().trim();
 
-      // Search by all relevant fields
-      const searchFields = [
-        "custom_emirate",
-        "custom_area",
-        "custom_community",
-        "custom_street_name",
-        "custom_property_number",
-        "custom_customer_email",
-        "custom_lead_email",
-        "custom_customer_phone_number",
-        "custom_lead_phone_number",
-        "custom_lead_customer_name",
-      ];
+      const searchPromises: Promise<any>[] = [];
 
-      // Make API calls for each field
-      for (const field of searchFields) {
-        try {
-          const url = `${addressEndpoint}?${field}=${encodeURIComponent(
-            query
-          )}`;
-          console.log(`📡 Making API call for field ${field}:`, url);
+      if (queryLower.length >= 2) {
+        // Existing search promises for addresses
+        searchPromises.push(
+          frappeAPI
+            .makeAuthenticatedRequest(
+              "GET",
+              `${addressEndpoint}?custom_uae_area=${encodeURIComponent(query)}`
+            )
+            .then((response) => ({
+              type: "area",
+              data: response.message?.data || [],
+            }))
+            .catch(() => ({ type: "area", data: [] }))
+        );
+        searchPromises.push(
+          frappeAPI
+            .makeAuthenticatedRequest(
+              "GET",
+              `${addressEndpoint}?custom_community=${encodeURIComponent(query)}`
+            )
+            .then((response) => ({
+              type: "community",
+              data: response.message?.data || [],
+            }))
+            .catch(() => ({ type: "community", data: [] }))
+        );
+        searchPromises.push(
+          frappeAPI
+            .makeAuthenticatedRequest(
+              "GET",
+              `${addressEndpoint}?custom_street_name=${encodeURIComponent(
+                query
+              )}`
+            )
+            .then((response) => ({
+              type: "street",
+              data: response.message?.data || [],
+            }))
+            .catch(() => ({ type: "street", data: [] }))
+        );
 
-          const response = await frappeAPI.makeAuthenticatedRequest("GET", url);
-          console.log(`✅ Response for ${field}:`, response);
+        // --- NEW: Search by Customer Name and Lead Name ---
+        searchPromises.push(
+          frappeAPI
+            .makeAuthenticatedRequest(
+              "GET",
+              `${addressEndpoint}?customer_name=${encodeURIComponent(query)}`
+            )
+            .then((response) => ({
+              type: "customer_name",
+              data: response.message?.data || [],
+            }))
+            .catch(() => ({ type: "customer_name", data: [] }))
+        );
+        searchPromises.push(
+          frappeAPI
+            .makeAuthenticatedRequest(
+              "GET",
+              `${addressEndpoint}?custom_lead_customer_name=${encodeURIComponent(
+                query
+              )}`
+            )
+            .then((response) => ({
+              type: "lead_name",
+              data: response.message?.data || [],
+            }))
+            .catch(() => ({ type: "lead_name", data: [] }))
+        );
+        // Always search, whether partial or full email
+        searchPromises.push(
+          frappeAPI
+            .makeAuthenticatedRequest(
+              "GET",
+              `${addressEndpoint}?custom_customer_email=${encodeURIComponent(
+                query
+              )}`
+            )
+            .then((response) => ({
+              type: "customer_email",
+              data: response.message?.data || [],
+            }))
+            .catch(() => ({ type: "customer_email", data: [] }))
+        );
 
-          if (response && response.message && response.message.data) {
-            const responseData = response.message.data;
-            console.log(`📋 Data for ${field}:`, responseData);
+        searchPromises.push(
+          frappeAPI
+            .makeAuthenticatedRequest(
+              "GET",
+              `${addressEndpoint}?custom_lead_email=${encodeURIComponent(
+                query
+              )}`
+            )
+            .then((response) => ({
+              type: "lead_email",
+              data: response.message?.data || [],
+            }))
+            .catch(() => ({ type: "lead_email", data: [] }))
+        );
+        // --- END NEW ---
 
-            if (Array.isArray(responseData) && responseData.length > 0) {
-              const transformedData = responseData.map((address: any) => {
-                console.log(`🔄 Transforming address:`, address);
-
-                const transformed = {
-                  ...address,
-                  search_type: "address",
-                  found_via: field,
-                  customer_name:
-                    address.custom_lead_customer_name ||
-                    address.lead_details?.lead_name ||
-                    address.customer_details?.customer_name ||
-                    "Unknown Customer",
-                  mobile_no:
-                    address.custom_lead_phone_number ||
-                    address.custom_customer_phone_number ||
-                    address.lead_details?.mobile_no ||
-                    address.customer_details?.mobile_no ||
-                    "",
-                  email_id:
-                    address.custom_lead_email ||
-                    address.custom_customer_email ||
-                    address.lead_details?.email_id ||
-                    address.customer_details?.email_id ||
-                    "",
-                  name:
-                    address.custom_lead_name || address.customer_details?.name,
-                  lead_name: address.custom_lead_name,
-                  address_details: {
-                    emirate: address.custom_emirate,
-                    area: address.custom_area,
-                    community: address.custom_community,
-                    street_name: address.custom_street_name,
-                    property_number: address.custom_property_number,
-                    combined_address:
-                      address.custom_combined_address ||
-                      `${address.custom_emirate || ""}, ${
-                        address.custom_area || ""
-                      }, ${address.custom_community || ""}, ${
-                        address.custom_street_name || ""
-                      }, ${address.custom_property_number || ""}`
-                        .replace(/,\s*,/g, ",")
-                        .replace(/^,\s*|,\s*$/g, ""),
-                  },
-                };
-
-                console.log(`✨ Transformed result:`, transformed);
-                return transformed;
-              });
-
-              allResults.push(...transformedData);
-              console.log(
-                `📊 Added ${transformedData.length} results from ${field}`
-              );
-            }
-          }
-        } catch (error) {
-          console.error(`❌ Error searching field ${field}:`, error);
+        if (/^\d+$/.test(query)) {
+          searchPromises.push(
+            frappeAPI
+              .makeAuthenticatedRequest(
+                "GET",
+                `${addressEndpoint}?custom_property_number=${encodeURIComponent(
+                  query
+                )}`
+              )
+              .then((response) => ({
+                type: "property",
+                data: response.message?.data || [],
+              }))
+              .catch(() => ({ type: "property", data: [] }))
+          );
         }
+
+        if (/^\+?\d+$/.test(query.replace(/[\s-]/g, ""))) {
+          const cleanPhone = query.replace(/[\s-]/g, "");
+          searchPromises.push(
+            frappeAPI
+              .makeAuthenticatedRequest(
+                "GET",
+                `${addressEndpoint}?custom_customer_phone_number=${encodeURIComponent(
+                  cleanPhone
+                )}`
+              )
+              .then((response) => ({
+                type: "customer_phone",
+                data: response.message?.data || [],
+              }))
+              .catch(() => ({ type: "customer_phone", data: [] }))
+          );
+          searchPromises.push(
+            frappeAPI
+              .makeAuthenticatedRequest(
+                "GET",
+                `${addressEndpoint}?custom_lead_phone_number=${encodeURIComponent(
+                  cleanPhone
+                )}`
+              )
+              .then((response) => ({
+                type: "lead_phone",
+                data: response.message?.data || [],
+              }))
+              .catch(() => ({ type: "lead_phone", data: [] }))
+          );
+        }
+
+        const knownEmirates = [
+          "dubai",
+          "abu dhabi",
+          "sharjah",
+          "ajman",
+          "umm al quwain",
+          "ras al khaimah",
+          "fujairah",
+        ];
+        if (
+          knownEmirates.some(
+            (emirate) =>
+              emirate.includes(queryLower) ||
+              queryLower.includes(emirate.replace(/\s/g, "")) ||
+              emirate.toLowerCase() === queryLower
+          )
+        ) {
+          searchPromises.push(
+            frappeAPI
+              .makeAuthenticatedRequest(
+                "GET",
+                `${addressEndpoint}?custom_emirate=${encodeURIComponent(query)}`
+              )
+              .then((response) => ({
+                type: "emirate",
+                data: response.message?.data || [],
+              }))
+              .catch(() => ({ type: "emirate", data: [] }))
+          );
+        }
+
+        const searchResults = await Promise.all(searchPromises);
+
+        searchResults.forEach((result) => {
+          if (result.data && Array.isArray(result.data)) {
+            const transformedData = result.data.map((address: any) => ({
+              ...address,
+              search_type: "address",
+              found_via: result.type,
+              customer_name:
+                address.customer_details?.customer_name ||
+                address.lead_details?.lead_name ||
+                `Address: ${address.custom_combined_address}`,
+              mobile_no:
+                address.custom_customer_phone_number ||
+                address.custom_lead_phone_number ||
+                address.customer_details?.mobile_no ||
+                address.lead_details?.mobile_no,
+              email_id:
+                address.custom_customer_email ||
+                address.lead_details?.email_id ||
+                address.customer_details?.email_id,
+              name: address.customer_details?.name || address.custom_lead_name,
+              lead_name: address.custom_lead_name,
+              // building_name: '',
+              // property_no: address.custom_property_number,
+              area: address.custom_combined_address,
+              address_details: {
+                emirate: address.custom_emirate,
+                area: address.custom_area,
+                community: address.custom_community,
+                street_name: address.custom_street_name,
+                property_number: address.custom_property_number,
+                combined_address: address.custom_combined_address,
+              },
+            }));
+            allResults.push(...transformedData);
+          }
+        });
       }
 
-      console.log(
-        `🎯 Total results before deduplication:`,
-        allResults.length,
-        allResults
-      );
-
-      // Remove duplicates
       const uniqueResults = allResults.filter((result, index, self) => {
-        const isDuplicate =
+        return (
+          index ===
           self.findIndex(
             (r) =>
-              (r.lead_name &&
-                result.lead_name &&
-                r.lead_name === result.lead_name) ||
-              (r.address_details?.combined_address &&
-                result.address_details?.combined_address &&
-                r.address_details.combined_address ===
-                  result.address_details.combined_address) ||
-              (r.customer_name === result.customer_name &&
-                r.mobile_no === result.mobile_no &&
-                r.email_id === result.email_id)
-          ) !== index;
-
-        if (isDuplicate) {
-          console.log(`🔄 Removing duplicate:`, result);
-        }
-
-        return !isDuplicate;
+              r.custom_combined_address === result.custom_combined_address ||
+              (r.custom_lead_name &&
+                result.custom_lead_name &&
+                r.custom_lead_name === result.custom_lead_name) ||
+              (r.site_name &&
+                result.site_name &&
+                r.site_name === result.site_name)
+          )
+        );
       });
 
-      console.log(`🎯 Unique results:`, uniqueResults.length, uniqueResults);
-
-      // Only add "Add New Customer" option if no results found
-      if (uniqueResults.length === 0) {
-        uniqueResults.push({
-          customer_name: query,
-          mobile_no: /^\d+$/.test(query) ? query : "",
-          email_id: query.includes("@") ? query : "",
-          is_new_customer: true,
-          search_type: "new",
-        });
-        console.log(`➕ No results found, adding new customer option`);
-      }
-
-      console.log(`📋 Final search results:`, uniqueResults);
       setSearchResults(uniqueResults);
       setShowDropdown(true);
     } catch (error) {
-      console.error("❌ Overall search error:", error);
-      // On error, show the "Add New Customer" option
-      setSearchResults([
-        {
-          customer_name: query,
-          mobile_no: /^\d+$/.test(query) ? query : "",
-          email_id: query.includes("@") ? query : "",
-          is_new_customer: true,
-          search_type: "new",
-        },
-      ]);
+      console.error("Search error:", error);
+      setSearchResults([]);
       setShowDropdown(true);
-      toast.error("Search failed. You can add a new customer instead.");
+      toast.error("Failed to search addresses. Please try again.");
     } finally {
       setIsSearching(false);
     }
@@ -526,12 +617,12 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
           customer_id: "",
           lead_id: "",
           // Clear address fields for new customers
-          building_name: "",
-          property_no: "",
+          // building_name: "",
+          // property_no: "",
           area: "",
           custom_property_category: "",
           custom_emirate: "",
-          custom_area: "",
+          custom_uae_area: "",
           custom_community: "",
           custom_street_name: "",
           custom_property_name__number: "",
@@ -545,12 +636,12 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
           customer_id: customer.name || "",
           lead_id: customer.lead_name || "",
           // Fill address fields from search result
-          building_name: customer.custom_building_name || "",
-          property_no: customer.address_details?.property_number || "",
+          // building_name: customer.custom_building_name || "",
+          // property_no: customer.address_details?.property_number || "",
           area: customer.address_details?.combined_address || "",
           custom_property_category: customer.custom_property_category || "",
           custom_emirate: customer.address_details?.emirate || "",
-          custom_area: customer.address_details?.area || "",
+          custom_uae_area: customer.address_details?.area || "",
           custom_community: customer.address_details?.community || "",
           custom_street_name: customer.address_details?.street_name || "",
           custom_property_name__number:
@@ -579,17 +670,15 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
             const lead = leadResponse.data;
             setFormData((prev) => ({
               ...prev,
-              building_name: lead.custom_building_name || prev.building_name,
-              property_no:
-                lead.custom_bulding__apartment__villa__office_number ||
-                prev.property_no,
+              // building_name: lead.custom_building_name || prev.building_name,
+              // property_no: lead.custom_bulding__apartment__villa__office_number || prev.property_no,
               area: lead.custom_property_area || prev.area,
               lead_id: lead.name,
               // Update property address fields from lead data
               custom_property_category:
                 lead.custom_property_category || prev.custom_property_category,
               custom_emirate: lead.custom_emirate || prev.custom_emirate,
-              custom_area: lead.custom_area || prev.custom_area,
+              custom_uae_area: lead.custom_area || prev.custom_uae_area,
               custom_community: lead.custom_community || prev.custom_community,
               custom_street_name:
                 lead.custom_street_name || prev.custom_street_name,
@@ -738,7 +827,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
   //             // Update property address fields from lead data
   //             custom_property_category: lead.custom_property_category || "",
   //             custom_emirate: lead.custom_emirate || "",
-  //             custom_area: lead.custom_area || "",
+  //             custom_uae_area: lead.custom_uae_area || "",
   //             custom_community: lead.custom_community || "",
   //             custom_street_name: lead.custom_street_name || "",
   //             custom_property_name__number:
@@ -971,10 +1060,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
 
     const hasValidPressingCharges =
       pressingCharges.length > 0
-        ? pressingCharges.every(
-            (charge) =>
-              charge.work_type && charge.price !== undefined && charge.price > 0
-          )
+        ? pressingCharges.every((charge) => charge.work_type)
         : true;
 
     if (!hasValidPressingCharges && pressingCharges.length > 0) {
@@ -984,12 +1070,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
 
     const hasValidMaterialsSold =
       materialsSold.length > 0
-        ? materialsSold.every(
-            (material) =>
-              material.work_type &&
-              material.price !== undefined &&
-              material.price > 0
-          )
+        ? materialsSold.every((material) => material.work_type)
         : true;
 
     if (!hasValidMaterialsSold && materialsSold.length > 0) {
@@ -1022,8 +1103,8 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
         doctype: "Job Card -Veneer Pressing",
         date: formData.date,
         party_name: formData.party_name,
-        property_no: formData.property_no,
-        building_name: formData.building_name,
+        // property_no: formData.property_no,
+        // building_name: formData.building_name,
         area: formData.area, // This will be the combined address from PropertyAddressSection
         start_date: formData.start_date,
         finish_date: formData.finish_date,
@@ -1038,7 +1119,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
         total_amount: calculateCombinedTotal(),
         custom_property_category: formData.custom_property_category || "",
         custom_emirate: formData.custom_emirate || "",
-        custom_area: formData.custom_area || "",
+        custom_uae_area: formData.custom_uae_area || "",
         custom_community: formData.custom_community || "",
         custom_street_name: formData.custom_street_name || "",
         custom_property_name__number:
@@ -1209,78 +1290,61 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                           {searchResults.length > 0 ? (
                             searchResults.map((result, index) => (
                               <div
-                                key={
-                                  result.is_new_customer
-                                    ? `new-customer-${index}`
-                                    : result.name ||
-                                      result.custom_combined_address ||
-                                      result.customer_name
-                                }
-                                className={`px-4 py-2 cursor-pointer ${
-                                  result.is_new_customer
-                                    ? "hover:bg-green-50 bg-green-25 border-t border-green-200"
-                                    : "hover:bg-gray-100"
-                                }`}
-                                onClick={() =>
-                                  result.is_new_customer
-                                    ? handleAddNewCustomer()
-                                    : handleCustomerSelect(result)
-                                }
+                                key={`search-result-${index}`} // Fixed: Using index to ensure uniqueness
+                                className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                                onClick={() => handleCustomerSelect(result)}
                               >
-                                {result.is_new_customer ? (
-                                  // "Add New Customer" option
-                                  <div className="flex items-center justify-between">
-                                    <div>
-                                      <p className="font-medium text-green-800">
-                                        No customers found for "
-                                        {result.customer_name}"
-                                      </p>
-                                      <p className="text-xs text-green-600">
-                                        Click to add a new customer
-                                      </p>
-                                    </div>
-                                    <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
-                                      Add New
+                                <p className="font-medium truncate">
+                                  {result.customer_name}
+                                  {result.is_new_customer && (
+                                    <span className="ml-2 text-xs text-gray-500">
+                                      (New Customer)
+                                    </span>
+                                  )}
+                                </p>
+                                {(result.mobile_no || result.email_id) && (
+                                  <div className="text-xs text-gray-500 space-x-2">
+                                    {result.mobile_no && (
+                                      <span className="inline-flex items-center">
+                                        <Phone className="h-3 w-3 mr-1" />
+                                        {result.mobile_no}
+                                      </span>
+                                    )}
+                                    {result.email_id && (
+                                      <span className="inline-flex items-center">
+                                        <Mail className="h-3 w-3 mr-1" />
+                                        {result.email_id}
+                                      </span>
+                                    )}
+                                  </div>
+                                )}
+                                {result.custom_combined_address && (
+                                  <div className="text-xs text-gray-500 mt-1 flex items-center">
+                                    <Home className="h-3 w-3 mr-1 flex-shrink-0" />
+                                    <span className="truncate">
+                                      {result.custom_combined_address}
                                     </span>
                                   </div>
-                                ) : (
-                                  // Existing customer option
-                                  <>
-                                    <p className="font-medium truncate">
-                                      {result.customer_name}
-                                    </p>
-                                    {(result.mobile_no || result.email_id) && (
-                                      <div className="text-xs text-gray-500 space-x-2">
-                                        {result.mobile_no && (
-                                          <span className="inline-flex items-center">
-                                            <Phone className="h-3 w-3 mr-1" />
-                                            {result.mobile_no}
-                                          </span>
-                                        )}
-                                        {result.email_id && (
-                                          <span className="inline-flex items-center">
-                                            <Mail className="h-3 w-3 mr-1" />
-                                            {result.email_id}
-                                          </span>
-                                        )}
-                                      </div>
-                                    )}
-                                    {result.custom_combined_address && (
-                                      <div className="text-xs text-gray-500 mt-1 flex items-center">
-                                        <Home className="h-3 w-3 mr-1 flex-shrink-0" />
-                                        <span className="truncate">
-                                          {result.custom_combined_address}
-                                        </span>
-                                      </div>
-                                    )}
-                                  </>
                                 )}
                               </div>
                             ))
                           ) : (
-                            // This shouldn't happen with the new logic, but keeping as fallback
-                            <div className="px-4 py-2 text-gray-500 text-sm">
-                              No results found
+                            <div
+                              key="no-results" // Added key for consistency
+                              className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center justify-between"
+                              onClick={handleAddNewCustomer}
+                            >
+                              <div>
+                                <p className="font-medium">
+                                  No customers found for "{searchQuery}"
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                  Click to add a new customer
+                                </p>
+                              </div>
+                              <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
+                                Add New
+                              </span>
                             </div>
                           )}
                         </div>
@@ -1294,6 +1358,15 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                         handleInputChange={handleInputChange}
                         handleSelectChange={handleSelectChange}
                         getPropertyArea={formData.area || ""}
+                        fieldNames={{
+                          propertyNumber: "custom_property_number_name",
+                          emirate: "custom_emirate",
+                          area: "custom_uae_area",
+                          community: "custom_community",
+                          streetName: "custom_street_name",
+                          propertyArea: "custom_area",
+                          propertyCategory: "custom_property_category",
+                        }}
                       />
                     </div>
 
@@ -1733,7 +1806,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                                 </div>
                               </div>
 
-                              <div className="space-y-2">
+                              {/* <div className="space-y-2">
                                 <Label className="text-xs font-medium text-gray-600">
                                   Price
                                 </Label>
@@ -1756,12 +1829,12 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                                     AED
                                   </span>
                                 </div>
-                              </div>
+                              </div> */}
 
-                              <div className="flex justify-between items-center pt-2">
-                                <Label className="text-xs font-medium text-gray-600">
+                              <div className="flex justify-end items-center pt-2">
+                                {/* <Label className="text-xs font-medium text-gray-600">
                                   Total Amount: {material.amount || 0} AED
-                                </Label>
+                                </Label> */}
                                 {!isReadOnly && (
                                   <Button
                                     type="button"

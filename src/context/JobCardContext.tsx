@@ -74,8 +74,8 @@ export interface JobCard {
   idx: number;
   date: string;
   party_name: string;
-  property_no: string;
-  building_name: string;
+  // property_no: string;
+  // building_name: string;
   area: string;
   start_date: string;
   finish_date: string;
@@ -86,6 +86,12 @@ export interface JobCard {
   doctype: string;
   material_sold: MaterialSold[];
   pressing_charges: PressingCharges[];
+  custom_uae_area: string;
+  custom_emirate: string;
+  custom_property_category: string;
+  custom_community: string;
+  custom_street_name: string;
+  custom_property_number_name: string;
 }
 
 export interface JobCardFormData {
@@ -93,8 +99,8 @@ export interface JobCardFormData {
   customer_id: string;
   date: string;
   party_name: string;
-  property_no: string;
-  building_name: string;
+  // property_no: string;
+  // building_name: string;
   area: string;
   start_date: string;
   finish_date: string;
@@ -105,6 +111,12 @@ export interface JobCardFormData {
   material_sold: MaterialSold[];
   pressing_charges: PressingCharges[];
   docstatus?: number;
+  custom_uae_area?: string;
+  custom_emirate?: string;
+  custom_property_category?: string;
+  custom_community?: string;
+  custom_street_name?: string;
+  custom_property_number_name?: string;
 }
 
 interface JobCardContextState {
@@ -172,8 +184,8 @@ const transformJobCardData = (apiResponse: any): JobCard => {
     // Job card specific fields
     date: actualData.date || '',
     party_name: actualData.party_name || '',
-    property_no: actualData.property_no || '',
-    building_name: actualData.building_name || '',
+    // property_no: actualData.property_no || '',
+    // building_name: actualData.building_name || '',
     area: actualData.area || '',
     start_date: actualData.start_date || '',
     finish_date: actualData.finish_date || '',
@@ -184,6 +196,12 @@ const transformJobCardData = (apiResponse: any): JobCard => {
     
     pressing_charges: Array.isArray(actualData.pressing_charges) ? actualData.pressing_charges : [],
     material_sold: Array.isArray(actualData.material_sold) ? actualData.material_sold : [],
+    custom_uae_area: actualData.custom_uae_area || '',
+    custom_emirate: actualData.custom_emirate || '',
+    custom_property_category: actualData.custom_property_category || '',
+    custom_community: actualData.custom_community || '',
+    custom_street_name: actualData.custom_street_name || '',
+    custom_property_number_name: actualData.custom_property_number_name || '',
   };
   
   console.log("✅ Transformed job card:", transformed);

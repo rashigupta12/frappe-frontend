@@ -498,7 +498,7 @@ const JobCardOtherList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
                   </div>
 
                   <p className="text-xs text-gray-600 leading-tight line-clamp-2">
-                    {[card.property_no, card.building_name, card.area]
+                    {[ card.area]
                       .filter(Boolean)
                       .join(", ") || "No Address"}
                   </p>

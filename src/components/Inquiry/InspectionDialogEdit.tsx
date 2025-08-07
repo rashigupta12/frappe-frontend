@@ -45,8 +45,8 @@ export default function InspectionDialog({
     specialRequirements: "",
     jobType: "",
     projectUrgency: "",
-    propertyType: "",
-    buildingType: "",
+    // propertyType: "",
+    // buildingType: "",
     unitNumber: "",
     phone: "",
     budgetRange: "",
@@ -71,8 +71,8 @@ export default function InspectionDialog({
           todoData.inquiry_data?.custom_special_requirements || "",
         jobType: todoData.inquiry_data?.custom_job_type || "",
         projectUrgency: todoData.inquiry_data?.custom_project_urgency || "",
-        propertyType: todoData.inquiry_data?.custom_property_type || "",
-        buildingType: todoData.inquiry_data?.custom_type_of_building || "",
+        // propertyType: todoData.inquiry_data?.custom_property_type || "",
+        // buildingType: todoData.inquiry_data?.custom_type_of_building || "",
         unitNumber:
           todoData.inquiry_data
             ?.custom_bulding__apartment__villa__office_number || "",
@@ -189,10 +189,10 @@ export default function InspectionDialog({
               <div className="break-words">
                 <span className="text-gray-900">
                   {[
-                    todoData?.inquiry_data?.custom_building_name,
+                    // todoData?.inquiry_data?.custom_building_name,
                     todoData?.inquiry_data?.custom_property_area,
                     todoData?.inquiry_data?.custom_property_type,
-                    todoData?.inquiry_data?.custom_type_of_building,
+                    // todoData?.inquiry_data?.custom_type_of_building,
                   ]
                     .filter(Boolean)
                     .join(" | ")}

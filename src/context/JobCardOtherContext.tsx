@@ -37,12 +37,12 @@ export interface Employee {
 }
 
 export interface JobCardOther {
-  custom_area: string;
+  custom_uae_area: string;
   custom_emirate: string;
   custom_property_category: string;
   custom_community: string;
   custom_street_name: string;
-  custom_property_name__number: string;
+  custom_property_numbername: string;
   name: string;
   owner: string;
   creation: string;
@@ -52,8 +52,8 @@ export interface JobCardOther {
   idx: number;
   date: string;
   party_name: string;
-  property_no: string;
-  building_name: string;
+  // property_no: string;
+  // building_name: string;
   area: string;
   start_date: string;
   finish_date: string;
@@ -69,8 +69,8 @@ export interface JobCardOther {
 export interface JobCardOtherFormData {
   date: string;
   party_name: string;
-  property_no: string;
-  building_name: string;
+  // property_no: string;
+  // building_name: string;
   area: string;
   start_date: string;
   finish_date: string;
@@ -83,12 +83,12 @@ export interface JobCardOtherFormData {
   lead_id: string;
   customer_id: string;
   custom_total_amount?: string;
-  custom_area?: string;
+  custom_uae_area?: string;
   custom_emirate?: string;
   custom_property_category?: string;
   custom_community?: string;
   custom_street_name?: string;
-  custom_property_name__number?: string;
+  custom_property_numbername?: string;
   custom_property_area?: string; // 🆕 ADDED for custom property area
 }
 
@@ -181,13 +181,13 @@ export const JobCardOtherProvider: React.FC<JobCardOtherProviderProps> = ({
       ac_v_no_and_date: actualData.ac_v_no_and_date || "",
 
       // Custom fields
-      custom_area: actualData.custom_area || "",
+      custom_uae_area: actualData.custom_uae_area || "",
       custom_emirate: actualData.custom_emirate || "",
       custom_property_category: actualData.custom_property_category || "",
       custom_community: actualData.custom_community || "",
       custom_street_name: actualData.custom_street_name || "",
-      custom_property_name__number:
-        actualData.custom_property_name__number || "",
+      custom_property_numbername:
+        actualData.custom_property_numbername || "",
       custom_property_area: actualData.custom_property_area || "", // 🆕 ADDED for custom property area
 
       services: Array.isArray(actualData.services) ? actualData.services : [], // 🆕 CHANGED

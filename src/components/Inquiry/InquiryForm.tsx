@@ -135,6 +135,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     null
   );
   const [fetchingCustomerDetails, setFetchingCustomerDetails] = useState(false);
+  const [showNewCustomerFields, setShowNewCustomerFields] = useState(false);
   const navigate = useNavigate();
 
   const updatedSections = useMemo(() => {
@@ -445,215 +446,369 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     onClose();
   };
 
-const handleCustomerSearch = useCallback(async (query: string) => {
-  if (!query.trim()) {
-    setSearchResults([]);
-    setShowDropdown(false);
-    return;
-  }
+  const handleCustomerSearch = useCallback(async (query: string) => {
+    if (!query.trim()) {
+      setSearchResults([]);
+      setShowDropdown(false);
+      setShowNewCustomerFields(false); // Hide new customer fields when search is empty
+      return;
+    }
+    setIsSearching(true);
+    try {
+      const allResults: any[] = [];
+      const addressEndpoint =
+        "/api/method/eits_app.site_address_search.search_site_addresses";
+      const queryLower = query.toLowerCase().trim();
 
-  setIsSearching(true);
-  try {
-    const allResults: any[] = [];
-    const addressEndpoint = "/api/method/eits_app.site_address_search.search_site_addresses";
+      const searchPromises: Promise<any>[] = [];
 
-    console.log("🔍 Starting search for query:", query);
+      if (queryLower.length >= 2) {
+        // ... (all your existing search logic remains the same) ...
+        // Existing search promises for addresses
+        searchPromises.push(
+          frappeAPI
+            .makeAuthenticatedRequest(
+              "GET",
+              `${addressEndpoint}?custom_area=${encodeURIComponent(query)}`
+            )
+            .then((response) => ({
+              type: "area",
+              data: response.message?.data || [],
+            }))
+            .catch(() => ({ type: "area", data: [] }))
+        );
+        searchPromises.push(
+          frappeAPI
+            .makeAuthenticatedRequest(
+              "GET",
+              `${addressEndpoint}?custom_community=${encodeURIComponent(query)}`
+            )
+            .then((response) => ({
+              type: "community",
+              data: response.message?.data || [],
+            }))
+            .catch(() => ({ type: "community", data: [] }))
+        );
+        searchPromises.push(
+          frappeAPI
+            .makeAuthenticatedRequest(
+              "GET",
+              `${addressEndpoint}?custom_street_name=${encodeURIComponent(
+                query
+              )}`
+            )
+            .then((response) => ({
+              type: "street",
+              data: response.message?.data || [],
+            }))
+            .catch(() => ({ type: "street", data: [] }))
+        );
 
-    // Search by all relevant fields
-    const searchFields = [
-      "custom_emirate",
-      "custom_area", 
-      "custom_community",
-      "custom_street_name",
-      "custom_property_number",
-      "custom_customer_email",
-      "custom_lead_email", 
-      "custom_customer_phone_number",
-      "custom_lead_phone_number",
-      "custom_lead_customer_name"
-    ];
+        // --- NEW: Search by Customer Name and Lead Name ---
+        searchPromises.push(
+          frappeAPI
+            .makeAuthenticatedRequest(
+              "GET",
+              `${addressEndpoint}?customer_name=${encodeURIComponent(query)}`
+            )
+            .then((response) => ({
+              type: "customer_name",
+              data: response.message?.data || [],
+            }))
+            .catch(() => ({ type: "customer_name", data: [] }))
+        );
+        searchPromises.push(
+          frappeAPI
+            .makeAuthenticatedRequest(
+              "GET",
+              `${addressEndpoint}?custom_lead_customer_name=${encodeURIComponent(
+                query
+              )}`
+            )
+            .then((response) => ({
+              type: "lead_name",
+              data: response.message?.data || [],
+            }))
+            .catch(() => ({ type: "lead_name", data: [] }))
+        );
+        // Always search, whether partial or full email
+        searchPromises.push(
+          frappeAPI
+            .makeAuthenticatedRequest(
+              "GET",
+              `${addressEndpoint}?custom_customer_email=${encodeURIComponent(
+                query
+              )}`
+            )
+            .then((response) => ({
+              type: "customer_email",
+              data: response.message?.data || [],
+            }))
+            .catch(() => ({ type: "customer_email", data: [] }))
+        );
 
-    // Make API calls for each field
-    for (const field of searchFields) {
-      try {
-        const url = `${addressEndpoint}?${field}=${encodeURIComponent(query)}`;
-        console.log(`📡 Making API call for field ${field}:`, url);
-        
-        const response = await frappeAPI.makeAuthenticatedRequest("GET", url);
-        console.log(`✅ Response for ${field}:`, response);
+        searchPromises.push(
+          frappeAPI
+            .makeAuthenticatedRequest(
+              "GET",
+              `${addressEndpoint}?custom_lead_email=${encodeURIComponent(
+                query
+              )}`
+            )
+            .then((response) => ({
+              type: "lead_email",
+              data: response.message?.data || [],
+            }))
+            .catch(() => ({ type: "lead_email", data: [] }))
+        );
+        // --- END NEW ---
 
-        // Check if we have data in the response
-        if (response && response.message && response.message.data) {
-          const responseData = response.message.data;
-          console.log(`📋 Data for ${field}:`, responseData);
+        if (/^\d+$/.test(query)) {
+          searchPromises.push(
+            frappeAPI
+              .makeAuthenticatedRequest(
+                "GET",
+                `${addressEndpoint}?custom_property_number=${encodeURIComponent(
+                  query
+                )}`
+              )
+              .then((response) => ({
+                type: "property",
+                data: response.message?.data || [],
+              }))
+              .catch(() => ({ type: "property", data: [] }))
+          );
+        }
 
-          if (Array.isArray(responseData) && responseData.length > 0) {
-            // Transform each result
-            const transformedData = responseData.map((address: any) => {
-              console.log(`🔄 Transforming address:`, address);
-              
-              const transformed = {
-                ...address,
-                search_type: "address",
-                found_via: field,
-                customer_name: 
-                  address.custom_lead_customer_name || 
-                  address.lead_details?.lead_name || 
-                  address.customer_details?.customer_name || 
-                  "Unknown Customer",
-                mobile_no:
-                  address.custom_lead_phone_number ||
-                  address.custom_customer_phone_number ||
-                  address.lead_details?.mobile_no ||
-                  address.customer_details?.mobile_no ||
-                  "",
-                email_id:
-                  address.custom_lead_email ||
-                  address.custom_customer_email ||
-                  address.lead_details?.email_id ||
-                  address.customer_details?.email_id ||
-                  "",
-                name: address.custom_lead_name || address.customer_details?.name,
-                lead_name: address.custom_lead_name,
-                address_details: {
-                  emirate: address.custom_emirate,
-                  area: address.custom_area,
-                  community: address.custom_community,
-                  street_name: address.custom_street_name,
-                  property_number: address.custom_property_number,
-                  combined_address: address.custom_combined_address || 
-                    `${address.custom_emirate || ''}, ${address.custom_area || ''}, ${address.custom_community || ''}, ${address.custom_street_name || ''}, ${address.custom_property_number || ''}`.replace(/,\s*,/g, ',').replace(/^,\s*|,\s*$/g, ''),
-                },
-              };
-              
-              console.log(`✨ Transformed result:`, transformed);
-              return transformed;
-            });
+        if (/^\+?\d+$/.test(query.replace(/[\s-]/g, ""))) {
+          const cleanPhone = query.replace(/[\s-]/g, "");
+          searchPromises.push(
+            frappeAPI
+              .makeAuthenticatedRequest(
+                "GET",
+                `${addressEndpoint}?custom_customer_phone_number=${encodeURIComponent(
+                  cleanPhone
+                )}`
+              )
+              .then((response) => ({
+                type: "customer_phone",
+                data: response.message?.data || [],
+              }))
+              .catch(() => ({ type: "customer_phone", data: [] }))
+          );
+          searchPromises.push(
+            frappeAPI
+              .makeAuthenticatedRequest(
+                "GET",
+                `${addressEndpoint}?custom_lead_phone_number=${encodeURIComponent(
+                  cleanPhone
+                )}`
+              )
+              .then((response) => ({
+                type: "lead_phone",
+                data: response.message?.data || [],
+              }))
+              .catch(() => ({ type: "lead_phone", data: [] }))
+          );
+        }
 
+        const knownEmirates = [
+          "dubai",
+          "abu dhabi",
+          "sharjah",
+          "ajman",
+          "umm al quwain",
+          "ras al khaimah",
+          "fujairah",
+        ];
+        if (
+          knownEmirates.some(
+            (emirate) =>
+              emirate.includes(queryLower) ||
+              queryLower.includes(emirate.replace(/\s/g, "")) ||
+              emirate.toLowerCase() === queryLower
+          )
+        ) {
+          searchPromises.push(
+            frappeAPI
+              .makeAuthenticatedRequest(
+                "GET",
+                `${addressEndpoint}?custom_emirate=${encodeURIComponent(query)}`
+              )
+              .then((response) => ({
+                type: "emirate",
+                data: response.message?.data || [],
+              }))
+              .catch(() => ({ type: "emirate", data: [] }))
+          );
+        }
+
+        const searchResults = await Promise.all(searchPromises);
+
+        searchResults.forEach((result) => {
+          if (result.data && Array.isArray(result.data)) {
+            const transformedData = result.data.map((address: any) => ({
+              ...address,
+              search_type: "address",
+              found_via: result.type,
+              customer_name:
+                address.customer_details?.customer_name ||
+                address.lead_details?.lead_name ||
+                `Address: ${address.custom_combined_address}`,
+              mobile_no:
+                address.custom_customer_phone_number ||
+                address.custom_lead_phone_number ||
+                address.customer_details?.mobile_no ||
+                address.lead_details?.mobile_no,
+              email_id:
+                address.custom_customer_email ||
+                address.lead_details?.email_id ||
+                address.customer_details?.email_id,
+              name: address.customer_details?.name || address.custom_lead_name,
+              lead_name: address.custom_lead_name,
+              // building_name: "",
+              // property_no: address.custom_property_number,
+              area: address.custom_combined_address,
+              address_details: {
+                emirate: address.custom_emirate,
+                area: address.custom_area,
+                community: address.custom_community,
+                street_name: address.custom_street_name,
+                property_number: address.custom_property_number,
+                combined_address: address.custom_combined_address,
+              },
+            }));
             allResults.push(...transformedData);
-            console.log(`📊 Added ${transformedData.length} results from ${field}`);
           }
-        }
-      } catch (error) {
-        console.error(`❌ Error searching field ${field}:`, error);
+        });
       }
-    }
 
-    console.log(`🎯 Total results before deduplication:`, allResults.length, allResults);
-
-    // Remove duplicates
-    const uniqueResults = allResults.filter(
-      (result, index, self) => {
-        const isDuplicate = self.findIndex(
-          (r) =>
-            (r.lead_name && result.lead_name && r.lead_name === result.lead_name) ||
-            (r.address_details?.combined_address && 
-             result.address_details?.combined_address && 
-             r.address_details.combined_address === result.address_details.combined_address) ||
-            (r.customer_name === result.customer_name && 
-             r.mobile_no === result.mobile_no && 
-             r.email_id === result.email_id)
-        ) !== index;
-        
-        if (isDuplicate) {
-          console.log(`🔄 Removing duplicate:`, result);
-        }
-        
-        return !isDuplicate;
-      }
-    );
-
-    console.log(`🎯 Unique results:`, uniqueResults.length, uniqueResults);
-
-    // If no results found, add a "new customer" option
-    if (uniqueResults.length === 0) {
-      console.log(`➕ No results found, adding new customer option`);
-      uniqueResults.push({
-        customer_name: query,
-        mobile_no: "",
-        email_id: "",
-        is_new_customer: true,
-        search_type: "new",
+      const uniqueResults = allResults.filter((result, index, self) => {
+        return (
+          index ===
+          self.findIndex(
+            (r) =>
+              r.custom_combined_address === result.custom_combined_address ||
+              (r.custom_lead_name &&
+                result.custom_lead_name &&
+                r.custom_lead_name === result.custom_lead_name) ||
+              (r.site_name &&
+                result.site_name &&
+                r.site_name === result.site_name)
+          )
+        );
       });
+
+      setSearchResults(uniqueResults);
+      setShowDropdown(true);
+
+      // CRITICAL: Show new customer fields when no results are found
+      if (uniqueResults.length === 0) {
+        setShowNewCustomerFields(true);
+      } else {
+        setShowNewCustomerFields(false);
+      }
+    } catch (error) {
+      console.error("Search error:", error);
+      setSearchResults([]);
+      setShowDropdown(true);
+      setShowNewCustomerFields(true); // Show new customer fields on error (no results)
+      toast.error("Failed to search addresses. Please try again.");
+    } finally {
+      setIsSearching(false);
     }
+  }, []);
 
-    console.log(`📋 Final search results:`, uniqueResults);
-    setSearchResults(uniqueResults);
-    setShowDropdown(true);
+  const handleCustomerSelect = async (result: any) => {
+    setFetchingCustomerDetails(true);
+    setShowNewCustomerFields(false); // Always hide new fields when an existing customer is selected
 
-  } catch (error) {
-    console.error("❌ Overall search error:", error);
-    setSearchResults([]);
-    setShowDropdown(false);
-    toast.error("Failed to search. Please try again.");
-  } finally {
-    setIsSearching(false);
-  }
-}, []);
+    try {
+      if (result.is_new_customer) {
+        // Logic for creating a new customer
+        setFormData({
+          ...formData,
+          new_customer_name: result.customer_name || searchQuery,
+          new_customer_phone: result.mobile_no || "",
+          new_customer_email: result.email_id || "",
+          // Clear existing customer fields
+          customer_id: "",
+          lead_id: "",
+          lead_name: "",
+          mobile_no: "",
+          email_id: "",
+          // Clear address fields for a new customer
+          custom_property_area: "",
+          custom_emirate: "",
+          custom_community: "",
+          custom_area: "",
+          custom_street_name: "",
+          custom_property_name__number: "",
+        });
+        setShowNewCustomerFields(true);
+        setSearchQuery(result.customer_name || searchQuery);
+      } else {
+        // Logic for selecting an existing customer
+        const customerData = {
+          lead_name: result.customer_name,
+          email_id: result.email_id || "",
+          mobile_no: result.mobile_no || "+971 ",
+          customer_id: result.name || "",
+          lead_id: result.custom_lead_name || "",
+          custom_property_area: result.custom_combined_address || "",
+          custom_emirate: result.custom_emirate || "",
+          custom_community: result.custom_community || "",
+          custom_area: result.custom_area || "",
+          custom_street_name: result.custom_street_name || "",
+          custom_property_name__number: result.custom_property_number || "",
+        };
+        setFormData((prev) => ({
+          ...prev,
+          ...customerData,
+          // Reset new customer fields just in case
+          new_customer_name: "",
+          new_customer_phone: "",
+          new_customer_email: "",
+        }));
 
- // In InquiryForm.tsx
+        // Set the search bar text to the selected customer's name
+        setSearchQuery(result.customer_name);
 
-const handleCustomerSelect = async (result: any) => {
-  setFetchingCustomerDetails(true);
-  try {
-    if (result.is_new_customer) {
-      setFormData((prev) => ({
-        ...prev,
-        lead_name: result.customer_name,
-        mobile_no: result.mobile_no || "",
-        email_id: result.email_id || "",
-        // Clear address fields for new customers
-        custom_property_area: "",
-        custom_emirate: "",
-        custom_community: "",
-        custom_area: "",
-        custom_street_name: "",
-        custom_property_name__number: "",
-      }));
-      setSearchQuery(result.customer_name);
-    } else {
-      const customerData = {
-        lead_name: result.customer_name,
-        email_id: result.email_id || "",
-        mobile_no: result.mobile_no || "+971 ",
-        customer_id: result.name || "",
-        lead_id: result.custom_lead_name || "",
-        custom_property_area: result.custom_combined_address || "",
-        custom_emirate: result.custom_emirate || "",
-        custom_community: result.custom_community || "",
-        custom_area: result.custom_area || "",
-        custom_street_name: result.custom_street_name || "",
-        custom_property_name__number: result.custom_property_number || "",
-      };
-      setFormData((prev) => ({ ...prev, ...customerData }));
-
-      // This will ensure the search bar reflects the selected customer's name
-      setSearchQuery(result.customer_name);
+        // We might need to hide the dropdown and the "new customer" fields
+        setShowNewCustomerFields(false);
+      }
+    } finally {
+      setFetchingCustomerDetails(false);
+      setShowDropdown(false);
     }
-  } finally {
-    setFetchingCustomerDetails(false);
+  };
+
+  const handleCreateNewCustomer = () => {
+    setShowNewCustomerFields(true);
     setShowDropdown(false);
-  }
-};
+  };
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value;
     setSearchQuery(query);
 
+    // Immediately hide dropdown and new customer fields if search is empty
+    if (!query.trim()) {
+      setSearchResults([]);
+      setShowDropdown(false);
+      setShowNewCustomerFields(false);
+      return;
+    }
+
     if (searchTimeout) {
       clearTimeout(searchTimeout);
     }
 
-    if (query.length > 0) {
-      setSearchTimeout(
-        setTimeout(() => {
-          handleCustomerSearch(query);
-        }, 300)
-      );
-    } else {
-      setSearchResults([]);
-      setShowDropdown(false);
-    }
+    setSearchTimeout(
+      setTimeout(() => {
+        handleCustomerSearch(query);
+      }, 300)
+    );
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -777,13 +932,9 @@ const handleCustomerSelect = async (result: any) => {
                             {showDropdown && (
                               <div className="absolute z-10 mt-1 w-full bg-white shadow-lg rounded-md border border-gray-200 max-h-60 overflow-y-auto">
                                 {searchResults.length > 0 ? (
-                                  searchResults.map((result) => (
+                                  searchResults.map((result, index) => (
                                     <div
-                                      key={
-                                        result.name ||
-                                        result.custom_combined_address ||
-                                        result.customer_name
-                                      }
+                                      key={`search-result-${index}`}
                                       className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
                                       onClick={() =>
                                         handleCustomerSelect(result)
@@ -825,70 +976,88 @@ const handleCustomerSelect = async (result: any) => {
                                     </div>
                                   ))
                                 ) : (
-                                  <div className="px-4 py-2 text-sm text-gray-500">
-                                    No results found
+                                  <div
+                                    key="no-results"
+                                    className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center justify-between"
+                                    onClick={handleCreateNewCustomer} // Add this click handler
+                                  >
+                                    <div>
+                                      <p className="font-medium">
+                                        No customers found for "{searchQuery}"
+                                      </p>
+                                      <p className="text-xs text-gray-500">
+                                        Please create a new customer.
+                                      </p>
+                                    </div>
                                   </div>
                                 )}
                               </div>
                             )}
                           </div>
 
-                          <div className="col-span-1">
-                            <Label
-                              htmlFor="lead_name"
-                              className="text-sm font-medium text-gray-700"
-                            >
-                              Lead Name <span className="text-red-500">*</span>
-                            </Label>
-                            <Input
-                              id="lead_name"
-                              name="lead_name"
-                              value={formData.lead_name || ""}
-                              onChange={handleInputChange}
-                              placeholder="Enter lead name"
-                              required
-                            />
-                          </div>
+                          {showNewCustomerFields || formData.lead_name ? (
+                            <>
+                              <div className="col-span-1">
+                                <Label
+                                  htmlFor="lead_name"
+                                  className="text-sm font-medium text-gray-700"
+                                >
+                                  Customer Name{" "}
+                                  <span className="text-red-500">*</span>
+                                </Label>
+                                <Input
+                                  id="lead_name"
+                                  name="lead_name"
+                                  value={formData.lead_name || ""}
+                                  onChange={handleInputChange}
+                                  placeholder="Enter customer name"
+                                  required
+                                />
+                              </div>
 
-                          <div className="col-span-1">
-                            <Label
-                              htmlFor="phone"
-                              className="text-sm font-medium text-gray-700"
-                            >
-                              Phone Number{" "}
-                              <span className="text-red-500">*</span>
-                            </Label>
-                            <Input
-                              type="tel"
-                              id="phone"
-                              name="mobile_no"
-                              value={formData.mobile_no || phoneNumber}
-                              onChange={handlePhoneChange}
-                              onKeyDown={handleKeyDown}
-                              placeholder="+971 XX XXX XXXX"
-                              className="w-full"
-                              maxLength={17}
-                              required
-                            />
-                          </div>
+                              <div className="col-span-1">
+                                <Label
+                                  htmlFor="phone"
+                                  className="text-sm font-medium text-gray-700"
+                                >
+                                  Phone Number{" "}
+                                  <span className="text-red-500">*</span>
+                                </Label>
+                                <Input
+                                  type="tel"
+                                  id="phone"
+                                  name="mobile_no"
+                                  value={formData.mobile_no || phoneNumber}
+                                  onChange={handlePhoneChange}
+                                  onKeyDown={handleKeyDown}
+                                  placeholder="+971 XX XXX XXXX"
+                                  className="w-full"
+                                  maxLength={17}
+                                  required
+                                />
+                              </div>
 
-                          <div className="col-span-1">
-                            <Label
-                              htmlFor="email_id"
-                              className="text-sm font-medium text-gray-700"
-                            >
-                              Email
-                            </Label>
-                            <Input
-                              type="email"
-                              id="email_id"
-                              name="email_id"
-                              value={formData.email_id || ""}
-                              onChange={handleInputChange}
-                              placeholder="Enter email"
-                            />
-                          </div>
+                              <div className="col-span-1">
+                                <Label
+                                  htmlFor="email_id"
+                                  className="text-sm font-medium text-gray-700"
+                                >
+                                  Email
+                                </Label>
+                                <Input
+                                  type="email"
+                                  id="email_id"
+                                  name="email_id"
+                                  value={formData.email_id || ""}
+                                  onChange={handleInputChange}
+                                  placeholder="Enter email"
+                                />
+                              </div>
+                            </>
+                          ) : null}
+                          {/* --- */}
 
+                          {/* Existing fields (source of inquiry, etc.) */}
                           <div className="col-span-1 md:col-span-2">
                             <Label
                               htmlFor="source"
@@ -1317,38 +1486,36 @@ const handleCustomerSelect = async (result: any) => {
                         </div>
                       )}
                     </div>
-                    
                   </div>
                 </div>
               ))}
               <div className="flex justify-end gap-3 pt-6">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleClose}
-                className="px-6"
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                disabled={loading}
-                className="px-6 bg-emerald-600 hover:bg-emerald-700"
-              >
-                {loading ? (
-                  <div className="flex items-center gap-2">
-                    <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white"></div>
-                    Saving...
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2 text-white">
-                    <Save className="h-4 w-4" />
-                    {inquiry ? "Update" : "Create"} Inquiry
-                  </div>
-                )}
-              </Button>
-            </div>
-
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleClose}
+                  className="px-6"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={loading}
+                  className="px-6 bg-emerald-600 hover:bg-emerald-700"
+                >
+                  {loading ? (
+                    <div className="flex items-center gap-2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white"></div>
+                      Saving...
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 text-white">
+                      <Save className="h-4 w-4" />
+                      {inquiry ? "Update" : "Create"} Inquiry
+                    </div>
+                  )}
+                </Button>
+              </div>
             </form>
           </div>
         </div>
