@@ -11,6 +11,7 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
 import FeedbackComponent from "../../common/FeedbackManagement";
 import { useAuth } from "../../context/AuthContext";
+import { RoleSwitcherMinimal } from "../../common/RoleSwitcher";
 import MobileSiteInspectionList from "../inspection/CompletedInspectionList";
 import MobileInspectionList from "../inspection/InspectionList";
 import CreateInspection from "../inspection/IspectionDetail";
@@ -20,7 +21,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 export default function InspectorDashboard() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { user, logout } = useAuth();
+  const { user, logout, isMultiRole } = useAuth();
 
   const initialTab = searchParams.get("tab") || "todos";
   const [activeTab, setActiveTab] = useState(initialTab);
@@ -64,7 +65,7 @@ export default function InspectorDashboard() {
   };
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden ">
+    <div className="h-screen flex flex-col overflow-hidden">
       {/* Top Navigation Bar - Fixed */}
       <nav className="bg-white shadow-lg border-b-2 border-emerald-200 px-3 sm:px-4 py-2 flex-shrink-0 z-50">
         <div className="flex items-center justify-between">
@@ -95,15 +96,30 @@ export default function InspectorDashboard() {
             </Link>
           </div>
 
-          {/* Title - Visible on all screens */}
-          {/* <h1 className="text-center text-lg sm:text-xl font-bold text-emerald-800">
-            Inspector
-          </h1> */}
+          {/* Title with Role Switcher */}
+          <div className="flex items-center gap-2">
+            <h1 className="text-center text-lg sm:text-xl font-bold text-emerald-800">
+              Inspector
+            </h1>
+            {/* Show role switcher if user has multiple roles */}
+            {isMultiRole && (
+              <div className="hidden sm:block">
+                <RoleSwitcherMinimal />
+              </div>
+            )}
+          </div>
 
           {/* User Menu */}
           <div className="flex items-center gap-1 sm:gap-2">
-            {/* Mobile Logout Button */}
-            <FeedbackComponent className="lg:hidden" >
+            {/* Mobile Role Switcher */}
+            {isMultiRole && (
+              <div className="sm:hidden">
+                <RoleSwitcherMinimal />
+              </div>
+            )}
+
+            {/* Mobile Feedback Button */}
+            <FeedbackComponent className="lg:hidden">
               <Button
                 variant="ghost"
                 size="icon"
@@ -113,6 +129,8 @@ export default function InspectorDashboard() {
                 <span className="sr-only">Feedback</span>
               </Button>
             </FeedbackComponent>
+
+            {/* Mobile Logout Button */}
             <Button
               variant="ghost"
               size="icon"
@@ -141,17 +159,22 @@ export default function InspectorDashboard() {
                 className="w-48 border border-emerald-200 bg-white shadow-md"
                 align="end"
               >
+                {/* Role information in desktop menu */}
+                {isMultiRole && (
+                  <div className="px-3 py-2 border-b border-gray-100">
+                    <RoleSwitcherMinimal className="w-full" />
+                  </div>
+                )}
                 <FeedbackComponent>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="w-full justify-start gap-2 text-blue-600 hover:bg-blue-100 hover:text-blue-700 transition-colors"
-                    >
-                      <MessageCircle className="h-4 w-4" />
-                      Feedback
-                    </Button>
-                  </FeedbackComponent>
-
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full justify-start gap-2 text-blue-600 hover:bg-blue-100 hover:text-blue-700 transition-colors"
+                  >
+                    <MessageCircle className="h-4 w-4" />
+                    Feedback
+                  </Button>
+                </FeedbackComponent>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -166,6 +189,7 @@ export default function InspectorDashboard() {
           </div>
         </div>
       </nav>
+
       {/* Main Content Area with Sidebar */}
       <div className="flex flex-1 overflow-hidden">
         {/* Mobile Sidebar Overlay */}
@@ -179,11 +203,11 @@ export default function InspectorDashboard() {
         {/* Sidebar - Fixed on desktop, overlay on mobile */}
         <aside
           className={`
-    fixed lg:relative z-40 w-64 bg-white border-r-2 border-emerald-200 
-    h-full p-4 shadow-lg lg:shadow-none overflow-y-auto flex-shrink-0
-    transform transition-transform duration-300 ease-in-out lg:transform-none
-    ${sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
-  `}
+            fixed lg:relative z-40 w-64 bg-white border-r-2 border-emerald-200 
+            h-full p-4 shadow-lg lg:shadow-none overflow-y-auto flex-shrink-0
+            transform transition-transform duration-300 ease-in-out lg:transform-none
+            ${sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
+          `}
         >
           <nav className="space-y-2 mt-2">
             <Button
@@ -210,16 +234,15 @@ export default function InspectorDashboard() {
               <ClipboardList className="h-5 w-5" />
               <span className="font-medium">Inspections</span>
             </Button>
-            {/* Removed Details button from sidebar but kept in mobile navigation */}
           </nav>
         </aside>
+
         {/* Main Content Container */}
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Main Content - Scrollable */}
-          <main className="flex-1 overflow-y-auto ">
+          <main className="flex-1 overflow-y-auto">
             <div className="w-full mx-auto">
-              {/* Main Content Area */}
-              <div className="pb-20 ">{renderContent()}</div>
+              <div className="pb-20">{renderContent()}</div>
             </div>
           </main>
 
@@ -232,11 +255,11 @@ export default function InspectorDashboard() {
                 className="flex-1 max-w-xs flex justify-center"
               >
                 <button className={`flex flex-col items-center justify-center w-full py-1 group ${activeTab === "todos" ? "bg-emerald-50 border-emerald-600" : ""}`}>
-                  <div className="w-10 h-6 flex items-center justify-center group-active:scale-95 transition-transform ">
+                  <div className="w-10 h-6 flex items-center justify-center group-active:scale-95 transition-transform">
                     <ListTodo
                       className={`h-5 w-5 ${
                         activeTab === "todos"
-                          ? "border-emerald-600 bg-emerald-50 "
+                          ? "border-emerald-600 bg-emerald-50"
                           : "text-gray-500"
                       }`}
                     />
@@ -263,7 +286,7 @@ export default function InspectorDashboard() {
                     <ClipboardList
                       className={`h-5 w-5 ${
                         activeTab === "inspections"
-                          ? "border-emerald-600 bg-emerald-50 "
+                          ? "border-emerald-600 bg-emerald-50"
                           : "text-gray-500"
                       }`}
                     />
@@ -279,33 +302,6 @@ export default function InspectorDashboard() {
                   </span>
                 </button>
               </Link>
-
-              {/* Details Button */}
-              {/* <Link
-                to="/inspector?tab=details"
-                className="flex-1 max-w-xs flex justify-center"
-              >
-                <button className="flex flex-col items-center justify-center w-full py-1 group">
-                  <div className="w-10 h-6 flex items-center justify-center group-active:scale-95 transition-transform">
-                    <FileText
-                      className={`h-5 w-5 ${
-                        activeTab === "details"
-                          ? "text-emerald-600"
-                          : "text-gray-500"
-                      }`}
-                    />
-                  </div>
-                  <span
-                    className={`text-xs font-medium mt-1 ${
-                      activeTab === "details"
-                        ? "text-emerald-600"
-                        : "text-gray-600"
-                    }`}
-                  >
-                    Details
-                  </span>
-                </button>
-              </Link> */}
             </div>
           </div>
         </div>

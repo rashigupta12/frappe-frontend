@@ -1,11 +1,11 @@
-// src/App.tsx
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Toaster } from "react-hot-toast";
 import {
   Navigate,
   Route,
   BrowserRouter as Router,
   Routes,
+  useLocation,
 } from "react-router-dom";
 import LoginPage from "./components/auth/Login";
 import AccountUser from "./components/pages/AccountUser";
@@ -16,9 +16,7 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import { JobCardProvider } from "./context/JobCardContext";
 import { JobCardOtherProvider } from "./context/JobCardOtherContext";
 import { LeadsProvider } from "./context/LeadContext";
-import { roleMiddleware } from "./middleware/roleMiddleware";
 
-import { frappeAPI } from "./api/frappeClient";
 import "./App.css";
 import { PasswordResetLoader } from "./common/Loader";
 import { FirstTimePasswordReset } from "./components/auth/NewPassword";
@@ -26,30 +24,23 @@ import { FirstTimePasswordReset } from "./components/auth/NewPassword";
 interface ProtectedRouteProps {
   children: ReactNode;
   allowedRoles?: string[];
+  requireExactRole?: boolean;
 }
 
-// In your App.tsx
 const ProtectedRoute = ({
   children,
   allowedRoles = [],
+  requireExactRole = false,
 }: ProtectedRouteProps) => {
-  const { isAuthenticated, user, loading } = useAuth();
+  const { isAuthenticated, currentRole, availableRoles, loading } = useAuth();
+  const location = useLocation();
 
+  // Add a brief delay if we're in the middle of a role switch
+  const [isCheckingAccess, setIsCheckingAccess] = useState(true);
   useEffect(() => {
-    // Check if password reset is required
-    const checkPasswordReset = async () => {
-      if (user?.username) {
-        const firstLoginCheck = await frappeAPI.checkFirstLogin(user.username);
-        if (firstLoginCheck.requiresPasswordReset) {
-          window.location.href = `/first-time-password-reset?email=${encodeURIComponent(
-            user.username
-          )}`;
-        }
-      }
-    };
-
-    checkPasswordReset();
-  }, [user]);
+    const timer = setTimeout(() => setIsCheckingAccess(false), 50);
+    return () => clearTimeout(timer);
+  }, []);
 
   if (loading) {
     return <PasswordResetLoader />;
@@ -59,38 +50,45 @@ const ProtectedRoute = ({
     return <Navigate to="/login" replace />;
   }
 
-  // Check role-based access
-  if (
-    allowedRoles.length > 0 &&
-    !roleMiddleware(user?.role ?? "", allowedRoles)
-  ) {
-    return <Navigate to="/unauthorized" replace />;
+  if (isCheckingAccess) {
+    return <PasswordResetLoader />;
+  }
+
+  if (allowedRoles.length > 0) {
+    let hasAccess = false;
+
+    if (requireExactRole) {
+      hasAccess = currentRole ? allowedRoles.includes(currentRole) : false;
+    } else {
+      hasAccess = allowedRoles.some(role => availableRoles.includes(role));
+    }
+
+    if (!hasAccess) {
+      // If user doesn't have access but has other roles, redirect to their primary role
+      if (availableRoles.length > 0) {
+        const primaryRole = availableRoles[0];
+        const roleRoutes: Record<string, string> = {
+          'EITS_Sale_Representative': '/sales',
+          'EITS_Site_Inspector': '/inspector',
+          'EITS_Project_Manager': '/project_manager',
+          'accountUser': '/accountUser'
+        };
+
+        const redirectRoute = roleRoutes[primaryRole];
+        if (redirectRoute && location.pathname !== redirectRoute) {
+          return <Navigate to={redirectRoute} replace />;
+        }
+      }
+      
+      return <Navigate to="/unauthorized" replace />;
+    }
   }
 
   return <>{children}</>;
 };
 
-// Public Route - prevents authenticated users from accessing login
-// In your App.tsx - Fix the PublicRoute component
-
 const PublicRoute = ({ children }: { children: ReactNode }) => {
-  const { isAuthenticated, loading, user } = useAuth();
-
-  useEffect(() => {
-    // Check if password reset is required
-    const checkPasswordReset = async () => {
-      if (user?.username && isAuthenticated) {
-        const firstLoginCheck = await frappeAPI.checkFirstLogin(user.username);
-        if (firstLoginCheck.requiresPasswordReset) {
-          window.location.href = `/first-time-password-reset?email=${encodeURIComponent(
-            user.username
-          )}`;
-        }
-      }
-    };
-
-    checkPasswordReset();
-  }, [user, isAuthenticated]);
+  const { isAuthenticated, loading, currentRole, availableRoles } = useAuth();
 
   if (loading) {
     return <PasswordResetLoader />;
@@ -98,121 +96,42 @@ const PublicRoute = ({ children }: { children: ReactNode }) => {
 
   if (
     isAuthenticated &&
-    user &&
     !window.location.pathname.includes("first-time-password-reset")
   ) {
-    // Check if password reset is required first
-    if (user.requiresPasswordReset) {
-      return (
-        <Navigate
-          to={`/first-time-password-reset?email=${encodeURIComponent(
-            user.username
-          )}`}
-          replace
-        />
-      );
-    }
+    const activeRole = currentRole || availableRoles[0] || "accountUser";
+    const roleRoutes: Record<string, string> = {
+      EITS_Sale_Representative: "/sales",
+      EITS_Site_Inspector: "/inspector",
+      EITS_Project_Manager: "/project_manager",
+      accountUser: "/accountUser",
+    };
 
-    // ✅ FIXED: Role-based redirect with correct role names
-    switch (user.role) {
-      case "EITS_Sale_Representative":
-        return <Navigate to="/sales" replace />;
-      case "EITS_Project_Manager": // ✅ FIXED: Use EITS_Project_Manager instead of project_manager
-        return <Navigate to="/project_manager" replace />;
-      case "EITS_Site_Inspector":
-        return <Navigate to="/inspector" replace />;
-      case "accountUser":
-        return <Navigate to="/accountUser" replace />;
-      case "admin":
-        return <Navigate to="/admin" replace />;
-      default:
-        return <Navigate to="/user" replace />;
+    const redirectRoute = roleRoutes[activeRole];
+    if (redirectRoute) {
+      return <Navigate to={redirectRoute} replace />;
     }
   }
 
   return <>{children}</>;
 };
-// If user is authenticated, redirect to appropriate dashboard
 
-// Dashboard Router - routes users to appropriate dashboard based on role
 const DashboardRouter = () => {
-  const { user } = useAuth();
+  const { currentRole, availableRoles } = useAuth();
 
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
+  const activeRole = currentRole || availableRoles[0] || "accountUser";
+  const roleRoutes: Record<string, string> = {
+    EITS_Sale_Representative: "/sales",
+    EITS_Site_Inspector: "/inspector",
+    EITS_Project_Manager: "/project_manager",
+    accountUser: "/accountUser",
+  };
 
-  return <Navigate to={`/${user.role}`} replace />;
+  const targetRoute = roleRoutes[activeRole];
+  return <Navigate to={targetRoute} replace />;
 };
 
-// Dashboard Components
-const UserDashboard = () => (
-  <div style={{ padding: "20px" }}>
-    <h1>User Dashboard</h1>
-    <p>Welcome to your user dashboard!</p>
-    <div>
-      <h3>Available Actions:</h3>
-      <ul>
-        <li>View Profile</li>
-        <li>Create Orders</li>
-        <li>View Your Orders</li>
-      </ul>
-    </div>
-  </div>
-);
-
-// New AccountUser Dashboard Component
-// const AccountUserDashboard = () => (
-//   <div style={{ padding: '20px' }}>
-//     <h1>Account User Dashboard</h1>
-//     <p>Welcome to your financial management dashboard!</p>
-//     <div>
-//       <h3>Available Actions:</h3>
-//       <ul>
-//         <li>View Profile</li>
-//         <li>View Orders & Customers</li>
-//         <li>Manage Invoices</li>
-//         <li>Process Payments</li>
-//         <li>Generate Financial Reports</li>
-//         <li>Handle Billing</li>
-//         <li>View Projects & Tasks</li>
-//       </ul>
-//     </div>
-//     <div style={{ marginTop: '20px' }}>
-//       <h3>Financial Management Features:</h3>
-//       <ul>
-//         <li>Create and update invoices</li>
-//         <li>Track payment status</li>
-//         <li>Generate billing reports</li>
-//         <li>Monitor accounts receivable</li>
-//         <li>Financial analytics dashboard</li>
-//       </ul>
-//     </div>
-//   </div>
-// );
-
-const AdminDashboard = () => (
-  <div style={{ padding: "20px" }}>
-    <h1>Admin Dashboard</h1>
-    <p>Welcome to your admin dashboard!</p>
-    <div>
-      <h3>Available Actions:</h3>
-      <ul>
-        <li>Manage Users</li>
-        <li>Manage All Orders</li>
-        <li>Manage All Customers</li>
-        <li>Create & View Reports</li>
-        <li>Manage Projects & Tasks</li>
-        <li>Financial Management</li>
-        <li>System Administration</li>
-      </ul>
-    </div>
-  </div>
-);
-
-// Unauthorized component
 const Unauthorized = () => {
-  const { user, logout } = useAuth();
+  const { logout, currentRole, availableRoles } = useAuth();
 
   return (
     <div
@@ -227,9 +146,15 @@ const Unauthorized = () => {
     >
       <h2>Unauthorized Access</h2>
       <p>You don't have permission to access this page.</p>
-      <p>
-        Current role: <strong>{user?.role || "Unknown"}</strong>
-      </p>
+      <div style={{ textAlign: "center" }}>
+        <p>
+          Current active role: <strong>{currentRole || "Unknown"}</strong>
+        </p>
+        <p>
+          Available roles:{" "}
+          <strong>{availableRoles.join(", ") || "None"}</strong>
+        </p>
+      </div>
       <div style={{ display: "flex", gap: "10px" }}>
         <button onClick={() => window.history.back()}>Go Back</button>
         <button onClick={logout}>Logout</button>
@@ -242,7 +167,6 @@ function AppRoutes() {
   return (
     <Router>
       <Routes>
-        {/* Root redirect to login */}
         <Route
           path="/"
           element={
@@ -261,7 +185,6 @@ function AppRoutes() {
           }
         />
 
-        {/* Public Routes */}
         <Route
           path="/login"
           element={
@@ -273,7 +196,6 @@ function AppRoutes() {
 
         <Route path="/unauthorized" element={<Unauthorized />} />
 
-        {/* Dashboard Router - redirects based on role */}
         <Route
           path="/dashboard"
           element={
@@ -283,19 +205,13 @@ function AppRoutes() {
           }
         />
 
-        {/* Role-specific Dashboard Routes */}
-        <Route
-          path="/user"
-          element={
-            <ProtectedRoute allowedRoles={["user"]}>
-              <UserDashboard />
-            </ProtectedRoute>
-          }
-        />
         <Route
           path="/sales"
           element={
-            <ProtectedRoute allowedRoles={["EITS_Sale_Representative"]}>
+            <ProtectedRoute
+              allowedRoles={["EITS_Sale_Representative"]}
+              requireExactRole={true}
+            >
               <SalesDashboard />
             </ProtectedRoute>
           }
@@ -303,7 +219,10 @@ function AppRoutes() {
         <Route
           path="/inspector"
           element={
-            <ProtectedRoute allowedRoles={["EITS_Site_Inspector"]}>
+            <ProtectedRoute
+              allowedRoles={["EITS_Site_Inspector"]}
+              requireExactRole={true}
+            >
               <InspectorDashboard />
             </ProtectedRoute>
           }
@@ -311,7 +230,10 @@ function AppRoutes() {
         <Route
           path="/accountUser"
           element={
-            <ProtectedRoute allowedRoles={["accountUser"]}>
+            <ProtectedRoute
+              allowedRoles={["accountUser"]}
+              requireExactRole={true}
+            >
               <AccountUser />
             </ProtectedRoute>
           }
@@ -319,9 +241,10 @@ function AppRoutes() {
         <Route
           path="/project_manager"
           element={
-            <ProtectedRoute allowedRoles={["EITS_Project_Manager"]}>
-              {" "}
-              {/* ✅ FIXED: Use EITS_Project_Manager */}
+            <ProtectedRoute
+              allowedRoles={["EITS_Project_Manager"]}
+              requireExactRole={true}
+            >
               <JobCardProvider>
                 <JobCardOtherProvider>
                   <ProjectManagerDashboard />
@@ -330,16 +253,7 @@ function AppRoutes() {
             </ProtectedRoute>
           }
         />
-        <Route
-          path="/admin"
-          element={
-            <ProtectedRoute allowedRoles={["admin"]}>
-              <AdminDashboard />
-            </ProtectedRoute>
-          }
-        />
 
-        {/* Catch all route */}
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </Router>

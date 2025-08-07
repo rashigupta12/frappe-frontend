@@ -11,11 +11,12 @@ import PaymentForm from "../account/Paytmentform";
 import ReceiptForm from "../account/Recipt";
 import ReceiptContainer from "../account/ReciptContainer";
 import FeedbackComponent from "../../common/FeedbackManagement";
+import { RoleSwitcherMinimal } from "../../common/RoleSwitcher";
 
 export default function AccountDashboard() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { user, logout } = useAuth();
+  const { user, logout, isMultiRole } = useAuth();
 
   // Default to summary, with payment-summary as the default toggle
   const initialTab = searchParams.get("tab") || "payment-summary";
@@ -47,7 +48,6 @@ export default function AccountDashboard() {
       case "payment-summary":
         return <PaymentContainer />;
       
-
       case "receipt-summary":
         return <ReceiptContainer/>
 
@@ -173,23 +173,37 @@ export default function AccountDashboard() {
               </Link>
             </div>
 
-            <h1 className="text-center text-lg sm:text-xl font-bold text-emerald-800">
-              {activeTab === "payment-summary" || activeTab === "payment-form" ? "Payment" : "Receipt"}{" "}
-              Dashboard
-            </h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-center text-lg sm:text-xl font-bold text-emerald-800">
+                {activeTab === "payment-summary" || activeTab === "payment-form" ? "Payment" : "Receipt"}{" "}
+                Dashboard
+              </h1>
+              {/* Show role switcher if user has multiple roles */}
+              {isMultiRole && (
+                <div className="hidden sm:block">
+                  <RoleSwitcherMinimal />
+                </div>
+              )}
+            </div>
 
             <div className="flex items-center gap-1 sm:gap-2">
+              {/* Mobile Role Switcher */}
+              {isMultiRole && (
+                <div className="sm:hidden">
+                  <RoleSwitcherMinimal />
+                </div>
+              )}
 
               <FeedbackComponent className="lg:hidden" >
-              <Button
-                variant="ghost"
-                size="icon"
-                className="p-1.5 rounded-lg hover:bg-blue-50 text-white bg-emerald-700 hover:text-blue-700 transition-colors"
-              >
-                <MessageCircle className="h-4 w-4" />
-                <span className="sr-only">Feedback</span>
-              </Button>
-            </FeedbackComponent>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="p-1.5 rounded-lg hover:bg-blue-50 text-white bg-emerald-700 hover:text-blue-700 transition-colors"
+                >
+                  <MessageCircle className="h-4 w-4" />
+                  <span className="sr-only">Feedback</span>
+                </Button>
+              </FeedbackComponent>
               <Button
                 variant="ghost"
                 size="icon"
@@ -217,6 +231,12 @@ export default function AccountDashboard() {
                   className="w-48 border border-emerald-200 bg-white shadow-md"
                   align="end"
                 >
+                  {/* Role information in desktop menu */}
+                  {isMultiRole && (
+                    <div className="px-3 py-2 border-b border-gray-100">
+                      <RoleSwitcherMinimal className="w-full" />
+                    </div>
+                  )}
                   <FeedbackComponent>
                     <Button
                       variant="ghost"

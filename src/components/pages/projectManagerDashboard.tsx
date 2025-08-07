@@ -4,7 +4,6 @@ import {
   LogOut,
   Menu,
   MessageCircle,
-  // Plus,
   Wrench,
   X
 } from "lucide-react";
@@ -19,6 +18,8 @@ import { Button } from "../ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import JobCardList from "../JobCard/JobCardList";
 import FeedbackComponent from "../../common/FeedbackManagement";
+import { RoleSwitcherMinimal } from "../../common/RoleSwitcher";
+
 
 export default function ProjectManagerDashboard() {
   const [isJobCardFormOpen, setIsJobCardFormOpen] = useState(false);
@@ -28,7 +29,7 @@ export default function ProjectManagerDashboard() {
 
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { user, logout } = useAuth();
+  const { user, logout, isMultiRole } = useAuth();
 
   const initialTab = searchParams.get("tab") || "veneer-pressing";
   const [activeTab, setActiveTab] = useState(initialTab);
@@ -168,15 +169,30 @@ export default function ProjectManagerDashboard() {
             </Link>
           </div>
 
-          {/* Title */}
-          <h1 className="text-center text-lg sm:text-xl font-bold text-emerald-800">
-            Supervisor
-          </h1>
+          {/* Title with Role Switcher */}
+          <div className="flex items-center gap-2">
+            <h1 className="text-center text-lg sm:text-xl font-bold text-emerald-800">
+              Supervisor
+            </h1>
+            {/* Show role switcher if user has multiple roles */}
+            {isMultiRole && (
+              <div className="hidden sm:block">
+                <RoleSwitcherMinimal />
+              </div>
+            )}
+          </div>
 
           {/* User Menu */}
           <div className="flex items-center gap-1 sm:gap-2">
-            {/* Mobile Logout Button */}
-            <FeedbackComponent className="lg:hidden" >
+            {/* Mobile Role Switcher */}
+            {isMultiRole && (
+              <div className="sm:hidden">
+                <RoleSwitcherMinimal />
+              </div>
+            )}
+            
+            {/* Mobile Feedback Button */}
+            <FeedbackComponent className="lg:hidden">
               <Button
                 variant="ghost"
                 size="icon"
@@ -186,6 +202,8 @@ export default function ProjectManagerDashboard() {
                 <span className="sr-only">Feedback</span>
               </Button>
             </FeedbackComponent>
+            
+            {/* Mobile Logout Button */}
             <Button
               variant="ghost"
               size="icon"
@@ -214,16 +232,24 @@ export default function ProjectManagerDashboard() {
                 className="w-48 border border-emerald-200 bg-white shadow-md"
                 align="end"
               >
+                {/* Role information in desktop menu */}
+                {isMultiRole && (
+                  <div className="px-3 py-2 border-b border-gray-100">
+                    <RoleSwitcherMinimal className="w-full" />
+                  </div>
+                )}
+                
                 <FeedbackComponent>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="w-full justify-start gap-2 text-blue-600 hover:bg-blue-100 hover:text-blue-700 transition-colors"
-                    >
-                      <MessageCircle className="h-4 w-4" />
-                      Feedback
-                    </Button>
-                  </FeedbackComponent>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full justify-start gap-2 text-blue-600 hover:bg-blue-100 hover:text-blue-700 transition-colors"
+                  >
+                    <MessageCircle className="h-4 w-4" />
+                    Feedback
+                  </Button>
+                </FeedbackComponent>
+                
                 <Button
                   variant="ghost"
                   size="sm"
@@ -265,10 +291,11 @@ export default function ProjectManagerDashboard() {
             <Button
               variant={activeTab === "veneer-pressing" ? "default" : "ghost"}
               onClick={() => handleTabChange("veneer-pressing")}
-              className={`w-full justify-start gap-3 rounded-xl p-3 text-left transition-all duration-200 ${activeTab === "veneer-pressing"
+              className={`w-full justify-start gap-3 rounded-xl p-3 text-left transition-all duration-200 ${
+                activeTab === "veneer-pressing"
                   ? "bg-emerald-500 text-white shadow-lg transform scale-105 hover:from-emerald-600 hover:to-green-600"
                   : "text-emerald-700 hover:bg-emerald-50 hover:shadow-md"
-                }`}
+              }`}
             >
               <FileText className="h-5 w-5" />
               <span className="font-medium">Veneer Pressing</span>
@@ -277,33 +304,15 @@ export default function ProjectManagerDashboard() {
             <Button
               variant={activeTab === "other-services" ? "default" : "ghost"}
               onClick={() => handleTabChange("other-services")}
-              className={`w-full justify-start gap-3 rounded-xl p-3 text-left transition-all duration-200 ${activeTab === "other-services"
-                  ? "bg-cyan-500  text-white shadow-lg transform scale-105 hover:bg-cyan-600 "
+              className={`w-full justify-start gap-3 rounded-xl p-3 text-left transition-all duration-200 ${
+                activeTab === "other-services"
+                  ? "bg-cyan-500 text-white shadow-lg transform scale-105 hover:bg-cyan-600"
                   : "text-blue-700 hover:bg-blue-50 hover:shadow-md"
-                }`}
+              }`}
             >
               <Wrench className="h-5 w-5" />
               <span className="font-medium">Other Services</span>
             </Button>
-
-            {/* Desktop Add Buttons in Sidebar */}
-            {/* <div className="hidden lg:block space-y-2 mt-6">
-              <Button
-                onClick={openJobCardForm}
-                className="w-full justify-start gap-3 rounded-xl p-3 bg-emerald-600 hover:bg-emerald-700 text-white"
-              >
-                <Plus className="h-5 w-5" />
-                <span className="font-medium">New JC - Veneer</span>
-              </Button>
-
-              <Button
-                onClick={openJobCardOtherForm}
-                className="w-full justify-start gap-3 rounded-xl p-3 bg-blue-600 hover:bg-blue-700 text-white"
-              >
-                <Wrench className="h-5 w-5" />
-                <span className="font-medium">New JC - Other</span>
-              </Button>
-            </div> */}
           </nav>
         </aside>
 
@@ -314,19 +323,21 @@ export default function ProjectManagerDashboard() {
             <div className="flex space-x-1">
               <button
                 onClick={() => handleTabChange("veneer-pressing")}
-                className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${activeTab === "veneer-pressing"
+                className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
+                  activeTab === "veneer-pressing"
                     ? "bg-emerald-100 text-emerald-700 border border-emerald-200"
                     : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
-                  }`}
+                }`}
               >
                 Veneer Pressing
               </button>
               <button
                 onClick={() => handleTabChange("other-services")}
-                className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${activeTab === "other-services"
+                className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
+                  activeTab === "other-services"
                     ? "bg-blue-100 text-blue-700 border border-blue-200"
                     : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
-                  }`}
+                }`}
               >
                 Other Services
               </button>
@@ -337,74 +348,10 @@ export default function ProjectManagerDashboard() {
           <main className="flex-1 overflow-y-auto">
             <div className="max-w-7xl mx-auto pb-4 pt-2 px-4">
               <div className="pb-6">
-                {/* Floating Action Buttons for Desktop */}
-                {/* <div className="hidden lg:flex justify-end gap-4 mb-4">
-                  <Button
-                    onClick={openJobCardForm}
-                    className="bg-emerald-600 hover:bg-emerald-700 shadow-lg"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    New JC - Veneer Pressing
-                  </Button>
-                  <Button
-                    onClick={openJobCardOtherForm}
-                    className="bg-blue-600 hover:bg-blue-700 shadow-lg"
-                  >
-                    <Wrench className="h-4 w-4 mr-2" />
-                    New JC - Other Service
-                  </Button>
-                </div> */}
                 {renderContent()}
               </div>
             </div>
           </main>
-
-          {/* Mobile Bottom Navigation */}
-          {/* <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-30 safe-area-pb">
-            <div className="flex items-center justify-between px-4 py-2">
-            
-              <div className="flex-1 max-w-xs flex justify-center">
-                <button
-                  onClick={openJobCardForm}
-                  className="flex flex-col items-center justify-center w-full py-1 group"
-                >
-                  <div className="w-10 h-6 flex items-center justify-center group-active:scale-95 transition-transform">
-                    <Plus
-                      className={`h-5 w-5 ${isJobCardFormOpen ? "text-emerald-600" : "text-gray-500"
-                        }`}
-                    />
-                  </div>
-                  <span
-                    className={`text-xs font-medium mt-1 text-center ${isJobCardFormOpen ? "text-emerald-600" : "text-gray-600"
-                      }`}
-                  >
-                    New JC-Veneer
-                  </span>
-                </button>
-              </div>
-
-              
-              <div className="flex-1 max-w-xs flex justify-center">
-                <button
-                  onClick={openJobCardOtherForm}
-                  className="flex flex-col items-center justify-center w-full py-1 group"
-                >
-                  <div className="w-10 h-6 flex items-center justify-center group-active:scale-95 transition-transform">
-                    <Wrench
-                      className={`h-5 w-5 ${isJobCardOtherFormOpen ? "text-blue-600" : "text-gray-500"
-                        }`}
-                    />
-                  </div>
-                  <span
-                    className={`text-xs font-medium mt-1 text-center ${isJobCardOtherFormOpen ? "text-blue-600" : "text-gray-600"
-                      }`}
-                  >
-                    New JC-Other
-                  </span>
-                </button>
-              </div>
-            </div>
-          </div> */}
         </div>
       </div>
 

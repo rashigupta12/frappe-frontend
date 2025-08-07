@@ -7,7 +7,7 @@ import {
   UserPlus,
   Users,
   X,
-  MessageCircle, // Add this import
+  MessageCircle,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
@@ -19,16 +19,16 @@ import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import TodoPage from "../Inquiry/Assign";
 import InquiryForm from "../Inquiry/InquiryForm";
 import FeedbackComponent from "../../common/FeedbackManagement";
+import { RoleSwitcherMinimal } from "../../common/RoleSwitcher";
 
 export default function SalesDashboard() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedInquiry, setSelectedInquiry] = useState(null);
 
-  // Add these functions
   const openInquiryForm = () => {
-    setSelectedInquiry(null); // Set to null for new inquiry
+    setSelectedInquiry(null);
     setIsFormOpen(true);
-    setSidebarOpen(false); // Close sidebar if open
+    setSidebarOpen(false);
   };
 
   const closeInquiryForm = () => {
@@ -36,26 +36,22 @@ export default function SalesDashboard() {
   };
 
   const navigate = useNavigate();
-  // const location = useLocation();
   const [searchParams] = useSearchParams();
-  const { user, logout } = useAuth();
+  const { user, logout, isMultiRole } = useAuth();
 
   const initialTab = searchParams.get("tab") || "inquiry-form";
   const [activeTab, setActiveTab] = useState(initialTab);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       e.preventDefault();
-      // Some browsers require setting returnValue
       e.returnValue =
         "Are you sure you want to leave? Your changes may not be saved.";
       return e.returnValue;
     };
 
-    // Add the event listener
     window.addEventListener("beforeunload", handleBeforeUnload);
-
-    // Clean up the event listener
     return () => {
       window.removeEventListener("beforeunload", handleBeforeUnload);
     };
@@ -68,7 +64,7 @@ export default function SalesDashboard() {
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
     navigate(`/sales?tab=${tab}`, { replace: true });
-    setSidebarOpen(false); // Close sidebar on mobile after selection
+    setSidebarOpen(false);
   };
 
   const handleLogout = async () => {
@@ -107,7 +103,7 @@ export default function SalesDashboard() {
   };
 
   return (
-    <div className="h-screen  flex flex-col overflow-hidden">
+    <div className="h-screen flex flex-col overflow-hidden">
       {/* Top Navigation Bar - Fixed */}
       <nav className="bg-white shadow-lg border-b-2 border-emerald-200 px-3 sm:px-2 py-2 flex-shrink-0 z-50">
         <div className="flex items-center justify-between">
@@ -138,13 +134,28 @@ export default function SalesDashboard() {
             </Link>
           </div>
 
-          {/* Title - Visible on all screens */}
-          <h1 className="text-center text-lg sm:text-xl font-bold text-emerald-800">
-            Sales Representative
-          </h1>
+          {/* Title with Role Switcher */}
+          <div className="flex items-center gap-2">
+            <h1 className="text-center text-lg sm:text-xl font-bold text-emerald-800">
+              Sales Representative
+            </h1>
+            {/* Show role switcher if user has multiple roles */}
+            {isMultiRole && (
+              <div className="hidden sm:block">
+                <RoleSwitcherMinimal />
+              </div>
+            )}
+          </div>
 
           {/* User Menu */}
           <div className="flex items-center gap-1 sm:gap-2">
+            {/* Mobile Role Switcher */}
+            {isMultiRole && (
+              <div className="sm:hidden">
+                <RoleSwitcherMinimal />
+              </div>
+            )}
+
             {/* Mobile Feedback Button */}
             <FeedbackComponent className="lg:hidden">
               <Button
@@ -185,6 +196,12 @@ export default function SalesDashboard() {
                 className="w-48 border border-emerald-200 bg-white shadow-md"
                 align="end"
               >
+                {/* Role information in desktop menu */}
+                {isMultiRole && (
+                  <div className="px-3 py-2 border-b border-gray-100">
+                    <RoleSwitcherMinimal className="w-full" />
+                  </div>
+                )}
                 <div className="space-y-1">
                   {/* Desktop Feedback Button */}
                   <FeedbackComponent>
@@ -214,6 +231,7 @@ export default function SalesDashboard() {
           </div>
         </div>
       </nav>
+
       {/* Main Content Area with Sidebar */}
       <div className="flex flex-1 overflow-hidden">
         {/* Mobile Sidebar Overlay */}
@@ -237,13 +255,13 @@ export default function SalesDashboard() {
             }
           `}
         >
-          <nav className="space-y-2 ">
+          <nav className="space-y-2">
             <Button
               variant={activeTab === "inquiry-form" ? "default" : "ghost"}
               onClick={() => handleTabChange("inquiry-form")}
               className={`w-full justify-start gap-3 rounded-xl p-3 text-left transition-all duration-200 ${
                 activeTab === "inquiry-form"
-                  ? "bg-emerald-500  text-white shadow-lg transform scale-105 hover:emerald-900  border border-emerald-600"
+                  ? "bg-emerald-500 text-white shadow-lg transform scale-105 hover:emerald-900 border border-emerald-600"
                   : "text-emerald-700 hover:bg-emerald-50 hover:shadow-md"
               }`}
             >
@@ -254,8 +272,7 @@ export default function SalesDashboard() {
               variant="ghost"
               onClick={openInquiryForm}
               className="w-full justify-start gap-3 rounded-xl p-3 text-left transition-all duration-200 text-emerald-700 hover:bg-emerald-50 hover:shadow-md"
-              
-              >
+            >
               <Plus className="h-4 w-4" />
               Add Inquiry
             </Button>
@@ -263,7 +280,7 @@ export default function SalesDashboard() {
               variant={activeTab === "assign" ? "default" : "ghost"}
               onClick={() => handleTabChange("assign")}
               className={`w-full justify-start gap-3 rounded-xl p-3 text-left transition-all duration-200 ${
-                activeTab === "assign" // Changed from "inquiry-form" to "assign"
+                activeTab === "assign"
                   ? "bg-emerald-500 text-white shadow-lg transform scale-105 hover:emerald-600"
                   : "text-emerald-700 hover:bg-emerald-50 hover:shadow-md"
               }`}
@@ -279,7 +296,6 @@ export default function SalesDashboard() {
           {/* Main Content - Scrollable */}
           <main className="flex-1 overflow-y-auto">
             <div className="max-w-7xl mx-auto">
-              {/* Main Content Area */}
               <div className="pb-6">{renderContent()}</div>
             </div>
           </main>
@@ -293,7 +309,7 @@ export default function SalesDashboard() {
                 className="flex-1 max-w-xs flex justify-center"
               >
                 <button
-                  className={`flex flex-col items-center justify-center w-full py-1 group  ${
+                  className={`flex flex-col items-center justify-center w-full py-1 group ${
                     activeTab === "inquiry-form"
                       ? "border-emerald-600 bg-emerald-50"
                       : "border-transparent"
@@ -352,7 +368,7 @@ export default function SalesDashboard() {
                 className="flex-1 max-w-xs flex justify-center"
               >
                 <button
-                  className={`flex flex-col items-center justify-center w-full py-1 group  ${
+                  className={`flex flex-col items-center justify-center w-full py-1 group ${
                     activeTab === "assign"
                       ? "border-emerald-600 bg-emerald-50"
                       : "border-transparent"
