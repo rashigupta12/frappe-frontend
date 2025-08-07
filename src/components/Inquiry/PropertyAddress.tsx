@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import debounce from "lodash.debounce";
 import { Loader2, Plus } from "lucide-react";
-import React, { useCallback, useEffect, useState, useRef } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
 import { frappeAPI } from "../../api/frappeClient";
 import { useLeads } from "../../context/LeadContext";
@@ -61,6 +60,7 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
   const [areaSearchQuery, setAreaSearchQuery] = useState(formData[areaField] || "");
   const [areaResults, setAreaResults] = useState<any[]>([]);
   const [isAreaSearching, setIsAreaSearching] = useState(false);
+  const [showAreaDropdown, setShowAreaDropdown] = useState(false);
   const [newAreaName, setNewAreaName] = useState("");
   const [isAddingArea, setIsAddingArea] = useState(false);
 
@@ -68,6 +68,7 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
   const [communitySearchQuery, setCommunitySearchQuery] = useState(formData[communityField] || "");
   const [communityResults, setCommunityResults] = useState<any[]>([]);
   const [isCommunitySearching, setIsCommunitySearching] = useState(false);
+  const [showCommunityDropdown, setShowCommunityDropdown] = useState(false);
   const [newCommunityName, setNewCommunityName] = useState("");
   const [isAddingCommunity, setIsAddingCommunity] = useState(false);
 
@@ -129,11 +130,16 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
   // Non-debounced area search function
   const searchArea = useCallback(
     async (query: string) => {
+      console.log('Searching for area:', query);
       if (!query.trim() || !selectedEmirate) {
         setAreaResults([]);
         setIsAreaSearching(false);
+        setShowAreaDropdown(false);
         return;
       }
+
+      setIsAreaSearching(true);
+      setShowAreaDropdown(true);
 
       try {
         const url = `/api/method/eits_app.area_search.search_uae_areas`;
@@ -146,17 +152,23 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
           "GET",
           `${url}?${params.toString()}`
         );
+        console.log('Area search response:', response);
 
         if (response.message?.status === "success") {
           const results = response.message.data || [];
+          console.log('Area results:', results);
           setAreaResults(results);
+          setShowAreaDropdown(results.length > 0 || true); // Always show dropdown when searching
         } else {
-          console.warn("Unexpected response format:", response.data);
+          console.warn("Unexpected response format:", response);
           setAreaResults([]);
+          setShowAreaDropdown(false);
         }
       } catch (error) {
         console.error("Error searching areas:", error);
         setAreaResults([]);
+        setShowAreaDropdown(false);
+        toast.error("Failed to search areas");
       } finally {
         setIsAreaSearching(false);
       }
@@ -164,17 +176,18 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
     [selectedEmirate]
   );
 
-  // Debounced area search ref
-  const debouncedAreaSearchRef = useRef(debounce(searchArea, 500));
-
   // Non-debounced community search function
   const searchCommunity = useCallback(
     async (query: string) => {
       if (!query.trim() || !selectedArea) {
         setCommunityResults([]);
         setIsCommunitySearching(false);
+        setShowCommunityDropdown(false);
         return;
       }
+
+      setIsCommunitySearching(true);
+      setShowCommunityDropdown(true);
 
       try {
         const response = await frappeAPI.makeAuthenticatedRequest(
@@ -185,13 +198,17 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
         );
 
         if (response.message?.status === "success") {
-          setCommunityResults(response.message.data || []);
+          const results = response.message.data || [];
+          setCommunityResults(results);
+          setShowCommunityDropdown(results.length > 0 || true); // Always show dropdown when searching
         } else {
           setCommunityResults([]);
+          setShowCommunityDropdown(false);
         }
       } catch (error) {
         console.error("Community search error:", error);
         setCommunityResults([]);
+        setShowCommunityDropdown(false);
       } finally {
         setIsCommunitySearching(false);
       }
@@ -199,40 +216,31 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
     [selectedArea]
   );
 
-  // Debounced community search ref
-  const debouncedCommunitySearchRef = useRef(debounce(searchCommunity, 500));
-
-  // Handle area search changes
-  useEffect(() => {
-    if (areaSearchQuery.trim() && selectedEmirate) {
-      setIsAreaSearching(true);
-      debouncedAreaSearchRef.current(areaSearchQuery);
-    } else {
+  // Handle area search input change - immediate search without debounce
+  const handleAreaSearchChange = (value: string) => {
+    setAreaSearchQuery(value);
+    if (value === "") {
+      setSelectedArea("");
+      handleSelectChange(areaField, "");
       setAreaResults([]);
-      setIsAreaSearching(false);
+      setShowAreaDropdown(false);
+    } else if (selectedEmirate) {
+      searchArea(value);
     }
+  };
 
-    const debounced = debouncedAreaSearchRef.current;
-    return () => {
-      debounced.cancel();
-    };
-  }, [areaSearchQuery, selectedEmirate]);
-
-  // Handle community search changes
-  useEffect(() => {
-    if (communitySearchQuery.trim() && selectedArea) {
-      setIsCommunitySearching(true);
-      debouncedCommunitySearchRef.current(communitySearchQuery);
-    } else {
+  // Handle community search input change - immediate search without debounce
+  const handleCommunitySearchChange = (value: string) => {
+    setCommunitySearchQuery(value);
+    if (value === "") {
+      setSelectedCommunity("");
+      handleSelectChange(communityField, "");
       setCommunityResults([]);
-      setIsCommunitySearching(false);
+      setShowCommunityDropdown(false);
+    } else if (selectedArea) {
+      searchCommunity(value);
     }
-
-    const debounced = debouncedCommunitySearchRef.current;
-    return () => {
-      debounced.cancel();
-    };
-  }, [communitySearchQuery, selectedArea]);
+  };
 
   // Function to combine address components
   const combineAddress = useCallback(
@@ -296,6 +304,8 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
 
     setAreaResults([]);
     setCommunityResults([]);
+    setShowAreaDropdown(false);
+    setShowCommunityDropdown(false);
   }, [handleSelectChange, emirateField, areaField, communityField]);
 
   // Handle area selection
@@ -304,12 +314,14 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
     setAreaSearchQuery(area);
     handleSelectChange(areaField, area);
     setAreaResults([]);
+    setShowAreaDropdown(false);
 
     // Reset community when area changes
     setSelectedCommunity("");
     setCommunitySearchQuery("");
     handleSelectChange(communityField, "");
     setCommunityResults([]);
+    setShowCommunityDropdown(false);
   };
 
   // Handle community selection
@@ -318,6 +330,7 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
     setCommunitySearchQuery(community);
     handleSelectChange(communityField, community);
     setCommunityResults([]);
+    setShowCommunityDropdown(false);
   };
 
   // Handle adding new area
@@ -556,49 +569,52 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
                 !selectedEmirate ? "Select emirate first" : "Search for area..."
               }
               value={areaSearchQuery}
-              onChange={(e) => {
-                setAreaSearchQuery(e.target.value);
-                if (e.target.value === "") {
-                  setSelectedArea("");
-                  handleSelectChange(areaField, "");
-                  setAreaResults([]);
-                }
-              }}
+              onChange={(e) => handleAreaSearchChange(e.target.value)}
               className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
               disabled={!selectedEmirate}
             />
 
-            {(isAreaSearching || (areaResults.length > 0 && !selectedArea)) && (
+            {/* Area dropdown - always show when there are results or searching */}
+            {showAreaDropdown && (isAreaSearching || areaResults.length > 0) && (
               <div className="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
                 {isAreaSearching ? (
                   <div className="px-4 py-2 text-sm text-gray-500 flex items-center">
                     <Loader2 className="h-4 w-4 animate-spin mr-2" />
                     Searching...
                   </div>
-                ) : (
+                ) : areaResults.length > 0 ? (
                   areaResults.map((area) => (
                     <div
                       key={area.name || area.area_name}
                       className="px-4 py-2 text-sm text-gray-700 hover:bg-emerald-100 focus:bg-emerald-100 cursor-pointer"
                       onClick={() => {
+                        console.log('Area selected:', area);
                         handleAreaSelect(area.area_name || area.name);
                       }}
                     >
                       {area.area_name || area.name}
                     </div>
                   ))
+                ) : (
+                  <div className="px-4 py-2 text-sm text-gray-500">
+                    No areas found
+                  </div>
                 )}
               </div>
             )}
           </div>
 
+          {/* Add Area button */}
           {!isAreaSearching &&
             areaSearchQuery &&
             selectedEmirate &&
             areaResults.length === 0 &&
             !selectedArea && (
               <Button
-                onClick={() => handleAddNewArea(areaSearchQuery)}
+                onClick={() => {
+                  console.log('Adding new area:', areaSearchQuery);
+                  handleAddNewArea(areaSearchQuery);
+                }}
                 disabled={isAddingArea || !areaSearchQuery.trim()}
                 className="bg-emerald-600 hover:bg-emerald-700 text-white whitespace-nowrap"
               >
@@ -634,26 +650,20 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
                 !selectedArea ? "Select area first" : "Search for community..."
               }
               value={communitySearchQuery}
-              onChange={(e) => {
-                setCommunitySearchQuery(e.target.value);
-                if (e.target.value === "") {
-                  setSelectedCommunity("");
-                  handleSelectChange(communityField, "");
-                  setCommunityResults([]);
-                }
-              }}
+              onChange={(e) => handleCommunitySearchChange(e.target.value)}
               className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
               disabled={!selectedArea}
             />
 
-            {(isCommunitySearching || (communityResults.length > 0 && !selectedCommunity)) && (
+            {/* Community dropdown - always show when there are results or searching */}
+            {showCommunityDropdown && (isCommunitySearching || communityResults.length > 0) && (
               <div className="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
                 {isCommunitySearching ? (
                   <div className="px-4 py-2 text-sm text-gray-500 flex items-center">
                     <Loader2 className="h-4 w-4 animate-spin mr-2" />
                     Searching...
                   </div>
-                ) : (
+                ) : communityResults.length > 0 ? (
                   communityResults.map((community) => (
                     <div
                       key={community.name}
@@ -665,11 +675,16 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
                       {community.community_name}
                     </div>
                   ))
+                ) : (
+                  <div className="px-4 py-2 text-sm text-gray-500">
+                    No communities found
+                  </div>
                 )}
               </div>
             )}
           </div>
 
+          {/* Add Community button */}
           {!isCommunitySearching &&
             communitySearchQuery &&
             selectedArea &&
