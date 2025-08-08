@@ -359,6 +359,11 @@ const handleImageUpload = async (file: File): Promise<string> => {
       toast.error("Please enter a valid amount");
       return;
     }
+    if (custom_purpose_of_payment === "" ) {
+      toast.error("Please enter a purpose of payment");
+      return;
+    }
+
 
     // Validate at least one image is uploaded
     if (images.length === 0) {
@@ -616,7 +621,7 @@ const handleImageUpload = async (file: File): Promise<string> => {
             {/* Bill No */}
             <div>
               <label className="block text-sm md:text-base font-medium text-gray-700 mb-2">
-                Bill No <span className="text-red-500">*</span>
+                Bill No 
               </label>
               <input
                 type="text"
@@ -626,7 +631,7 @@ const handleImageUpload = async (file: File): Promise<string> => {
                 }
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                 placeholder="Enter Bill No"
-                required
+                
               />
             </div>
 
@@ -715,7 +720,7 @@ const handleImageUpload = async (file: File): Promise<string> => {
           {/* Purpose of Payment (full width) */}
           <div>
             <label className="block text-sm md:text-base font-medium text-gray-700 mb-2">
-              Purpose of Payment
+              Purpose of Payment<span className="text-red-500">*</span>
             </label>
             <textarea
               rows={3}
@@ -725,6 +730,7 @@ const handleImageUpload = async (file: File): Promise<string> => {
               }
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none"
               placeholder="Enter Purpose of Payment"
+              required
             />
           </div>
 
