@@ -33,9 +33,10 @@ interface AuthContextType {
   canAccess: (resource: string, action?: string) => boolean;
   currentRole: string | null;
   availableRoles: string[];
-  switchRole: (role: string) => void;
+  switchRole: (role: string) => Promise<boolean>;
   getDisplayRoleName: (role: string) => string;
   isMultiRole: boolean;
+  isSwitchingRole: boolean; // Add this to track role switching state
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -53,9 +54,10 @@ const AuthContext = createContext<AuthContextType>({
   canAccess: () => false,
   currentRole: null,
   availableRoles: [],
-  switchRole: () => {},
+  switchRole: async () => false,
   getDisplayRoleName: () => '',
   isMultiRole: false,
+  isSwitchingRole: false,
 });
 
 // Only these roles are allowed
@@ -115,6 +117,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [error, setError] = useState<string | null>(null);
   const [currentRole, setCurrentRole] = useState<AllowedRole | null>(null);
   const [availableRoles, setAvailableRoles] = useState<AllowedRole[]>([]);
+  const [isSwitchingRole, setIsSwitchingRole] = useState(false);
 
   useEffect(() => {
     checkAuthStatus();
@@ -182,13 +185,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-// In your AuthContext.tsx
-const switchRole = async (role: string): Promise<boolean> => {
-  if (availableRoles.includes(role as AllowedRole)) {
+  // Improved switchRole function with better state management
+  const switchRole = async (role: string): Promise<boolean> => {
+    if (!availableRoles.includes(role as AllowedRole)) {
+      return false;
+    }
+
     try {
-      // Immediately update both state and localStorage
+      setIsSwitchingRole(true);
+      
+      // Update localStorage immediately
       const username = user?.username || '';
       localStorage.setItem(`currentRole_${username}`, role);
+      localStorage.setItem('isRoleSwitching', 'true'); // Flag to indicate role switching
+      
+      // Update both state values
       setCurrentRole(role as AllowedRole);
       
       // Update user object with new active role
@@ -196,14 +207,15 @@ const switchRole = async (role: string): Promise<boolean> => {
         const updatedUser = { ...user, role };
         setUser(updatedUser);
       }
+      
       return true;
     } catch (error) {
       console.error("Error switching role:", error);
       return false;
+    } finally {
+      // Don't clear isSwitchingRole here - let the navigation handle it
     }
-  }
-  return false;
-};
+  };
 
   const login = async (username: string, password: string) => {
     try {
@@ -306,6 +318,7 @@ const switchRole = async (role: string): Promise<boolean> => {
       if (user?.username) {
         localStorage.removeItem(`currentRole_${user.username}`);
       }
+      localStorage.removeItem('isRoleSwitching');
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
@@ -314,6 +327,7 @@ const switchRole = async (role: string): Promise<boolean> => {
       setAvailableRoles([]);
       setError(null);
       setLoading(false);
+      setIsSwitchingRole(false);
     }
   };
 
@@ -365,6 +379,7 @@ const switchRole = async (role: string): Promise<boolean> => {
     switchRole,
     getDisplayRoleName,
     isMultiRole: availableRoles.length > 1,
+    isSwitchingRole,
     hasRole: (roleToCheck: string): boolean => {
       return currentRole === roleToCheck;
     },

@@ -1,7 +1,7 @@
 // components/common/RoleSwitcher.tsx
 import { ChevronDown, User } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "../components/ui/popover";
-// import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Button } from "../components/ui/button";
 import { useAuth } from "../context/AuthContext";
 
@@ -21,7 +21,7 @@ export const RoleSwitcher = ({
     getDisplayRoleName, 
     isMultiRole 
   } = useAuth();
-  // const navigate = useNavigate();
+  const navigate = useNavigate();
 
   // Don't show switcher if only one role or no roles
   if (!isMultiRole || availableRoles.length <= 1) {
@@ -33,20 +33,24 @@ export const RoleSwitcher = ({
     
     try {
       // Switch the role first
-      await switchRole(role);
-
-      // Define the role routes - only include the 4 roles you need
-      const roleRoutes: Record<string, string> = {
-        'EITS_Sale_Representative': '/sales',
-        'EITS_Site_Inspector': '/inspector',
-        'EITS_Project_Manager': '/project_manager',
-        'accountUser': '/accountUser'
-      };
+      const success = await switchRole(role);
       
-      const targetRoute = roleRoutes[role];
-      if (targetRoute) {
-        // Force a full page reload to ensure all role-based checks are reapplied
-        window.location.href = targetRoute;
+      if (success) {
+        // Define the role routes
+        const roleRoutes: Record<string, string> = {
+          'EITS_Sale_Representative': '/sales',
+          'EITS_Site_Inspector': '/inspector',
+          'EITS_Project_Manager': '/project_manager',
+          'accountUser': '/accountUser'
+        };
+        
+        const targetRoute = roleRoutes[role];
+        if (targetRoute) {
+          // Use React Router navigation instead of window.location.href
+          // This prevents the full page reload and maintains React's state
+          navigate(targetRoute, { replace: true });
+        }
+        window.location.reload(); // Reload to ensure the new role is applied
       }
     } catch (error) {
       console.error("Failed to switch role:", error);

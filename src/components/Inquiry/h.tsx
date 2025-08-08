@@ -13,6 +13,7 @@ import {
   Search,
   User,
   X,
+  // Loader2, // Added loader icon
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useLeads, type Lead } from "../../context/LeadContext";
@@ -54,6 +55,9 @@ const InquiryPage = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedInquiryForDialog, setSelectedInquiryForDialog] =
     useState<Lead | null>(null);
+  
+  // Added loading state
+  const [isLoading, setIsLoading] = useState(true);
 
   // States for InquiryForm component
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -72,14 +76,23 @@ const InquiryPage = () => {
   };
 
   useEffect(() => {
-    fetchLeads();
-    fetchJobTypes();
-    if (fetchProjectUrgency) {
-      fetchProjectUrgency();
-    }
-    if (fetchUtmSource) {
-      fetchUtmSource();
-    }
+    const loadData = async () => {
+      setIsLoading(true);
+      try {
+        await Promise.all([
+          fetchLeads(),
+          fetchJobTypes(),
+          fetchProjectUrgency?.(),
+          fetchUtmSource?.(),
+        ]);
+      } catch (error) {
+        console.error('Error loading data:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadData();
   }, [fetchLeads, fetchJobTypes, fetchProjectUrgency, fetchUtmSource]);
 
   // Function to open form for new inquiry
@@ -129,6 +142,59 @@ const InquiryPage = () => {
         )
     );
 
+  // Loading Component
+  // const LoadingComponent = () => (
+  //   <div className="flex items-center justify-center py-12">
+  //     <div className="text-center">
+  //       <Loader2 className="h-8 w-8 animate-spin text-emerald-500 mx-auto mb-4" />
+  //       <p className="text-gray-500 text-sm">Loading inquiries...</p>
+  //     </div>
+  //   </div>
+  // );
+
+  // Skeleton loader for inquiry cards
+  const SkeletonCard = () => (
+    <div className="bg-gradient-to-br from-white to-gray-50 rounded-lg p-3 border border-gray-300 shadow-2xs animate-pulse lg:p-4">
+      <div className="flex justify-between items-start gap-2">
+        <div className="flex items-start gap-2 min-w-0 flex-1">
+          <div className="bg-gray-200 rounded-md p-1.5 mt-0.5 flex-shrink-0">
+            <div className="h-4 w-4 bg-gray-300 rounded"></div>
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+              <div className="h-4 bg-gray-200 rounded w-32"></div>
+              <div className="h-6 bg-gray-200 rounded w-20"></div>
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center gap-1 flex-shrink-0">
+          <div className="h-5 w-5 bg-gray-200 rounded-full"></div>
+          <div className="h-5 w-5 bg-gray-200 rounded"></div>
+        </div>
+      </div>
+      <div className="mt-2 space-y-2">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1.5">
+            <div className="w-2 h-2 bg-gray-200 rounded-full"></div>
+            <div className="h-3 bg-gray-200 rounded w-16"></div>
+          </div>
+          <div className="h-5 bg-gray-200 rounded w-20"></div>
+        </div>
+        <div className="flex items-start gap-2">
+          <div className="h-3.5 w-3.5 bg-gray-200 rounded mt-0.5"></div>
+          <div className="h-3 bg-gray-200 rounded flex-1"></div>
+        </div>
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <div className="h-3.5 w-3.5 bg-gray-200 rounded"></div>
+            <div className="h-3 bg-gray-200 rounded w-20"></div>
+          </div>
+          <div className="h-7 bg-gray-200 rounded w-16"></div>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <div className="w-full pb-20">
       {error && (
@@ -152,12 +218,14 @@ const InquiryPage = () => {
                   className="pl-10 w-full bg-white border border-gray-300"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
+                  disabled={isLoading}
                 />
               </div>
 
               <Button
                 onClick={openNewInquiryForm}
-                className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white shadow-md hover:shadow-lg transition-all duration-300 "
+                disabled={isLoading}
+                className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white shadow-md hover:shadow-lg transition-all duration-300 disabled:opacity-50"
               >
                 <Plus className="h-3 w-3 mr-1" />
                 Create New Inquiry
@@ -174,6 +242,7 @@ const InquiryPage = () => {
                   className="pl-10 w-full bg-white border border-gray-300"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
+                  disabled={isLoading}
                 />
               </div>
             </div>
@@ -183,7 +252,14 @@ const InquiryPage = () => {
 
       {/* Inquiry List */}
       <div className="">
-        {filteredInquiries.length === 0 ? (
+        {isLoading ? (
+          // Show skeleton loaders while loading
+          <div className="space-y-3 p-2 lg:grid lg:grid-cols-2 lg:gap-4 lg:space-y-0">
+            {Array.from({ length: 6 }).map((_, index) => (
+              <SkeletonCard key={index} />
+            ))}
+          </div>
+        ) : filteredInquiries.length === 0 ? (
           <div className="text-center py-8 px-4 text-gray-500 lg:py-12 lg:px-6">
             <div className="inline-flex items-center justify-center bg-emerald-50/50 rounded-full p-3 mb-3 lg:p-4 lg:mb-4">
               <FileText className="h-6 w-6 lg:h-7 lg:w-7 text-emerald-500" />

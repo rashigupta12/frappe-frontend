@@ -32,26 +32,35 @@ const ProtectedRoute = ({
   allowedRoles = [],
   requireExactRole = false,
 }: ProtectedRouteProps) => {
-  const { isAuthenticated, currentRole, availableRoles, loading } = useAuth();
+  const { isAuthenticated, currentRole, availableRoles, loading, isSwitchingRole } = useAuth();
   const location = useLocation();
 
-  // Add a brief delay if we're in the middle of a role switch
+  // Extended delay during role switching to prevent unauthorized flicker
   const [isCheckingAccess, setIsCheckingAccess] = useState(true);
+  
   useEffect(() => {
-    const timer = setTimeout(() => setIsCheckingAccess(false), 50);
+    // Check if we're in the middle of a role switch
+    const isRoleSwitching = localStorage.getItem('isRoleSwitching') === 'true';
+    
+    const delay = isRoleSwitching || isSwitchingRole ? 200 : 50; // Longer delay during role switching
+    
+    const timer = setTimeout(() => {
+      setIsCheckingAccess(false);
+      // Clear the role switching flag after access check
+      if (isRoleSwitching) {
+        localStorage.removeItem('isRoleSwitching');
+      }
+    }, delay);
+    
     return () => clearTimeout(timer);
-  }, []);
+  }, [isSwitchingRole, currentRole]);
 
-  if (loading) {
+  if (loading || isCheckingAccess || isSwitchingRole) {
     return <PasswordResetLoader />;
   }
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
-  }
-
-  if (isCheckingAccess) {
-    return <PasswordResetLoader />;
   }
 
   if (allowedRoles.length > 0) {
@@ -66,7 +75,7 @@ const ProtectedRoute = ({
     if (!hasAccess) {
       // If user doesn't have access but has other roles, redirect to their primary role
       if (availableRoles.length > 0) {
-        const primaryRole = availableRoles[0];
+        const primaryRole = currentRole || availableRoles[0];
         const roleRoutes: Record<string, string> = {
           'EITS_Sale_Representative': '/sales',
           'EITS_Site_Inspector': '/inspector',
