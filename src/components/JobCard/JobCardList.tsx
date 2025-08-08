@@ -538,8 +538,9 @@ const JobCardList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
             <Button
               onClick={onOpenForm}
               size="sm"
-              className="bg-emerald-600 hover:bg-emerald-700"
+              className="bg-emerald-600 hover:bg-emerald-700 text-white"
             >
+              <Plus className="h-4 w-4 mr-1" />
               Create Job Card
             </Button>
           </div>

@@ -1579,8 +1579,8 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                                 </div>
 
                                 <div className="w-[30%] space-y-2">
-                                  <Label className="text-xs font-medium text-gray-600">
-                                    Thickness (mm)
+                                  <Label className="text-xs  text-gray-600">
+                                    Thickness(mm)
                                   </Label>
                                   <Input
                                     placeholder="Thickness"
