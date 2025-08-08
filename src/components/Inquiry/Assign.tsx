@@ -19,13 +19,7 @@ import { Alert, AlertDescription } from "../ui/alert";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
-// import {
-//   Select,
-//   SelectContent,
-//   SelectItem,
-//   SelectTrigger,
-//   SelectValue,
-// } from "../ui/select";
+
 import InspectionDialog from "./InspectionDialogEdit";
 
 export default function TodoPage() {
@@ -41,10 +35,6 @@ export default function TodoPage() {
   } = useAssignStore();
 
   const [searchTerm, setSearchTerm] = useState("");
-  // const [selectedStatus, setSelectedStatus] = useState("All");
-  // const [selectedPriority, setSelectedPriority] = useState("All");
-  // const [selectedInspector, setSelectedInspector] = useState("All");
-  // const [showMobileFilters, setShowMobileFilters] = useState(false);
 
   // State for inspection dialog
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -63,8 +53,6 @@ export default function TodoPage() {
       fetchTodos();
     }
   }, [currentUserEmail, fetchTodos]);
-
-  console.log("Todos:", todos);
 
   // Reset success message after 3 seconds
   useEffect(() => {
@@ -88,7 +76,7 @@ export default function TodoPage() {
     setSelectedTodo(null);
   };
 
-  // Filter todos based on search and filters
+  // Filter todos based on search
   const filteredTodos = todos.filter((todo) => {
     const matchesSearch =
       todo.inquiry_data?.lead_name
@@ -99,22 +87,14 @@ export default function TodoPage() {
       todo.status?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       todo.priority?.toLowerCase().includes(searchTerm.toLowerCase());
 
-    // const matchesStatus =
-    //   selectedStatus === "All" ||
-    //   (selectedStatus === "Open" && todo.status === "Open") ||
-    //   (selectedStatus === "Completed" && todo.status === "Completed")||
-    //   (selectedStatus === "Cancelled" && todo.status === "Cancelled");
-
-    // const matchesPriority =
-    //   selectedPriority === "All" || todo.priority === selectedPriority;
-
-    // const matchesInspector =
-    //   selectedInspector === "All" ||
-    //   todo.allocated_to
-    //     ?.toLowerCase()
-    //     .includes(selectedInspector.toLowerCase());
-
     return matchesSearch;
+  });
+
+  // Sort todos by due date (ascending - earliest first)
+  const sortedTodos = [...filteredTodos].sort((a, b) => {
+    const dateA = a.date ? new Date(a.date).getTime() : Number.MIN_SAFE_INTEGER;
+    const dateB = b.date ? new Date(b.date).getTime() : Number.MIN_SAFE_INTEGER;
+    return dateB - dateA; // Changed from dateA - dateB to dateB - dateA
   });
 
   return (
@@ -153,22 +133,6 @@ export default function TodoPage() {
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
-              {/* <div className="flex items-center gap-2 flex-[2]">
-                <Select
-                  value={selectedPriority}
-                  onValueChange={setSelectedPriority}
-                >
-                  <SelectTrigger className="w-full bg-white border border-gray-300">
-                    <SelectValue placeholder="Filter by priority" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white border border-gray-300">
-                    <SelectItem value="All">All Priorities</SelectItem>
-                    <SelectItem value="Low">Low</SelectItem>
-                    <SelectItem value="Medium">Medium</SelectItem>
-                    <SelectItem value="High">High</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div> */}
             </div>
 
             {/* Mobile View */}
@@ -183,68 +147,6 @@ export default function TodoPage() {
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
-
-              {/* <Button
-                variant="outline"
-                className="w-full flex items-center justify-center gap-2"
-                onClick={() => setShowMobileFilters(!showMobileFilters)}
-              >
-                <Filter className="h-4 w-4" />
-                <span>Filters</span>
-              </Button>
-
-              {showMobileFilters && (
-                <div className="space-y-2 mt-2 p-2 bg-gray-50 rounded-lg">
-                  <Select
-                    value={selectedStatus}
-                    onValueChange={setSelectedStatus}
-                  >
-                    <SelectTrigger className="w-full bg-white">
-                      <SelectValue placeholder="Status" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-white border border-gray-300">
-                      <SelectItem value="All">All Status</SelectItem>
-                      <SelectItem value="Open">Open</SelectItem>
-                      <SelectItem value="Completed">Completed</SelectItem>
-                      <SelectItem value="Cancelled">Cancelled</SelectItem>
-                    </SelectContent>
-                  </Select>
-
-                  <Select
-                    value={selectedPriority}
-                    onValueChange={setSelectedPriority}
-                  >
-                    <SelectTrigger className="w-full bg-white">
-                      <SelectValue placeholder="Priority" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-white border border-gray-300">
-                      <SelectItem value="All">All Priorities</SelectItem>
-                      <SelectItem value="Low">Low</SelectItem>
-                      <SelectItem value="Medium">Medium</SelectItem>
-                      <SelectItem value="High">High</SelectItem>
-                    </SelectContent>
-                  </Select>
-
-                  <Select
-                    value={selectedInspector}
-                    onValueChange={setSelectedInspector}
-                  >
-                    <SelectTrigger className="w-full bg-white">
-                      <SelectValue placeholder="Inspector" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-white border border-gray-300">
-                      <SelectItem value="All">All Inspectors</SelectItem>
-                      {Array.from(
-                        new Set(todos.map((todo) => todo.allocated_to))
-                      ).map((inspector) => (
-                        <SelectItem key={inspector} value={inspector}>
-                          {inspector}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )} */}
             </div>
           </div>
         </div>
@@ -256,7 +158,7 @@ export default function TodoPage() {
           <div className="flex justify-center py-12">
             <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-emerald-500"></div>
           </div>
-        ) : filteredTodos.length === 0 ? (
+        ) : sortedTodos.length === 0 ? (
           <div className="text-center py-8 md:py-12 px-4 text-gray-500">
             <div className="inline-flex items-center justify-center bg-emerald-50/50 rounded-full p-3 md:p-4 mb-2 md:mb-3">
               <ClipboardList className="h-6 w-6 md:h-8 md:w-8 text-emerald-500" />
@@ -267,23 +169,10 @@ export default function TodoPage() {
             <p className="text-xs md:text-sm text-gray-500 mb-3 md:mb-4">
               Try adjusting your search or filters
             </p>
-            {/* <Button
-              onClick={() => {
-                setSearchTerm("");
-                setSelectedStatus("All");
-                setSelectedPriority("All");
-                setSelectedInspector("All");
-                setShowMobileFilters(false);
-              }}
-              className="mt-1 md:mt-2 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5 text-sm md:text-base"
-              size="sm"
-            >
-              Clear Filters
-            </Button> */}
           </div>
         ) : (
           <div className="space-y-3 p-2 lg:grid lg:grid-cols-3 lg:gap-4 lg:space-y-0">
-            {filteredTodos.map((todo) => (
+            {sortedTodos.map((todo) => (
               <div
                 key={todo.name}
                 className="bg-gradient-to-br from-white to-gray-50 rounded-lg p-3 border border-gray-100 shadow-xs hover:shadow-sm hover:border-emerald-100 transition-all duration-300"
@@ -378,7 +267,6 @@ export default function TodoPage() {
                       className="h-6 flex items-center gap-1 text-xs  border-emerald-900 text-emerald-800 hover:bg-emerald-900 hover:border-emerald-900 hover:text-emerald-900 transition-all duration-200"
                     >
                       <Edit className="h-3 w-3 text-emerald-900" />
-                      {/* <span className="hidden sm:inline">Edit</span> */}
                     </Button>
                   </div>
                 )}

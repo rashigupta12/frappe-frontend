@@ -473,7 +473,7 @@ const InquiryPage = () => {
                 <div className="text-sm">
                   <div className="break-words">
                     <span className="text-gray-900">
-                      {[viewInquiry.custom_property_area]
+                      {[viewInquiry.custom_property_category, viewInquiry.custom_property_area]
                         .filter(Boolean)
                         .join(" | ")}
                     </span>
