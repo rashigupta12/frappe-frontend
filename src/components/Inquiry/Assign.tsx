@@ -94,7 +94,8 @@ export default function TodoPage() {
       todo.inquiry_data?.lead_name
         ?.toLowerCase()
         .includes(searchTerm.toLowerCase()) ||
-      todo.reference_name?.toLowerCase().includes(searchTerm.toLowerCase()) || todo.allocated_to?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      todo.reference_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      todo.allocated_to?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       todo.status?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       todo.priority?.toLowerCase().includes(searchTerm.toLowerCase());
 
@@ -113,9 +114,7 @@ export default function TodoPage() {
     //     ?.toLowerCase()
     //     .includes(selectedInspector.toLowerCase());
 
-    return (
-      matchesSearch 
-    );
+    return matchesSearch;
   });
 
   return (
@@ -322,17 +321,17 @@ export default function TodoPage() {
                         </Badge>
                       </div>
                     </div>
-                   <div className="flex items-center gap-2 text-xs">
-  <CalendarIcon className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
-  <span className="text-gray-600">
-    Due:{" "}
-    <span className="font-medium">
-      {todo.date
-        ? format(new Date(todo.date), "dd/MM/yyyy")
-        : "Not specified"}
-    </span>
-  </span>
-</div>
+                    <div className="flex items-center gap-2 text-xs">
+                      <CalendarIcon className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
+                      <span className="text-gray-600">
+                        Due:{" "}
+                        <span className="font-medium">
+                          {todo.date
+                            ? format(new Date(todo.date), "dd/MM/yyyy")
+                            : "Not specified"}
+                        </span>
+                      </span>
+                    </div>
 
                     {/* Additional details below */}
                     <div className=" space-y-1.5 text-xs">
@@ -341,12 +340,11 @@ export default function TodoPage() {
                         <span className="text-gray-600 truncate">
                           Inspector:{" "}
                           <span className="font-medium">
-                            {todo.allocated_to}
+                            {todo.allocated_to_name}
                           </span>
                         </span>
                       </div>
 
-                      
                       {todo.inquiry_data?.custom_property_area && (
                         <div className="flex items-center gap-2">
                           <MapPin className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />

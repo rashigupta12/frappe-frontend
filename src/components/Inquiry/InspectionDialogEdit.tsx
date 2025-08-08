@@ -100,6 +100,23 @@ export default function InspectionDialog({
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
+    console.log("Submitting form:", formData);
+    if (!formData.inspector) {
+      toast.error("Please select an inspector.");
+      return;
+    }
+    if (!formData.inspectionDate) {
+      toast.error("Please select an inspection date.");
+      return;
+    }
+    if (!formData.priority) {
+      toast.error("Please select a priority.");
+      return;
+    }
+    if (!formData.specialRequirements) {
+      toast.error("Please enter special requirements.");
+      return;
+    }
     e.preventDefault();
     if (mode === "edit") {
       await updateTodo(todoData.name, formData);

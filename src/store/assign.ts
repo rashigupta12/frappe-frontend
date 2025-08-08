@@ -21,6 +21,7 @@ interface TodoItem {
   assigned_by: string;
   creation: string;
   modified: string;
+  allocated_to_name?: string; // Optional, can be set to user full name
 }
 
 interface TodoWithInquiry extends TodoItem {
@@ -158,65 +159,87 @@ export const useAssignStore = create<AssignStore>((set, get) => ({
   selectInquiry: (inquiry: Inquiry) => {
     set({ selectedInquiry: inquiry });
   },
+fetchTodos: async () => {
+  const { currentUserEmail } = get();
+  if (!currentUserEmail) {
+    set({ error: 'Current user email not set' });
+    return;
+  }
 
-  fetchTodos: async () => {
-    const { currentUserEmail } = get();
-    if (!currentUserEmail) {
-      set({ error: 'Current user email not set' });
-      return;
-    }
+  try {
+    set({ todosLoading: true, error: null });
 
-    
-    try {
-      set({ todosLoading: true, error: null });
+    // Fetch todos for the current user
+    const todosResponse = await frappeAPI.getAllToDos({ owner: currentUserEmail });
+    const todos = todosResponse.data || [];
 
-      // Fetch todos for the current user
-      const todosResponse = await frappeAPI.getAllToDos({ owner: currentUserEmail });
-      const todos = todosResponse.data || [];
-
-      // Fetch inquiry data for each todo
-      const todosWithInquiries: TodoWithInquiry[] = await Promise.all(
-        todos.map(async (todo: TodoItem) => {
-          try {
-            if (todo.name) {
-              // Fix potential typo in API method name
-              const todoNameResponse = await frappeAPI.getTodoByNAme ? 
-                await frappeAPI.getTodoByNAme(todo.name) : 
-                await frappeAPI.getTodoByNAme?.(todo.name);
-              
-              const updatedTodo = todoNameResponse?.data || todo;
-
-              if (updatedTodo.reference_type === 'Lead' && updatedTodo.reference_name) {
-                try {
-                  const inquiryResponse = await frappeAPI.getLeadById(updatedTodo.reference_name);
-                  return {
-                    ...updatedTodo,
-                    inquiry_data: inquiryResponse.data
-                  };
-                } catch (error) {
-                  console.warn(`Failed to fetch inquiry data for todo ${updatedTodo.name}:`, error);
-                  return updatedTodo;
-                }
-              }
-              return updatedTodo;
+    // Fetch inquiry data and user details for each todo
+    const todosWithInquiries: TodoWithInquiry[] = await Promise.all(
+      todos.map(async (todo: TodoItem) => {
+        try {
+          let updatedTodo = todo;
+          
+          // Get updated todo data if name exists - using proper type checking
+          if (todo.name) {
+            // Type-safe approach
+            const getTodoMethod = (frappeAPI as any).getTodoByName || (frappeAPI as any).getTodoByNAme;
+            
+            if (typeof getTodoMethod === 'function') {
+              const todoNameResponse = await getTodoMethod(todo.name);
+              updatedTodo = todoNameResponse?.data || todo;
             }
-            return todo;
-          } catch (error) {
-            console.warn(`Failed to process todo ${todo.name}:`, error);
-            return { ...todo, inquiry_data: null };
           }
-        })
-      );
 
-      set({ todos: todosWithInquiries });
-    } catch (err: any) {
-      const errorMessage = err?.message || err?.response?.data?.message || 'Failed to fetch todos';
-      set({ error: errorMessage });
-      console.error('Error fetching todos:', err);
-    } finally {
-      set({ todosLoading: false });
-    }
-  },
+          // Fetch inquiry data if reference is Lead
+          let inquiryData = null;
+          if (updatedTodo.reference_type === 'Lead' && updatedTodo.reference_name) {
+            try {
+              const inquiryResponse = await frappeAPI.getLeadById(updatedTodo.reference_name);
+              inquiryData = inquiryResponse.data;
+            } catch (error) {
+              console.warn(`Failed to fetch inquiry data for todo ${updatedTodo.name}:`, error);
+            }
+          }
+
+          // Fetch allocated_to user details if exists
+          let allocatedToName = updatedTodo.allocated_to;
+          if (updatedTodo.allocated_to) {
+            try {
+              const userResponse = await frappeAPI.makeAuthenticatedRequest(
+                'GET', 
+                `/api/resource/User/${encodeURIComponent(updatedTodo.allocated_to)}`
+              );
+              allocatedToName = userResponse.data.full_name || updatedTodo.allocated_to;
+            } catch (error) {
+              console.warn(`Failed to fetch user details for ${updatedTodo.allocated_to}:`, error);
+            }
+          }
+
+          return {
+            ...updatedTodo,
+            inquiry_data: inquiryData,
+            allocated_to_name: allocatedToName
+          };
+        } catch (error) {
+          console.warn(`Failed to process todo ${todo.name}:`, error);
+          return { 
+            ...todo, 
+            inquiry_data: null,
+            allocated_to_name: todo.allocated_to
+          };
+        }
+      })
+    );
+
+    set({ todos: todosWithInquiries });
+  } catch (err: any) {
+    const errorMessage = err?.message || err?.response?.data?.message || 'Failed to fetch todos';
+    set({ error: errorMessage });
+    console.error('Error fetching todos:', err);
+  } finally {
+    set({ todosLoading: false });
+  }
+},
 
   fetchAvailableInquiries: async () => {
     const { currentUserEmail } = get();

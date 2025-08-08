@@ -102,6 +102,10 @@ const IspectionDialog: React.FC<IspectionDialogProps> = ({
       toast.error("Invalid inquiry data");
       return;
     }
+    if (!inquiry?.specialRequirements) {
+      toast.error("Please enter special requirements");
+      return;
+    }
 
     try {
       const preferredDate = format(date, "yyyy-MM-dd");
