@@ -261,79 +261,106 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
   }, [fetchEmployees]);
 
   // Load existing job card data when editing
-  useEffect(() => {
-    if (jobCard) {
-      setFormData({
-        date: jobCard.date || new Date().toISOString().split("T")[0],
-        // building_name: jobCard.building_name || "",
-        // property_no: jobCard.property_no || "",
-        area: jobCard.area || "",
-        party_name: jobCard.party_name || "",
-        start_date:
-          jobCard.start_date || new Date().toISOString().split("T")[0],
-        finish_date: jobCard.finish_date || "",
-        prepared_by: jobCard.prepared_by || "",
-        approved_by: jobCard.approved_by || "",
-        project_id_no: jobCard.project_id_no || "",
-        ac_v_no_and_date: jobCard.ac_v_no_and_date || "",
-        pressing_charges: jobCard.pressing_charges || [],
-        material_sold: jobCard.material_sold || [],
-        lead_id: jobCard.lead_id || "",
-        customer_id: jobCard.customer_id || "",
-        // Initialize property address fields - parse from existing area if available
-        custom_property_category: "",
-        custom_emirate: "",
-        custom_uae_area: "",
-        custom_community: "",
-        custom_street_name: "",
-        custom_property_name__number: "",
-        custom_property_area: jobCard.area || "",
-      });
-      setSearchQuery(jobCard.party_name || "");
-      setPressingCharges(jobCard.pressing_charges || []);
-      setMaterialsSold(jobCard.material_sold || []);
+ useEffect(() => {
+  if (jobCard) {
+    // Parse property address from the job card's area field if available
+    const propertyAddress = jobCard.area
+      ? JSON.parse(jobCard.area)
+      : {};
 
-      // If customer_id exists but no lead_id, preserve the property data
-      if (jobCard.customer_id && !jobCard.lead_id) {
-        setFormData((prev) => ({
-          ...prev,
-          // building_name: jobCard.building_name || "",
-          // property_no: jobCard.property_no || "",
-          area: jobCard.area || "",
-          custom_property_area: jobCard.area || "",
-        }));
-      }
-    } else {
-      // Reset form for new job card
-      setFormData({
-        date: new Date().toISOString().split("T")[0],
-        // building_name: "",
-        // property_no: "",
-        area: "",
-        party_name: "",
-        start_date: new Date().toISOString().split("T")[0],
-        finish_date: "",
-        prepared_by: "",
-        approved_by: "",
-        project_id_no: "",
-        ac_v_no_and_date: "",
-        pressing_charges: [],
-        material_sold: [],
-        lead_id: "",
-        customer_id: "",
-        custom_property_category: "",
-        custom_emirate: "",
-        custom_uae_area: "",
-        custom_community: "",
-        custom_street_name: "",
-        custom_property_name__number: "",
-        custom_property_area: "",
-      });
-      setSearchQuery("");
-      setPressingCharges([]);
-      setMaterialsSold([]);
+    setFormData({
+      date: jobCard.date || new Date().toISOString().split("T")[0],
+      area: jobCard.area || "",
+      party_name: jobCard.party_name || "",
+      start_date: jobCard.start_date || new Date().toISOString().split("T")[0],
+      finish_date: jobCard.finish_date || "",
+      prepared_by: jobCard.prepared_by || "",
+      approved_by: jobCard.approved_by || "",
+      project_id_no: jobCard.project_id_no || "",
+      ac_v_no_and_date: jobCard.ac_v_no_and_date || "",
+      pressing_charges: jobCard.pressing_charges || [],
+      material_sold: jobCard.material_sold || [],
+      lead_id: jobCard.lead_id || "",
+      customer_id: jobCard.customer_id || "",
+      // Property address fields
+      custom_property_category: propertyAddress.category || jobCard.custom_property_category || "",
+      custom_emirate: propertyAddress.emirate || jobCard.custom_emirate || "",
+      custom_uae_area: propertyAddress.area || jobCard.custom_uae_area || "",
+      custom_community: propertyAddress.community || jobCard.custom_community || "",
+      custom_street_name: propertyAddress.street || jobCard.custom_street_name || "",
+      custom_property_name__number: propertyAddress.propertyNumber || jobCard.custom_property_number_name|| "",
+      custom_property_area: jobCard.area || "",
+    });
+
+    setSearchQuery(jobCard.party_name || "");
+    setPressingCharges(jobCard.pressing_charges || []);
+    setMaterialsSold(jobCard.material_sold || []);
+
+    // If customer_id exists, fetch customer details
+    if (jobCard.customer_id) {
+      fetchCustomerDetails(jobCard.customer_id);
     }
-  }, [jobCard]);
+  } else {
+    // Reset form for new job card
+    setFormData({
+      date: new Date().toISOString().split("T")[0],
+      area: "",
+      party_name: "",
+      start_date: new Date().toISOString().split("T")[0],
+      finish_date: "",
+      prepared_by: "",
+      approved_by: "",
+      project_id_no: "",
+      ac_v_no_and_date: "",
+      pressing_charges: [],
+      material_sold: [],
+      lead_id: "",
+      customer_id: "",
+      custom_property_category: "",
+      custom_emirate: "",
+      custom_uae_area: "",
+      custom_community: "",
+      custom_street_name: "",
+      custom_property_name__number: "",
+      custom_property_area: "",
+    });
+    setSearchQuery("");
+    setPressingCharges([]);
+    setMaterialsSold([]);
+  }
+}, [jobCard]);
+
+// Add this helper function
+const fetchCustomerDetails = async (customerId: string) => {
+  try {
+    const response = await frappeAPI.getCustomerById(customerId);
+    const customer = response.data;
+    
+    setFormData(prev => ({
+      ...prev,
+      party_name: customer.customer_name || "",
+    }));
+    setSearchQuery(customer.customer_name || "");
+    
+    // If customer has associated address, populate those fields
+    if (customer.custom_property_address) {
+      const address = JSON.parse(customer.custom_property_address);
+      setFormData(prev => ({
+        ...prev,
+        custom_property_category: address.category || "",
+        custom_emirate: address.emirate || "",
+        custom_uae_area: address.area || "",
+        custom_community: address.community || "",
+        custom_street_name: address.street || "",
+        custom_property_name__number: address.propertyNumber || "",
+        custom_property_area: address.combined || "",
+        area: address.combined || "",
+      }));
+    }
+  } catch (error) {
+    console.error("Failed to fetch customer details:", error);
+  }
+};
 
   const handleNewCustomerInputChange = (
     e: React.ChangeEvent<HTMLInputElement>

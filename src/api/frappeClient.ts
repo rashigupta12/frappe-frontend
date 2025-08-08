@@ -129,37 +129,30 @@ frappeClient.interceptors.response.use(
 export const frappeAPI = {
 
   // Get user details from Frappe
-  getUserDetails: async (username: string) => {
-    try {
-      const response = await frappeClient.get(`/api/resource/User/${username}`);
-      return {
-        success: true,
-        data: response.data.data,
-        roles: response.data.data.roles || []
-      };
-    } catch (error) {
-      console.error('Error fetching user details:', error);
-      return {
-        success: false,
-        error: axios.isAxiosError(error) ? 
-          (error.response?.data?.message || error.message) : 
-          (error as Error).message
-      };
-    }
-  },
+getUserDetails: async (username: string) => {
+  try {
+    const response = await frappeClient.get(`/api/resource/User/${username}`);
+    console.log('User details response:', response.data); // Add debugging
+    
+    return {
+      success: true,
+      data: response.data.data,
+      roles: response.data.data.roles || []
+    };
+  } catch (error) {
+    console.error('Error fetching user details:', error);
+    return {
+      success: false,
+      error: axios.isAxiosError(error) ? 
+        (error.response?.data?.message || error.message) : 
+        (error as Error).message
+    };
+  }
+},
 
 
-  // Test connection first
-  
-
-  // Enhanced login with better session handling
-  // Enhanced login method
 login: async (username: string, password: string) => {
   try {
-    // // Clear any existing session data
-    // localStorage.removeItem('frappe_user');
-    // localStorage.removeItem('frappe_session');
-
     const response = await frappeClient.post('/api/method/login', {
       usr: username,
       pwd: password
@@ -170,15 +163,16 @@ login: async (username: string, password: string) => {
       // First check if this is a first-time login
       const firstLoginCheck = await frappeAPI.checkFirstLogin(username);
       
-      // Fetch user details after successful login
+      // Fetch user details after successful login - CRITICAL!
       const userDetails = await frappeAPI.getUserDetails(username);
+      console.log('Login - user details:', userDetails); // Add debugging
       
       const userData = {
         username: username,
         full_name: userDetails.data?.full_name || username.split('@')[0] || 'User',
         email: userDetails.data?.email || username,
         role: userDetails.data?.role || '',
-        roles: userDetails.data?.roles || [],
+        roles: userDetails.data?.roles || [], // This should contain the actual roles
         authenticated: true,
         loginTime: Date.now(),
         requiresPasswordReset: firstLoginCheck.requiresPasswordReset || false
@@ -191,7 +185,7 @@ login: async (username: string, password: string) => {
         success: true, 
         data: response.data, 
         user: userData,
-        details: userDetails.data,
+        details: userDetails.data, // Return details separately
         requiresPasswordReset: firstLoginCheck.requiresPasswordReset
       };
     }
@@ -366,77 +360,89 @@ resetFirstTimePassword: async (username: string, newPassword: string) => {
     }
   },
 
-  checkSession: async () => {
-    try {
-      // First check if we have stored user data
-      const storedUser = localStorage.getItem('frappe_user');
-      if (!storedUser) {
-        return { authenticated: false, error: 'No stored user data' };
-      }
-
-      let userData;
-      try {
-        userData = JSON.parse(storedUser);
-      } catch {
-        localStorage.removeItem('frappe_user');
-        return { authenticated: false, error: 'Invalid stored user data' };
-      }
-
-      try {
-        // Verify session with Frappe
-        const response = await frappeClient.get('/api/method/frappe.auth.get_logged_user');
-        
-        if (response.data && response.data.message && response.data.message !== 'Guest') {
-          // Fetch fresh user details
-          const userDetails = await frappeAPI.getUserDetails(response.data.message);
-          
-          const updatedUserData = {
-            ...userData,
-            full_name: userDetails.data?.full_name || userData.full_name,
-            email: userDetails.data?.email || userData.email,
-            role: userDetails.data?.role || userData.role,
-            roles: userDetails.data?.roles || userData.roles
-          };
-
-          // Update stored user data
-          localStorage.setItem('frappe_user', JSON.stringify(updatedUserData));
-
-          return { 
-            authenticated: true, 
-            user: updatedUserData,
-            details: userDetails.data 
-          };
-        }
-      } catch (error) {
-        console.warn('Session verification failed:', error);
-      }
-
-      // Fallback to stored data with time check
-      const loginTime = userData.loginTime || 0;
-      const now = Date.now();
-      const sessionAge = now - loginTime;
-      const maxSessionAge = 24 * 60 * 60 * 1000; // 24 hours
-
-      if (sessionAge > maxSessionAge) {
-        localStorage.removeItem('frappe_user');
-        localStorage.removeItem('frappe_csrf_token');
-        return { authenticated: false, error: 'Session expired' };
-      }
-
-      return { authenticated: true, user: userData };
-    } catch (error) {
-      console.error('Session check failed:', error);
-      localStorage.removeItem('frappe_user');
-      localStorage.removeItem('frappe_session');
-      localStorage.removeItem('frappe_csrf_token');
-      return {
-        authenticated: false,
-        error: axios.isAxiosError(error) ? 
-          (error.response?.data?.message || error.message) : 
-          (error as Error).message
-      };
+ // Fixed checkSession function
+checkSession: async () => {
+  try {
+    // First check if we have stored user data
+    const storedUser = localStorage.getItem('frappe_user');
+    if (!storedUser) {
+      return { authenticated: false, error: 'No stored user data' };
     }
-  },
+
+    let userData;
+    try {
+      userData = JSON.parse(storedUser);
+    } catch {
+      localStorage.removeItem('frappe_user');
+      return { authenticated: false, error: 'Invalid stored user data' };
+    }
+
+    try {
+      // Verify session with Frappe
+      const response = await frappeClient.get('/api/method/frappe.auth.get_logged_user');
+      
+      if (response.data && response.data.message && response.data.message !== 'Guest') {
+        // Fetch fresh user details - THIS IS KEY!
+        const userDetails = await frappeAPI.getUserDetails(response.data.message);
+        console.log('Fresh user details:', userDetails); // Add debugging
+        
+        const updatedUserData = {
+          ...userData,
+          full_name: userDetails.data?.full_name || userData.full_name,
+          email: userDetails.data?.email || userData.email,
+          role: userDetails.data?.role || userData.role,
+          roles: userDetails.data?.roles || userData.roles || [] // Make sure roles are included
+        };
+
+        // Update stored user data
+        localStorage.setItem('frappe_user', JSON.stringify(updatedUserData));
+
+        return { 
+          authenticated: true, 
+          user: updatedUserData,
+          details: userDetails.data // Return full details including roles
+        };
+      }
+    } catch (error) {
+      console.warn('Session verification failed:', error);
+    }
+
+    // Fallback to stored data with time check
+    const loginTime = userData.loginTime || 0;
+    const now = Date.now();
+    const sessionAge = now - loginTime;
+    const maxSessionAge = 24 * 60 * 60 * 1000; // 24 hours
+
+    if (sessionAge > maxSessionAge) {
+      localStorage.removeItem('frappe_user');
+      localStorage.removeItem('frappe_csrf_token');
+      return { authenticated: false, error: 'Session expired' };
+    }
+
+    // For fallback, try to get fresh user details
+    try {
+      const userDetails = await frappeAPI.getUserDetails(userData.username);
+      return { 
+        authenticated: true, 
+        user: userData,
+        details: userDetails.data // Include details with roles
+      };
+    } catch {
+      return { authenticated: true, user: userData };
+    }
+  } catch (error) {
+    console.error('Session check failed:', error);
+    localStorage.removeItem('frappe_user');
+    localStorage.removeItem('frappe_session');
+    localStorage.removeItem('frappe_csrf_token');
+    return {
+      authenticated: false,
+      error: axios.isAxiosError(error) ? 
+        (error.response?.data?.message || error.message) : 
+        (error as Error).message
+    };
+  }
+},
 
   // Get user roles
   getUserRoles: async (username: string) => {

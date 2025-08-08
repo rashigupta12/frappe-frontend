@@ -69,7 +69,7 @@ const ProtectedRoute = ({
     if (requireExactRole) {
       hasAccess = currentRole ? allowedRoles.includes(currentRole) : false;
     } else {
-      hasAccess = allowedRoles.some(role => availableRoles.includes(role));
+      hasAccess = currentRole ? allowedRoles.includes(currentRole) : false;
     }
 
     if (!hasAccess) {
@@ -125,9 +125,15 @@ const PublicRoute = ({ children }: { children: ReactNode }) => {
 };
 
 const DashboardRouter = () => {
-  const { currentRole, availableRoles } = useAuth();
+  const { currentRole, availableRoles, logout } = useAuth();
 
-  const activeRole = currentRole || availableRoles[0] || "accountUser";
+  if (availableRoles.length === 0) {
+    // No valid roles - force logout or show error
+    logout();
+    return <Navigate to="/unauthorized" replace />;
+  }
+
+  const activeRole = currentRole || availableRoles[0];
   const roleRoutes: Record<string, string> = {
     EITS_Sale_Representative: "/sales",
     EITS_Site_Inspector: "/inspector",
