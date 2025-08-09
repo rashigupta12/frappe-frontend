@@ -177,12 +177,14 @@ const PaymentSummary: React.FC<Props> = ({
             </span>
           </h2>
         </div>
+
         <div className="flex gap-2">
           <Link to="/accountUser?tab=payment-form" className="no-underline">
             <Button
               size="sm"
               className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-md px-3 py-2"
             >
+
               <Plus className="h-4 w-4 mr-1" />
               Add Payment
             </Button>
@@ -397,8 +399,9 @@ const PaymentSummary: React.FC<Props> = ({
           <Link to="/accountUser?tab=payment-form" className="no-underline">
             <Button
               size="sm"
-              className="bg-emerald-600 hover:bg-emerald-700"
+              className="bg-emerald-600 hover:bg-emerald-700 text-white"
             >
+              <Plus className="h-4 w-4 mr-1" />
               Add Payment
             </Button>
           </Link>

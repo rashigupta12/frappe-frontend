@@ -19,6 +19,7 @@ interface AuthContextType {
     user?: AuthUser;
     error?: string;
     requiresPasswordReset?: boolean;
+    noValidRoles?: boolean; // Add this to indicate no valid roles
   }>;
   logout: () => Promise<void>;
   refreshAuth: () => Promise<void>;
@@ -36,7 +37,7 @@ interface AuthContextType {
   switchRole: (role: string) => Promise<boolean>;
   getDisplayRoleName: (role: string) => string;
   isMultiRole: boolean;
-  isSwitchingRole: boolean; // Add this to track role switching state
+  isSwitchingRole: boolean;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -63,50 +64,68 @@ const AuthContext = createContext<AuthContextType>({
 // Only these roles are allowed
 type AllowedRole = 'EITS_Sale_Representative' | 'EITS_Site_Inspector' | 'EITS_Project_Manager' | 'accountUser';
 
-// Function to filter and map only the allowed roles
-// Fixed getAllowedRoles function
+// Modified function to NOT automatically default to any role
 const getAllowedRoles = (frappeRoles?: any[]): AllowedRole[] => {
-  console.log('Processing roles:', frappeRoles); // Add debugging
+  console.log('=== ROLE DEBUGGING START ===');
+  console.log('Raw frappeRoles input:', frappeRoles);
+  console.log('frappeRoles type:', typeof frappeRoles);
+  console.log('Is array:', Array.isArray(frappeRoles));
   
-  if (!frappeRoles || !Array.isArray(frappeRoles)) return ['accountUser']; // Keep default for safety
+  if (!frappeRoles || !Array.isArray(frappeRoles)) {
+    console.log('No valid roles array, returning empty array');
+    return []; // Return empty array instead of default role
+  }
   
   // Extract role names - handle both string and object formats
-  const roleNames = frappeRoles.map(r => {
-    if (typeof r === 'string') return r;
-    if (typeof r === 'object' && r !== null) {
-      return r.role || r.name || '';
+  const roleNames = frappeRoles.map((r, index) => {
+    console.log(`Role ${index}:`, r);
+    if (typeof r === 'string') {
+      console.log(`Role ${index} is string:`, r);
+      return r;
     }
+    if (typeof r === 'object' && r !== null) {
+      const roleName = r.role || r.name || '';
+      console.log(`Role ${index} is object, extracted name:`, roleName);
+      return roleName;
+    }
+    console.log(`Role ${index} is neither string nor valid object`);
     return '';
   }).filter(Boolean);
   
-  console.log('Extracted role names:', roleNames); // Add debugging
+  console.log('Extracted role names:', roleNames);
   
   const roleMap: Record<string, AllowedRole> = {
     'EITS_Sale_Representative': 'EITS_Sale_Representative',
     'EITS_Site_Inspector': 'EITS_Site_Inspector', 
-    'EITS_Project_Manager': 'EITS_Project_Manager', // This should match your data
+    'EITS_Project_Manager': 'EITS_Project_Manager',
     'Accounts Manager': 'accountUser',
     'Accounts User': 'accountUser'
   };
+  
+  console.log('Available role mappings:', Object.keys(roleMap));
   
   const mappedRoles = new Set<AllowedRole>();
   
   // Map only allowed roles
   for (const roleName of roleNames) {
+    console.log(`Checking role: "${roleName}"`);
     if (roleMap[roleName]) {
       mappedRoles.add(roleMap[roleName]);
-      console.log(`Mapped role: ${roleName} -> ${roleMap[roleName]}`); // Add debugging
+      console.log(`✅ Mapped: ${roleName} -> ${roleMap[roleName]}`);
+    } else {
+      console.log(`❌ Not mapped: ${roleName}`);
     }
   }
   
-  // If no roles found, use default
-  if (mappedRoles.size === 0) {
-    console.log('No valid roles found, defaulting to accountUser'); // Add debugging
-    mappedRoles.add('accountUser');
+  const finalRoles = Array.from(mappedRoles);
+  console.log('Final mapped roles:', finalRoles);
+  
+  // Don't add default role if no valid roles found
+  if (finalRoles.length === 0) {
+    console.log('⚠️ No valid roles found, returning empty array');
   }
   
-  const finalRoles = Array.from(mappedRoles);
-  console.log('Final mapped roles:', finalRoles); // Add debugging
+  console.log('=== ROLE DEBUGGING END ===');
   
   return finalRoles;
 };
@@ -138,145 +157,179 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [currentRole, user?.username]);
 
- const checkAuthStatus = async () => {
-  try {
-    setLoading(true);
-    setError(null);
-    
-    const sessionCheck = await frappeAPI.checkSession();
-    console.log('Session check result:', sessionCheck); // Add debugging
-    
-    if (sessionCheck.authenticated) {
-      const username = sessionCheck.user?.username || sessionCheck.user || '';
-      const fullName = sessionCheck.user?.full_name || username.split('@')[0] || 'User';
-      const email = sessionCheck.user?.email || username;
+  const checkAuthStatus = async () => {
+    try {
+      setLoading(true);
+      setError(null);
       
-      // Get roles from details instead of user object
-      const frappeRoles = sessionCheck.details?.roles || sessionCheck.user?.roles || [];
-      console.log('Frappe roles from session:', frappeRoles); // Add debugging
+      const sessionCheck = await frappeAPI.checkSession();
+      console.log('Session check result:', sessionCheck);
       
-      const requiresPasswordReset = sessionCheck.user?.requiresPasswordReset || false;
+      if (sessionCheck.authenticated) {
+        const username = sessionCheck.user?.username || sessionCheck.user || '';
+        const fullName = sessionCheck.user?.full_name || username.split('@')[0] || 'User';
+        const email = sessionCheck.user?.email || username;
+        
+        // Get roles from details instead of user object
+        const frappeRoles = sessionCheck.details?.roles || sessionCheck.user?.roles || [];
+        console.log('Frappe roles from session:', frappeRoles);
+        
+        const requiresPasswordReset = sessionCheck.user?.requiresPasswordReset || false;
+        
+        if (requiresPasswordReset) {
+          return {
+            authenticated: false,
+            requiresPasswordReset: true
+          };
+        }
+        
+        // Get only allowed roles for this user
+        const allowedRoles = getAllowedRoles(frappeRoles);
+        
+        // If no valid roles, logout the user
+        if (allowedRoles.length === 0) {
+          console.log('No valid roles found, logging out user');
+          await logout();
+          setError('Access denied: No valid roles assigned to your account.');
+          return { 
+            authenticated: false, 
+            error: 'No valid roles assigned',
+            noValidRoles: true 
+          };
+        }
+        
+        setAvailableRoles(allowedRoles);
+        
+        // Set current role (check localStorage first for persistence)
+        const savedRole = localStorage.getItem(`currentRole_${username}`);
+        const initialRole = (savedRole && allowedRoles.includes(savedRole as AllowedRole)) 
+          ? savedRole as AllowedRole
+          : allowedRoles[0]; // Default to first available role
+        
+        setCurrentRole(initialRole);
+        
+        const userData: AuthUser = {
+          username: username,
+          full_name: fullName,
+          email: email,
+          role: initialRole,
+          roles: frappeRoles.map((r: any) => typeof r === 'string' ? r : (r.role || r.name || '')),
+          requiresPasswordReset: undefined
+        };
+        
+        console.log('Setting user data:', userData);
+        setUser(userData);
+        return { authenticated: true, user: userData };
+      }
       
-      if (requiresPasswordReset) {
-        return {
-          authenticated: false,
-          requiresPasswordReset: true
+      return { authenticated: false };
+    } catch (error) {
+      console.error('Auth check failed:', error);
+      return { authenticated: false, error: 'Authentication check failed' };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Improved switchRole function with better state management
+  const switchRole = async (role: string): Promise<boolean> => {
+    if (!availableRoles.includes(role as AllowedRole)) {
+      return false;
+    }
+
+    try {
+      setIsSwitchingRole(true);
+      localStorage.setItem(`currentRole_${user?.username || ''}`, role);
+      setCurrentRole(role as AllowedRole);
+      
+      if (user) {
+        setUser({ ...user, role });
+      }
+      
+      return true;
+    } catch (error) {
+      console.error("Error switching role:", error);
+      return false;
+    } finally {
+      setIsSwitchingRole(false);
+    }
+  };
+
+  const login = async (username: string, password: string) => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const response = await frappeAPI.login(username, password);
+      console.log('Login response:', response);
+      
+      if (response.success && response.user) {
+        const firstLoginCheck = await frappeAPI.checkFirstLogin(username);
+        
+        // Use details.roles instead of user.roles - this is key!
+        const rawRoles = response.details?.roles || response.user.roles || [];
+        console.log('Raw roles from login:', rawRoles);
+        
+        // Get only allowed roles
+        const allowedRoles = getAllowedRoles(rawRoles);
+        
+        // If no valid roles found, logout and return error
+        if (allowedRoles.length === 0) {
+          console.log('No valid roles found during login, logging out');
+          await frappeAPI.logout(); // Logout from Frappe
+          
+          // Clear any stored data
+          localStorage.removeItem(`currentRole_${username}`);
+          setUser(null);
+          setCurrentRole(null);
+          setAvailableRoles([]);
+          
+          return { 
+            success: false, 
+            error: 'Access denied: No valid roles assigned to your account.',
+            noValidRoles: true
+          };
+        }
+        
+        setAvailableRoles(allowedRoles);
+        
+        const initialRole = allowedRoles[0]; // Default to first role
+        setCurrentRole(initialRole);
+        
+        const userData: AuthUser = {
+          username: username,
+          full_name: response.user.full_name || username.split('@')[0] || 'User',
+          email: response.user.email || username,
+          role: initialRole,
+          roles: rawRoles.map((r: any) => typeof r === 'string' ? r : (r.role || r.name || '')),
+          requiresPasswordReset: firstLoginCheck.requiresPasswordReset || false
+        };
+
+        setUser(userData);
+        console.log('User logged in:', userData);
+        
+        return { 
+          success: true, 
+          user: userData,
+          requiresPasswordReset: firstLoginCheck.requiresPasswordReset
         };
       }
       
-      // Get only allowed roles for this user
-      const allowedRoles = getAllowedRoles(frappeRoles);
-      setAvailableRoles(allowedRoles);
-      
-      // Set current role (check localStorage first for persistence)
-      const savedRole = localStorage.getItem(`currentRole_${username}`);
-      const initialRole = (savedRole && allowedRoles.includes(savedRole as AllowedRole)) 
-        ? savedRole as AllowedRole
-        : allowedRoles[0]; // Default to first available role
-      
-      setCurrentRole(initialRole);
-      
-      const userData: AuthUser = {
-        username: username,
-        full_name: fullName,
-        email: email,
-        role: initialRole,
-        roles: frappeRoles.map((r: any) => typeof r === 'string' ? r : (r.role || r.name || '')),
-        requiresPasswordReset: undefined
-      };
-      
-      console.log('Setting user data:', userData); // Add debugging
-      setUser(userData);
-      return { authenticated: true, user: userData };
-    }
-    
-    return { authenticated: false };
-  } catch (error) {
-    console.error('Auth check failed:', error);
-    return { authenticated: false, error: 'Authentication check failed' };
-  } finally {
-    setLoading(false);
-  }
-};
-
-  // Improved switchRole function with better state management
- const switchRole = async (role: string): Promise<boolean> => {
-  if (!availableRoles.includes(role as AllowedRole)) {
-    return false;
-  }
-
-  try {
-    setIsSwitchingRole(true);
-    localStorage.setItem(`currentRole_${user?.username || ''}`, role);
-    setCurrentRole(role as AllowedRole);
-    
-    if (user) {
-      setUser({ ...user, role });
-    }
-    
-    return true;
-  } catch (error) {
-    console.error("Error switching role:", error);
-    return false;
-  } finally {
-    setIsSwitchingRole(false);
-  }
-};
-const login = async (username: string, password: string) => {
-  try {
-    setLoading(true);
-    setError(null);
-    
-    const response = await frappeAPI.login(username, password);
-    console.log('Login response:', response); // Add debugging
-    
-    if (response.success && response.user) {
-      const firstLoginCheck = await frappeAPI.checkFirstLogin(username);
-      
-      // Use details.roles instead of user.roles - this is key!
-      const rawRoles = response.details?.roles || response.user.roles || [];
-      console.log('Raw roles from login:', rawRoles); // Add debugging
-      
-      // Get only allowed roles
-      const allowedRoles = getAllowedRoles(rawRoles);
-      setAvailableRoles(allowedRoles);
-      
-      const initialRole = allowedRoles[0]; // Default to first role
-      setCurrentRole(initialRole);
-      
-      const userData: AuthUser = {
-        username: username,
-        full_name: response.user.full_name || username.split('@')[0] || 'User',
-        email: response.user.email || username,
-        role: initialRole,
-        roles: rawRoles.map((r: any) => typeof r === 'string' ? r : (r.role || r.name || '')),
-        requiresPasswordReset: firstLoginCheck.requiresPasswordReset || false
-      };
-
-      setUser(userData);
-      console.log('User logged in:', userData);
-      
       return { 
-        success: true, 
-        user: userData,
-        requiresPasswordReset: firstLoginCheck.requiresPasswordReset
+        success: false, 
+        error: response.error || 'Login failed' 
       };
+    } catch (error) {
+      console.error('Login error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Login failed';
+      
+      setError(errorMessage);
+      return { success: false, error: errorMessage };
+    } finally {
+      setLoading(false);
     }
-    
-    return { 
-      success: false, 
-      error: response.error || 'Login failed' 
-    };
-  } catch (error) {
-    console.error('Login error:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Login failed';
-    
-    setError(errorMessage);
-    return { success: false, error: errorMessage };
-  } finally {
-    setLoading(false);
-  }
-};
+  };
+
   const resetPassword = async (username: string, newPassword: string) => {
     try {
       setLoading(true);
@@ -288,6 +341,18 @@ const login = async (username: string, password: string) => {
         const userDetails = await frappeAPI.getUserDetails(username);
         
         const allowedRoles = getAllowedRoles(userDetails.data?.roles || []);
+        
+        // If no valid roles after password reset, logout
+        if (allowedRoles.length === 0) {
+          await frappeAPI.logout();
+          setError('Access denied: No valid roles assigned to your account.');
+          return { 
+            success: false, 
+            error: 'No valid roles assigned',
+            noValidRoles: true 
+          };
+        }
+        
         setAvailableRoles(allowedRoles);
         
         const initialRole = allowedRoles[0];

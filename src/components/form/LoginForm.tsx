@@ -56,34 +56,41 @@ function LoginForm() {
   }
 
  // In your LoginForm.tsx
-const onLoginSubmit = async (values: LoginFormValues) => {
-  setIsPending(true);
-  setError("");
-  setSuccess("");
+  const onLoginSubmit = async (values: LoginFormValues) => {
+    setIsPending(true);
+    setError("");
+    setSuccess("");
 
-  try {
-    const result = await login(values.email, values.password);
+    try {
+      const result = await login(values.email, values.password);
 
-    if (result.success) {
-      if (result.requiresPasswordReset) {
-        // Immediately redirect to password reset without showing login
-        window.location.href = `/first-time-password-reset?email=${encodeURIComponent(values.email)}`;
-        return;
+      if (result.success) {
+        if (result.requiresPasswordReset) {
+          // Immediately redirect to password reset without showing login
+          window.location.href = `/first-time-password-reset?email=${encodeURIComponent(values.email)}`;
+          return;
+        }
+        
+        toast.success("Login successful!");
+        // Navigation will be handled by the redirect logic above
+      } else {
+        // Handle different error cases
+        if (result.noValidRoles) {
+          toast.error("Access denied: No valid roles assigned to your account.");
+          setError("Access denied: Your account does not have the required permissions to access this application. Please contact your administrator.");
+        } else {
+          toast.error(result.error || "Invalid email or password");
+          setError(result.error || "Login failed");
+        }
       }
-      
-      toast.success("Login successful!");
-    } else {
-      toast.error( "Invalid email or password");
-      setError(result.error || "Login failed");
+    } catch (err) {
+      console.error("Login error:", err);
+      toast.error("Login failed");
+      setError("Login failed");
+    } finally {
+      setIsPending(false);
     }
-  } catch (err) {
-    console.error("Login error:", err);
-    toast.error("Login failed");
-    setError("Login failed");
-  } finally {
-    setIsPending(false);
   }
-};
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-white p-4">

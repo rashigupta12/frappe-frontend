@@ -761,12 +761,12 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
   //   }
   // };
 
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
+  // const handleInputChange = (
+  //   e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  // ) => {
+  //   const { name, value } = e.target;
+  //   setFormData((prev) => ({ ...prev, [name]: value }));
+  // };
 
   const handleNewCustomerInputChange = (
     e: React.ChangeEvent<HTMLInputElement>
@@ -1090,9 +1090,9 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                     <div className="col-span-1 md:col-span-2 lg:col-span-3">
                       <PropertyAddressSection
                         formData={formData}
-                        handleInputChange={handleInputChange}
+                        // handleInputChange={handleInputChange}
                         handleSelectChange={handleSelectChange}
-                        getPropertyArea={formData.area || ""}
+                        // getPropertyArea={formData.area || ""}
                         fieldNames={{
                           propertyNumber: "custom_property_numbername",
                           emirate: "custom_emirate",

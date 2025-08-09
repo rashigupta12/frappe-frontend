@@ -258,16 +258,17 @@ const fetchJobCards = useCallback(async () => {
     return;
   }
 
+  console.log("🔄 Fetching job cards for user:", user);
   setLoading(true);
   setError(null);
-  
+  const useremail = user.email || '';
   try {
     console.log("🚀 Step 1: Fetching job card list...");
     
     // First, get the simple list (this works - you confirmed it returns names)
     const listResponse = await frappeAPI.makeAuthenticatedRequest(
       'GET', 
-      '/api/resource/Job Card -Veneer Pressing?order_by=creation desc'
+      `/api/resource/Job Card -Veneer Pressing?filters=[["owner", "=", "${useremail}"]]&order_by=creation desc`
     );
     
     console.log("📋 Job card list response:", listResponse);

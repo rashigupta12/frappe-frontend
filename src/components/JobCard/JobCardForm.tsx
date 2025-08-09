@@ -254,6 +254,14 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
 
     fetchCustomerData();
   }, [jobCard?.customer_id]);
+  useEffect(() => {
+  if (formData.start_date && !formData.finish_date) {
+    setFormData(prev => ({
+      ...prev,
+      finish_date: formData.start_date
+    }));
+  }
+}, [formData.start_date, formData.finish_date]);
 
   // Fetch employees when component mounts
   useEffect(() => {
@@ -261,106 +269,111 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
   }, [fetchEmployees]);
 
   // Load existing job card data when editing
- useEffect(() => {
-  if (jobCard) {
-    // Parse property address from the job card's area field if available
-    const propertyAddress = jobCard.area
-      ? JSON.parse(jobCard.area)
-      : {};
+  useEffect(() => {
+    if (jobCard) {
+      // Parse property address from the job card's area field if available
+      const propertyAddress = jobCard.area ? JSON.parse(jobCard.area) : {};
 
-    setFormData({
-      date: jobCard.date || new Date().toISOString().split("T")[0],
-      area: jobCard.area || "",
-      party_name: jobCard.party_name || "",
-      start_date: jobCard.start_date || new Date().toISOString().split("T")[0],
-      finish_date: jobCard.finish_date || "",
-      prepared_by: jobCard.prepared_by || "",
-      approved_by: jobCard.approved_by || "",
-      project_id_no: jobCard.project_id_no || "",
-      ac_v_no_and_date: jobCard.ac_v_no_and_date || "",
-      pressing_charges: jobCard.pressing_charges || [],
-      material_sold: jobCard.material_sold || [],
-      lead_id: jobCard.lead_id || "",
-      customer_id: jobCard.customer_id || "",
-      // Property address fields
-      custom_property_category: propertyAddress.category || jobCard.custom_property_category || "",
-      custom_emirate: propertyAddress.emirate || jobCard.custom_emirate || "",
-      custom_uae_area: propertyAddress.area || jobCard.custom_uae_area || "",
-      custom_community: propertyAddress.community || jobCard.custom_community || "",
-      custom_street_name: propertyAddress.street || jobCard.custom_street_name || "",
-      custom_property_name__number: propertyAddress.propertyNumber || jobCard.custom_property_number_name|| "",
-      custom_property_area: jobCard.area || "",
-    });
+      setFormData({
+        date: jobCard.date || new Date().toISOString().split("T")[0],
+        area: jobCard.area || "",
+        party_name: jobCard.party_name || "",
+        start_date:
+          jobCard.start_date || new Date().toISOString().split("T")[0],
+        finish_date: jobCard.finish_date || "",
+        prepared_by: jobCard.prepared_by || "",
+        approved_by: jobCard.approved_by || "",
+        project_id_no: jobCard.project_id_no || "",
+        ac_v_no_and_date: jobCard.ac_v_no_and_date || "",
+        pressing_charges: jobCard.pressing_charges || [],
+        material_sold: jobCard.material_sold || [],
+        lead_id: jobCard.lead_id || "",
+        customer_id: jobCard.customer_id || "",
+        // Property address fields
+        custom_property_category:
+          propertyAddress.category || jobCard.custom_property_category || "",
+        custom_emirate: propertyAddress.emirate || jobCard.custom_emirate || "",
+        custom_uae_area: propertyAddress.area || jobCard.custom_uae_area || "",
+        custom_community:
+          propertyAddress.community || jobCard.custom_community || "",
+        custom_street_name:
+          propertyAddress.street || jobCard.custom_street_name || "",
+        custom_property_name__number:
+          propertyAddress.propertyNumber ||
+          jobCard.custom_property_number_name ||
+          "",
+        custom_property_area: jobCard.area || "",
+      });
 
-    setSearchQuery(jobCard.party_name || "");
-    setPressingCharges(jobCard.pressing_charges || []);
-    setMaterialsSold(jobCard.material_sold || []);
+      setSearchQuery(jobCard.party_name || "");
+      setPressingCharges(jobCard.pressing_charges || []);
+      setMaterialsSold(jobCard.material_sold || []);
 
-    // If customer_id exists, fetch customer details
-    if (jobCard.customer_id) {
-      fetchCustomerDetails(jobCard.customer_id);
+      // If customer_id exists, fetch customer details
+      if (jobCard.customer_id) {
+        fetchCustomerDetails(jobCard.customer_id);
+      }
+    } else {
+      // Reset form for new job card
+      setFormData({
+        date: new Date().toISOString().split("T")[0],
+        area: "",
+        party_name: "",
+        start_date: new Date().toISOString().split("T")[0],
+        finish_date: "",
+        prepared_by: "",
+        approved_by: "",
+        project_id_no: "",
+        ac_v_no_and_date: "",
+        pressing_charges: [],
+        material_sold: [],
+        lead_id: "",
+        customer_id: "",
+        custom_property_category: "",
+        custom_emirate: "",
+        custom_uae_area: "",
+        custom_community: "",
+        custom_street_name: "",
+        custom_property_name__number: "",
+        custom_property_area: "",
+      });
+      setSearchQuery("");
+      setPressingCharges([]);
+      setMaterialsSold([]);
     }
-  } else {
-    // Reset form for new job card
-    setFormData({
-      date: new Date().toISOString().split("T")[0],
-      area: "",
-      party_name: "",
-      start_date: new Date().toISOString().split("T")[0],
-      finish_date: "",
-      prepared_by: "",
-      approved_by: "",
-      project_id_no: "",
-      ac_v_no_and_date: "",
-      pressing_charges: [],
-      material_sold: [],
-      lead_id: "",
-      customer_id: "",
-      custom_property_category: "",
-      custom_emirate: "",
-      custom_uae_area: "",
-      custom_community: "",
-      custom_street_name: "",
-      custom_property_name__number: "",
-      custom_property_area: "",
-    });
-    setSearchQuery("");
-    setPressingCharges([]);
-    setMaterialsSold([]);
-  }
-}, [jobCard]);
+  }, [jobCard]);
 
-// Add this helper function
-const fetchCustomerDetails = async (customerId: string) => {
-  try {
-    const response = await frappeAPI.getCustomerById(customerId);
-    const customer = response.data;
-    
-    setFormData(prev => ({
-      ...prev,
-      party_name: customer.customer_name || "",
-    }));
-    setSearchQuery(customer.customer_name || "");
-    
-    // If customer has associated address, populate those fields
-    if (customer.custom_property_address) {
-      const address = JSON.parse(customer.custom_property_address);
-      setFormData(prev => ({
+  // Add this helper function
+  const fetchCustomerDetails = async (customerId: string) => {
+    try {
+      const response = await frappeAPI.getCustomerById(customerId);
+      const customer = response.data;
+
+      setFormData((prev) => ({
         ...prev,
-        custom_property_category: address.category || "",
-        custom_emirate: address.emirate || "",
-        custom_uae_area: address.area || "",
-        custom_community: address.community || "",
-        custom_street_name: address.street || "",
-        custom_property_name__number: address.propertyNumber || "",
-        custom_property_area: address.combined || "",
-        area: address.combined || "",
+        party_name: customer.customer_name || "",
       }));
+      setSearchQuery(customer.customer_name || "");
+
+      // If customer has associated address, populate those fields
+      if (customer.custom_property_address) {
+        const address = JSON.parse(customer.custom_property_address);
+        setFormData((prev) => ({
+          ...prev,
+          custom_property_category: address.category || "",
+          custom_emirate: address.emirate || "",
+          custom_uae_area: address.area || "",
+          custom_community: address.community || "",
+          custom_street_name: address.street || "",
+          custom_property_name__number: address.propertyNumber || "",
+          custom_property_area: address.combined || "",
+          area: address.combined || "",
+        }));
+      }
+    } catch (error) {
+      console.error("Failed to fetch customer details:", error);
     }
-  } catch (error) {
-    console.error("Failed to fetch customer details:", error);
-  }
-};
+  };
 
   const handleNewCustomerInputChange = (
     e: React.ChangeEvent<HTMLInputElement>
@@ -873,12 +886,12 @@ const fetchCustomerDetails = async (customerId: string) => {
   //   }
   // };
 
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
+  // const handleInputChange = (
+  //   e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  // ) => {
+  //   const { name, value } = e.target;
+  //   setFormData((prev) => ({ ...prev, [name]: value }));
+  // };
 
   // Pressing Charges functions
   const addPressingCharge = () => {
@@ -1065,60 +1078,69 @@ const fetchCustomerDetails = async (customerId: string) => {
   };
 
   const validateForm = (): boolean => {
-    if (!formData.party_name) {
-      toast.error("Customer name is required");
-      return false;
-    }
-    if (!formData.start_date) {
-      toast.error("Start date is required");
-      return false;
-    }
-    if (!formData.finish_date) {
-      toast.error("Finish date is required");
-      return false;
-    }
+  if (!formData.party_name) {
+    toast.error("Customer name is required");
+    return false;
+  }
+  if (!formData.start_date) {
+    toast.error("Start date is required");
+    return false;
+  }
+  
+  // Fixed: Check for finish_date and auto-set it to start_date if empty
+  const finishDate = formData.finish_date || formData.start_date;
+  if (!finishDate) {
+    toast.error("Finish date is required");
+    return false;
+  }
 
-    if (pressingCharges.length === 0 && materialsSold.length === 0) {
-      toast.error(
-        "At least one entry in Pressing Charges or Materials Sold is required"
-      );
-      return false;
-    }
+  // Allow same day completion
+  if (new Date(finishDate) < new Date(formData.start_date)) {
+    toast.error("Finish date cannot be before start date");
+    return false;
+  }
 
-    const hasValidPressingCharges =
-      pressingCharges.length > 0
-        ? pressingCharges.every((charge) => charge.work_type)
-        : true;
+  if (pressingCharges.length === 0 && materialsSold.length === 0) {
+    toast.error(
+      "At least one entry in Pressing Charges or Materials Sold is required"
+    );
+    return false;
+  }
 
-    if (!hasValidPressingCharges && pressingCharges.length > 0) {
-      toast.error("All pressing charges must have a work type and valid price");
-      return false;
-    }
+  const hasValidPressingCharges =
+    pressingCharges.length > 0
+      ? pressingCharges.every((charge) => charge.work_type)
+      : true;
 
-    const hasValidMaterialsSold =
-      materialsSold.length > 0
-        ? materialsSold.every((material) => material.work_type)
-        : true;
+  if (!hasValidPressingCharges && pressingCharges.length > 0) {
+    toast.error("All pressing charges must have a work type and valid price");
+    return false;
+  }
 
-    if (!hasValidMaterialsSold && materialsSold.length > 0) {
-      toast.error("All materials sold must have a work type and valid price");
-      return false;
-    }
+  const hasValidMaterialsSold =
+    materialsSold.length > 0
+      ? materialsSold.every((material) => material.work_type)
+      : true;
 
-    if (
-      pressingCharges.length > 0 &&
-      materialsSold.length > 0 &&
-      !hasValidPressingCharges &&
-      !hasValidMaterialsSold
-    ) {
-      toast.error(
-        "Please add valid entries to either Pressing Charges or Materials Sold"
-      );
-      return false;
-    }
+  if (!hasValidMaterialsSold && materialsSold.length > 0) {
+    toast.error("All materials sold must have a work type and valid price");
+    return false;
+  }
 
-    return true;
-  };
+  if (
+    pressingCharges.length > 0 &&
+    materialsSold.length > 0 &&
+    !hasValidPressingCharges &&
+    !hasValidMaterialsSold
+  ) {
+    toast.error(
+      "Please add valid entries to either Pressing Charges or Materials Sold"
+    );
+    return false;
+  }
+
+  return true;
+};
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1382,9 +1404,9 @@ const fetchCustomerDetails = async (customerId: string) => {
                     <div className="col-span-1 md:col-span-2 lg:col-span-3">
                       <PropertyAddressSection
                         formData={formData}
-                        handleInputChange={handleInputChange}
+                        // handleInputChange={handleInputChange}
                         handleSelectChange={handleSelectChange}
-                        getPropertyArea={formData.area || ""}
+                        // getPropertyArea={formData.area || ""}
                         fieldNames={{
                           propertyNumber: "custom_property_number_name",
                           emirate: "custom_emirate",
@@ -1417,16 +1439,21 @@ const fetchCustomerDetails = async (customerId: string) => {
                             value={formData.start_date || ""}
                             onChange={(e) => {
                               const selectedDate = e.target.value;
-                              if (
-                                new Date(selectedDate) <
-                                new Date(new Date().toISOString().split("T")[0])
-                              ) {
+                              const today = new Date()
+                                .toISOString()
+                                .split("T")[0];
+
+                              // Allow today's date - only prevent past dates
+                              if (new Date(selectedDate) < new Date(today)) {
                                 toast.error("Start date cannot be in the past");
                                 return;
                               }
+
                               setFormData((prev) => ({
                                 ...prev,
                                 start_date: selectedDate,
+                                // If finish date is the same as start date or earlier, clear it
+                                // This allows same-day completion
                                 ...(formData.finish_date &&
                                 new Date(formData.finish_date) <
                                   new Date(selectedDate)
@@ -1444,51 +1471,49 @@ const fetchCustomerDetails = async (customerId: string) => {
                       </div>
 
                       <div className="space-y-2">
-                        <Label
-                          htmlFor="finish_date"
-                          className="flex items-center space-x-2"
-                        >
-                          <Calendar className="h-4 w-4 text-gray-500" />
-                          <span>
-                            Finish Date <span className="text-red-500">*</span>
-                          </span>
-                        </Label>
-                        <div className="relative">
-                          <Input
-                            id="finish_date"
-                            name="finish_date"
-                            type="date"
-                            value={
-                              formData.finish_date || formData.start_date || ""
-                            }
-                            onChange={(e) => {
-                              const selectedDate = e.target.value;
-                              if (
-                                formData.start_date &&
-                                new Date(selectedDate) <
-                                  new Date(formData.start_date)
-                              ) {
-                                toast.error(
-                                  "Finish date cannot be before start date"
-                                );
-                                return;
-                              }
-                              setFormData((prev) => ({
-                                ...prev,
-                                finish_date: selectedDate,
-                              }));
-                            }}
-                            min={
-                              formData.start_date ||
-                              new Date().toISOString().split("T")[0]
-                            }
-                            required
-                            disabled={isReadOnly}
-                            className="w-full rounded-md border border-gray-300 px-3 py-2 pr-10 text-sm text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 disabled:bg-gray-50 disabled:text-gray-500"
-                          />
-                          <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
-                        </div>
-                      </div>
+  <Label
+    htmlFor="finish_date"
+    className="flex items-center space-x-2"
+  >
+    <Calendar className="h-4 w-4 text-gray-500" />
+    <span>
+      Finish Date <span className="text-red-500">*</span>
+    </span>
+  </Label>
+  <div className="relative">
+    <Input
+      id="finish_date"
+      name="finish_date"
+      type="date"
+      value={formData.finish_date || formData.start_date || ""} // This line ensures it has a value
+      onChange={(e) => {
+        const selectedDate = e.target.value;
+
+        // Allow same day completion - only prevent dates before start date
+        if (
+          formData.start_date &&
+          new Date(selectedDate) < new Date(formData.start_date)
+        ) {
+          toast.error("Finish date cannot be before start date");
+          return;
+        }
+
+        setFormData((prev) => ({
+          ...prev,
+          finish_date: selectedDate,
+        }));
+      }}
+      min={
+        formData.start_date ||
+        new Date().toISOString().split("T")[0]
+      }
+      required
+      disabled={isReadOnly}
+      className="w-full rounded-md border border-gray-300 px-3 py-2 pr-10 text-sm text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 disabled:bg-gray-50 disabled:text-gray-500"
+    />
+    <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+  </div>
+</div>
                     </div>
                   </div>
                 </div>
@@ -1607,10 +1632,10 @@ const fetchCustomerDetails = async (customerId: string) => {
 
                                 <div className="w-[30%] space-y-2">
                                   <Label className="text-xs  text-gray-600">
-                                    Thickness(mm)
+                                    Thickness
                                   </Label>
                                   <Input
-                                    placeholder="Thickness"
+                                    placeholder="mm"
                                     value={charge.thickness}
                                     onChange={(e) =>
                                       updatePressingCharge(

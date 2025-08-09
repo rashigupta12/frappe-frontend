@@ -1204,9 +1204,9 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                       {section.id === "property" && (
                         <PropertyAddressSection
                           formData={formData}
-                          handleInputChange={handleInputChange}
+                          // handleInputChange={handleInputChange}
                           handleSelectChange={handleSelectChange}
-                          getPropertyArea={formData.custom_property_area || ""}
+                          // getPropertyArea={formData.custom_property_area || ""}
                         />
                       )}
 
