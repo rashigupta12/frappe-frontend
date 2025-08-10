@@ -25,6 +25,7 @@ import { Label } from "../ui/label";
 
 interface PropertyAddressSectionProps {
   formData: any;
+  
   handleSelectChange: (name: string, value: string) => void;
   fieldNames?: {
     emirate?: string;
@@ -158,6 +159,7 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
         "GET",
         "/api/resource/property Category"
       );
+      console.log(response)
       if (response.data) {
         setPropertyCategories(response.data);
       }

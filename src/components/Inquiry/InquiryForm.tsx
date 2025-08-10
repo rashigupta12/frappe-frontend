@@ -127,15 +127,16 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     ...defaultFormData,
   });
   const [showReferenceInput, setShowReferenceInput] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<any[]>([]);
-  const [showDropdown, setShowDropdown] = useState(false);
-  const [isSearching, setIsSearching] = useState(false);
-  const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(
-    null
-  );
+  
+  // Customer search states
+  const [customerSearchQuery, setCustomerSearchQuery] = useState("");
+  const [customerSearchResults, setCustomerSearchResults] = useState<any[]>([]);
+  const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
+  const [isCustomerSearching, setIsCustomerSearching] = useState(false);
+  const [customerSearchTimeout, setCustomerSearchTimeout] = useState<NodeJS.Timeout | null>(null);
   const [fetchingCustomerDetails, setFetchingCustomerDetails] = useState(false);
   const [showNewCustomerFields, setShowNewCustomerFields] = useState(false);
+  
   const navigate = useNavigate();
 
   const updatedSections = useMemo(() => {
@@ -250,9 +251,10 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     setDate(new Date());
     setHasFetchedInitialData(false);
     setShowReferenceInput(false);
-    setSearchQuery("");
-    setSearchResults([]);
-    setShowDropdown(false);
+    setCustomerSearchQuery("");
+    setCustomerSearchResults([]);
+    setShowCustomerDropdown(false);
+    setShowNewCustomerFields(false);
   };
 
   const toggleSection = (sectionId: string) => {
@@ -446,14 +448,16 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     onClose();
   };
 
+  // Updated customer search function - only search by name, email, and phone
   const handleCustomerSearch = useCallback(async (query: string) => {
     if (!query.trim()) {
-      setSearchResults([]);
-      setShowDropdown(false);
-      setShowNewCustomerFields(false); // Hide new customer fields when search is empty
+      setCustomerSearchResults([]);
+      setShowCustomerDropdown(false);
+      setShowNewCustomerFields(false);
       return;
     }
-    setIsSearching(true);
+
+    setIsCustomerSearching(true);
     try {
       const allResults: any[] = [];
       const addressEndpoint =
@@ -463,48 +467,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
       const searchPromises: Promise<any>[] = [];
 
       if (queryLower.length >= 2) {
-        // ... (all your existing search logic remains the same) ...
-        // Existing search promises for addresses
-        searchPromises.push(
-          frappeAPI
-            .makeAuthenticatedRequest(
-              "GET",
-              `${addressEndpoint}?custom_area=${encodeURIComponent(query)}`
-            )
-            .then((response) => ({
-              type: "area",
-              data: response.message?.data || [],
-            }))
-            .catch(() => ({ type: "area", data: [] }))
-        );
-        searchPromises.push(
-          frappeAPI
-            .makeAuthenticatedRequest(
-              "GET",
-              `${addressEndpoint}?custom_community=${encodeURIComponent(query)}`
-            )
-            .then((response) => ({
-              type: "community",
-              data: response.message?.data || [],
-            }))
-            .catch(() => ({ type: "community", data: [] }))
-        );
-        searchPromises.push(
-          frappeAPI
-            .makeAuthenticatedRequest(
-              "GET",
-              `${addressEndpoint}?custom_street_name=${encodeURIComponent(
-                query
-              )}`
-            )
-            .then((response) => ({
-              type: "street",
-              data: response.message?.data || [],
-            }))
-            .catch(() => ({ type: "street", data: [] }))
-        );
-
-        // --- NEW: Search by Customer Name and Lead Name ---
+        // Search by Customer Name
         searchPromises.push(
           frappeAPI
             .makeAuthenticatedRequest(
@@ -517,13 +480,13 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
             }))
             .catch(() => ({ type: "customer_name", data: [] }))
         );
+
+        // Search by Lead Name
         searchPromises.push(
           frappeAPI
             .makeAuthenticatedRequest(
               "GET",
-              `${addressEndpoint}?custom_lead_customer_name=${encodeURIComponent(
-                query
-              )}`
+              `${addressEndpoint}?custom_lead_customer_name=${encodeURIComponent(query)}`
             )
             .then((response) => ({
               type: "lead_name",
@@ -531,14 +494,13 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
             }))
             .catch(() => ({ type: "lead_name", data: [] }))
         );
-        // Always search, whether partial or full email
+
+        // Search by Customer Email
         searchPromises.push(
           frappeAPI
             .makeAuthenticatedRequest(
               "GET",
-              `${addressEndpoint}?custom_customer_email=${encodeURIComponent(
-                query
-              )}`
+              `${addressEndpoint}?custom_customer_email=${encodeURIComponent(query)}`
             )
             .then((response) => ({
               type: "customer_email",
@@ -547,13 +509,12 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
             .catch(() => ({ type: "customer_email", data: [] }))
         );
 
+        // Search by Lead Email
         searchPromises.push(
           frappeAPI
             .makeAuthenticatedRequest(
               "GET",
-              `${addressEndpoint}?custom_lead_email=${encodeURIComponent(
-                query
-              )}`
+              `${addressEndpoint}?custom_lead_email=${encodeURIComponent(query)}`
             )
             .then((response) => ({
               type: "lead_email",
@@ -561,34 +522,16 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
             }))
             .catch(() => ({ type: "lead_email", data: [] }))
         );
-        // --- END NEW ---
 
-        if (/^\d+$/.test(query)) {
-          searchPromises.push(
-            frappeAPI
-              .makeAuthenticatedRequest(
-                "GET",
-                `${addressEndpoint}?custom_property_number=${encodeURIComponent(
-                  query
-                )}`
-              )
-              .then((response) => ({
-                type: "property",
-                data: response.message?.data || [],
-              }))
-              .catch(() => ({ type: "property", data: [] }))
-          );
-        }
-
+        // Search by Phone (if query looks like a phone number)
         if (/^\+?\d+$/.test(query.replace(/[\s-]/g, ""))) {
           const cleanPhone = query.replace(/[\s-]/g, "");
+          
           searchPromises.push(
             frappeAPI
               .makeAuthenticatedRequest(
                 "GET",
-                `${addressEndpoint}?custom_customer_phone_number=${encodeURIComponent(
-                  cleanPhone
-                )}`
+                `${addressEndpoint}?custom_customer_phone_number=${encodeURIComponent(cleanPhone)}`
               )
               .then((response) => ({
                 type: "customer_phone",
@@ -596,13 +539,12 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
               }))
               .catch(() => ({ type: "customer_phone", data: [] }))
           );
+
           searchPromises.push(
             frappeAPI
               .makeAuthenticatedRequest(
                 "GET",
-                `${addressEndpoint}?custom_lead_phone_number=${encodeURIComponent(
-                  cleanPhone
-                )}`
+                `${addressEndpoint}?custom_lead_phone_number=${encodeURIComponent(cleanPhone)}`
               )
               .then((response) => ({
                 type: "lead_phone",
@@ -612,49 +554,19 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
           );
         }
 
-        const knownEmirates = [
-          "dubai",
-          "abu dhabi",
-          "sharjah",
-          "ajman",
-          "umm al quwain",
-          "ras al khaimah",
-          "fujairah",
-        ];
-        if (
-          knownEmirates.some(
-            (emirate) =>
-              emirate.includes(queryLower) ||
-              queryLower.includes(emirate.replace(/\s/g, "")) ||
-              emirate.toLowerCase() === queryLower
-          )
-        ) {
-          searchPromises.push(
-            frappeAPI
-              .makeAuthenticatedRequest(
-                "GET",
-                `${addressEndpoint}?custom_emirate=${encodeURIComponent(query)}`
-              )
-              .then((response) => ({
-                type: "emirate",
-                data: response.message?.data || [],
-              }))
-              .catch(() => ({ type: "emirate", data: [] }))
-          );
-        }
-
         const searchResults = await Promise.all(searchPromises);
 
         searchResults.forEach((result) => {
           if (result.data && Array.isArray(result.data)) {
             const transformedData = result.data.map((address: any) => ({
               ...address,
-              search_type: "address",
+              search_type: "customer",
               found_via: result.type,
               customer_name:
                 address.customer_details?.customer_name ||
                 address.lead_details?.lead_name ||
-                `Address: ${address.custom_combined_address}`,
+                address.custom_lead_customer_name ||
+                `Customer`,
               mobile_no:
                 address.custom_customer_phone_number ||
                 address.custom_lead_phone_number ||
@@ -666,16 +578,15 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                 address.customer_details?.email_id,
               name: address.customer_details?.name || address.custom_lead_name,
               lead_name: address.custom_lead_name,
-              // building_name: "",
-              // property_no: address.custom_property_number,
-              area: address.custom_combined_address,
+              // Address information (if available)
               address_details: {
-                emirate: address.custom_emirate,
-                area: address.custom_area,
-                community: address.custom_community,
-                street_name: address.custom_street_name,
-                property_number: address.custom_property_number,
-                combined_address: address.custom_combined_address,
+                emirate: address.custom_emirate || "",
+                area: address.custom_area || "",
+                community: address.custom_community || "",
+                street_name: address.custom_street_name || "",
+                property_number: address.custom_property_number || "",
+                property_category: address.custom_property_category || "",
+                combined_address: address.custom_combined_address || "",
               },
             }));
             allResults.push(...transformedData);
@@ -688,123 +599,90 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
           index ===
           self.findIndex(
             (r) =>
-              r.custom_combined_address === result.custom_combined_address ||
+              (r.customer_name === result.customer_name && 
+               r.email_id === result.email_id && 
+               r.mobile_no === result.mobile_no) ||
               (r.custom_lead_name &&
                 result.custom_lead_name &&
-                r.custom_lead_name === result.custom_lead_name) ||
-              (r.site_name &&
-                result.site_name &&
-                r.site_name === result.site_name)
+                r.custom_lead_name === result.custom_lead_name)
           )
         );
       });
 
-      setSearchResults(uniqueResults);
-      setShowDropdown(true);
+      setCustomerSearchResults(uniqueResults);
+      setShowCustomerDropdown(true);
 
-      // CRITICAL: Show new customer fields when no results are found
+      // Show new customer fields immediately if no results found
       if (uniqueResults.length === 0) {
         setShowNewCustomerFields(true);
       } else {
         setShowNewCustomerFields(false);
       }
     } catch (error) {
-      console.error("Search error:", error);
-      setSearchResults([]);
-      setShowDropdown(true);
-      setShowNewCustomerFields(true); // Show new customer fields on error (no results)
-      toast.error("Failed to search addresses. Please try again.");
+      console.error("Customer search error:", error);
+      setCustomerSearchResults([]);
+      setShowCustomerDropdown(false);
+      setShowNewCustomerFields(true);
+      toast.error("Failed to search customers. Please try again.");
     } finally {
-      setIsSearching(false);
+      setIsCustomerSearching(false);
     }
   }, []);
 
   const handleCustomerSelect = async (result: any) => {
     setFetchingCustomerDetails(true);
-    setShowNewCustomerFields(false); // Always hide new fields when an existing customer is selected
+    setShowNewCustomerFields(false);
 
     try {
-      if (result.is_new_customer) {
-        // Logic for creating a new customer
-        setFormData({
-          ...formData,
-          new_customer_name: result.customer_name || searchQuery,
-          new_customer_phone: result.mobile_no || "",
-          new_customer_email: result.email_id || "",
-          // Clear existing customer fields
-          customer_id: "",
-          lead_id: "",
-          lead_name: "",
-          mobile_no: "",
-          email_id: "",
-          // Clear address fields for a new customer
-          custom_property_area: "",
-          custom_emirate: "",
-          custom_community: "",
-          custom_area: "",
-          custom_street_name: "",
-          custom_property_name__number: "",
-        });
-        setShowNewCustomerFields(true);
-        setSearchQuery(result.customer_name || searchQuery);
-      } else {
-        // Logic for selecting an existing customer
-        const customerData = {
-          lead_name: result.customer_name,
-          email_id: result.email_id || "",
-          mobile_no: result.mobile_no || "+971 ",
-          customer_id: result.name || "",
-          lead_id: result.custom_lead_name || "",
-          custom_property_area: result.custom_combined_address || "",
-          custom_emirate: result.custom_emirate || "",
-          custom_community: result.custom_community || "",
-          custom_area: result.custom_area || "",
-          custom_street_name: result.custom_street_name || "",
-          custom_property_name__number: result.custom_property_number || "",
-        };
-        setFormData((prev) => ({
-          ...prev,
-          ...customerData,
-          // Reset new customer fields just in case
-          new_customer_name: "",
-          new_customer_phone: "",
-          new_customer_email: "",
-        }));
+      // Set customer data
+      const customerData = {
+        lead_name: result.customer_name,
+        email_id: result.email_id || "",
+        mobile_no: result.mobile_no || "+971 ",
+        customer_id: result.name || "",
+        lead_id: result.custom_lead_name || "",
+      };
 
-        // Set the search bar text to the selected customer's name
-        setSearchQuery(result.customer_name);
+      // Set address data if available
+      const addressData = result.address_details ? {
+        custom_property_category: result.address_details.property_category || "",
+        custom_emirate: result.address_details.emirate || "",
+        custom_community: result.address_details.community || "",
+        custom_area: result.address_details.area || "",
+        custom_street_name: result.address_details.street_name || "",
+        custom_property_name__number: result.address_details.property_number || "",
+        custom_property_area: result.address_details.combined_address || "",
+      } : {};
 
-        // We might need to hide the dropdown and the "new customer" fields
-        setShowNewCustomerFields(false);
-      }
+      setFormData((prev) => ({
+        ...prev,
+        ...customerData,
+        ...addressData,
+      }));
+
+      setCustomerSearchQuery(result.customer_name);
+      setShowCustomerDropdown(false);
     } finally {
       setFetchingCustomerDetails(false);
-      setShowDropdown(false);
     }
   };
 
-  const handleCreateNewCustomer = () => {
-    setShowNewCustomerFields(true);
-    setShowDropdown(false);
-  };
-
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCustomerSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value;
-    setSearchQuery(query);
+    setCustomerSearchQuery(query);
 
-    // Immediately hide dropdown and new customer fields if search is empty
     if (!query.trim()) {
-      setSearchResults([]);
-      setShowDropdown(false);
+      setCustomerSearchResults([]);
+      setShowCustomerDropdown(false);
       setShowNewCustomerFields(false);
       return;
     }
 
-    if (searchTimeout) {
-      clearTimeout(searchTimeout);
+    if (customerSearchTimeout) {
+      clearTimeout(customerSearchTimeout);
     }
 
-    setSearchTimeout(
+    setCustomerSearchTimeout(
       setTimeout(() => {
         handleCustomerSearch(query);
       }, 300)
@@ -905,7 +783,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                               <span className="text-sm font-medium text-gray-700">
                                 Customer{" "}
                                 <span className="text-gray-500">
-                                  (name/email/phone/address)
+                                  (name/email/phone)
                                 </span>
                                 <span className="text-red-500 ml-1">*</span>
                               </span>
@@ -918,38 +796,30 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                               <Input
                                 id="customer_search"
                                 name="customer_search"
-                                value={searchQuery}
-                                onChange={handleSearchChange}
-                                placeholder="Search by name, phone, email or address"
+                                value={customerSearchQuery}
+                                onChange={handleCustomerSearchChange}
+                                placeholder="Search by name, phone or email"
                                 required
                                 className="pr-10"
                               />
-                              {isSearching && (
+                              {isCustomerSearching && (
                                 <Loader2 className="absolute right-3 top-3 h-4 w-4 animate-spin text-gray-500" />
                               )}
                             </div>
 
-                            {showDropdown && (
+                            {showCustomerDropdown && (
                               <div className="absolute z-10 mt-1 w-full bg-white shadow-lg rounded-md border border-gray-200 max-h-60 overflow-y-auto">
-                                {searchResults.length > 0 ? (
-                                  searchResults.map((result, index) => (
+                                {customerSearchResults.length > 0 ? (
+                                  customerSearchResults.map((result, index) => (
                                     <div
-                                      key={`search-result-${index}`}
+                                      key={`customer-result-${index}`}
                                       className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                                      onClick={() =>
-                                        handleCustomerSelect(result)
-                                      }
+                                      onClick={() => handleCustomerSelect(result)}
                                     >
                                       <p className="font-medium truncate">
                                         {result.customer_name}
-                                        {result.is_new_customer && (
-                                          <span className="ml-2 text-xs text-gray-500">
-                                            (New Customer)
-                                          </span>
-                                        )}
                                       </p>
-                                      {(result.mobile_no ||
-                                        result.email_id) && (
+                                      {(result.mobile_no || result.email_id) && (
                                         <div className="text-xs text-gray-500 space-x-2">
                                           {result.mobile_no && (
                                             <span className="inline-flex items-center">
@@ -963,58 +833,29 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                                               {result.email_id}
                                             </span>
                                           )}
+
                                         </div>
                                       )}
-                                      {result.custom_combined_address && (
-                                        <div className="text-xs text-gray-500 mt-1 flex items-center">
-                                          <Home className="h-3 w-3 mr-1 flex-shrink-0" />
-                                          <span className="truncate">
-                                            {result.custom_combined_address}
-                                          </span>
-                                        </div>
-                                      )}
+                                      
                                     </div>
                                   ))
                                 ) : (
-                                  <div
-                                    key="no-results"
-                                    className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center justify-between"
-                                    onClick={handleCreateNewCustomer} // Add this click handler
-                                  >
-                                    <div>
-                                      <p className="font-medium">
-                                        No customers found for "{searchQuery}"
-                                      </p>
-                                      <p className="text-xs text-gray-500">
-                                        Please create a new customer.
-                                      </p>
-                                    </div>
+                                  <div className="px-4 py-2 text-center">
+                                    <p className="font-medium text-gray-700">
+                                      No customers found for "{customerSearchQuery}"
+                                    </p>
+                                    <p className="text-xs text-gray-500 mt-1">
+                                      Fill in the details below to add a new customer
+                                    </p>
                                   </div>
                                 )}
                               </div>
                             )}
                           </div>
 
-                          {showNewCustomerFields || formData.lead_name ? (
+                          {/* Show customer fields when needed */}
+                          {(showNewCustomerFields || formData.lead_name || customerSearchQuery) && (
                             <>
-                              <div className="col-span-1">
-                                <Label
-                                  htmlFor="lead_name"
-                                  className="text-sm font-medium text-gray-700"
-                                >
-                                  Customer Name{" "}
-                                  <span className="text-red-500">*</span>
-                                </Label>
-                                <Input
-                                  id="lead_name"
-                                  name="lead_name"
-                                  value={formData.lead_name || ""}
-                                  onChange={handleInputChange}
-                                  placeholder="Enter customer name"
-                                  required
-                                />
-                              </div>
-
                               <div className="col-span-1">
                                 <Label
                                   htmlFor="phone"
@@ -1054,10 +895,8 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                                 />
                               </div>
                             </>
-                          ) : null}
-                          {/* --- */}
+                          )}
 
-                          {/* Existing fields (source of inquiry, etc.) */}
                           <div className="col-span-1 md:col-span-2">
                             <Label
                               htmlFor="source"
@@ -1204,9 +1043,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                       {section.id === "property" && (
                         <PropertyAddressSection
                           formData={formData}
-                          // handleInputChange={handleInputChange}
                           handleSelectChange={handleSelectChange}
-                          // getPropertyArea={formData.custom_property_area || ""}
                         />
                       )}
 
@@ -1423,7 +1260,6 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                                     MozAppearance: "textfield",
                                   }}
                                 />
-                                {/* Custom Calendar Icon - Clickable */}
                                 <div
                                   className="absolute inset-y-0 right-3 flex items-center text-gray-400 cursor-pointer"
                                   onClick={() => {
