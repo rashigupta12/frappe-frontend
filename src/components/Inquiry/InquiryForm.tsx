@@ -420,6 +420,8 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
       }
 
       const preferredDate = format(date, "yyyy-MM-dd");
+
+      //first create the todo
       await createTodo({
         assigned_by: user?.username || "sales_rep@eits.com",
         inquiry_id: inquiryName,
@@ -428,7 +430,55 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
         priority: priority,
         preferred_date: preferredDate,
       });
+//creating dwa
+let employeeName = '';
+    const inspector = inspectors.find(i => i.name === inspectorEmail);
 
+    // Method 1: Check if inspector has employee_id directly
+    
+    // Method 2: Look up employee by email with your specific response format
+  
+      try {
+        const employeeResponse = await frappeAPI.makeAuthenticatedRequest(
+          "GET",
+          `/api/resource/Employee?filters=[["user_id","=","${inspectorEmail}"]]`
+        );
+
+        // Handle your specific response format {"data":[{"name":"HR-EMP-00023"}]}
+        if (employeeResponse?.data?.length > 0) {
+          employeeName = employeeResponse.data[0].name; // Get the employee ID
+        } else {
+          throw new Error("Employee record not found in response");
+        }
+      } catch (error) {
+        console.warn("Employee lookup failed:", error);
+        throw new Error(`Could not find employee record for ${inspectorEmail}. Please ensure:
+        1. The inspector has an associated Employee record
+        2. The Employee record has their email set in the user_id field`);
+      
+    }
+    // Then create the Daily Work Allocation
+    const dwaPayload = {
+      "employee_name": employeeName,
+      "date": preferredDate,
+      "custom_work_allocation": [
+        {
+          "work_title": formData.custom_job_type || "Site Inspection",
+          "work_description": formData.custom_special_requirements || 
+            `Site inspection at ${formData.custom_property_area}`,
+          "expected_start_date": formData.custom_preferred_inspection_time,
+          "expected_time_in_hours": 2,
+        
+        }
+      ]
+    };
+
+    // Make API call to create DWA
+    await frappeAPI.makeAuthenticatedRequest(
+      "POST",
+      "/api/resource/Daily Work Allocation",
+      dwaPayload
+    );
       toast.success("Inspector assigned successfully!");
       navigate("/sales?tab=assign");
       onClose();

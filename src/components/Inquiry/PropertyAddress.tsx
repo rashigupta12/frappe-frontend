@@ -1848,7 +1848,7 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
             >
               Cancel
             </Button>
-            <Button onClick={handleSaveAddress}>Save Address</Button>
+            <Button      variant="outline" onClick={handleSaveAddress}>Save Address</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
