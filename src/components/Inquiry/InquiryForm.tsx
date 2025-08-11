@@ -432,7 +432,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
       });
 //creating dwa
 let employeeName = '';
-    const inspector = inspectors.find(i => i.name === inspectorEmail);
+    // const inspector = inspectors.find(i => i.name === inspectorEmail);
 
     // Method 1: Check if inspector has employee_id directly
     
