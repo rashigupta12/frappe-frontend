@@ -47,6 +47,7 @@ import {
 } from "../ui/select";
 import { Textarea } from "../ui/textarea";
 import PropertyAddressSection from "./PropertyAddress";
+import UserAvailability from "../ui/UserAvailability";
 
 type PriorityLevel = "Low" | "Medium" | "High";
 
@@ -122,6 +123,8 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [priority, setPriority] = useState<PriorityLevel>("Medium");
   const [inspectorEmail, setInspectorEmail] = useState("");
+  const [showAvailability, setShowAvailability] = useState(false);
+
   const [hasFetchedInitialData, setHasFetchedInitialData] = useState(false);
   const [formData, setFormData] = useState<LeadFormData>({
     ...defaultFormData,
@@ -237,7 +240,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
       );
       setShowReferenceInput(
         inquiry.source === "Reference" ||
-          inquiry.source === "Supplier Reference"
+        inquiry.source === "Supplier Reference"
       );
     }
   }, [inquiry, hasFetchedInitialData]);
@@ -432,10 +435,9 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     } catch (error) {
       console.error("Full error in assignment process:", error);
       toast.error(
-        `Failed to complete assignment: ${
-          error && typeof error === "object" && "message" in error
-            ? (error as { message: string }).message
-            : String(error)
+        `Failed to complete assignment: ${error && typeof error === "object" && "message" in error
+          ? (error as { message: string }).message
+          : String(error)
         }`
       );
     }
@@ -865,9 +867,8 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                 >
                   <button
                     type="button"
-                    className={`w-full flex justify-between items-center p-4 text-left hover:bg-gray-50 transition-colors ${
-                      activeSection === section.id ? "bg-gray-50" : ""
-                    }`}
+                    className={`w-full flex justify-between items-center p-4 text-left hover:bg-gray-50 transition-colors ${activeSection === section.id ? "bg-gray-50" : ""
+                      }`}
                     onClick={() => toggleSection(section.id)}
                   >
                     <div className="flex items-center gap-3">
@@ -887,11 +888,10 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                   </button>
 
                   <div
-                    className={`transition-all duration-300 overflow-hidden ${
-                      activeSection === section.id
-                        ? "max-h-[1000px] opacity-100"
-                        : "max-h-0 opacity-0"
-                    }`}
+                    className={`transition-all duration-300 overflow-hidden ${activeSection === section.id
+                      ? "max-h-[1000px] opacity-100"
+                      : "max-h-0 opacity-0"
+                      }`}
                   >
                     <div className="p-4 pt-2 space-y-4">
                       {section.id === "contact" && (
@@ -950,21 +950,21 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                                       </p>
                                       {(result.mobile_no ||
                                         result.email_id) && (
-                                        <div className="text-xs text-gray-500 space-x-2">
-                                          {result.mobile_no && (
-                                            <span className="inline-flex items-center">
-                                              <Phone className="h-3 w-3 mr-1" />
-                                              {result.mobile_no}
-                                            </span>
-                                          )}
-                                          {result.email_id && (
-                                            <span className="inline-flex items-center">
-                                              <Mail className="h-3 w-3 mr-1" />
-                                              {result.email_id}
-                                            </span>
-                                          )}
-                                        </div>
-                                      )}
+                                          <div className="text-xs text-gray-500 space-x-2">
+                                            {result.mobile_no && (
+                                              <span className="inline-flex items-center">
+                                                <Phone className="h-3 w-3 mr-1" />
+                                                {result.mobile_no}
+                                              </span>
+                                            )}
+                                            {result.email_id && (
+                                              <span className="inline-flex items-center">
+                                                <Mail className="h-3 w-3 mr-1" />
+                                                {result.email_id}
+                                              </span>
+                                            )}
+                                          </div>
+                                        )}
                                       {result.custom_combined_address && (
                                         <div className="text-xs text-gray-500 mt-1 flex items-center">
                                           <Home className="h-3 w-3 mr-1 flex-shrink-0" />
@@ -1206,17 +1206,17 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                           formData={formData}
                           // handleInputChange={handleInputChange}
                           handleSelectChange={handleSelectChange}
-                          // getPropertyArea={formData.custom_property_area || ""}
+                        // getPropertyArea={formData.custom_property_area || ""}
                         />
                       )}
 
                       {section.id === "additional" && (
                         <div>
                           <div className="grid grid-cols-12 gap-4 mb-2">
-                            <div className="col-span-6">
-                              <Label className="text-sm font-medium text-gray-700">
-                                Preferred Date
-                              </Label>
+
+                            {/* Preferred Date */}
+                            <div className="col-span-5">
+                              <Label className="text-sm font-medium text-gray-700">Preferred Date</Label>
                               <div className="relative">
                                 <Input
                                   type="date"
@@ -1225,12 +1225,10 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                                     date
                                       ? format(date, "yyyy-MM-dd")
                                       : formData.custom_preferred_inspection_date
-                                      ? new Date(
-                                          formData.custom_preferred_inspection_date
-                                        )
+                                        ? new Date(formData.custom_preferred_inspection_date)
                                           .toISOString()
                                           .split("T")[0]
-                                      : ""
+                                        : ""
                                   }
                                   onChange={(e) => {
                                     const selectedDate = e.target.value
@@ -1266,6 +1264,20 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                               </div>
                             </div>
 
+                            {/* User Icon Button */}
+                            <div className="col-span-1 pt-5 flex justify-center">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="icon"
+                                className="h-9 w-8 rounded-md text-gray-600 hover:text-emerald-600 hover:bg-gray-100"
+                                onClick={() => setShowAvailability(true)}
+                              >
+                                <User className="h-5 w-5" />
+                              </Button>
+                            </div>
+
+                            {/* Time */}
                             <div className="col-span-6">
                               <Label
                                 htmlFor="custom_preferred_inspection_time"
@@ -1279,8 +1291,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                                   id="custom_preferred_inspection_time"
                                   name="custom_preferred_inspection_time"
                                   value={
-                                    formData.custom_preferred_inspection_time ||
-                                    getCurrentTime()
+                                    formData.custom_preferred_inspection_time || getCurrentTime()
                                   }
                                   onChange={handleInputChange}
                                   className="w-full pr-10"
@@ -1305,7 +1316,30 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                                   <Clock className="h-4 w-4" />
                                 </div>
                               </div>
+
                             </div>
+
+                            {showAvailability && (
+                              <UserAvailability
+                                date={date || new Date()}
+                                onClose={() => setShowAvailability(false)}
+                                onSelectInspector={(email, availabilityData) => {
+                                  setInspectorEmail(email);
+
+                                  // Find the selected inspector from the availability data
+                                  const selectedInspector = availabilityData.find(i => i.email === email);
+
+                                  // Auto-set the time to the first available slot if available
+                                  if (selectedInspector?.availability.free_slots.length) {
+                                    const firstSlot = selectedInspector.availability.free_slots[0];
+                                    setFormData(prev => ({
+                                      ...prev,
+                                      custom_preferred_inspection_time: firstSlot.start
+                                    }));
+                                  }
+                                }}
+                              />
+                            )}
                           </div>
 
                           <div>
@@ -1400,12 +1434,12 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                                     date
                                       ? format(date, "yyyy-MM-dd")
                                       : formData.custom_preferred_inspection_date
-                                      ? new Date(
+                                        ? new Date(
                                           formData.custom_preferred_inspection_date
                                         )
                                           .toISOString()
                                           .split("T")[0]
-                                      : ""
+                                        : ""
                                   }
                                   onChange={(e) => {
                                     const selectedDate = e.target.value
