@@ -464,8 +464,7 @@ let employeeName = '';
       "custom_work_allocation": [
         {
           "work_title": formData.custom_job_type || "Site Inspection",
-          "work_description": formData.custom_special_requirements || 
-            `Site inspection at ${formData.custom_property_area}`,
+          "work_description": formData.custom_property_area,
           "expected_start_date": formData.custom_preferred_inspection_time,
           "expected_time_in_hours": 2,
         
