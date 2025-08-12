@@ -958,7 +958,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                               <span className="text-sm font-medium text-gray-700">
                                 Customer{" "}
                                 <span className="text-gray-500">
-                                  (name/email/phone/address)
+                                  (name/email/phone)
                                 </span>
                                 <span className="text-red-500 ml-1">*</span>
                               </span>
