@@ -421,9 +421,9 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
       }
 
       const preferredDate = format(date, "yyyy-MM-dd");
-  const durationHours = parseFloat(formData.custom_duration || "0.5");
+      const durationHours = parseFloat(formData.custom_duration || "0.5");
       // Parse duration to hours (assuming format is HH:MM)
-      
+
 
       //first create the todo
       await createTodo({
@@ -1265,10 +1265,10 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
 
                       {section.id === "additional" && (
                         <div>
-                          <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 mb-2">
-                            {/* Preferred Date */}
-                            <div className="sm:col-span-5">
-                              <Label className="text-sm font-medium text-gray-700">Preferred Date</Label>
+                          <div className="grid grid-cols-12 gap-2 pt-2 mb-3">
+                            {/* Preferred Date - 45% */}
+                            <div className="col-span-5">
+                              <Label className="text-xs font-medium text-gray-700">Preferred Date</Label>
                               <div className="relative">
                                 <Input
                                   type="date"
@@ -1289,7 +1289,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                                     setDate(selectedDate);
                                     handleDateChange("custom_preferred_inspection_date", selectedDate);
                                   }}
-                                  className="w-full pr-10"
+                                  className="pl-1"
                                 />
                                 <div
                                   className="absolute inset-y-0 right-3 flex items-center text-gray-400 cursor-pointer"
@@ -1299,25 +1299,22 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                                     ) as HTMLInputElement;
                                     if (input) {
                                       input.focus();
-                                      if (
-                                        "showPicker" in input &&
-                                        typeof input.showPicker === "function"
-                                      ) {
+                                      if ("showPicker" in input && typeof input.showPicker === "function") {
                                         input.showPicker();
                                       }
                                     }
                                   }}
                                 >
-                                  <CalendarIcon className="h-4 w-4" />
+                                  <CalendarIcon className="h-3 w-3" />
                                 </div>
                               </div>
                             </div>
 
-                            {/* Time */}
-                            <div className="sm:col-span-4">
+                            {/* Time - 35% */}
+                            <div className="col-span-4">
                               <Label
                                 htmlFor="custom_preferred_inspection_time"
-                                className="text-sm font-medium text-gray-700"
+                                className="text-xs font-medium text-gray-700"
                               >
                                 Time
                               </Label>
@@ -1328,7 +1325,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                                   name="custom_preferred_inspection_time"
                                   value={formData.custom_preferred_inspection_time || getCurrentTime()}
                                   onChange={handleInputChange}
-                                  className="w-full pr-10"
+                                  className="pl-2"
                                 />
                                 <div
                                   className="absolute inset-y-0 right-3 flex items-center text-gray-400 cursor-pointer"
@@ -1338,10 +1335,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                                     ) as HTMLInputElement;
                                     if (input) {
                                       input.focus();
-                                      if (
-                                        "showPicker" in input &&
-                                        typeof input.showPicker === "function"
-                                      ) {
+                                      if ("showPicker" in input && typeof input.showPicker === "function") {
                                         input.showPicker();
                                       }
                                     }
@@ -1352,79 +1346,40 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                               </div>
                             </div>
 
-                            {/* Duration */}
-                            {/* <div className="sm:col-span-3">
-    <Label
-      htmlFor="custom_duration"
-      className="text-sm font-medium text-gray-700"
-    >
-      Duration
-    </Label>
-    <div className="relative">
-      <Input
-        type="time"
-        step="60"
-        id="custom_duration"
-        name="custom_duration"
-        value={formData.custom_duration || "00:30"}
-        onChange={handleInputChange}
-        className="w-full pr-10"
-      />
-      <div
-        className="absolute inset-y-0 right-3 flex items-center text-gray-400 cursor-pointer"
-        onClick={() => {
-          const input = document.querySelector(
-            "#custom_duration"
-          ) as HTMLInputElement;
-          if (input) {
-            input.focus();
-            if (
-              "showPicker" in input &&
-              typeof input.showPicker === "function"
-            ) {
-              input.showPicker();
-            }
-          }
-        }}
-      >
-        <Clock className="h-4 w-4" />
-      </div>
-    </div>
-  </div> */}
-
-                            {/* Duration */}
-                            <div className="sm:col-span-3">
+                            {/* Duration - 20% */}
+                            <div className="col-span-3">
                               <Label
                                 htmlFor="custom_duration"
-                                className="text-sm font-medium text-gray-700"
+                                className="text-xs font-medium text-gray-700"
                               >
-                                Duration (Hours)
+                                Duration(Hrs)
                               </Label>
                               <div className="relative">
                                 <Input
                                   type="number"
-                                  step="0.5" // allows half hours
-                                  min="0.5"  // minimum 30 minutes
+                                  step="0.5"
+                                  min="0.5"
                                   id="custom_duration"
                                   name="custom_duration"
                                   value={formData.custom_duration || ""}
                                   onChange={handleInputChange}
                                   placeholder="e.g. 1.5"
-                                  className="w-full pr-3"
+                                  className="w-full pr-8"
                                 />
                                 <span className="absolute inset-y-0 right-3 flex items-center text-gray-400 text-sm">
                                   hrs
                                 </span>
                               </div>
                             </div>
-
                           </div>
+
+
 
 
                           <div>
                             <Label
                               htmlFor="custom_special_requirements"
-                              className="text-sm font-medium text-gray-700"
+                              className="text-xs font-medium text-gray-700"
                             >
                               Special Requirements
                             </Label>
