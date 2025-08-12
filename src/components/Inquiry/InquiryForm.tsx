@@ -4,6 +4,7 @@
 import { format } from "date-fns";
 import {
   Building,
+  CalendarCheck,
   Calendar as CalendarIcon,
   CheckCircle2,
   ChevronDown,
@@ -420,6 +421,9 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
       }
 
       const preferredDate = format(date, "yyyy-MM-dd");
+  const durationHours = parseFloat(formData.custom_duration || "0.5");
+      // Parse duration to hours (assuming format is HH:MM)
+      
 
       //first create the todo
       await createTodo({
@@ -430,14 +434,14 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
         priority: priority,
         preferred_date: preferredDate,
       });
-//creating dwa
-let employeeName = '';
-    // const inspector = inspectors.find(i => i.name === inspectorEmail);
+      //creating dwa
+      let employeeName = '';
+      // const inspector = inspectors.find(i => i.name === inspectorEmail);
 
-    // Method 1: Check if inspector has employee_id directly
-    
-    // Method 2: Look up employee by email with your specific response format
-  
+      // Method 1: Check if inspector has employee_id directly
+
+      // Method 2: Look up employee by email with your specific response format
+
       try {
         const employeeResponse = await frappeAPI.makeAuthenticatedRequest(
           "GET",
@@ -455,29 +459,29 @@ let employeeName = '';
         throw new Error(`Could not find employee record for ${inspectorEmail}. Please ensure:
         1. The inspector has an associated Employee record
         2. The Employee record has their email set in the user_id field`);
-      
-    }
-    // Then create the Daily Work Allocation
-    const dwaPayload = {
-      "employee_name": employeeName,
-      "date": preferredDate,
-      "custom_work_allocation": [
-        {
-          "work_title": formData.custom_job_type || "Site Inspection",
-          "work_description": formData.custom_property_area,
-          "expected_start_date": formData.custom_preferred_inspection_time,
-          "expected_time_in_hours": 2,
-        
-        }
-      ]
-    };
 
-    // Make API call to create DWA
-    await frappeAPI.makeAuthenticatedRequest(
-      "POST",
-      "/api/resource/Daily Work Allocation",
-      dwaPayload
-    );
+      }
+      // Then create the Daily Work Allocation
+      const dwaPayload = {
+        "employee_name": employeeName,
+        "date": preferredDate,
+        "custom_work_allocation": [
+          {
+            "work_title": formData.custom_job_type || "Site Inspection",
+            "work_description": formData.custom_property_area,
+            "expected_start_date": formData.custom_preferred_inspection_time,
+            "expected_time_in_hours": durationHours,
+
+          }
+        ]
+      };
+
+      // Make API call to create DWA
+      await frappeAPI.makeAuthenticatedRequest(
+        "POST",
+        "/api/resource/Daily Work Allocation",
+        dwaPayload
+      );
       toast.success("Inspector assigned successfully!");
       navigate("/sales?tab=assign");
       onClose();
@@ -1261,10 +1265,9 @@ let employeeName = '';
 
                       {section.id === "additional" && (
                         <div>
-                          <div className="grid grid-cols-12 gap-4 mb-2">
-
+                          <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 mb-2">
                             {/* Preferred Date */}
-                            <div className="col-span-5">
+                            <div className="sm:col-span-5">
                               <Label className="text-sm font-medium text-gray-700">Preferred Date</Label>
                               <div className="relative">
                                 <Input
@@ -1284,10 +1287,7 @@ let employeeName = '';
                                       ? new Date(e.target.value)
                                       : undefined;
                                     setDate(selectedDate);
-                                    handleDateChange(
-                                      "custom_preferred_inspection_date",
-                                      selectedDate
-                                    );
+                                    handleDateChange("custom_preferred_inspection_date", selectedDate);
                                   }}
                                   className="w-full pr-10"
                                 />
@@ -1313,21 +1313,8 @@ let employeeName = '';
                               </div>
                             </div>
 
-                            {/* User Icon Button */}
-                            <div className="col-span-1 pt-5 flex justify-center">
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="icon"
-                                className="h-9 w-8 rounded-md text-gray-600 hover:text-emerald-600 hover:bg-gray-100"
-                                onClick={() => setShowAvailability(true)}
-                              >
-                                <User className="h-5 w-5" />
-                              </Button>
-                            </div>
-
                             {/* Time */}
-                            <div className="col-span-6">
+                            <div className="sm:col-span-4">
                               <Label
                                 htmlFor="custom_preferred_inspection_time"
                                 className="text-sm font-medium text-gray-700"
@@ -1339,9 +1326,7 @@ let employeeName = '';
                                   type="time"
                                   id="custom_preferred_inspection_time"
                                   name="custom_preferred_inspection_time"
-                                  value={
-                                    formData.custom_preferred_inspection_time || getCurrentTime()
-                                  }
+                                  value={formData.custom_preferred_inspection_time || getCurrentTime()}
                                   onChange={handleInputChange}
                                   className="w-full pr-10"
                                 />
@@ -1365,31 +1350,76 @@ let employeeName = '';
                                   <Clock className="h-4 w-4" />
                                 </div>
                               </div>
-
                             </div>
 
-                            {showAvailability && (
-                              <UserAvailability
-                                date={date || new Date()}
-                                onClose={() => setShowAvailability(false)}
-                                onSelectInspector={(email, availabilityData) => {
-                                  setInspectorEmail(email);
+                            {/* Duration */}
+                            {/* <div className="sm:col-span-3">
+    <Label
+      htmlFor="custom_duration"
+      className="text-sm font-medium text-gray-700"
+    >
+      Duration
+    </Label>
+    <div className="relative">
+      <Input
+        type="time"
+        step="60"
+        id="custom_duration"
+        name="custom_duration"
+        value={formData.custom_duration || "00:30"}
+        onChange={handleInputChange}
+        className="w-full pr-10"
+      />
+      <div
+        className="absolute inset-y-0 right-3 flex items-center text-gray-400 cursor-pointer"
+        onClick={() => {
+          const input = document.querySelector(
+            "#custom_duration"
+          ) as HTMLInputElement;
+          if (input) {
+            input.focus();
+            if (
+              "showPicker" in input &&
+              typeof input.showPicker === "function"
+            ) {
+              input.showPicker();
+            }
+          }
+        }}
+      >
+        <Clock className="h-4 w-4" />
+      </div>
+    </div>
+  </div> */}
 
-                                  // Find the selected inspector from the availability data
-                                  const selectedInspector = availabilityData.find(i => i.email === email);
+                            {/* Duration */}
+                            <div className="sm:col-span-3">
+                              <Label
+                                htmlFor="custom_duration"
+                                className="text-sm font-medium text-gray-700"
+                              >
+                                Duration (Hours)
+                              </Label>
+                              <div className="relative">
+                                <Input
+                                  type="number"
+                                  step="0.5" // allows half hours
+                                  min="0.5"  // minimum 30 minutes
+                                  id="custom_duration"
+                                  name="custom_duration"
+                                  value={formData.custom_duration || ""}
+                                  onChange={handleInputChange}
+                                  placeholder="e.g. 1.5"
+                                  className="w-full pr-3"
+                                />
+                                <span className="absolute inset-y-0 right-3 flex items-center text-gray-400 text-sm">
+                                  hrs
+                                </span>
+                              </div>
+                            </div>
 
-                                  // Auto-set the time to the first available slot if available
-                                  if (selectedInspector?.availability.free_slots.length) {
-                                    const firstSlot = selectedInspector.availability.free_slots[0];
-                                    setFormData(prev => ({
-                                      ...prev,
-                                      custom_preferred_inspection_time: firstSlot.start
-                                    }));
-                                  }
-                                }}
-                              />
-                            )}
                           </div>
+
 
                           <div>
                             <Label
@@ -1423,31 +1453,77 @@ let employeeName = '';
                             </div>
                           )}
 
-                          <div className="space-y-2">
-                            <Label className="text-gray-700 text-sm font-medium">
-                              Select Inspector
-                            </Label>
-                            <Select
-                              value={inspectorEmail}
-                              onValueChange={setInspectorEmail}
-                              disabled={inspectorsLoading}
-                            >
-                              <SelectTrigger className="w-full bg-white border border-gray-300">
-                                <SelectValue placeholder="Select an inspector" />
-                              </SelectTrigger>
-                              <SelectContent className="bg-white border border-gray-300 max-h-[200px]">
-                                {inspectors.map((inspector) => (
-                                  <SelectItem
-                                    key={inspector.full_name ?? inspector.name}
-                                    value={inspector.name ?? ""}
-                                  >
-                                    <div className="flex items-center gap-2">
-                                      <span>{inspector.full_name}</span>
-                                    </div>
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                          <div className="grid grid-cols-12 gap-2 mb-2 items-center">
+                            {/* Label */}
+                            <div className="col-span-12">
+                              <Label className="text-gray-700 text-sm font-medium">
+                                Select Inspector
+                              </Label>
+                            </div>
+
+                            {/* Select Field */}
+                            <div className="col-span-10">
+                              <Select
+                                value={inspectorEmail}
+                                onValueChange={setInspectorEmail}
+                                disabled={inspectorsLoading}
+                              >
+                                <SelectTrigger className="w-full bg-white border border-gray-300">
+                                  <SelectValue placeholder="Select an inspector" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-white border border-gray-300 max-h-[200px]">
+                                  {inspectors.map((inspector) => (
+                                    <SelectItem
+                                      key={inspector.full_name ?? inspector.name}
+                                      value={inspector.name ?? ""}
+                                    >
+                                      <div className="flex items-center gap-2">
+                                        <span>{inspector.full_name}</span>
+                                      </div>
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+
+                            {/* User Icon Button */}
+                            <div className="col-span-2 flex justify-center">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="icon"
+                                className="h-9 w-8 rounded-md text-gray-600 hover:text-emerald-600 hover:bg-gray-100"
+                                onClick={() => setShowAvailability(true)}
+                              >
+                                <CalendarCheck className="h-5 w-5" />
+                              </Button>
+                            </div>
+
+                            {/* Availability Modal */}
+                            {showAvailability && (
+                              <UserAvailability
+                                date={date || new Date()}
+                                onClose={() => setShowAvailability(false)}
+                                onSelectInspector={(email, availabilityData) => {
+                                  setInspectorEmail(email);
+
+                                  // Find selected inspector
+                                  const selectedInspector = availabilityData.find(
+                                    (i) => i.email === email
+                                  );
+
+                                  // Auto-set first available slot
+                                  if (selectedInspector?.availability.free_slots.length) {
+                                    const firstSlot =
+                                      selectedInspector.availability.free_slots[0];
+                                    setFormData((prev) => ({
+                                      ...prev,
+                                      custom_preferred_inspection_time: firstSlot.start,
+                                    }));
+                                  }
+                                }}
+                              />
+                            )}
                           </div>
 
                           <div className="grid grid-cols-1 gap-4">
