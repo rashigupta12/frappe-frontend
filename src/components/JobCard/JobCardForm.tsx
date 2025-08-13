@@ -4,7 +4,6 @@ import {
   Calendar,
   ChevronDown,
   FileText,
-  Home,
   Loader2,
   Mail,
   Phone,
@@ -12,7 +11,7 @@ import {
   Save,
   Trash2,
   User,
-  X,
+  X
 } from "lucide-react";
 import React, { useCallback, useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
@@ -67,42 +66,38 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
   const isReadOnly = jobCard?.docstatus === 1;
   const projectidname = jobCard?.name || jobCard?.project_id_no || "";
 
-  const [formData, setFormData] = useState<
-    JobCardFormData & {
-      // Add property address fields to formData type
-      custom_property_category?: string;
-      custom_emirate?: string;
-      custom_uae_area?: string;
-      custom_community?: string;
-      custom_street_name?: string;
-      custom_property_name__number?: string;
-      custom_property_area?: string;
-    }
-  >({
-    date: new Date().toISOString().split("T")[0],
-    // building_name: "",
-    // property_no: "",
-    area: "",
-    party_name: "",
-    start_date: new Date().toISOString().split("T")[0],
-    finish_date: "",
-    prepared_by: "",
-    approved_by: "",
-    project_id_no: "",
-    ac_v_no_and_date: "",
-    pressing_charges: [],
-    material_sold: [],
-    lead_id: "",
-    customer_id: "",
-    // Initialize property address fields
-    custom_property_category: "",
-    custom_emirate: "",
-    custom_uae_area: "",
-    custom_community: "",
-    custom_street_name: "",
-    custom_property_name__number: "",
-    custom_property_area: "",
-  });
+ const [formData, setFormData] = useState<
+  JobCardFormData & {
+    custom_property_category?: string;
+    custom_emirate?: string;
+    custom_uae_area?: string;
+    custom_community?: string;
+    custom_street_name?: string;
+    custom_property_name__number?: string;
+    custom_property_area?: string;
+  }
+>({
+  date: new Date().toISOString().split("T")[0],
+  area: "",
+  party_name: "",
+  start_date: new Date().toISOString().split("T")[0],
+  finish_date: new Date().toISOString().split("T")[0], // Set finish_date to today by default
+  prepared_by: "",
+  approved_by: "",
+  project_id_no: "",
+  ac_v_no_and_date: "",
+  pressing_charges: [],
+  material_sold: [],
+  lead_id: "",
+  customer_id: "",
+  custom_property_category: "",
+  custom_emirate: "",
+  custom_uae_area: "",
+  custom_community: "",
+  custom_street_name: "",
+  custom_property_name__number: "",
+  custom_property_area: "",
+});
 
   const [pressingCharges, setPressingCharges] = useState<PressingCharges[]>([]);
   const [materialsSold, setMaterialsSold] = useState<MaterialSold[]>([]);
@@ -270,40 +265,37 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
 
   // Load existing job card data when editing
   useEffect(() => {
-    if (jobCard) {
-      // Parse property address from the job card's area field if available
-      const propertyAddress = jobCard.area ? JSON.parse(jobCard.area) : {};
+   if (jobCard) {
+    const propertyAddress = jobCard.area ? JSON.parse(jobCard.area) : {};
 
-      setFormData({
-        date: jobCard.date || new Date().toISOString().split("T")[0],
-        area: jobCard.area || "",
-        party_name: jobCard.party_name || "",
-        start_date:
-          jobCard.start_date || new Date().toISOString().split("T")[0],
-        finish_date: jobCard.finish_date || "",
-        prepared_by: jobCard.prepared_by || "",
-        approved_by: jobCard.approved_by || "",
-        project_id_no: jobCard.project_id_no || "",
-        ac_v_no_and_date: jobCard.ac_v_no_and_date || "",
-        pressing_charges: jobCard.pressing_charges || [],
-        material_sold: jobCard.material_sold || [],
-        lead_id: jobCard.lead_id || "",
-        customer_id: jobCard.customer_id || "",
-        // Property address fields
-        custom_property_category:
-          propertyAddress.category || jobCard.custom_property_category || "",
-        custom_emirate: propertyAddress.emirate || jobCard.custom_emirate || "",
-        custom_uae_area: propertyAddress.area || jobCard.custom_uae_area || "",
-        custom_community:
-          propertyAddress.community || jobCard.custom_community || "",
-        custom_street_name:
-          propertyAddress.street || jobCard.custom_street_name || "",
-        custom_property_name__number:
-          propertyAddress.propertyNumber ||
-          jobCard.custom_property_number_name ||
-          "",
-        custom_property_area: jobCard.area || "",
-      });
+    setFormData({
+      date: jobCard.date || new Date().toISOString().split("T")[0],
+      area: jobCard.area || "",
+      party_name: jobCard.party_name || "",
+      start_date: jobCard.start_date || new Date().toISOString().split("T")[0],
+      finish_date: jobCard.finish_date || new Date().toISOString().split("T")[0], // Default to today if not set
+      prepared_by: jobCard.prepared_by || "",
+      approved_by: jobCard.approved_by || "",
+      project_id_no: jobCard.project_id_no || "",
+      ac_v_no_and_date: jobCard.ac_v_no_and_date || "",
+      pressing_charges: jobCard.pressing_charges || [],
+      material_sold: jobCard.material_sold || [],
+      lead_id: jobCard.lead_id || "",
+      customer_id: jobCard.customer_id || "",
+      custom_property_category:
+        propertyAddress.category || jobCard.custom_property_category || "",
+      custom_emirate: propertyAddress.emirate || jobCard.custom_emirate || "",
+      custom_uae_area: propertyAddress.area || jobCard.custom_uae_area || "",
+      custom_community:
+        propertyAddress.community || jobCard.custom_community || "",
+      custom_street_name:
+        propertyAddress.street || jobCard.custom_street_name || "",
+      custom_property_name__number:
+        propertyAddress.propertyNumber ||
+        jobCard.custom_property_number_name ||
+        "",
+      custom_property_area: jobCard.area || "",
+    });
 
       setSearchQuery(jobCard.party_name || "");
       setPressingCharges(jobCard.pressing_charges || []);
@@ -316,27 +308,27 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
     } else {
       // Reset form for new job card
       setFormData({
-        date: new Date().toISOString().split("T")[0],
-        area: "",
-        party_name: "",
-        start_date: new Date().toISOString().split("T")[0],
-        finish_date: "",
-        prepared_by: "",
-        approved_by: "",
-        project_id_no: "",
-        ac_v_no_and_date: "",
-        pressing_charges: [],
-        material_sold: [],
-        lead_id: "",
-        customer_id: "",
-        custom_property_category: "",
-        custom_emirate: "",
-        custom_uae_area: "",
-        custom_community: "",
-        custom_street_name: "",
-        custom_property_name__number: "",
-        custom_property_area: "",
-      });
+      date: new Date().toISOString().split("T")[0],
+      area: "",
+      party_name: "",
+      start_date: new Date().toISOString().split("T")[0],
+      finish_date: new Date().toISOString().split("T")[0], // Today's date
+      prepared_by: "",
+      approved_by: "",
+      project_id_no: "",
+      ac_v_no_and_date: "",
+      pressing_charges: [],
+      material_sold: [],
+      lead_id: "",
+      customer_id: "",
+      custom_property_category: "",
+      custom_emirate: "",
+      custom_uae_area: "",
+      custom_community: "",
+      custom_street_name: "",
+      custom_property_name__number: "",
+      custom_property_area: "",
+    });
       setSearchQuery("");
       setPressingCharges([]);
       setMaterialsSold([]);
@@ -835,62 +827,6 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
     }
   };
 
-  // const handleCustomerSelect = async (customer: any) => {
-  //   setFetchingCustomerDetails(true);
-
-  //   try {
-  //     setFormData((prev) => ({
-  //       ...prev,
-  //       party_name: customer.customer_name || customer.name || "",
-  //       customer_id: customer.name,
-  //     }));
-
-  //     setSearchQuery(customer.customer_name || customer.name || "");
-  //     setShowDropdown(false);
-
-  //     if (customer.lead_name) {
-  //       setFetchingLeadDetails(true);
-  //       try {
-  //         const leadResponse = await frappeAPI.getLeadById(customer.lead_name);
-
-  //         if (leadResponse.data) {
-  //           const lead = leadResponse.data;
-  //           setFormData((prev) => ({
-  //             ...prev,
-  //             building_name: lead.custom_building_name || "",
-  //             property_no:
-  //               lead.custom_bulding__apartment__villa__office_number || "",
-  //             area: lead.custom_property_area || "",
-  //             lead_id: lead.name,
-  //             // Update property address fields from lead data
-  //             custom_property_category: lead.custom_property_category || "",
-  //             custom_emirate: lead.custom_emirate || "",
-  //             custom_uae_area: lead.custom_uae_area || "",
-  //             custom_community: lead.custom_community || "",
-  //             custom_street_name: lead.custom_street_name || "",
-  //             custom_property_name__number:
-  //               lead.custom_property_name__number || "",
-  //             custom_property_area: lead.custom_property_area || "",
-  //           }));
-  //         }
-  //       } catch (error) {
-  //         console.error("Failed to fetch lead data:", error);
-  //       } finally {
-  //         setFetchingLeadDetails(false);
-  //       }
-  //     }
-  //   } finally {
-  //     setFetchingCustomerDetails(false);
-  //   }
-  // };
-
-  // const handleInputChange = (
-  //   e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  // ) => {
-  //   const { name, value } = e.target;
-  //   setFormData((prev) => ({ ...prev, [name]: value }));
-  // };
-
   // Pressing Charges functions
   const addPressingCharge = () => {
     const newCharge: PressingCharges = {
@@ -1154,7 +1090,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
         // building_name: formData.building_name,
         area: formData.area, // This will be the combined address from PropertyAddressSection
         start_date: formData.start_date,
-        finish_date: formData.finish_date,
+        finish_date: formData.finish_date, // This will be sent to backend
         prepared_by: formData.prepared_by || "",
         approved_by: formData.approved_by || "",
         project_id_no: formData.project_id_no || "",
@@ -1365,14 +1301,14 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                                     )}
                                   </div>
                                 )}
-                                {result.custom_combined_address && (
+                                {/* {result.custom_combined_address && (
                                   <div className="text-xs text-gray-500 mt-1 flex items-center">
                                     <Home className="h-3 w-3 mr-1 flex-shrink-0" />
                                     <span className="truncate">
                                       {result.custom_combined_address}
                                     </span>
                                   </div>
-                                )}
+                                )} */}
                               </div>
                             ))
                           ) : (
@@ -1411,8 +1347,8 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                           area: "custom_uae_area",
                           community: "custom_community",
                           streetName: "custom_street_name",
-                          propertyArea: "custom_area",
-                          propertyCategory: "custom_property_category",
+                          propertyArea: "area",
+                          
                         }}
                       />
                     </div>
@@ -1468,11 +1404,8 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                         </div>
                       </div>
 
-                      <div className="space-y-2">
-  <Label
-    htmlFor="finish_date"
-    className="flex items-center space-x-2"
-  >
+        <div className="space-y-2">
+  <Label htmlFor="finish_date" className="flex items-center space-x-2">
     <Calendar className="h-4 w-4 text-gray-500" />
     <span>
       Finish Date <span className="text-red-500">*</span>
@@ -1483,15 +1416,12 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
       id="finish_date"
       name="finish_date"
       type="date"
-      value={formData.finish_date || formData.start_date || ""} // This line ensures it has a value
+      value={formData.finish_date || formData.start_date || new Date().toISOString().split("T")[0]}
       onChange={(e) => {
         const selectedDate = e.target.value;
-
+        
         // Allow same day completion - only prevent dates before start date
-        if (
-          formData.start_date &&
-          new Date(selectedDate) < new Date(formData.start_date)
-        ) {
+        if (formData.start_date && new Date(selectedDate) < new Date(formData.start_date)) {
           toast.error("Finish date cannot be before start date");
           return;
         }
@@ -1501,10 +1431,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
           finish_date: selectedDate,
         }));
       }}
-      min={
-        formData.start_date ||
-        new Date().toISOString().split("T")[0]
-      }
+      min={formData.start_date || new Date().toISOString().split("T")[0]}
       required
       disabled={isReadOnly}
       className="w-full rounded-md border border-gray-300 px-3 py-2 pr-10 text-sm text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 disabled:bg-gray-50 disabled:text-gray-500"

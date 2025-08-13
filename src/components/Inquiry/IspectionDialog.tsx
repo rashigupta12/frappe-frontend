@@ -658,12 +658,13 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
           )}
 
           {/* Step 3: Time Slot Selection (only for create mode) */}
-          {mode === "create" &&
+          {/* Step 3: Time Slot Selection (for both create and edit modes) */}
+          {(mode === "create" || mode === "edit") &&
             selectedInspector &&
             selectedInspector.availability.free_slots.length > 0 && (
               <div className="space-y-2 px-5 py-2 bg-yellow-50 ">
                 <Label className="text-gray-700 text-sm font-medium">
-                  Available Time Slots
+                  Time Slots
                 </Label>
                 <div className="grid grid-cols-2 gap-2">
                   {selectedInspector.availability.free_slots.map(

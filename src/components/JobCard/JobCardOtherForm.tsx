@@ -4,7 +4,6 @@
 import {
   Calendar,
   ChevronDown,
-  Home,
   Loader2,
   Mail,
   Phone,
@@ -13,7 +12,7 @@ import {
   Trash2,
   User,
   Wrench,
-  X,
+  X
 } from "lucide-react";
 import React, { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -85,7 +84,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
     area: "",
     party_name: "",
     start_date: new Date().toISOString().split("T")[0],
-    finish_date: "",
+    finish_date: new Date().toISOString().split("T")[0],
     prepared_by: "",
     approved_by: "",
     project_id_no: "",
@@ -194,7 +193,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
         customer_id: (jobCard as any).customer_id || "",
         start_date:
           jobCard.start_date || new Date().toISOString().split("T")[0],
-        finish_date: jobCard.finish_date || "",
+        finish_date: jobCard.finish_date || new Date().toISOString().split("T")[0],
         custom_uae_area: jobCard.custom_uae_area || "",
         custom_emirate: jobCard.custom_emirate || "",
         custom_property_category: jobCard.custom_property_category || "",
@@ -212,7 +211,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
         area: "",
         party_name: "",
         start_date: new Date().toISOString().split("T")[0],
-        finish_date: "",
+        finish_date: new Date().toISOString().split("T")[0],
         prepared_by: "",
         approved_by: "",
         project_id_no: "",
@@ -1048,14 +1047,14 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                                     )}
                                   </div>
                                 )}
-                                {result.custom_combined_address && (
+                                {/* {result.custom_combined_address && (
                                   <div className="text-xs text-gray-500 mt-1 flex items-center">
                                     <Home className="h-3 w-3 mr-1 flex-shrink-0" />
                                     <span className="truncate">
                                       {result.custom_combined_address}
                                     </span>
                                   </div>
-                                )}
+                                )} */}
                               </div>
                             ))
                           ) : (

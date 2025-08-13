@@ -41,6 +41,7 @@ const JobCardList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
   useEffect(() => {
     fetchJobCards();
   }, [fetchJobCards]);
+  console.log("Job Cards:", jobCards);
 
   const handleEdit = (card: JobCard, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -82,86 +83,109 @@ const JobCardList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
     return total;
   };
 
-  // Helper function to check if date is within range
-  const isDateInRange = (
-    cardStartDate: Date,
-    cardFinishDate: Date,
-    fromDate: Date,
-    toDate: Date
-  ) => {
-    // Set all dates to start of day for accurate comparison
-    const normalizeDate = (date: Date) => {
-      const normalized = new Date(date);
-      normalized.setHours(0, 0, 0, 0);
-      return normalized;
-    };
+//   const normalizeDate = (dateString: string) => {
+//   if (!dateString) return null;
+//   const date = new Date(dateString);
+//   date.setHours(0, 0, 0, 0);
+//   return date;
+// }
+//   // Helper function to check if date is within range
+//   const isDateInRange = (
+//     cardStartDate: Date,
+//     cardFinishDate: Date,
+//     fromDate: Date,
+//     toDate: Date
+//   ) => {
+//     // Set all dates to start of day for accurate comparison
+//     const normalizeDate = (date: Date) => {
+//       const normalized = new Date(date);
+//       normalized.setHours(0, 0, 0, 0);
+//       return normalized;
+//     };
 
-    const normalizedCardStart = normalizeDate(cardStartDate);
-    const normalizedCardFinish = normalizeDate(cardFinishDate);
-    const normalizedFrom = normalizeDate(fromDate);
-    const normalizedTo = normalizeDate(toDate);
+//     const normalizedCardStart = normalizeDate(cardStartDate);
+//     const normalizedCardFinish = normalizeDate(cardFinishDate);
+//     const normalizedFrom = normalizeDate(fromDate);
+//     const normalizedTo = normalizeDate(toDate);
 
-    // Check if card dates fall completely within the selected date range
-    return (
-      normalizedCardStart >= normalizedFrom &&
-      normalizedCardFinish <= normalizedTo
-    );
-  };
+//     // Check if card dates fall completely within the selected date range
+//     return (
+//       normalizedCardStart >= normalizedFrom &&
+//       normalizedCardFinish <= normalizedTo
+//     );
+//   };
 
   // Filter job cards based on all criteria
-  const filteredJobCards = useMemo(() => {
-    return jobCards.filter((card) => {
-      // Parse card dates
-      const cardStartDate = new Date(card.start_date || "");
-      const cardFinishDate = new Date(card.finish_date || "");
-      const filterFromDate = new Date(fromDate);
-      const filterToDate = new Date(toDate);
+const filteredJobCards = useMemo(() => {
+  // Helper function to normalize dates (ignore time component)
+  const normalizeDate = (date: Date) => {
+    const normalized = new Date(date);
+    normalized.setHours(0, 0, 0, 0);
+    return normalized;
+  };
 
-      // Skip invalid dates
-      if (isNaN(cardStartDate.getTime()) || isNaN(cardFinishDate.getTime())) {
-        return false;
-      }
+  // Helper function to check if date is valid
+  const isValidDate = (date: Date) => !isNaN(date.getTime());
 
-      // Date filter logic
-      let isInDateRange = false;
+  return jobCards.filter((card) => {
+    // Parse and validate dates
+    const cardStartDate = new Date(card.start_date || "");
+    const cardFinishDate = card.finish_date ? new Date(card.finish_date) : cardStartDate; // Fallback to start_date if empty
+    const filterFromDate = new Date(fromDate);
+    const filterToDate = new Date(toDate);
 
-      if (isDefaultFilter) {
-        // Default behavior: show only cards that start today
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const cardStart = new Date(cardStartDate);
-        cardStart.setHours(0, 0, 0, 0);
-        isInDateRange = cardStart.getTime() === today.getTime();
-      } else {
-        // Custom date range: show cards that overlap with the selected date range
-        isInDateRange = isDateInRange(
-          cardStartDate,
-          cardFinishDate,
-          filterFromDate,
-          filterToDate
-        );
-      }
+    // Skip if invalid start date
+    if (!isValidDate(cardStartDate)) return false;
 
-      // Search filter
-      const matchesSearch =
-        searchQuery === "" ||
-        card.party_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (card.pressing_charges || []).some((charge) =>
-          charge.work_type?.toLowerCase().includes(searchQuery.toLowerCase())
-        );
+    // Date filter logic
+    let isInDateRange = false;
 
-      // Purpose filter
-      const cardPurpose = getJobCardPurpose(card);
-      const matchesPurpose =
-        purposeFilter === "all" ||
-        (purposeFilter === "both" && cardPurpose === "both") ||
-        (purposeFilter === "pressing" && cardPurpose === "pressing") ||
-        (purposeFilter === "material" && cardPurpose === "material") ||
-        (purposeFilter === "submitted" && card.docstatus === 1);
+    if (isDefaultFilter) {
+      // Default behavior: show only cards that start today
+      const today = normalizeDate(new Date());
+      const cardStart = normalizeDate(cardStartDate);
+      isInDateRange = cardStart.getTime() === today.getTime();
+    } else {
+      // Custom date range: show cards that overlap with the selected date range
+      const normalizedFrom = normalizeDate(filterFromDate);
+      const normalizedTo = normalizeDate(filterToDate);
+      const normalizedCardStart = normalizeDate(cardStartDate);
+      const normalizedCardFinish = normalizeDate(cardFinishDate);
 
-      return isInDateRange && matchesSearch && matchesPurpose;
+      isInDateRange = 
+        normalizedCardStart <= normalizedTo && 
+        normalizedCardFinish >= normalizedFrom;
+    }
+
+    // Search filter
+    const matchesSearch =
+      searchQuery === "" ||
+      card.party_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (card.pressing_charges || []).some((charge) =>
+        charge.work_type?.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+
+    // Purpose filter
+    const cardPurpose = getJobCardPurpose(card);
+    const matchesPurpose =
+      purposeFilter === "all" ||
+      (purposeFilter === "both" && cardPurpose === "both") ||
+      (purposeFilter === "pressing" && cardPurpose === "pressing") ||
+      (purposeFilter === "material" && cardPurpose === "material") ||
+      (purposeFilter === "submitted" && card.docstatus === 1);
+
+    // Debug logging (remove in production)
+    console.log('Card:', card.name, {
+      startDate: card.start_date,
+      finishDate: card.finish_date,
+      passesDate: isInDateRange,
+      passesSearch: matchesSearch,
+      passesPurpose: matchesPurpose
     });
-  }, [jobCards, fromDate, toDate, searchQuery, purposeFilter, isDefaultFilter]);
+
+    return isInDateRange && matchesSearch && matchesPurpose;
+  });
+}, [jobCards, fromDate, toDate, searchQuery, purposeFilter, isDefaultFilter]);
 
   const formatDate = (dateString: string) => {
     if (!dateString) return "N/A";

@@ -25,7 +25,6 @@ import { Label } from "../ui/label";
 
 interface PropertyAddressSectionProps {
   formData: any;
-  
   handleSelectChange: (name: string, value: string) => void;
   fieldNames?: {
     emirate?: string;
@@ -57,9 +56,6 @@ interface AddressSearchResult {
   lead_name?: string;
   address_details?: any;
   site_name?: string;
-  // For internal form state
-  custom_uae_area?: string;
-  custom_property_name__number?: string;
 }
 
 const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
@@ -119,6 +115,7 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
   const [showAddType, setShowAddType] = useState(false);
   const [newTypeName, setNewTypeName] = useState("");
   const [isAddingType, setIsAddingType] = useState(false);
+
   // Fetch initial data
   useEffect(() => {
     fetchEmirates();
@@ -180,7 +177,6 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
         "GET",
         "/api/resource/Category"
       );
-      console.log(response)
       if (response.data) {
         setPropertyCategories(response.data);
       }
@@ -233,155 +229,49 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
       setShowAddressDropdown(true);
 
       try {
-        const allResults: any[] = [];
-        const addressEndpoint =
-          "/api/method/eits_app.site_address_search.search_site_addresses";
-        const queryLower = query.toLowerCase().trim();
+        const response = await frappeAPI.makeAuthenticatedRequest(
+          "GET",
+          `/api/method/eits_app.site_address_search.search_site_addresses?search_term=${encodeURIComponent(
+            query
+          )}`
+        );
 
-        const searchPromises: Promise<any>[] = [];
-
-        if (queryLower.length >= 2) {
-          searchPromises.push(
-            frappeAPI
-              .makeAuthenticatedRequest(
-                "GET",
-                `${addressEndpoint}?search_term=${encodeURIComponent(query)}`
-              )
-              .then((response) => ({
-                type: "area",
-                data: response.message?.data || [],
-              }))
-              .catch(() => ({ type: "area", data: [] }))
+        if (response.message?.status === "success") {
+          // Filter unique addresses based on combined address
+          const uniqueResults = response.message.data.reduce(
+            (acc: AddressSearchResult[], current: AddressSearchResult) => {
+              const combined =
+                current.custom_combined_address ||
+                generateCombinedAddress(current);
+              const isDuplicate = acc.some(
+                (item) =>
+                  (item.custom_combined_address ||
+                    generateCombinedAddress(item)) === combined
+              );
+              if (!isDuplicate) {
+                acc.push({
+                  ...current,
+                  search_type: "address",
+                  found_via: "combined",
+                  address_details: {
+                    emirate: current.custom_emirate,
+                    area: current.custom_area,
+                    community: current.custom_community,
+                    street_name: current.custom_street_name,
+                    property_number: current.custom_property_number,
+                    combined_address: combined,
+                  },
+                });
+              }
+              return acc;
+            },
+            []
           );
 
-          searchPromises.push(
-            frappeAPI
-              .makeAuthenticatedRequest(
-                "GET",
-                `${addressEndpoint}?search_term=${encodeURIComponent(
-                  query
-                )}`
-              )
-              .then((response) => ({
-                type: "community",
-                data: response.message?.data || [],
-              }))
-              .catch(() => ({ type: "community", data: [] }))
-          );
-
-          searchPromises.push(
-            frappeAPI
-              .makeAuthenticatedRequest(
-                "GET",
-                `${addressEndpoint}?search_term=${encodeURIComponent(
-                  query
-                )}`
-              )
-              .then((response) => ({
-                type: "street",
-                data: response.message?.data || [],
-              }))
-              .catch(() => ({ type: "street", data: [] }))
-          );
-
-          if (/^\d+$/.test(query)) {
-            searchPromises.push(
-              frappeAPI
-                .makeAuthenticatedRequest(
-                  "GET",
-                  `${addressEndpoint}?search_term=${encodeURIComponent(
-                    query
-                  )}`
-                )
-                .then((response) => ({
-                  type: "property",
-                  data: response.message?.data || [],
-                }))
-                .catch(() => ({ type: "property", data: [] }))
-            );
-          }
-
-          const knownEmirates = [
-            "dubai",
-            "abu dhabi",
-            "sharjah",
-            "ajman",
-            "umm al quwain",
-            "ras al khaimah",
-            "fujairah",
-          ];
-
-          if (
-            knownEmirates.some(
-              (emirate) =>
-                emirate.includes(queryLower) ||
-                queryLower.includes(emirate.replace(/\s/g, "")) ||
-                emirate.toLowerCase() === queryLower
-            )
-          ) {
-            searchPromises.push(
-              frappeAPI
-                .makeAuthenticatedRequest(
-                  "GET",
-                  `${addressEndpoint}?custom_emirate=${encodeURIComponent(
-                    query
-                  )}`
-                )
-                .then((response) => ({
-                  type: "emirate",
-                  data: response.message?.data || [],
-                }))
-                .catch(() => ({ type: "emirate", data: [] }))
-            );
-          }
-
-          searchPromises.push(
-            frappeAPI
-              .makeAuthenticatedRequest(
-                "GET",
-                `${addressEndpoint}?search_term=${encodeURIComponent(query)}`
-              )
-              .then((response) => ({
-                type: "combined_address",
-                data: response.message?.data || [],
-              }))
-              .catch(() => ({ type: "combined_address", data: [] }))
-          );
-
-          const searchResults = await Promise.all(searchPromises);
-
-          searchResults.forEach((result) => {
-            if (result.data && Array.isArray(result.data)) {
-              const transformedData = result.data.map((address: any) => ({
-                ...address,
-                search_type: "address",
-                found_via: result.type,
-                customer_name: address.site_name || generateCombinedAddress(address),
-                address_details: {
-                  emirate: address.custom_emirate,
-                  area: address.custom_area,
-                  community: address.custom_community,
-                  street_name: address.custom_street_name,
-                  property_number: address.custom_property_number,
-                  combined_address: address.custom_combined_address || generateCombinedAddress(address),
-                },
-              }));
-              allResults.push(...transformedData);
-            }
-          });
+          setAddressSearchResults(uniqueResults);
+        } else {
+          setAddressSearchResults([]);
         }
-
-        const uniqueResults = allResults.filter((result, index, self) => {
-          return (
-            index ===
-            self.findIndex(
-              (r) =>
-                generateCombinedAddress(r) === generateCombinedAddress(result)
-            )
-          );
-        });
-
-        setAddressSearchResults(uniqueResults);
       } catch (error) {
         console.error("Address search error:", error);
         setAddressSearchResults([]);
@@ -413,6 +303,9 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
   };
 
   const handleAddressSelect = (address: AddressSearchResult) => {
+    const combinedAddress =
+      address.custom_combined_address || generateCombinedAddress(address);
+
     const updates = {
       [propertyCategoryField]: address.custom_property_category || "",
       [propertyTypeField]: address.custom_property_type || "",
@@ -421,6 +314,7 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
       [communityField]: address.custom_community || "",
       [streetNameField]: address.custom_street_name || "",
       [propertyNumberField]: address.custom_property_number || "",
+      [propertyAreaField]: combinedAddress,
     };
 
     Object.entries(updates).forEach(([field, value]) => {
@@ -437,10 +331,7 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
       custom_property_number: address.custom_property_number || "",
     });
 
-    const combinedAddress = generateCombinedAddress(address);
-    handleSelectChange(propertyAreaField, combinedAddress);
-
-    setAddressSearchQuery("");
+    setAddressSearchQuery(combinedAddress);
     setAddressSearchResults([]);
     setShowAddressDropdown(false);
   };
@@ -450,6 +341,8 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
   };
 
   const handleSaveAddress = () => {
+    const combinedAddress = generateCombinedAddress(addressForm);
+
     const updates = {
       [propertyCategoryField]: addressForm.custom_property_category || "",
       [propertyTypeField]: addressForm.custom_property_type || "",
@@ -458,15 +351,14 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
       [communityField]: addressForm.custom_community || "",
       [streetNameField]: addressForm.custom_street_name || "",
       [propertyNumberField]: addressForm.custom_property_number || "",
+      [propertyAreaField]: combinedAddress,
     };
 
     Object.entries(updates).forEach(([field, value]) => {
       handleSelectChange(field, value);
     });
 
-    const combinedAddress = generateCombinedAddress(addressForm);
-    handleSelectChange(propertyAreaField, combinedAddress);
-
+    setAddressSearchQuery(combinedAddress);
     setShowAddressDialog(false);
     toast.success("Address updated successfully");
   };
@@ -560,6 +452,7 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
       setIsAddingCategory(false);
     }
   };
+
   const handleAddNewType = async () => {
     if (!newTypeName.trim()) {
       toast.error("Please enter a type name");
@@ -599,6 +492,7 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
       setIsAddingType(false);
     }
   };
+
   const handleCategoryChange = (value: string) => {
     setAddressForm((prev) => ({
       ...prev,
@@ -629,27 +523,112 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
 
   const { uniqueCategories, hasOtherCategory } = getUniqueCategories();
 
+  // Fixed handlers for clear and edit buttons
+  const handleClearAddress = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setAddressSearchQuery("");
+    setAddressSearchResults([]);
+    setShowAddressDropdown(false);
+    
+    // Clear all address-related fields
+    const clearUpdates = {
+      [propertyCategoryField]: "",
+      [propertyTypeField]: "",
+      [emirateField]: "",
+      [areaField]: "",
+      [communityField]: "",
+      [streetNameField]: "",
+      [propertyNumberField]: "",
+      [propertyAreaField]: "",
+    };
+
+    Object.entries(clearUpdates).forEach(([field, value]) => {
+      handleSelectChange(field, value);
+    });
+
+    // Also clear the address form state
+    setAddressForm({
+      custom_property_category: "",
+      custom_property_type: "",
+      custom_emirate: "",
+      custom_area: "",
+      custom_community: "",
+      custom_street_name: "",
+      custom_property_number: "",
+    });
+  };
+
+  const handleEditAddress = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    handleOpenAddressDialog();
+  };
+
+  // Check if we have a valid address - improved logic
+  const hasValidAddress = Boolean(
+    (formData[propertyAreaField] && formData[propertyAreaField].trim()) ||
+    (addressSearchQuery && addressSearchQuery.trim())
+  );
+
+  // Debug log to help troubleshoot
+  console.log('Debug - hasValidAddress:', hasValidAddress);
+  console.log('Debug - propertyAreaField:', propertyAreaField);
+  console.log('Debug - formData[propertyAreaField]:', formData[propertyAreaField]);
+  console.log('Debug - addressSearchQuery:', addressSearchQuery);
+
   return (
     <div className="space-y-4">
-      {/* Address Search - Single Row */}
+      {/* Address Search - Single Field */}
       <div className="w-full">
         <label className="block text-sm font-medium text-gray-700 mb-1">
           Site Address
         </label>
         <div className="relative">
           <div className="flex items-center">
-            <Search className="absolute left-3 h-4 w-4 text-gray-400" />
+            <Search className="absolute left-3 h-4 w-4 text-gray-400 z-10" />
             <Input
               type="text"
               placeholder="Search by emirate, area, community, street name, or property number..."
-                      
-              value={addressSearchQuery || formData[propertyAreaField] || ""}
+              value={addressSearchQuery}
               onChange={handleAddressSearchChange}
-              className="w-full pl-9 pr-10"
+              className="w-full pl-9 pr-20"
+              onFocus={() => {
+                if (addressSearchQuery && !showAddressDropdown) {
+                  searchAddresses(addressSearchQuery);
+                }
+              }}
             />
-            {isAddressSearching && (
-              <Loader2 className="absolute right-3 h-4 w-4 animate-spin text-gray-400" />
-            )}
+            
+            {/* Action buttons container */}
+            <div className="absolute right-3 flex items-center space-x-1 z-10">
+              {isAddressSearching && (
+                <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
+              )}
+              
+              {/* Always show buttons when we have any address data or search query */}
+              {!isAddressSearching && (hasValidAddress || addressSearchQuery.trim()) && (
+                <>
+                  
+                  <button
+                    type="button"
+                    onClick={handleEditAddress}
+                    className="text-gray-400 hover:text-blue-500 p-1 flex-shrink-0"
+                    title="Edit address"
+                  >
+                    <Edit className="h-4 w-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleClearAddress}
+                    className="text-gray-400 hover:text-gray-600 p-1 flex-shrink-0"
+                    title="Clear address"
+                  >
+                    <span className="text-lg leading-none">×</span>
+                  </button>
+                </>
+              )}
+            </div>
           </div>
 
           {showAddressDropdown && (
@@ -671,16 +650,16 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
                         <div className="flex-1 min-w-0">
                           <p className="font-medium text-gray-900 truncate">
                             {address.customer_name ||
+                              address.custom_combined_address ||
                               generateCombinedAddress(address)}
                           </p>
-                          {generateCombinedAddress(address) && (
-                            <div className="text-xs text-gray-500 mt-1 flex items-start">
-                              <Home className="h-3 w-3 mr-1 flex-shrink-0 mt-0.5" />
-                              <span className="break-all">
-                                {generateCombinedAddress(address)}
-                              </span>
-                            </div>
-                          )}
+                          <div className="text-xs text-gray-500 mt-1 flex items-start">
+                            <Home className="h-3 w-3 mr-1 flex-shrink-0 mt-0.5" />
+                            <span className="break-all">
+                              {address.custom_combined_address ||
+                                generateCombinedAddress(address)}
+                            </span>
+                          </div>
                         </div>
                         <div className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded ml-2 flex-shrink-0">
                           {address.found_via}
@@ -709,31 +688,6 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
               ) : null}
             </div>
           )}
-        </div>
-      </div>
-
-      {/* Combined Address Display - Single Row */}
-      <div className="w-full">
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Combined Address
-        </label>
-        <div className="relative">
-          <Input
-            type="text"
-            value={formData[propertyAreaField] || ""}
-            readOnly
-            onClick={handleOpenAddressDialog}
-            placeholder="Click to set address"
-            className="w-full rounded-md border border-gray-300 px-3 py-2 text-xs shadow-sm bg-gray-50 text-gray-600 cursor-pointer hover:bg-gray-100"
-            title="Click to edit address details"
-          />
-          <button
-            onClick={handleOpenAddressDialog}
-            className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
-            title="Edit address"
-          >
-            <Edit className="h-4 w-4" />
-          </button>
         </div>
       </div>
 
@@ -773,33 +727,6 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
                 </SelectContent>
               </Select>
 
-              {/* {showAddCategory && (
-                <div className="mt-2 flex gap-2">
-                  <Input
-                    type="text"
-                    placeholder="Enter new category name"
-                    value={newCategoryName}
-                    onChange={(e) => setNewCategoryName(e.target.value)}
-                    className="flex-1"
-                     onKeyDown={(e) => {
-        if (e.key === 'Enter') {
-          e.preventDefault(); // Prevent form submission
-          handleAddNewCategory();
-        }
-                  />
-                  <Button
-                    onClick={handleAddNewCategory}
-                    disabled={isAddingCategory || !newCategoryName.trim()}
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white"
-                  >
-                    {isAddingCategory ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Plus className="h-4 w-4" />
-                    )}
-                  </Button>
-                </div>
-              )} */}
               {showAddCategory && (
                 <div className="mt-2 flex gap-2">
                   <Input
@@ -809,16 +736,16 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
                     onChange={(e) => setNewCategoryName(e.target.value)}
                     className="flex-1"
                     onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault(); // Prevent form submission
+                      if (e.key === "Enter") {
+                        e.preventDefault();
                         handleAddNewCategory();
                       }
                     }}
                   />
                   <Button
-                    type="button" // Add this to prevent form submission
+                    type="button"
                     onClick={(e) => {
-                      e.preventDefault(); // Prevent form submission
+                      e.preventDefault();
                       handleAddNewCategory();
                     }}
                     disabled={isAddingCategory || !newCategoryName.trim()}
@@ -835,52 +762,6 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
             </div>
 
             {/* Property Type */}
-            {/* <div className="space-y-2">
-              <Label>Property Type</Label>
-              <Select
-                value={addressForm.custom_property_type || ""}
-                onValueChange={(value) => {
-                  setAddressForm((prev) => ({
-                    ...prev,
-                    custom_property_type: value,
-                  }));
-                }}
-                disabled={!addressForm.custom_property_category || isLoadingTypes}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue 
-                    placeholder={
-                      !addressForm.custom_property_category
-                        ? "Select property category first"
-                        : isLoadingTypes
-                        ? "Loading property types..."
-                        : "Select property type"
-                    } 
-                  />
-                </SelectTrigger>
-                <SelectContent className="bg-white">
-                  {propertyTypes.length > 0 ? (
-                    propertyTypes.map((type) => (
-                      <SelectItem key={type.name} value={type.name}>
-                        {type.name}
-                      </SelectItem>
-                    ))
-                  ) : (
-                    addressForm.custom_property_category && !isLoadingTypes && (
-                      <div className="px-2 py-1.5 text-sm text-gray-500">
-                        No types available for this category
-                      </div>
-                    )
-                  )}
-                </SelectContent>
-              </Select>
-              {isLoadingTypes && (
-                <div className="flex items-center text-sm text-gray-500">
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  Loading property types...
-                </div>
-              )}
-            </div> */}
             <div className="space-y-2">
               <Label>Property Type</Label>
               <Select
@@ -896,7 +777,9 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
                     setShowAddType(false);
                   }
                 }}
-                disabled={!addressForm.custom_property_category || isLoadingTypes}
+                disabled={
+                  !addressForm.custom_property_category || isLoadingTypes
+                }
               >
                 <SelectTrigger className="w-full">
                   <SelectValue
@@ -904,8 +787,8 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
                       !addressForm.custom_property_category
                         ? "Select property category first"
                         : isLoadingTypes
-                          ? "Loading property types..."
-                          : "Select property type"
+                        ? "Loading property types..."
+                        : "Select property type"
                     }
                   />
                 </SelectTrigger>
@@ -920,35 +803,14 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
                       <SelectItem value="Other">Other (Add New)</SelectItem>
                     </>
                   ) : (
-                    addressForm.custom_property_category && !isLoadingTypes && (
+                    addressForm.custom_property_category &&
+                    !isLoadingTypes && (
                       <SelectItem value="Other">Other (Add New)</SelectItem>
                     )
                   )}
                 </SelectContent>
               </Select>
 
-              {/* {showAddType && (
-                <div className="mt-2 flex gap-2">
-                  <Input
-                    type="text"
-                    placeholder="Enter new type name"
-                    value={newTypeName}
-                    onChange={(e) => setNewTypeName(e.target.value)}
-                    className="flex-1"
-                  />
-                  <Button
-                    onClick={handleAddNewType}
-                    disabled={isAddingType || !newTypeName.trim()}
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white"
-                  >
-                    {isAddingType ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Plus className="h-4 w-4" />
-                    )}
-                  </Button>
-                </div>
-              )} */}
               {showAddType && (
                 <div className="mt-2 flex gap-2">
                   <Input
@@ -958,16 +820,16 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
                     onChange={(e) => setNewTypeName(e.target.value)}
                     className="flex-1"
                     onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault(); // Prevent form submission
+                      if (e.key === "Enter") {
+                        e.preventDefault();
                         handleAddNewType();
                       }
                     }}
                   />
                   <Button
-                    type="button" // Add this to prevent form submission
+                    type="button"
                     onClick={(e) => {
-                      e.preventDefault(); // Prevent form submission
+                      e.preventDefault();
                       handleAddNewType();
                     }}
                     disabled={isAddingType || !newTypeName.trim()}
@@ -989,6 +851,7 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
                 </div>
               )}
             </div>
+
             {/* Emirate */}
             <div className="space-y-2">
               <Label>Emirate</Label>
@@ -998,8 +861,8 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
                   setAddressForm((prev) => ({
                     ...prev,
                     custom_emirate: value,
-                    custom_area: "", // Reset area when emirate changes
-                    custom_community: "", // Reset community when emirate changes
+                    custom_area: "",
+                    custom_community: "",
                   }));
                 }}
               >
@@ -1155,7 +1018,7 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
             >
               Cancel
             </Button>
-            <Button variant="outline" onClick={handleSaveAddress}>Save Address</Button>
+            <Button onClick={handleSaveAddress}>Save Address</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
