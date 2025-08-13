@@ -79,8 +79,8 @@ function LoginForm() {
           toast.error("Access denied: No valid roles assigned to your account.");
           setError("Access denied: Your account does not have the required permissions to access this application. Please contact your administrator.");
         } else {
-          toast.error(result.error || "Invalid email or password");
-          setError(result.error || "Login failed");
+          toast.error( "Invalid email or password");
+          setError( "Login failed");
         }
       }
     } catch (err) {

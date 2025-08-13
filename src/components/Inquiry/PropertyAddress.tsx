@@ -35,6 +35,7 @@ interface PropertyAddressSectionProps {
     propertyNumber?: string;
     propertyArea?: string;
     propertyCategory?: string;
+    propertyType?: string;
   };
 }
 
@@ -45,6 +46,7 @@ interface AddressSearchResult {
   custom_community?: string;
   custom_street_name?: string;
   custom_property_number?: string;
+  custom_property_type?: string;
   name?: string;
   custom_combined_address?: string;
   search_type?: string;
@@ -74,6 +76,7 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
     propertyNumber: propertyNumberField = "custom_property_number",
     propertyArea: propertyAreaField = "custom_property_area",
     propertyCategory: propertyCategoryField = "custom_property_category",
+    propertyType: propertyTypeField = "custom_property_type",
   } = fieldNames;
 
   const { emirates, fetchEmirates } = useLeads();
@@ -90,6 +93,7 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
   // Address form state
   const [addressForm, setAddressForm] = useState<AddressSearchResult>({
     custom_property_category: formData[propertyCategoryField] || "",
+    custom_property_type: formData[propertyTypeField] || "",
     custom_emirate: formData[emirateField] || "",
     custom_area: formData[areaField] || "",
     custom_community: formData[communityField] || "",
@@ -103,12 +107,18 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
   const [newCategoryName, setNewCategoryName] = useState("");
   const [isAddingCategory, setIsAddingCategory] = useState(false);
 
+  // Property type states
+  const [propertyTypes, setPropertyTypes] = useState<any[]>([]);
+  const [isLoadingTypes, setIsLoadingTypes] = useState(false);
+
   // Area and community search states
   const [areaResults, setAreaResults] = useState<any[]>([]);
   const [isAreaSearching, setIsAreaSearching] = useState(false);
   const [communityResults, setCommunityResults] = useState<any[]>([]);
   const [isCommunitySearching, setIsCommunitySearching] = useState(false);
-
+  const [showAddType, setShowAddType] = useState(false);
+  const [newTypeName, setNewTypeName] = useState("");
+  const [isAddingType, setIsAddingType] = useState(false);
   // Fetch initial data
   useEffect(() => {
     fetchEmirates();
@@ -119,6 +129,7 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
   useEffect(() => {
     setAddressForm({
       custom_property_category: formData[propertyCategoryField] || "",
+      custom_property_type: formData[propertyTypeField] || "",
       custom_emirate: formData[emirateField] || "",
       custom_area: formData[areaField] || "",
       custom_community: formData[communityField] || "",
@@ -128,12 +139,22 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
   }, [
     formData,
     propertyCategoryField,
+    propertyTypeField,
     emirateField,
     areaField,
     communityField,
     streetNameField,
     propertyNumberField,
   ]);
+
+  // Fetch property types when category changes
+  useEffect(() => {
+    if (addressForm.custom_property_category) {
+      fetchPropertyTypes(addressForm.custom_property_category);
+    } else {
+      setPropertyTypes([]);
+    }
+  }, [addressForm.custom_property_category]);
 
   // Function to generate combined address from available fields
   const generateCombinedAddress = useCallback(
@@ -157,7 +178,7 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
     try {
       const response = await frappeAPI.makeAuthenticatedRequest(
         "GET",
-        "/api/resource/property Category"
+        "/api/resource/Category"
       );
       console.log(response)
       if (response.data) {
@@ -168,6 +189,33 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
       toast.error("Failed to load property categories");
     } finally {
       setIsAddingCategory(false);
+    }
+  };
+
+  // Function to fetch property types based on category
+  const fetchPropertyTypes = async (category: string) => {
+    if (!category) {
+      setPropertyTypes([]);
+      return;
+    }
+
+    setIsLoadingTypes(true);
+    try {
+      const response = await frappeAPI.makeAuthenticatedRequest(
+        "GET",
+        `/api/resource/Type?filters=[["category","=","${category}"]]`
+      );
+      if (response.data) {
+        setPropertyTypes(response.data);
+      } else {
+        setPropertyTypes([]);
+      }
+    } catch (error) {
+      console.error("Error fetching property types:", error);
+      toast.error("Failed to load property types");
+      setPropertyTypes([]);
+    } finally {
+      setIsLoadingTypes(false);
     }
   };
 
@@ -367,6 +415,7 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
   const handleAddressSelect = (address: AddressSearchResult) => {
     const updates = {
       [propertyCategoryField]: address.custom_property_category || "",
+      [propertyTypeField]: address.custom_property_type || "",
       [emirateField]: address.custom_emirate || "",
       [areaField]: address.custom_area || "",
       [communityField]: address.custom_community || "",
@@ -380,6 +429,7 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
 
     setAddressForm({
       custom_property_category: address.custom_property_category || "",
+      custom_property_type: address.custom_property_type || "",
       custom_emirate: address.custom_emirate || "",
       custom_area: address.custom_area || "",
       custom_community: address.custom_community || "",
@@ -402,6 +452,7 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
   const handleSaveAddress = () => {
     const updates = {
       [propertyCategoryField]: addressForm.custom_property_category || "",
+      [propertyTypeField]: addressForm.custom_property_type || "",
       [emirateField]: addressForm.custom_emirate || "",
       [areaField]: addressForm.custom_area || "",
       [communityField]: addressForm.custom_community || "",
@@ -486,9 +537,9 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
     try {
       const response = await frappeAPI.makeAuthenticatedRequest(
         "POST",
-        "/api/resource/property Category",
+        "/api/resource/Category",
         {
-          custom_title: newCategoryName.trim(),
+          property_category: newCategoryName.trim(),
         }
       );
 
@@ -508,6 +559,53 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
     } finally {
       setIsAddingCategory(false);
     }
+  };
+  const handleAddNewType = async () => {
+    if (!newTypeName.trim()) {
+      toast.error("Please enter a type name");
+      return;
+    }
+
+    if (!addressForm.custom_property_category) {
+      toast.error("Please select a property category first");
+      return;
+    }
+
+    setIsAddingType(true);
+    try {
+      const response = await frappeAPI.makeAuthenticatedRequest(
+        "POST",
+        "/api/resource/Type",
+        {
+          category: addressForm.custom_property_category,
+          type: newTypeName.trim(),
+        }
+      );
+
+      if (response.data) {
+        toast.success("Property type added successfully!");
+        await fetchPropertyTypes(addressForm.custom_property_category);
+        setAddressForm((prev) => ({
+          ...prev,
+          custom_property_type: newTypeName.trim(),
+        }));
+        setNewTypeName("");
+        setShowAddType(false);
+      }
+    } catch (error) {
+      console.error("Error creating property type:", error);
+      toast.error("Failed to create property type. Please try again.");
+    } finally {
+      setIsAddingType(false);
+    }
+  };
+  const handleCategoryChange = (value: string) => {
+    setAddressForm((prev) => ({
+      ...prev,
+      custom_property_category: value,
+      custom_property_type: "", // Reset property type when category changes
+    }));
+    setShowAddCategory(value === "Other");
   };
 
   const getUniqueCategories = () => {
@@ -544,7 +642,8 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
             <Input
               type="text"
               placeholder="Search by emirate, area, community, street name, or property number..."
-              value={addressSearchQuery}
+                      
+              value={addressSearchQuery || formData[propertyAreaField] || ""}
               onChange={handleAddressSearchChange}
               className="w-full pl-9 pr-10"
             />
@@ -657,13 +756,7 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
               <Label>Property Category</Label>
               <Select
                 value={addressForm.custom_property_category || ""}
-                onValueChange={(value) => {
-                  setAddressForm((prev) => ({
-                    ...prev,
-                    custom_property_category: value,
-                  }));
-                  setShowAddCategory(value === "Other");
-                }}
+                onValueChange={handleCategoryChange}
               >
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select property category" />
@@ -680,7 +773,7 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
                 </SelectContent>
               </Select>
 
-              {showAddCategory && (
+              {/* {showAddCategory && (
                 <div className="mt-2 flex gap-2">
                   <Input
                     type="text"
@@ -688,6 +781,11 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
                     value={newCategoryName}
                     onChange={(e) => setNewCategoryName(e.target.value)}
                     className="flex-1"
+                     onKeyDown={(e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault(); // Prevent form submission
+          handleAddNewCategory();
+        }
                   />
                   <Button
                     onClick={handleAddNewCategory}
@@ -701,9 +799,196 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
                     )}
                   </Button>
                 </div>
+              )} */}
+              {showAddCategory && (
+                <div className="mt-2 flex gap-2">
+                  <Input
+                    type="text"
+                    placeholder="Enter new category name"
+                    value={newCategoryName}
+                    onChange={(e) => setNewCategoryName(e.target.value)}
+                    className="flex-1"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault(); // Prevent form submission
+                        handleAddNewCategory();
+                      }
+                    }}
+                  />
+                  <Button
+                    type="button" // Add this to prevent form submission
+                    onClick={(e) => {
+                      e.preventDefault(); // Prevent form submission
+                      handleAddNewCategory();
+                    }}
+                    disabled={isAddingCategory || !newCategoryName.trim()}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                  >
+                    {isAddingCategory ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Plus className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
               )}
             </div>
 
+            {/* Property Type */}
+            {/* <div className="space-y-2">
+              <Label>Property Type</Label>
+              <Select
+                value={addressForm.custom_property_type || ""}
+                onValueChange={(value) => {
+                  setAddressForm((prev) => ({
+                    ...prev,
+                    custom_property_type: value,
+                  }));
+                }}
+                disabled={!addressForm.custom_property_category || isLoadingTypes}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue 
+                    placeholder={
+                      !addressForm.custom_property_category
+                        ? "Select property category first"
+                        : isLoadingTypes
+                        ? "Loading property types..."
+                        : "Select property type"
+                    } 
+                  />
+                </SelectTrigger>
+                <SelectContent className="bg-white">
+                  {propertyTypes.length > 0 ? (
+                    propertyTypes.map((type) => (
+                      <SelectItem key={type.name} value={type.name}>
+                        {type.name}
+                      </SelectItem>
+                    ))
+                  ) : (
+                    addressForm.custom_property_category && !isLoadingTypes && (
+                      <div className="px-2 py-1.5 text-sm text-gray-500">
+                        No types available for this category
+                      </div>
+                    )
+                  )}
+                </SelectContent>
+              </Select>
+              {isLoadingTypes && (
+                <div className="flex items-center text-sm text-gray-500">
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Loading property types...
+                </div>
+              )}
+            </div> */}
+            <div className="space-y-2">
+              <Label>Property Type</Label>
+              <Select
+                value={addressForm.custom_property_type || ""}
+                onValueChange={(value) => {
+                  if (value === "Other") {
+                    setShowAddType(true);
+                  } else {
+                    setAddressForm((prev) => ({
+                      ...prev,
+                      custom_property_type: value,
+                    }));
+                    setShowAddType(false);
+                  }
+                }}
+                disabled={!addressForm.custom_property_category || isLoadingTypes}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue
+                    placeholder={
+                      !addressForm.custom_property_category
+                        ? "Select property category first"
+                        : isLoadingTypes
+                          ? "Loading property types..."
+                          : "Select property type"
+                    }
+                  />
+                </SelectTrigger>
+                <SelectContent className="bg-white">
+                  {propertyTypes.length > 0 ? (
+                    <>
+                      {propertyTypes.map((type) => (
+                        <SelectItem key={type.name} value={type.name}>
+                          {type.name}
+                        </SelectItem>
+                      ))}
+                      <SelectItem value="Other">Other (Add New)</SelectItem>
+                    </>
+                  ) : (
+                    addressForm.custom_property_category && !isLoadingTypes && (
+                      <SelectItem value="Other">Other (Add New)</SelectItem>
+                    )
+                  )}
+                </SelectContent>
+              </Select>
+
+              {/* {showAddType && (
+                <div className="mt-2 flex gap-2">
+                  <Input
+                    type="text"
+                    placeholder="Enter new type name"
+                    value={newTypeName}
+                    onChange={(e) => setNewTypeName(e.target.value)}
+                    className="flex-1"
+                  />
+                  <Button
+                    onClick={handleAddNewType}
+                    disabled={isAddingType || !newTypeName.trim()}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                  >
+                    {isAddingType ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Plus className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+              )} */}
+              {showAddType && (
+                <div className="mt-2 flex gap-2">
+                  <Input
+                    type="text"
+                    placeholder="Enter new type name"
+                    value={newTypeName}
+                    onChange={(e) => setNewTypeName(e.target.value)}
+                    className="flex-1"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault(); // Prevent form submission
+                        handleAddNewType();
+                      }
+                    }}
+                  />
+                  <Button
+                    type="button" // Add this to prevent form submission
+                    onClick={(e) => {
+                      e.preventDefault(); // Prevent form submission
+                      handleAddNewType();
+                    }}
+                    disabled={isAddingType || !newTypeName.trim()}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                  >
+                    {isAddingType ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Plus className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+              )}
+
+              {isLoadingTypes && (
+                <div className="flex items-center text-sm text-gray-500">
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Loading property types...
+                </div>
+              )}
+            </div>
             {/* Emirate */}
             <div className="space-y-2">
               <Label>Emirate</Label>
@@ -870,7 +1155,7 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
             >
               Cancel
             </Button>
-            <Button onClick={handleSaveAddress}>Save Address</Button>
+            <Button variant="outline" onClick={handleSaveAddress}>Save Address</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

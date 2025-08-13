@@ -1310,7 +1310,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                         <span>
                           Customer{" "}
                           <span className="text-gray-500">
-                            (name/email/phone/address)
+                            (name/email/phone)
                           </span>
                           <span className="text-red-500 ml-1">*</span>
                         </span>

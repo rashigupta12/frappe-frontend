@@ -51,6 +51,7 @@ export default function InspectionDialog({
     phone: "",
     budgetRange: "",
   });
+  
   useEffect(() => {
     fetchInspectors();
   }, [fetchInspectors]);
@@ -114,7 +115,7 @@ export default function InspectionDialog({
       return;
     }
     if (!formData.specialRequirements) {
-      toast.error("Please enter special requirements.");
+      toast.error("Please enter Special requirements.");
       return;
     }
     e.preventDefault();
