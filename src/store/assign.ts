@@ -22,6 +22,8 @@ interface TodoItem {
   creation: string;
   modified: string;
   allocated_to_name?: string; // Optional, can be set to user full name
+  custom_start_time?:Date;
+  custom_end_time?: Date;
 }
 
 interface TodoWithInquiry extends TodoItem {
@@ -47,6 +49,8 @@ interface Inquiry {
 }
 
 interface CreateTodoData {
+  custom_end_time: any;
+  custom_start_time: any;
   inquiry_id: string;
   inspector_email: string;
   preferred_date: string;
@@ -348,6 +352,8 @@ fetchTodos: async () => {
       reference_type: "Lead",
       reference_name: todoData.inquiry_id,
       assigned_by: todoData.assigned_by || get().currentUserEmail,
+      custom_start_time:todoData.custom_start_time,
+      custom_end_time: todoData.custom_end_time
     };
     console.log("ToDo Payload:", todoPayload);
 

@@ -435,14 +435,10 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
         description: formData.custom_special_requirements || "",
         priority: priority,
         preferred_date: preferredDate,
+        
       });
       //creating dwa
       let employeeName = '';
-      // const inspector = inspectors.find(i => i.name === inspectorEmail);
-
-      // Method 1: Check if inspector has employee_id directly
-
-      // Method 2: Look up employee by email with your specific response format
 
       try {
         const employeeResponse = await frappeAPI.makeAuthenticatedRequest(
@@ -527,7 +523,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
           frappeAPI
             .makeAuthenticatedRequest(
               "GET",
-              `${addressEndpoint}?customer_name=${encodeURIComponent(query)}`
+              `${addressEndpoint}?search_term=${encodeURIComponent(query)}`
             )
             .then((response) => ({
               type: "customer_name",
@@ -555,7 +551,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
           frappeAPI
             .makeAuthenticatedRequest(
               "GET",
-              `${addressEndpoint}?custom_customer_email=${encodeURIComponent(query)}`
+              `${addressEndpoint}?search_term=${encodeURIComponent(query)}`
             )
             .then((response) => ({
               type: "customer_email",
@@ -569,7 +565,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
           frappeAPI
             .makeAuthenticatedRequest(
               "GET",
-              `${addressEndpoint}?custom_lead_email=${encodeURIComponent(query)}`
+              `${addressEndpoint}?search_term=${encodeURIComponent(query)}`
             )
             .then((response) => ({
               type: "lead_email",
@@ -586,7 +582,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
             frappeAPI
               .makeAuthenticatedRequest(
                 "GET",
-                `${addressEndpoint}?custom_customer_phone_number=${encodeURIComponent(cleanPhone)}`
+                `${addressEndpoint}?search_term=${encodeURIComponent(cleanPhone)}`
               )
               .then((response) => ({
                 type: "customer_phone",
@@ -599,7 +595,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
             frappeAPI
               .makeAuthenticatedRequest(
                 "GET",
-                `${addressEndpoint}?custom_lead_phone_number=${encodeURIComponent(cleanPhone)}`
+                `${addressEndpoint}?search_term=${encodeURIComponent(cleanPhone)}`
               )
               .then((response) => ({
                 type: "lead_phone",

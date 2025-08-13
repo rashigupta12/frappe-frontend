@@ -245,7 +245,7 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
             frappeAPI
               .makeAuthenticatedRequest(
                 "GET",
-                `${addressEndpoint}?custom_area=${encodeURIComponent(query)}`
+                `${addressEndpoint}?search_term=${encodeURIComponent(query)}`
               )
               .then((response) => ({
                 type: "area",
@@ -258,7 +258,7 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
             frappeAPI
               .makeAuthenticatedRequest(
                 "GET",
-                `${addressEndpoint}?custom_community=${encodeURIComponent(
+                `${addressEndpoint}?search_term=${encodeURIComponent(
                   query
                 )}`
               )
@@ -273,7 +273,7 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
             frappeAPI
               .makeAuthenticatedRequest(
                 "GET",
-                `${addressEndpoint}?custom_street_name=${encodeURIComponent(
+                `${addressEndpoint}?search_term=${encodeURIComponent(
                   query
                 )}`
               )
@@ -289,7 +289,7 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
               frappeAPI
                 .makeAuthenticatedRequest(
                   "GET",
-                  `${addressEndpoint}?custom_property_number=${encodeURIComponent(
+                  `${addressEndpoint}?search_term=${encodeURIComponent(
                     query
                   )}`
                 )

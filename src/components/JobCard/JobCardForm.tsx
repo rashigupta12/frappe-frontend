@@ -442,7 +442,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
           frappeAPI
             .makeAuthenticatedRequest(
               "GET",
-              `${addressEndpoint}?customer_name=${encodeURIComponent(query)}`
+              `${addressEndpoint}?search_term=${encodeURIComponent(query)}`
             )
             .then((response) => ({
               type: "customer_name",
@@ -454,7 +454,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
           frappeAPI
             .makeAuthenticatedRequest(
               "GET",
-              `${addressEndpoint}?custom_lead_customer_name=${encodeURIComponent(
+              `${addressEndpoint}?search_term=${encodeURIComponent(
                 query
               )}`
             )
@@ -469,7 +469,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
           frappeAPI
             .makeAuthenticatedRequest(
               "GET",
-              `${addressEndpoint}?custom_customer_email=${encodeURIComponent(
+              `${addressEndpoint}?search_term=${encodeURIComponent(
                 query
               )}`
             )
@@ -484,7 +484,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
           frappeAPI
             .makeAuthenticatedRequest(
               "GET",
-              `${addressEndpoint}?custom_lead_email=${encodeURIComponent(
+              `${addressEndpoint}?search_term=${encodeURIComponent(
                 query
               )}`
             )
@@ -501,7 +501,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
             frappeAPI
               .makeAuthenticatedRequest(
                 "GET",
-                `${addressEndpoint}?custom_property_number=${encodeURIComponent(
+                `${addressEndpoint}?search_term=${encodeURIComponent(
                   query
                 )}`
               )
@@ -519,7 +519,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
             frappeAPI
               .makeAuthenticatedRequest(
                 "GET",
-                `${addressEndpoint}?custom_customer_phone_number=${encodeURIComponent(
+                `${addressEndpoint}?search_term=${encodeURIComponent(
                   cleanPhone
                 )}`
               )
@@ -533,7 +533,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
             frappeAPI
               .makeAuthenticatedRequest(
                 "GET",
-                `${addressEndpoint}?custom_lead_phone_number=${encodeURIComponent(
+                `${addressEndpoint}?search_term=${encodeURIComponent(
                   cleanPhone
                 )}`
               )
@@ -566,7 +566,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
             frappeAPI
               .makeAuthenticatedRequest(
                 "GET",
-                `${addressEndpoint}?custom_emirate=${encodeURIComponent(query)}`
+                `${addressEndpoint}?search_term=${encodeURIComponent(query)}`
               )
               .then((response) => ({
                 type: "emirate",
@@ -599,8 +599,6 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                 address.customer_details?.email_id,
               name: address.customer_details?.name || address.custom_lead_name,
               lead_name: address.custom_lead_name,
-              // building_name: '',
-              // property_no: address.custom_property_number,
               area: address.custom_combined_address,
               address_details: {
                 emirate: address.custom_emirate,

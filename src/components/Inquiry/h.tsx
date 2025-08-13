@@ -36,7 +36,7 @@ import { Input } from "../ui/input";
 // } from "../ui/select";
 import { format } from "date-fns";
 import InquiryForm from "./InquiryForm";
-import IspectionDialog from "./IspectionDialog";
+import InspectionDialog from "./IspectionDialog";
 
 const InquiryPage = () => {
   const {
@@ -449,13 +449,15 @@ const InquiryPage = () => {
       </div>
 
       {/* Fixed: Moved dialog outside of map and used correct inquiry state */}
-      {isDialogOpen && selectedInquiryForDialog && (
-        <IspectionDialog
-          open={isDialogOpen}
-          onClose={handleCloseDialog}
-          inquiry={selectedInquiryForDialog}
-        />
-      )}
+     {isDialogOpen && selectedInquiryForDialog && (
+  <InspectionDialog
+    open={isDialogOpen}
+    onClose={handleCloseDialog}
+    data={selectedInquiryForDialog}
+    mode="create"
+  />
+)}
+
 
       <InquiryForm
         isOpen={isFormOpen}
