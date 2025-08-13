@@ -49,6 +49,7 @@ import {
 import { Textarea } from "../ui/textarea";
 import PropertyAddressSection from "./PropertyAddress";
 import UserAvailability from "../ui/UserAvailability";
+import { timeToMinutes } from "../../lib/timeUtils";
 
 type PriorityLevel = "Low" | "Medium" | "High";
 
@@ -91,6 +92,25 @@ const sections: FormSection[] = [
   },
 ];
 
+interface InspectorAvailability {
+  user_id: string;
+  user_name: string;
+  email: string;
+  date: string;
+  availability: {
+    occupied_slots: Array<{ start: string; end: string }>;
+    free_slots: Array<{ start: string; end: string; duration_hours?: number }>;
+    is_completely_free: boolean;
+    total_occupied_hours: number;
+  };
+}
+
+interface InquiryFormProps {
+  isOpen: boolean;
+  onClose: () => void;
+  inquiry?: Lead | null;
+}
+
 const InquiryForm: React.FC<InquiryFormProps> = ({
   isOpen,
   onClose,
@@ -131,16 +151,32 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     ...defaultFormData,
   });
   const [showReferenceInput, setShowReferenceInput] = useState(false);
-  
+
   // Customer search states
   const [customerSearchQuery, setCustomerSearchQuery] = useState("");
   const [customerSearchResults, setCustomerSearchResults] = useState<any[]>([]);
   const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
   const [isCustomerSearching, setIsCustomerSearching] = useState(false);
-  const [customerSearchTimeout, setCustomerSearchTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [customerSearchTimeout, setCustomerSearchTimeout] =
+    useState<NodeJS.Timeout | null>(null);
   const [fetchingCustomerDetails, setFetchingCustomerDetails] = useState(false);
   const [showNewCustomerFields, setShowNewCustomerFields] = useState(false);
-  
+
+  // Add these new state variables for enhanced inspector assignment
+  const [selectedInspector, setSelectedInspector] =
+    useState<InspectorAvailability | null>(null);
+  const [selectedSlot, setSelectedSlot] = useState<{
+    start: string;
+    end: string;
+  } | null>(null);
+  const [requestedTime, setRequestedTime] = useState("");
+  const [duration, setDuration] = useState("0.5");
+  const [showAvailabilityModal, setShowAvailabilityModal] = useState(false);
+
+  // Remove these old variables (they'll be replaced):
+  // const [inspectorEmail, setInspectorEmail] = useState("");
+  // const [showAvailability, setShowAvailability] = useState(false);
+
   const navigate = useNavigate();
 
   const updatedSections = useMemo(() => {
@@ -178,7 +214,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                 !!formData.custom_preferred_inspection_time),
           };
         case "inspector":
-          return { ...section, completed: !!inspectorEmail };
+          return { ...section, completed: !!selectedInspector }; // Changed from inspectorEmail
         default:
           return section;
       }
@@ -221,6 +257,115 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     return `${hours}:${minutes}`;
   };
 
+  // Add these helper functions for time validation and calculation
+  const validateRequestedTime = () => {
+    if (!requestedTime) return false;
+    if (!selectedSlot) return false;
+
+    const requestedMinutes = timeToMinutes(requestedTime);
+    const slotStartMinutes = timeToMinutes(selectedSlot.start);
+    const slotEndMinutes = timeToMinutes(selectedSlot.end);
+    const durationMinutes = Math.round(parseFloat(duration) * 60);
+
+    if (
+      requestedMinutes < slotStartMinutes ||
+      requestedMinutes >= slotEndMinutes
+    ) {
+      return false;
+    }
+
+    if (requestedMinutes + durationMinutes > slotEndMinutes) {
+      return false;
+    }
+
+    return true;
+  };
+
+  const calculateEndTime = () => {
+    if (!requestedTime || !duration) return "";
+
+    const startMinutes = timeToMinutes(requestedTime);
+    const durationMinutes = Math.round(parseFloat(duration) * 60);
+    const endMinutes = startMinutes + durationMinutes;
+
+    const hours = Math.floor(endMinutes / 60);
+    const mins = endMinutes % 60;
+
+    return `${hours.toString().padStart(2, "0")}:${mins
+      .toString()
+      .padStart(2, "0")}`;
+  };
+
+  const validateTimeDuration = (durationValue: string) => {
+    if (!selectedSlot || !requestedTime) return;
+
+    const durationHours = parseFloat(durationValue);
+    const durationMinutes = Math.round(durationHours * 60);
+    const startMinutes = timeToMinutes(requestedTime);
+    const slotEndMinutes = timeToMinutes(selectedSlot.end);
+
+    if (startMinutes + durationMinutes > slotEndMinutes) {
+      const availableHours = (slotEndMinutes - startMinutes) / 60;
+      toast.error(
+        `Duration exceeds available time. Max ${availableHours.toFixed(
+          1
+        )} hours available in this slot.`
+      );
+    }
+  };
+
+  const handleInspectorSelect = (
+    email: string,
+    availabilityData: InspectorAvailability[]
+  ) => {
+    const inspector = availabilityData.find(
+      (inspector) => inspector.email === email
+    );
+    if (inspector) {
+      setSelectedInspector(inspector);
+      if (inspector.availability.free_slots.length > 0) {
+        const firstSlot = inspector.availability.free_slots[0];
+        setSelectedSlot({
+          start: firstSlot.start,
+          end: firstSlot.end,
+        });
+        setRequestedTime(firstSlot.start);
+        setFormData((prev) => ({
+          ...prev,
+          custom_preferred_inspection_time: firstSlot.start,
+        }));
+        toast.success(
+          `Selected ${inspector.user_name} - Time slot auto-selected`
+        );
+      } else {
+        toast.success(`Selected ${inspector.user_name}`);
+      }
+    }
+    setShowAvailabilityModal(false);
+  };
+
+  const handleSlotSelect = (slot: { start: string; end: string }) => {
+    setSelectedSlot(slot);
+    setRequestedTime(slot.start);
+    setFormData((prev) => ({
+      ...prev,
+      custom_preferred_inspection_time: slot.start,
+    }));
+    toast.success(`Selected time slot: ${slot.start} - ${slot.end}`);
+  };
+
+  const handleDateSelect = (selectedDate: Date | undefined) => {
+    setDate(selectedDate);
+    setSelectedInspector(null);
+    setSelectedSlot(null);
+
+    if (selectedDate) {
+      setTimeout(() => {
+        setShowAvailabilityModal(true);
+      }, 300);
+    }
+  };
+
   useEffect(() => {
     if (inquiry && hasFetchedInitialData) {
       setFormData({
@@ -242,7 +387,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
       );
       setShowReferenceInput(
         inquiry.source === "Reference" ||
-        inquiry.source === "Supplier Reference"
+          inquiry.source === "Supplier Reference"
       );
     }
   }, [inquiry, hasFetchedInitialData]);
@@ -250,7 +395,14 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
   const resetForm = () => {
     setFormData({ ...defaultFormData });
     setPhoneNumber("+971 ");
-    setInspectorEmail("");
+    // Replace these lines:
+    // setInspectorEmail("");
+    // With these:
+    setSelectedInspector(null);
+    setSelectedSlot(null);
+    setRequestedTime("");
+    setDuration("0.5");
+
     setPriority("Medium");
     setDate(new Date());
     setHasFetchedInitialData(false);
@@ -259,6 +411,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     setCustomerSearchResults([]);
     setShowCustomerDropdown(false);
     setShowNewCustomerFields(false);
+    setShowAvailabilityModal(false); // Add this
   };
 
   const toggleSection = (sectionId: string) => {
@@ -398,7 +551,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
 
   const handleAssignAndSave = async () => {
     if (!validateForm()) return;
-    if (!inspectorEmail) {
+    if (!selectedInspector) {
       toast.error("Please select an inspector");
       return;
     }
@@ -406,12 +559,14 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
       toast.error("Please select an inspection date");
       return;
     }
-    if (!priority) {
-      toast.error("Please select a priority");
+    if (!requestedTime) {
+      toast.error("Please enter the requested inspection time");
       return;
     }
-    if (!formData.custom_preferred_inspection_time) {
-      toast.error("Please select a preferred inspection time");
+    if (!validateRequestedTime()) {
+      toast.error(
+        `Requested time must be within the selected slot (${selectedSlot?.start} - ${selectedSlot?.end})`
+      );
       return;
     }
 
@@ -423,72 +578,69 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
       }
 
       const preferredDate = format(date, "yyyy-MM-dd");
-      const durationHours = parseFloat(formData.custom_duration || "0.5");
-      // Parse duration to hours (assuming format is HH:MM)
+      const endTime = calculateEndTime();
 
+      // Combine date and time for DATETIME fields
+      const startDateTime = `${preferredDate} ${requestedTime}:00`;
+      const endDateTime = `${preferredDate} ${endTime}:00`;
 
-      //first create the todo
+      // Create todo
       await createTodo({
         assigned_by: user?.username || "sales_rep@eits.com",
         inquiry_id: inquiryName,
-        inspector_email: inspectorEmail,
+        inspector_email: selectedInspector.email,
         description: formData.custom_special_requirements || "",
         priority: priority,
         preferred_date: preferredDate,
-        
+        custom_start_time: startDateTime,
+        custom_end_time: endDateTime,
       });
-      //creating dwa
-      let employeeName = '';
 
-      try {
-        const employeeResponse = await frappeAPI.makeAuthenticatedRequest(
-          "GET",
-          `/api/resource/Employee?filters=[["user_id","=","${inspectorEmail}"]]`
+      // Get employee name for DWA
+      let employeeName = "";
+      const employeeResponse = await frappeAPI.makeAuthenticatedRequest(
+        "GET",
+        `/api/resource/Employee?filters=[["user_id","=","${selectedInspector.email}"]]`
+      );
+
+      if (employeeResponse?.data?.length > 0) {
+        employeeName = employeeResponse.data[0].name;
+      } else {
+        throw new Error(
+          `Could not find employee record for ${selectedInspector.email}`
         );
-
-        // Handle your specific response format {"data":[{"name":"HR-EMP-00023"}]}
-        if (employeeResponse?.data?.length > 0) {
-          employeeName = employeeResponse.data[0].name; // Get the employee ID
-        } else {
-          throw new Error("Employee record not found in response");
-        }
-      } catch (error) {
-        console.warn("Employee lookup failed:", error);
-        throw new Error(`Could not find employee record for ${inspectorEmail}. Please ensure:
-        1. The inspector has an associated Employee record
-        2. The Employee record has their email set in the user_id field`);
-
       }
-      // Then create the Daily Work Allocation
-      const dwaPayload = {
-        "employee_name": employeeName,
-        "date": preferredDate,
-        "custom_work_allocation": [
-          {
-            "work_title": formData.custom_job_type || "Site Inspection",
-            "work_description": formData.custom_property_area,
-            "expected_start_date": formData.custom_preferred_inspection_time,
-            "expected_time_in_hours": durationHours,
 
-          }
-        ]
+      // Create DWA
+      const dwaPayload = {
+        employee_name: employeeName,
+        date: preferredDate,
+        custom_work_allocation: [
+          {
+            work_title: formData.custom_job_type || "Site Inspection",
+            work_description: formData.custom_property_area,
+            expected_start_date: requestedTime,
+            expected_time_in_hours: parseFloat(duration),
+          },
+        ],
       };
 
-      // Make API call to create DWA
       await frappeAPI.makeAuthenticatedRequest(
         "POST",
         "/api/resource/Daily Work Allocation",
         dwaPayload
       );
+
       toast.success("Inspector assigned successfully!");
       navigate("/sales?tab=assign");
       onClose();
     } catch (error) {
       console.error("Full error in assignment process:", error);
       toast.error(
-        `Failed to complete assignment: ${error && typeof error === "object" && "message" in error
-          ? (error as { message: string }).message
-          : String(error)
+        `Failed to complete assignment: ${
+          error && typeof error === "object" && "message" in error
+            ? (error as { message: string }).message
+            : String(error)
         }`
       );
     }
@@ -537,7 +689,9 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
           frappeAPI
             .makeAuthenticatedRequest(
               "GET",
-              `${addressEndpoint}?custom_lead_customer_name=${encodeURIComponent(query)}`
+              `${addressEndpoint}?custom_lead_customer_name=${encodeURIComponent(
+                query
+              )}`
             )
             .then((response) => ({
               type: "lead_name",
@@ -577,12 +731,14 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
         // Search by Phone (if query looks like a phone number)
         if (/^\+?\d+$/.test(query.replace(/[\s-]/g, ""))) {
           const cleanPhone = query.replace(/[\s-]/g, "");
-          
+
           searchPromises.push(
             frappeAPI
               .makeAuthenticatedRequest(
                 "GET",
-                `${addressEndpoint}?search_term=${encodeURIComponent(cleanPhone)}`
+                `${addressEndpoint}?search_term=${encodeURIComponent(
+                  cleanPhone
+                )}`
               )
               .then((response) => ({
                 type: "customer_phone",
@@ -595,7 +751,9 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
             frappeAPI
               .makeAuthenticatedRequest(
                 "GET",
-                `${addressEndpoint}?search_term=${encodeURIComponent(cleanPhone)}`
+                `${addressEndpoint}?search_term=${encodeURIComponent(
+                  cleanPhone
+                )}`
               )
               .then((response) => ({
                 type: "lead_phone",
@@ -650,9 +808,9 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
           index ===
           self.findIndex(
             (r) =>
-              (r.customer_name === result.customer_name && 
-               r.email_id === result.email_id && 
-               r.mobile_no === result.mobile_no) ||
+              (r.customer_name === result.customer_name &&
+                r.email_id === result.email_id &&
+                r.mobile_no === result.mobile_no) ||
               (r.custom_lead_name &&
                 result.custom_lead_name &&
                 r.custom_lead_name === result.custom_lead_name)
@@ -695,15 +853,19 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
       };
 
       // Set address data if available
-      const addressData = result.address_details ? {
-        custom_property_category: result.address_details.property_category || "",
-        custom_emirate: result.address_details.emirate || "",
-        custom_community: result.address_details.community || "",
-        custom_area: result.address_details.area || "",
-        custom_street_name: result.address_details.street_name || "",
-        custom_property_name__number: result.address_details.property_number || "",
-        custom_property_area: result.address_details.combined_address || "",
-      } : {};
+      const addressData = result.address_details
+        ? {
+            custom_property_category:
+              result.address_details.property_category || "",
+            custom_emirate: result.address_details.emirate || "",
+            custom_community: result.address_details.community || "",
+            custom_area: result.address_details.area || "",
+            custom_street_name: result.address_details.street_name || "",
+            custom_property_name__number:
+              result.address_details.property_number || "",
+            custom_property_area: result.address_details.combined_address || "",
+          }
+        : {};
 
       setFormData((prev) => ({
         ...prev,
@@ -718,7 +880,9 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     }
   };
 
-  const handleCustomerSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCustomerSearchChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const query = e.target.value;
     setCustomerSearchQuery(query);
 
@@ -794,8 +958,9 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                 >
                   <button
                     type="button"
-                    className={`w-full flex justify-between items-center p-4 text-left hover:bg-gray-50 transition-colors ${activeSection === section.id ? "bg-gray-50" : ""
-                      }`}
+                    className={`w-full flex justify-between items-center p-4 text-left hover:bg-gray-50 transition-colors ${
+                      activeSection === section.id ? "bg-gray-50" : ""
+                    }`}
                     onClick={() => toggleSection(section.id)}
                   >
                     <div className="flex items-center gap-3">
@@ -815,10 +980,11 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                   </button>
 
                   <div
-                    className={`transition-all duration-300 overflow-hidden ${activeSection === section.id
-                      ? "max-h-[1000px] opacity-100"
-                      : "max-h-0 opacity-0"
-                      }`}
+                    className={`transition-all duration-300 overflow-hidden ${
+                      activeSection === section.id
+                        ? "max-h-[1000px] opacity-100"
+                        : "max-h-0 opacity-0"
+                    }`}
                   >
                     <div className="p-4 pt-2 space-y-4">
                       {section.id === "contact" && (
@@ -863,28 +1029,30 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                                     <div
                                       key={`customer-result-${index}`}
                                       className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                                      onClick={() => handleCustomerSelect(result)}
+                                      onClick={() =>
+                                        handleCustomerSelect(result)
+                                      }
                                     >
                                       <p className="font-medium truncate">
                                         {result.customer_name}
                                       </p>
                                       {(result.mobile_no ||
                                         result.email_id) && (
-                                          <div className="text-xs text-gray-500 space-x-2">
-                                            {result.mobile_no && (
-                                              <span className="inline-flex items-center">
-                                                <Phone className="h-3 w-3 mr-1" />
-                                                {result.mobile_no}
-                                              </span>
-                                            )}
-                                            {result.email_id && (
-                                              <span className="inline-flex items-center">
-                                                <Mail className="h-3 w-3 mr-1" />
-                                                {result.email_id}
-                                              </span>
-                                            )}
-                                          </div>
-                                        )}
+                                        <div className="text-xs text-gray-500 space-x-2">
+                                          {result.mobile_no && (
+                                            <span className="inline-flex items-center">
+                                              <Phone className="h-3 w-3 mr-1" />
+                                              {result.mobile_no}
+                                            </span>
+                                          )}
+                                          {result.email_id && (
+                                            <span className="inline-flex items-center">
+                                              <Mail className="h-3 w-3 mr-1" />
+                                              {result.email_id}
+                                            </span>
+                                          )}
+                                        </div>
+                                      )}
                                       {result.custom_combined_address && (
                                         <div className="text-xs text-gray-500 mt-1 flex items-center">
                                           <Home className="h-3 w-3 mr-1 flex-shrink-0" />
@@ -898,10 +1066,12 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                                 ) : (
                                   <div className="px-4 py-2 text-center">
                                     <p className="font-medium text-gray-700">
-                                      No customers found for "{customerSearchQuery}"
+                                      No customers found for "
+                                      {customerSearchQuery}"
                                     </p>
                                     <p className="text-xs text-gray-500 mt-1">
-                                      Fill in the details below to add a new customer
+                                      Fill in the details below to add a new
+                                      customer
                                     </p>
                                   </div>
                                 )}
@@ -910,7 +1080,9 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                           </div>
 
                           {/* Show customer fields when needed */}
-                          {(showNewCustomerFields || formData.lead_name || customerSearchQuery) && (
+                          {(showNewCustomerFields ||
+                            formData.lead_name ||
+                            customerSearchQuery) && (
                             <>
                               <div className="col-span-1">
                                 <Label
@@ -1100,123 +1272,13 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                         <PropertyAddressSection
                           formData={formData}
                           handleSelectChange={handleSelectChange}
-                        // getPropertyArea={formData.custom_property_area || ""}
+                          // getPropertyArea={formData.custom_property_area || ""}
                         />
                       )}
 
                       {section.id === "additional" && (
                         <div>
-                          <div className="grid grid-cols-12 gap-2 pt-2 mb-3">
-                            {/* Preferred Date - 45% */}
-                            <div className="col-span-5">
-                              <Label className="text-xs font-medium text-gray-700">Preferred Date</Label>
-                              <div className="relative">
-                                <Input
-                                  type="date"
-                                  min={new Date().toISOString().split("T")[0]}
-                                  value={
-                                    date
-                                      ? format(date, "yyyy-MM-dd")
-                                      : formData.custom_preferred_inspection_date
-                                        ? new Date(formData.custom_preferred_inspection_date)
-                                          .toISOString()
-                                          .split("T")[0]
-                                        : ""
-                                  }
-                                  onChange={(e) => {
-                                    const selectedDate = e.target.value
-                                      ? new Date(e.target.value)
-                                      : undefined;
-                                    setDate(selectedDate);
-                                    handleDateChange("custom_preferred_inspection_date", selectedDate);
-                                  }}
-                                  className="pl-1"
-                                />
-                                <div
-                                  className="absolute inset-y-0 right-3 flex items-center text-gray-400 cursor-pointer"
-                                  onClick={() => {
-                                    const input = document.querySelector(
-                                      'input[type="date"]'
-                                    ) as HTMLInputElement;
-                                    if (input) {
-                                      input.focus();
-                                      if ("showPicker" in input && typeof input.showPicker === "function") {
-                                        input.showPicker();
-                                      }
-                                    }
-                                  }}
-                                >
-                                  <CalendarIcon className="h-3 w-3" />
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Time - 35% */}
-                            <div className="col-span-4">
-                              <Label
-                                htmlFor="custom_preferred_inspection_time"
-                                className="text-xs font-medium text-gray-700"
-                              >
-                                Time
-                              </Label>
-                              <div className="relative">
-                                <Input
-                                  type="time"
-                                  id="custom_preferred_inspection_time"
-                                  name="custom_preferred_inspection_time"
-                                  value={formData.custom_preferred_inspection_time || getCurrentTime()}
-                                  onChange={handleInputChange}
-                                  className="pl-2"
-                                />
-                                <div
-                                  className="absolute inset-y-0 right-3 flex items-center text-gray-400 cursor-pointer"
-                                  onClick={() => {
-                                    const input = document.querySelector(
-                                      'input[type="time"]'
-                                    ) as HTMLInputElement;
-                                    if (input) {
-                                      input.focus();
-                                      if ("showPicker" in input && typeof input.showPicker === "function") {
-                                        input.showPicker();
-                                      }
-                                    }
-                                  }}
-                                >
-                                  <Clock className="h-4 w-4" />
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Duration - 20% */}
-                            <div className="col-span-3">
-                              <Label
-                                htmlFor="custom_duration"
-                                className="text-xs font-medium text-gray-700"
-                              >
-                                Duration(Hrs)
-                              </Label>
-                              <div className="relative">
-                                <Input
-                                  type="number"
-                                  step="0.5"
-                                  min="0.5"
-                                  id="custom_duration"
-                                  name="custom_duration"
-                                  value={formData.custom_duration || ""}
-                                  onChange={handleInputChange}
-                                  placeholder="e.g. 1.5"
-                                  className="w-full pr-8"
-                                />
-                                <span className="absolute inset-y-0 right-3 flex items-center text-gray-400 text-sm">
-                                  hrs
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-
-
-
-
+                         
                           <div>
                             <Label
                               htmlFor="custom_special_requirements"
@@ -1239,168 +1301,248 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                       {section.id === "inspector" && (
                         <div className="space-y-4">
                           {assignError && (
-                            <div className="text-red-500 text-sm">
-                              {assignError}
+                            <div className="bg-red-50 border border-red-200 rounded-md p-2">
+                              <div className="text-red-700 text-sm">
+                                {assignError}
+                              </div>
                             </div>
                           )}
                           {assignSuccess && (
-                            <div className="text-emerald-500 text-sm">
-                              Inspector assigned successfully!
+                            <div className="bg-emerald-50 border border-emerald-200 rounded-md p-2">
+                              <div className="text-emerald-700 text-sm">
+                                Inspector assigned successfully!
+                              </div>
                             </div>
                           )}
 
-                          <div className="grid grid-cols-12 gap-2 mb-2 items-center">
-                            {/* Label */}
-                            <div className="col-span-12">
-                              <Label className="text-gray-700 text-sm font-medium">
-                                Select Inspector
-                              </Label>
-                            </div>
-
-                            {/* Select Field */}
-                            <div className="col-span-10">
-                              <Select
-                                value={inspectorEmail}
-                                onValueChange={setInspectorEmail}
-                                disabled={inspectorsLoading}
-                              >
-                                <SelectTrigger className="w-full bg-white border border-gray-300">
-                                  <SelectValue placeholder="Select an inspector" />
-                                </SelectTrigger>
-                                <SelectContent className="bg-white border border-gray-300 max-h-[200px]">
-                                  {inspectors.map((inspector) => (
-                                    <SelectItem
-                                      key={inspector.full_name ?? inspector.name}
-                                      value={inspector.name ?? ""}
-                                    >
-                                      <div className="flex items-center gap-2">
-                                        <span>{inspector.full_name}</span>
-                                      </div>
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-
-                            {/* User Icon Button */}
-                            <div className="col-span-2 flex justify-center">
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="icon"
-                                className="h-9 w-8 rounded-md text-gray-600 hover:text-emerald-600 hover:bg-gray-100"
-                                onClick={() => setShowAvailability(true)}
-                              >
-                                <CalendarCheck className="h-5 w-5" />
-                              </Button>
-                            </div>
-
-                            {/* Availability Modal */}
-                            {showAvailability && (
-                              <UserAvailability
-                                date={date || new Date()}
-                                onClose={() => setShowAvailability(false)}
-                                onSelectInspector={(email, availabilityData) => {
-                                  setInspectorEmail(email);
-
-                                  // Find selected inspector
-                                  const selectedInspector = availabilityData.find(
-                                    (i) => i.email === email
-                                  );
-
-                                  // Auto-set first available slot
-                                  if (selectedInspector?.availability.free_slots.length) {
-                                    const firstSlot =
-                                      selectedInspector.availability.free_slots[0];
-                                    setFormData((prev) => ({
-                                      ...prev,
-                                      custom_preferred_inspection_time: firstSlot.start,
-                                    }));
-                                  }
+                          {/* Step 1: Date Selection */}
+                          <div className="space-y-2">
+                            <Label className="text-gray-700 text-sm font-medium">
+                              Select Inspection Date{" "}
+                              <span className="text-red-500">*</span>
+                            </Label>
+                            <div className="relative">
+                              <input
+                                type="date"
+                                min={new Date().toISOString().split("T")[0]}
+                                value={date ? format(date, "yyyy-MM-dd") : ""}
+                                onChange={(e) => {
+                                  const selectedDate = e.target.value
+                                    ? new Date(e.target.value)
+                                    : undefined;
+                                  handleDateSelect(selectedDate);
                                 }}
+                                className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 pr-10 text-sm"
                               />
-                            )}
+                              <CalendarIcon className="absolute right-3 top-2.5 h-4 w-4 text-gray-400" />
+                            </div>
                           </div>
 
-                          <div className="grid grid-cols-1 gap-4">
+                          {/* Step 2: Inspector Selection */}
+                          {date && (
                             <div className="space-y-2">
                               <Label className="text-gray-700 text-sm font-medium">
-                                Priority
+                                Inspector Selected
                               </Label>
-                              <Select
-                                value={priority}
-                                onValueChange={(value) =>
-                                  setPriority(value as PriorityLevel)
-                                }
-                              >
-                                <SelectTrigger className="w-full bg-white border border-gray-300">
-                                  <SelectValue placeholder="Priority" />
-                                </SelectTrigger>
-                                <SelectContent className="bg-white border border-gray-300">
-                                  <SelectItem value="Low">Low</SelectItem>
-                                  <SelectItem value="Medium">Medium</SelectItem>
-                                  <SelectItem value="High">High</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            <div className="space-y-2">
-                              <Label className="text-gray-700 text-sm font-medium">
-                                Inspection Date
-                              </Label>
-                              <div className="relative">
-                                <input
-                                  type="date"
-                                  min={new Date().toISOString().split("T")[0]}
-                                  value={
-                                    date
-                                      ? format(date, "yyyy-MM-dd")
-                                      : formData.custom_preferred_inspection_date
-                                        ? new Date(
-                                          formData.custom_preferred_inspection_date
-                                        )
-                                          .toISOString()
-                                          .split("T")[0]
-                                        : ""
-                                  }
-                                  onChange={(e) => {
-                                    const selectedDate = e.target.value
-                                      ? new Date(e.target.value)
-                                      : undefined;
-                                    setDate(selectedDate);
-                                    handleDateChange(
-                                      "custom_preferred_inspection_date",
-                                      selectedDate
-                                    );
-                                  }}
-                                  className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 pr-10 text-sm text-black shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                                  style={{
-                                    WebkitAppearance: "none",
-                                    MozAppearance: "textfield",
-                                  }}
-                                />
-                                <div
-                                  className="absolute inset-y-0 right-3 flex items-center text-gray-400 cursor-pointer"
-                                  onClick={() => {
-                                    const input = document.querySelector(
-                                      'input[type="date"]'
-                                    ) as HTMLInputElement;
-                                    if (input) {
-                                      input.focus();
-                                      if (
-                                        "showPicker" in input &&
-                                        typeof input.showPicker === "function"
-                                      ) {
-                                        input.showPicker();
-                                      }
-                                    }
-                                  }}
+                              <div className="flex items-center justify-between">
+                                {selectedInspector ? (
+                                  <div className="flex items-center gap-2">
+                                    <div>
+                                      <div className="font-medium text-sm">
+                                        {selectedInspector.user_name}
+                                      </div>
+                                      <div className="text-xs text-gray-500">
+                                        {selectedInspector.email}
+                                      </div>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="text-sm text-gray-600">
+                                    Waiting for inspector selection...
+                                  </div>
+                                )}
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => setShowAvailabilityModal(true)}
                                 >
-                                  <CalendarIcon className="h-4 w-4" />
+                                  {selectedInspector ? "Change" : "Select"}
+                                </Button>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Step 3: Time Slot Selection */}
+                          {selectedInspector &&
+                            selectedInspector.availability.free_slots.length >
+                              0 && (
+                              <div className="space-y-2 p-3 bg-yellow-50 rounded-lg">
+                                <Label className="text-gray-700 text-sm font-medium">
+                                  Available Time Slots
+                                </Label>
+                                <div className="grid grid-cols-2 gap-2">
+                                  {selectedInspector.availability.free_slots.map(
+                                    (slot, index) => (
+                                      <Button
+                                        key={index}
+                                        type="button"
+                                        variant={
+                                          selectedSlot?.start === slot.start &&
+                                          selectedSlot?.end === slot.end
+                                            ? "outline"
+                                            : "default"
+                                        }
+                                        className="justify-center h-auto py-1.5 px-2 text-xs"
+                                        onClick={() =>
+                                          handleSlotSelect({
+                                            start: slot.start,
+                                            end: slot.end,
+                                          })
+                                        }
+                                      >
+                                        {slot.start} - {slot.end}
+                                        {slot.duration_hours && (
+                                          <span className="ml-1 text-xs opacity-70">
+                                            ({slot.duration_hours}h)
+                                          </span>
+                                        )}
+                                      </Button>
+                                    )
+                                  )}
+                                </div>
+                              </div>
+                            )}
+
+                          {/* Step 4: Time and Duration Input */}
+                          {selectedSlot && (
+                            <div className="space-y-3 p-3 border rounded-lg">
+                              <Label className="text-gray-700 text-sm font-medium">
+                                Finalize Time & Duration
+                              </Label>
+                              <div className="grid grid-cols-3 gap-3">
+                                <div className="space-y-1">
+                                  <Label className="text-xs text-gray-600">
+                                    Start Time *
+                                  </Label>
+                                  <Input
+                                    type="time"
+                                    value={requestedTime}
+                                    onChange={(e) => {
+                                      const newTime = e.target.value;
+                                      if (!selectedSlot) return;
+
+                                      const newMinutes = timeToMinutes(newTime);
+                                      const slotStart = timeToMinutes(
+                                        selectedSlot.start
+                                      );
+                                      const slotEnd = timeToMinutes(
+                                        selectedSlot.end
+                                      );
+
+                                      if (
+                                        newMinutes >= slotStart &&
+                                        newMinutes <= slotEnd
+                                      ) {
+                                        setRequestedTime(newTime);
+                                        setFormData((prev) => ({
+                                          ...prev,
+                                          custom_preferred_inspection_time:
+                                            newTime,
+                                        }));
+                                      } else {
+                                        toast.error(
+                                          `Time must be between ${selectedSlot.start} and ${selectedSlot.end}`
+                                        );
+                                      }
+                                    }}
+                                    min={selectedSlot?.start || ""}
+                                    max={selectedSlot?.end || ""}
+                                    className="text-sm h-8"
+                                  />
+                                  <div className="text-xs text-gray-500">
+                                    Between {selectedSlot.start} -{" "}
+                                    {selectedSlot.end}
+                                  </div>
+                                </div>
+                                <div className="space-y-1">
+                                  <Label className="text-xs text-gray-600">
+                                    Duration (hrs) *
+                                  </Label>
+                                  <Input
+                                    type="number"
+                                    step="0.5"
+                                    min="0.5"
+                                    value={duration}
+                                    onChange={(e) => {
+                                      const newDuration = e.target.value;
+                                      setDuration(newDuration);
+                                      setFormData((prev) => ({
+                                        ...prev,
+                                        custom_duration: newDuration,
+                                      }));
+                                      if (selectedSlot && requestedTime) {
+                                        validateTimeDuration(newDuration);
+                                      }
+                                    }}
+                                    placeholder="1.5"
+                                    className="text-sm h-8"
+                                  />
+                                </div>
+                                <div className="space-y-1">
+                                  <Label className="text-xs text-gray-600">
+                                    End Time
+                                  </Label>
+                                  <Input
+                                    type="text"
+                                    value={calculateEndTime()}
+                                    className="text-sm h-8 bg-gray-100"
+                                    disabled
+                                    readOnly
+                                  />
                                 </div>
                               </div>
                             </div>
+                          )}
+
+                          {/* Priority Selection */}
+                          <div className="space-y-2">
+                            <Label className="text-gray-700 text-sm font-medium">
+                              Priority
+                            </Label>
+                            <Select
+                              value={priority}
+                              onValueChange={(value) =>
+                                setPriority(value as PriorityLevel)
+                              }
+                            >
+                              <SelectTrigger className="w-full bg-white border border-gray-300">
+                                <SelectValue placeholder="Priority" />
+                              </SelectTrigger>
+                              <SelectContent className="bg-white border border-gray-300">
+                                <SelectItem value="Low">
+                                  <span className="flex items-center gap-2">
+                                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                                    Low
+                                  </span>
+                                </SelectItem>
+                                <SelectItem value="Medium">
+                                  <span className="flex items-center gap-2">
+                                    <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                                    Medium
+                                  </span>
+                                </SelectItem>
+                                <SelectItem value="High">
+                                  <span className="flex items-center gap-2">
+                                    <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                                    High
+                                  </span>
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
                           </div>
 
+                          {/* Save & Assign Button */}
                           <div className="flex justify-end">
                             <Button
                               type="button"
@@ -1408,8 +1550,10 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                               disabled={
                                 createTodoLoading ||
                                 loading ||
-                                !inspectorEmail ||
+                                !selectedInspector ||
                                 !date ||
+                                !requestedTime ||
+                                !validateRequestedTime() ||
                                 !formData.lead_name ||
                                 !formData.mobile_no ||
                                 !formData.custom_job_type ||
@@ -1418,10 +1562,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                                 !formData.custom_budget_range ||
                                 !formData.custom_project_urgency ||
                                 !formData.source ||
-                                (formData.source === "Reference" &&
-                                  !formData.custom_reference_name) ||
-                                !formData.custom_property_area ||
-                                !formData.custom_preferred_inspection_time
+                                !formData.custom_property_area
                               }
                               className="bg-gradient-to-r from-emerald-400 to-teal-500 hover:from-emerald-700 hover:to-teal-600 text-white"
                             >
@@ -1437,6 +1578,15 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                               )}
                             </Button>
                           </div>
+
+                          {/* UserAvailability Modal */}
+                          {showAvailabilityModal && (
+                            <UserAvailability
+                              date={date || new Date()}
+                              onClose={() => setShowAvailabilityModal(false)}
+                              onSelectInspector={handleInspectorSelect}
+                            />
+                          )}
                         </div>
                       )}
                     </div>
