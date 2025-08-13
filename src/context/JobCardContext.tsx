@@ -91,7 +91,8 @@ export interface JobCard {
   custom_property_category: string;
   custom_community: string;
   custom_street_name: string;
-  custom_property_number_name: string;
+  custom_property_number__name: string;
+  custom_property_type: string;
 }
 
 export interface JobCardFormData {
@@ -116,7 +117,8 @@ export interface JobCardFormData {
   custom_property_category?: string;
   custom_community?: string;
   custom_street_name?: string;
-  custom_property_number_name?: string;
+  custom_property_number__name?: string;
+  custom_property_type?: string;
 }
 
 interface JobCardContextState {
@@ -201,7 +203,8 @@ const transformJobCardData = (apiResponse: any): JobCard => {
     custom_property_category: actualData.custom_property_category || '',
     custom_community: actualData.custom_community || '',
     custom_street_name: actualData.custom_street_name || '',
-    custom_property_number_name: actualData.custom_property_number_name || '',
+    custom_property_number__name: actualData.custom_property_number__name || '',
+    custom_property_type: actualData.custom_property_type || '', // Added custom_property_type
   };
   
   console.log("✅ Transformed job card:", transformed);

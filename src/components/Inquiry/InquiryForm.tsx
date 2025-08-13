@@ -364,8 +364,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
       }, 300);
     }
   };
-
-  useEffect(() => {
+useEffect(() => {
     if (inquiry && hasFetchedInitialData) {
       setFormData({
         ...defaultFormData,
@@ -388,6 +387,11 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
         inquiry.source === "Reference" ||
           inquiry.source === "Supplier Reference"
       );
+      
+      // FIX: Set the customer search query with the existing lead name
+      setCustomerSearchQuery(inquiry.lead_name || "");
+      // Also ensure we show the customer fields since we have existing data
+      setShowNewCustomerFields(true);
     }
   }, [inquiry, hasFetchedInitialData]);
 
@@ -1263,7 +1267,17 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                         <PropertyAddressSection
                           formData={formData}
                           handleSelectChange={handleSelectChange}
-                          // getPropertyArea={formData.custom_property_area || ""}
+                          fieldNames={{
+                          propertyNumber: "custom_property_name__number",
+                          emirate: "custom_emirate",
+                          area: "custom_area", // This is the individual area field
+                          community: "custom_community",
+                          streetName: "custom_street_name",
+                          propertyArea: "custom_property_area", // This maps to the actual 'area' field in backend
+                          propertyCategory: "custom_property_category",
+                          propertyType: "custom_property_type",
+                        }}
+                          
                         />
                       )}
 

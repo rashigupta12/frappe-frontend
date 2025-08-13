@@ -62,6 +62,8 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
   onClose,
   jobCard,
 }) => {
+
+  console.log("job card" , jobCard)
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const { createJobCardOther, updateJobCardOther, loading, fetchEmployees } =
     useJobCardsOther();
@@ -79,8 +81,6 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
     }
   >({
     date: new Date().toISOString().split("T")[0],
-    // building_name: "",
-    // property_no: "",
     area: "",
     party_name: "",
     start_date: new Date().toISOString().split("T")[0],
@@ -99,7 +99,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
     custom_community: "",
     custom_street_name: "",
     custom_property_numbername: "",
-    custom_property_area: "",
+    custom_property_type: "",
   });
 
   const [services, setServices] = useState<Services[]>([]);
@@ -133,7 +133,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
     }, 0);
   };
 
-  const serviceTotal = calculateServiceTotal();
+  // const serviceTotal = calculateServiceTotal();
 
   // Date validation functions
   const validateServiceDates = React.useCallback(
@@ -178,11 +178,10 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
   // Load existing job card data when editing
   useEffect(() => {
     if (jobCard) {
+      console.log("Loading existing job card data:", jobCard);
       setFormData({
         ...jobCard,
         date: jobCard.date || new Date().toISOString().split("T")[0],
-        // building_name: jobCard.building_name || "",
-        // property_no: jobCard.property_no || "",
         area: jobCard.area || "",
         party_name: jobCard.party_name || "",
         approved_by: jobCard.approved_by || "",
@@ -194,20 +193,20 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
         start_date:
           jobCard.start_date || new Date().toISOString().split("T")[0],
         finish_date: jobCard.finish_date || new Date().toISOString().split("T")[0],
+        // FIX: Ensure all custom fields are properly mapped
         custom_uae_area: jobCard.custom_uae_area || "",
         custom_emirate: jobCard.custom_emirate || "",
         custom_property_category: jobCard.custom_property_category || "",
         custom_community: jobCard.custom_community || "",
         custom_street_name: jobCard.custom_street_name || "",
         custom_property_numbername: jobCard.custom_property_numbername || "",
+        custom_property_type: jobCard.custom_property_type || "",
       });
       setSearchQuery(jobCard.party_name || "");
       setServices(jobCard.services || []);
     } else {
       setFormData({
         date: new Date().toISOString().split("T")[0],
-        // building_name: "",
-        // property_no: "",
         area: "",
         party_name: "",
         start_date: new Date().toISOString().split("T")[0],
@@ -226,7 +225,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
         custom_community: "",
         custom_street_name: "",
         custom_property_numbername: "",
-        custom_property_area: "",
+        custom_property_type: "",
       });
       setSearchQuery("");
       setServices([]);
@@ -485,12 +484,10 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                 address.customer_details?.email_id,
               name: address.customer_details?.name || address.custom_lead_name,
               lead_name: address.custom_lead_name,
-              // building_name: '',
-              // property_no: address.custom_property_number,
               area: address.custom_combined_address,
               address_details: {
                 emirate: address.custom_emirate,
-                area: address.custom_area,
+                area: address.custom_area, // FIX: This should map to custom_uae_area
                 community: address.custom_community,
                 street_name: address.custom_street_name,
                 property_number: address.custom_property_number,
@@ -533,6 +530,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
   // Updated handleCustomerSelect function for JobCard
   const handleCustomerSelect = async (customer: any) => {
     setFetchingCustomerDetails(true);
+    console.log("Selected customer data:", customer);
 
     try {
       if (customer.is_new_customer) {
@@ -543,8 +541,6 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
           customer_id: "",
           lead_id: "",
           // Clear address fields for new customers
-          // building_name: "",
-          // property_no: "",
           area: "",
           custom_property_category: "",
           custom_emirate: "",
@@ -552,27 +548,30 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
           custom_community: "",
           custom_street_name: "",
           custom_property_numbername: "",
-          custom_property_area: "",
+          custom_property_type: "",
         }));
         setSearchQuery(customer.customer_name);
       } else {
         // Handle existing customer/lead
+        console.log("Mapping address details:", customer.address_details);
+        
         const customerData = {
           party_name: customer.customer_name || customer.name || "",
           customer_id: customer.name || "",
           lead_id: customer.lead_name || "",
-          // Fill address fields from search result
-          // building_name: customer.custom_building_name || "",
-          // property_no: customer.address_details?.property_number || "",
           area: customer.address_details?.combined_address || "",
           custom_property_category: customer.custom_property_category || "",
           custom_emirate: customer.address_details?.emirate || "",
-          custom_uae_area: customer.address_details?.area || "",
+          // FIX: Map the area field correctly to custom_uae_area
+          custom_uae_area: customer.address_details?.area || customer.custom_area || "",
           custom_community: customer.address_details?.community || "",
           custom_street_name: customer.address_details?.street_name || "",
           custom_property_numbername:
             customer.address_details?.property_number || "",
+          custom_property_type: customer.custom_property_type || "",
         };
+
+        console.log("Setting customer data:", customerData);
 
         setFormData((prev) => ({
           ...prev,
@@ -592,23 +591,25 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
 
           if (leadResponse.data) {
             const lead = leadResponse.data;
+            console.log("Lead data received:", lead);
+            
             setFormData((prev) => ({
               ...prev,
-              // building_name: lead.custom_building_name || prev.building_name,
-              // property_no: lead.custom_bulding__apartment__villa__office_number || prev.property_no,
               area: lead.custom_property_area || prev.area,
               lead_id: lead.name,
               // Update property address fields from lead data
               custom_property_category:
                 lead.custom_property_category || prev.custom_property_category,
               custom_emirate: lead.custom_emirate || prev.custom_emirate,
-              custom_uae_area: lead.custom_uae_area || prev.custom_uae_area,
+              // FIX: Ensure we're mapping the correct field for UAE area
+              custom_uae_area: lead.custom_uae_area || lead.custom_area || prev.custom_uae_area,
               custom_community: lead.custom_community || prev.custom_community,
               custom_street_name:
                 lead.custom_street_name || prev.custom_street_name,
               custom_property_numbername:
                 lead.custom_property_numbername ||
                 prev.custom_property_numbername,
+              custom_property_type: lead.custom_property_type || prev.custom_property_type,
             }));
           }
         } catch (error) {
@@ -621,6 +622,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
       setFetchingCustomerDetails(false);
     }
   };
+
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value;
     setSearchQuery(query);
@@ -668,6 +670,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
       }));
     }
   }, [searchQuery]);
+
   const handleAddNewCustomer = () => {
     setNewCustomerData({
       customer_name:
@@ -713,53 +716,6 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
       setCreatingCustomer(false);
     }
   };
-
-  // const handleCustomerSelect = async (customer: any) => {
-  //   setFetchingCustomerDetails(true);
-
-  //   try {
-  //     setFormData((prev) => ({
-  //       ...prev,
-  //       party_name: customer.customer_name || customer.name || "",
-  //       customer_id: customer.name,
-  //     }));
-
-  //     setSearchQuery(customer.customer_name || customer.name || "");
-  //     setShowDropdown(false);
-
-  //     if (customer.lead_name) {
-  //       setFetchingLeadDetails(true);
-  //       try {
-  //         const leadResponse = await frappeAPI.getLeadById(customer.lead_name);
-
-  //         if (leadResponse.data) {
-  //           const lead = leadResponse.data;
-  //           setFormData((prev) => ({
-  //             ...prev,
-  //             building_name: lead.custom_building_name || "",
-  //             property_no:
-  //               lead.custom_bulding__apartment__villa__office_number || "",
-  //             area: lead.custom_property_area || "",
-  //             lead_id: lead.name,
-  //           }));
-  //         }
-  //       } catch (error) {
-  //         console.error("Failed to fetch lead data:", error);
-  //       } finally {
-  //         setFetchingLeadDetails(false);
-  //       }
-  //     }
-  //   } finally {
-  //     setFetchingCustomerDetails(false);
-  //   }
-  // };
-
-  // const handleInputChange = (
-  //   e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  // ) => {
-  //   const { name, value } = e.target;
-  //   setFormData((prev) => ({ ...prev, [name]: value }));
-  // };
 
   const handleNewCustomerInputChange = (
     e: React.ChangeEvent<HTMLInputElement>
@@ -845,8 +801,6 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
       const submissionData: JobCardOtherFormData = {
         date: formData.date,
         party_name: formData.party_name,
-        // property_no: formData.property_no,
-        // building_name: formData.building_name,
         area: formData.area,
         start_date: formData.start_date,
         finish_date: formData.finish_date,
@@ -859,12 +813,17 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
         customer_id: formData.customer_id || "",
         custom_total_amount: calculateServiceTotal().toString(),
 
+        // FIX: Ensure all custom fields are included in submission
         custom_emirate: formData.custom_emirate || "",
+        custom_uae_area: formData.custom_uae_area || "", // Make sure this is included
         custom_property_category: formData.custom_property_category || "",
         custom_community: formData.custom_community || "",
         custom_street_name: formData.custom_street_name || "",
         custom_property_numbername: formData.custom_property_numbername || "",
+        custom_property_type: formData.custom_property_type || "",
       };
+
+      console.log("Submitting job card data:", submissionData);
 
       if (jobCard?.name) {
         await updateJobCardOther(jobCard.name, submissionData);
@@ -887,8 +846,15 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
     setShowCancelDialog(false);
     onClose();
   };
+
+  // FIX: Add debug logging for handleSelectChange
   const handleSelectChange = useCallback((name: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    console.log(`handleSelectChange called: ${name} = ${value}`);
+    setFormData((prev) => {
+      const newData = { ...prev, [name]: value };
+      console.log("Updated formData:", newData);
+      return newData;
+    });
   }, []);
 
   if (!isOpen) return null;
@@ -1092,8 +1058,9 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                           area: "custom_uae_area",
                           community: "custom_community",
                           streetName: "custom_street_name",
-                          propertyArea: "custom_area",
+                          propertyArea: "area",
                           propertyCategory: "custom_property_category",
+                          propertyType: "custom_property_type",
                         }}
                       />
                     </div>
@@ -1202,9 +1169,9 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                     <h4 className="text-lg font-semibold text-gray-900">
                       Services
                     </h4>
-                    <span className="font-medium">
+                    {/* <span className="font-medium">
                       {serviceTotal.toFixed(2)} AED
-                    </span>
+                    </span> */}
                   </div>
                 </div>
 

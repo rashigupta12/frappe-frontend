@@ -62,26 +62,17 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
 }) => {
   const { createJobCard, updateJobCard, loading, fetchEmployees } =
     useJobCards();
+    console.log("JobCardForm jobCard:", jobCard);
 
   const isReadOnly = jobCard?.docstatus === 1;
   const projectidname = jobCard?.name || jobCard?.project_id_no || "";
 
-  const [formData, setFormData] = useState<
-    JobCardFormData & {
-      custom_property_category?: string;
-      custom_emirate?: string;
-      custom_uae_area?: string;
-      custom_community?: string;
-      custom_street_name?: string;
-      custom_property_name__number?: string;
-      custom_property_area?: string;
-    }
-  >({
+  const [formData, setFormData] = useState<JobCardFormData>({
     date: new Date().toISOString().split("T")[0],
     area: "",
     party_name: "",
     start_date: new Date().toISOString().split("T")[0],
-    finish_date: new Date().toISOString().split("T")[0], // Set finish_date to today by default
+    finish_date: new Date().toISOString().split("T")[0],
     prepared_by: "",
     approved_by: "",
     project_id_no: "",
@@ -95,8 +86,8 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
     custom_uae_area: "",
     custom_community: "",
     custom_street_name: "",
-    custom_property_name__number: "",
-    custom_property_area: "",
+    custom_property_number__name: "",
+    custom_property_type: "",
   });
 
   const [pressingCharges, setPressingCharges] = useState<PressingCharges[]>([]);
@@ -119,38 +110,13 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
     null
   );
   const [showCancelDialog, setShowCancelDialog] = useState(false);
-
   const [isPressingChargesExpanded, setIsPressingChargesExpanded] =
     useState(false);
   const [isMaterialsSoldExpanded, setIsMaterialsSoldExpanded] = useState(false);
-
-  const [materialSoldItems, setMaterialSoldItems] = useState<
-    {
-      item_name: string;
-      name: string;
-      valuation_rate?: number;
-      size?: string;
-      price?: number;
-      remarks?: string;
-      thickness?: string;
-      uom?: string;
-    }[]
-  >([]);
+  const [materialSoldItems, setMaterialSoldItems] = useState<any[]>([]);
   const [loadingMaterialSoldItems, setLoadingMaterialSoldItems] =
     useState(false);
-
-  const [pressingItems, setPressingItems] = useState<
-    {
-      item_name: string;
-      name: string;
-      valuation_rate?: number;
-      size?: string;
-      price?: number;
-      remarks?: string;
-      thickness?: string;
-      uom?: string;
-    }[]
-  >([]);
+  const [pressingItems, setPressingItems] = useState<any[]>([]);
   const [loadingPressingItems, setLoadingPressingItems] = useState(false);
 
   // Helper function for property address section
@@ -158,20 +124,40 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
     setFormData((prev) => ({ ...prev, [name]: value }));
   }, []);
 
-  // Update the area field whenever custom_property_area changes
+  // Generate combined address when address components change
   useEffect(() => {
-    if (formData.custom_property_area !== formData.area) {
+    const combinedAddress = [
+      formData.custom_emirate,
+      formData.custom_uae_area,
+      formData.custom_community,
+      formData.custom_street_name,
+      formData.custom_property_number__name,
+      formData.custom_property_type
+    ]
+      .filter((part) => part && part.trim() !== "")
+      .join(", ");
+
+    if (combinedAddress && combinedAddress !== formData.area) {
       setFormData((prev) => ({
         ...prev,
-        area: formData.custom_property_area || "",
+        area: combinedAddress,
       }));
     }
-  }, [formData.custom_property_area, formData.area]);
+  }, [
+    formData.custom_emirate,
+    formData.custom_uae_area,
+    formData.custom_community,
+    formData.custom_street_name,
+    formData.custom_property_number__name,
+    formData.custom_property_type,
+    formData.area,
+  ]);
 
   // Helper functions
-  const calculatePressingTotal = (charges: PressingCharges[]) => {
-    return charges.reduce((sum, charge) => sum + (charge.amount || 0), 0);
-  };
+  // const calculatePressingTotal = (charges: PressingCharges[]) => {
+  //   return charges.reduce((sum, charge) => sum + (charge.amount || 0), 0);
+  // };
+
   const calculateCombinedTotal = () => {
     const pressingTotal = pressingCharges.reduce(
       (sum, charge) => sum + (charge.amount || 0),
@@ -249,6 +235,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
 
     fetchCustomerData();
   }, [jobCard?.customer_id]);
+
   useEffect(() => {
     if (formData.start_date && !formData.finish_date) {
       setFormData((prev) => ({
@@ -266,8 +253,6 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
   // Load existing job card data when editing
   useEffect(() => {
     if (jobCard) {
-      const propertyAddress = jobCard.area ? JSON.parse(jobCard.area) : {};
-
       setFormData({
         date: jobCard.date || new Date().toISOString().split("T")[0],
         area: jobCard.area || "",
@@ -275,7 +260,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
         start_date:
           jobCard.start_date || new Date().toISOString().split("T")[0],
         finish_date:
-          jobCard.finish_date || new Date().toISOString().split("T")[0], // Default to today if not set
+          jobCard.finish_date || new Date().toISOString().split("T")[0],
         prepared_by: jobCard.prepared_by || "",
         approved_by: jobCard.approved_by || "",
         project_id_no: jobCard.project_id_no || "",
@@ -284,19 +269,13 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
         material_sold: jobCard.material_sold || [],
         lead_id: jobCard.lead_id || "",
         customer_id: jobCard.customer_id || "",
-        custom_property_category:
-          propertyAddress.category || jobCard.custom_property_category || "",
-        custom_emirate: propertyAddress.emirate || jobCard.custom_emirate || "",
-        custom_uae_area: propertyAddress.area || jobCard.custom_uae_area || "",
-        custom_community:
-          propertyAddress.community || jobCard.custom_community || "",
-        custom_street_name:
-          propertyAddress.street || jobCard.custom_street_name || "",
-        custom_property_name__number:
-          propertyAddress.propertyNumber ||
-          jobCard.custom_property_number_name ||
-          "",
-        custom_property_area: jobCard.area || "",
+        custom_property_category: jobCard.custom_property_category || "",
+        custom_emirate: jobCard.custom_emirate || "",
+        custom_uae_area: jobCard.custom_uae_area || "",
+        custom_community: jobCard.custom_community || "",
+        custom_street_name: jobCard.custom_street_name || "",
+        custom_property_number__name: jobCard.custom_property_number__name || "",
+        custom_property_type: jobCard.custom_property_type || "",
       });
 
       setSearchQuery(jobCard.party_name || "");
@@ -314,7 +293,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
         area: "",
         party_name: "",
         start_date: new Date().toISOString().split("T")[0],
-        finish_date: new Date().toISOString().split("T")[0], // Today's date
+        finish_date: new Date().toISOString().split("T")[0],
         prepared_by: "",
         approved_by: "",
         project_id_no: "",
@@ -328,8 +307,8 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
         custom_uae_area: "",
         custom_community: "",
         custom_street_name: "",
-        custom_property_name__number: "",
-        custom_property_area: "",
+        custom_property_number__name: "",
+        custom_property_type: "",
       });
       setSearchQuery("");
       setPressingCharges([]);
@@ -360,7 +339,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
           custom_community: address.community || "",
           custom_street_name: address.street || "",
           custom_property_name__number: address.propertyNumber || "",
-          custom_property_area: address.combined || "",
+          custom_property_type: address.propertyType || "",
           area: address.combined || "",
         }));
       }
@@ -375,6 +354,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
     const { name, value } = e.target;
     setNewCustomerData((prev) => ({ ...prev, [name]: value }));
   };
+
   const handleCustomerSearch = useCallback(async (query: string) => {
     if (!query.trim()) {
       setSearchResults([]);
@@ -431,7 +411,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
             .catch(() => ({ type: "street", data: [] }))
         );
 
-        // --- NEW: Search by Customer Name and Lead Name ---
+        // Search by Customer Name and Lead Name
         searchPromises.push(
           frappeAPI
             .makeAuthenticatedRequest(
@@ -482,7 +462,6 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
             }))
             .catch(() => ({ type: "lead_email", data: [] }))
         );
-        // --- END NEW ---
 
         if (/^\d+$/.test(query)) {
           searchPromises.push(
@@ -640,9 +619,6 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
           party_name: customer.customer_name,
           customer_id: "",
           lead_id: "",
-          // Clear address fields for new customers
-          // building_name: "",
-          // property_no: "",
           area: "",
           custom_property_category: "",
           custom_emirate: "",
@@ -650,7 +626,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
           custom_community: "",
           custom_street_name: "",
           custom_property_name__number: "",
-          custom_property_area: "",
+          custom_property_type: "",
         }));
         setSearchQuery(customer.customer_name);
       } else {
@@ -659,9 +635,6 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
           party_name: customer.customer_name || customer.name || "",
           customer_id: customer.name || "",
           lead_id: customer.lead_name || "",
-          // Fill address fields from search result
-          // building_name: customer.custom_building_name || "",
-          // property_no: customer.address_details?.property_number || "",
           area: customer.address_details?.combined_address || "",
           custom_property_category: customer.custom_property_category || "",
           custom_emirate: customer.address_details?.emirate || "",
@@ -670,8 +643,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
           custom_street_name: customer.address_details?.street_name || "",
           custom_property_name__number:
             customer.address_details?.property_number || "",
-          custom_property_area:
-            customer.address_details?.combined_address || "",
+          custom_property_type: customer.custom_property_type || "",
         };
 
         setFormData((prev) => ({
@@ -694,11 +666,8 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
             const lead = leadResponse.data;
             setFormData((prev) => ({
               ...prev,
-              // building_name: lead.custom_building_name || prev.building_name,
-              // property_no: lead.custom_bulding__apartment__villa__office_number || prev.property_no,
               area: lead.custom_property_area || prev.area,
               lead_id: lead.name,
-              // Update property address fields from lead data
               custom_property_category:
                 lead.custom_property_category || prev.custom_property_category,
               custom_emirate: lead.custom_emirate || prev.custom_emirate,
@@ -706,11 +675,11 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
               custom_community: lead.custom_community || prev.custom_community,
               custom_street_name:
                 lead.custom_street_name || prev.custom_street_name,
-              custom_property_name__number:
-                lead.custom_property_name__number ||
-                prev.custom_property_name__number,
-              custom_property_area:
-                lead.custom_property_area || prev.custom_property_area,
+              custom_property_number__name:
+                lead.custom_property_number__name ||
+                prev.custom_property_number__name,
+              custom_property_type:
+                lead.custom_property_type || prev.custom_property_type,
             }));
           }
         } catch (error) {
@@ -1080,11 +1049,9 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
         doctype: "Job Card -Veneer Pressing",
         date: formData.date,
         party_name: formData.party_name,
-        // property_no: formData.property_no,
-        // building_name: formData.building_name,
-        area: formData.area, // This will be the combined address from PropertyAddressSection
+        area: formData.area,
         start_date: formData.start_date,
-        finish_date: formData.finish_date, // This will be sent to backend
+        finish_date: formData.finish_date,
         prepared_by: formData.prepared_by || "",
         approved_by: formData.approved_by || "",
         project_id_no: formData.project_id_no || "",
@@ -1099,8 +1066,8 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
         custom_uae_area: formData.custom_uae_area || "",
         custom_community: formData.custom_community || "",
         custom_street_name: formData.custom_street_name || "",
-        custom_property_name__number:
-          formData.custom_property_name__number || "",
+        custom_property_number__name: formData.custom_property_number__name || "",
+        custom_property_type: formData.custom_property_type || "",
       };
 
       if (jobCard?.name) {
@@ -1334,14 +1301,14 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                         formData={formData}
                         handleSelectChange={handleSelectChange}
                         fieldNames={{
-                          propertyNumber: "custom_property_name__number", // Fixed this mapping
+                          propertyNumber: "custom_property_number__name",
                           emirate: "custom_emirate",
-                          area: "custom_uae_area",
+                          area: "custom_uae_area", // This is the individual area field
                           community: "custom_community",
                           streetName: "custom_street_name",
-                          propertyArea: "area",
+                          propertyArea: "area", // This maps to the actual 'area' field in backend
                           propertyCategory: "custom_property_category",
-                          propertyType: "custom_property_type", // Add if needed
+                          propertyType: "custom_property_type",
                         }}
                       />
                     </div>
@@ -1673,9 +1640,9 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                         </h4>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <span className="font-medium">
+                        {/* <span className="font-medium">
                           {calculatePressingTotal(materialsSold).toFixed(2)} AED
-                        </span>
+                        </span> */}
                         <ChevronDown
                           className={`h-5 w-5 text-gray-500 transition-transform duration-200 ${
                             isMaterialsSoldExpanded ? "rotate-180" : ""

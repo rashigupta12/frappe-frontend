@@ -63,7 +63,7 @@ export interface JobCardOther {
   ac_v_no_and_date: string;
   doctype: string;
   services: Services[]; // 🆕 CHANGED from material_sold to services
-  custom_property_area?: string; // 🆕 ADDED for custom property area
+  custom_property_type: string;
 }
 
 export interface JobCardOtherFormData {
@@ -89,7 +89,8 @@ export interface JobCardOtherFormData {
   custom_community?: string;
   custom_street_name?: string;
   custom_property_numbername?: string;
-  custom_property_area?: string; // 🆕 ADDED for custom property area
+  custom_property_type?: string;
+
 }
 
 interface JobCardOtherContextState {
@@ -188,9 +189,10 @@ export const JobCardOtherProvider: React.FC<JobCardOtherProviderProps> = ({
       custom_street_name: actualData.custom_street_name || "",
       custom_property_numbername:
         actualData.custom_property_numbername || "",
-      custom_property_area: actualData.custom_property_area || "", // 🆕 ADDED for custom property area
+      
 
       services: Array.isArray(actualData.services) ? actualData.services : [], // 🆕 CHANGED
+      custom_property_type: actualData.custom_property_type || "",
     };
     return transformed;
   };
