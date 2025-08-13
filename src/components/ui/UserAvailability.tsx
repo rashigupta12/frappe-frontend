@@ -32,10 +32,17 @@ interface InspectorAvailability {
 interface UserAvailabilityProps {
   date: Date;
   onClose: () => void;
-  onSelectInspector?: (email: string, availabilityData: InspectorAvailability[]) => void; // Modified to pass availability data
+  onSelectInspector?: (
+    email: string,
+    availabilityData: InspectorAvailability[]
+  ) => void; // Modified to pass availability data
 }
 
-const UserAvailability = ({ date, onClose, onSelectInspector }: UserAvailabilityProps) => {
+const UserAvailability = ({
+  date,
+  onClose,
+  onSelectInspector,
+}: UserAvailabilityProps) => {
   const [availability, setAvailability] = useState<InspectorAvailability[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -68,60 +75,63 @@ const UserAvailability = ({ date, onClose, onSelectInspector }: UserAvailability
   }, [date]);
 
   const formatTime = (timeStr: string) => {
-    const [hours, minutes] = timeStr.split(':');
+    const [hours, minutes] = timeStr.split(":");
     const hourNum = parseInt(hours, 10);
-    const period = hourNum >= 12 ? 'PM' : 'AM';
+    const period = hourNum >= 12 ? "PM" : "AM";
     const displayHour = hourNum % 12 || 12;
     return `${displayHour}:${minutes} ${period}`;
   };
-const calculateAvailableSlots = (inspector: InspectorAvailability) => {
-  const workStart = timeToMinutes('09:00');
-  const workEnd = timeToMinutes('18:00');
-  const occupiedSlots = inspector.availability.occupied_slots;
-  
-  // Sort occupied slots by start time
-  const sortedOccupied = [...occupiedSlots].sort((a, b) => 
-    timeToMinutes(a.start) - timeToMinutes(b.start)
-  );
-  
-  const availableSlots: AvailabilitySlot[] = [];
-  let lastEnd = workStart;
-  
-  for (const slot of sortedOccupied) {
-    const slotStart = timeToMinutes(slot.start);
-    const slotEnd = timeToMinutes(slot.end);
+  const calculateAvailableSlots = (inspector: InspectorAvailability) => {
+    const workStart = timeToMinutes("09:00");
+    const workEnd = timeToMinutes("18:00");
+    const occupiedSlots = inspector.availability.occupied_slots;
 
+    // Sort occupied slots by start time
+    const sortedOccupied = [...occupiedSlots].sort(
+      (a, b) => timeToMinutes(a.start) - timeToMinutes(b.start)
+    );
 
-    if (slotStart - lastEnd >= 30) {
+    const availableSlots: AvailabilitySlot[] = [];
+    let lastEnd = workStart;
+
+    for (const slot of sortedOccupied) {
+      const slotStart = timeToMinutes(slot.start);
+      const slotEnd = timeToMinutes(slot.end);
+
+      if (slotStart - lastEnd >= 30) {
+        availableSlots.push({
+          start: minutesToTime(lastEnd),
+          end: minutesToTime(slotStart - 30),
+          duration_hours: (slotStart - 30 - lastEnd) / 60,
+        });
+      }
+
+      lastEnd = slotEnd + 30; // Add 30-minute buffer after occupied slot
+    }
+
+    // Add remaining time after last occupied slot
+    if (lastEnd < workEnd) {
       availableSlots.push({
         start: minutesToTime(lastEnd),
-        end: minutesToTime(slotStart - 30),
-        duration_hours: (slotStart - 30 - lastEnd) / 60
+        end: minutesToTime(workEnd),
+        duration_hours: (workEnd - lastEnd) / 60,
       });
     }
-    
-    lastEnd = slotEnd + 30; // Add 30-minute buffer after occupied slot
-  }
-  
-  // Add remaining time after last occupied slot
-  if (lastEnd < workEnd) {
-    availableSlots.push({
-      start: minutesToTime(lastEnd),
-      end: minutesToTime(workEnd),
-      duration_hours: (workEnd - lastEnd) / 60
-    });
-  }
-  
-  return availableSlots;
-};
+
+    return availableSlots;
+  };
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-2 sm:p-4">
       <div className="bg-white rounded-t-xl sm:rounded-xl shadow-2xl w-full max-w-md sm:max-w-lg max-h-[90vh] sm:max-h-[85vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-100 bg-gray-50">
           <div>
-            <h3 className="text-base font-semibold text-gray-900">Inspector Availability</h3>
-            <p className="text-xs text-gray-500 mt-0.5">{format(date, "MMM dd, yyyy")}</p>
+            <h3 className="text-base font-semibold text-gray-900">
+              Inspector Availability
+            </h3>
+            <p className="text-xs text-gray-500 mt-0.5">
+              {format(date, "MMM dd, yyyy")}
+            </p>
           </div>
           <Button
             variant="ghost"
@@ -144,14 +154,19 @@ const calculateAvailableSlots = (inspector: InspectorAvailability) => {
           ) : (
             <div className="space-y-3 p-4">
               {availability.map((inspector) => (
-                <div key={inspector.user_id} className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                <div
+                  key={inspector.user_id}
+                  className="bg-gray-50 rounded-lg p-3 border border-gray-200"
+                >
                   {/* Inspector Header */}
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex-1 min-w-0">
                       <h4 className="font-medium text-gray-900 text-sm truncate">
                         {inspector.user_name}
                       </h4>
-                      <p className="text-xs text-gray-500 truncate">{inspector.email}</p>
+                      <p className="text-xs text-gray-500 truncate">
+                        {inspector.email}
+                      </p>
                     </div>
                     <div className="flex items-center gap-2 shrink-0 ml-2">
                       {inspector.availability.is_completely_free ? (
@@ -210,28 +225,31 @@ const calculateAvailableSlots = (inspector: InspectorAvailability) => {
                     )} */}
 
                     {inspector.availability.free_slots.length > 0 && (
-  <div>
-    <h5 className="text-xs font-medium text-emerald-700 mb-1 flex items-center">
-      <CheckCircle2 className="h-3 w-3 mr-1" />
-      Available Times (with 30-minute buffers)
-    </h5>
-    <div className="flex flex-wrap gap-1">
-      {calculateAvailableSlots(inspector).map((slot, index) => (
-        <span
-          key={index}
-          className="inline-flex items-center px-2 py-1 rounded-md text-xs bg-gray-100 text-gray-700"
-        >
-          {formatTime(slot.start)} - {formatTime(slot.end)}
-          {slot.duration_hours && (
-            <span className="text-gray-600 ml-1">
-              ({slot.duration_hours.toFixed(1)}h)
-            </span>
-          )}
-        </span>
-      ))}
-    </div>
-  </div>
-)}
+                      <div>
+                        <h5 className="text-xs font-medium text-emerald-700 mb-1 flex items-center">
+                          <CheckCircle2 className="h-3 w-3 mr-1" />
+                          Available Times (with 30-minute buffers)
+                        </h5>
+                        <div className="flex flex-wrap gap-1">
+                          {calculateAvailableSlots(inspector).map(
+                            (slot, index) => (
+                              <span
+                                key={index}
+                                className="inline-flex items-center px-2 py-1 rounded-md text-xs bg-gray-100 text-gray-700"
+                              >
+                                {formatTime(slot.start)} -{" "}
+                                {formatTime(slot.end)}
+                                {slot.duration_hours && (
+                                  <span className="text-gray-600 ml-1">
+                                    ({slot.duration_hours.toFixed(1)}h)
+                                  </span>
+                                )}
+                              </span>
+                            )
+                          )}
+                        </div>
+                      </div>
+                    )}
 
                     {/* Occupied Slots */}
                     {inspector.availability.occupied_slots.length > 0 && (
@@ -241,32 +259,38 @@ const calculateAvailableSlots = (inspector: InspectorAvailability) => {
                           Busy Times
                         </h5>
                         <div className="flex flex-wrap gap-1">
-                          {inspector.availability.occupied_slots.map((slot, index) => (
-                            <span
-                              key={index}
-                              className="inline-flex items-center px-2 py-1 rounded-md text-xs bg-gray-100 text-gray-700"
-                            >
-                              {formatTime(slot.start)} - {formatTime(slot.end)}
-                            </span>
-                          ))}
+                          {inspector.availability.occupied_slots.map(
+                            (slot, index) => (
+                              <span
+                                key={index}
+                                className="inline-flex items-center px-2 py-1 rounded-md text-xs bg-gray-100 text-gray-700"
+                              >
+                                {formatTime(slot.start)} -{" "}
+                                {formatTime(slot.end)}
+                              </span>
+                            )
+                          )}
                         </div>
                       </div>
                     )}
 
                     {/* No availability message */}
-                    {inspector.availability.free_slots.length === 0 && inspector.availability.occupied_slots.length === 0 && (
-                      <p className="text-xs text-gray-500 text-center py-2">No schedule information available</p>
-                    )}
+                    {inspector.availability.free_slots.length === 0 &&
+                      inspector.availability.occupied_slots.length === 0 && (
+                        <p className="text-xs text-gray-500 text-center py-2">
+                          No schedule information available
+                        </p>
+                      )}
                   </div>
-
-
                 </div>
               ))}
 
               {availability.length === 0 && !loading && (
                 <div className="text-center py-8">
                   <Clock className="h-8 w-8 text-gray-300 mx-auto mb-2" />
-                  <p className="text-sm text-gray-500">No inspectors found for this date</p>
+                  <p className="text-sm text-gray-500">
+                    No inspectors found for this date
+                  </p>
                 </div>
               )}
             </div>
@@ -278,7 +302,6 @@ const calculateAvailableSlots = (inspector: InspectorAvailability) => {
 };
 
 export default UserAvailability;
-
 
 // // components/UserAvailability.tsx
 // import { X } from "lucide-react";
@@ -319,12 +342,12 @@ export default UserAvailability;
 //   proposedEndTime?: string;   // Format: "HH:MM"
 // }
 
-// const UserAvailability = ({ 
-//   date, 
-//   onClose, 
+// const UserAvailability = ({
+//   date,
+//   onClose,
 //   onSelectInspector,
 //   proposedStartTime,
-//   proposedEndTime 
+//   proposedEndTime
 // }: UserAvailabilityProps) => {
 //   const [availability, setAvailability] = useState<InspectorAvailability[]>([]);
 //   const [loading, setLoading] = useState(true);
@@ -354,10 +377,10 @@ export default UserAvailability;
 
 //   // Check if two time ranges overlap (including 30-minute buffer)
 //   const hasTimeOverlap = (
-//     start1: string, 
-//     end1: string, 
-//     start2: string, 
-//     end2: string, 
+//     start1: string,
+//     end1: string,
+//     start2: string,
+//     end2: string,
 //     bufferMinutes: number = 30
 //   ): boolean => {
 //     const start1Minutes = timeToMinutes(start1);
@@ -381,7 +404,7 @@ export default UserAvailability;
 //     proposedEnd: string,
 //     busySlots: AvailabilitySlot[]
 //   ): boolean => {
-//     return busySlots.some(slot => 
+//     return busySlots.some(slot =>
 //       hasTimeOverlap(proposedStart, proposedEnd, slot.start, slot.end, 30)
 //     );
 //   };
@@ -396,7 +419,7 @@ export default UserAvailability;
 //       return freeSlots;
 //     }
 
-//     return freeSlots.filter(slot => 
+//     return freeSlots.filter(slot =>
 //       !hasTimeOverlap(proposedStart, proposedEnd, slot.start, slot.end, 30)
 //     );
 //   };
@@ -513,12 +536,12 @@ export default UserAvailability;
 //                 );
 
 //                 return (
-//                   <div 
-//                     key={inspector.user_id} 
+//                   <div
+//                     key={inspector.user_id}
 //                     className={`bg-gray-50 rounded-lg p-3 border ${
 //                       proposedStartTime && proposedEndTime
-//                         ? isAvailableForProposed 
-//                           ? 'border-emerald-200 bg-emerald-50' 
+//                         ? isAvailableForProposed
+//                           ? 'border-emerald-200 bg-emerald-50'
 //                           : 'border-red-200 bg-red-50'
 //                         : 'border-gray-200'
 //                     }`}
@@ -565,7 +588,7 @@ export default UserAvailability;
 //                               onClose();
 //                             }}
 //                             disabled={
-//                               proposedStartTime && proposedEndTime 
+//                               proposedStartTime && proposedEndTime
 //                                 ? !isAvailableForProposed
 //                                 : !inspector.availability.free_slots.length
 //                             }
@@ -622,15 +645,15 @@ export default UserAvailability;
 //                           </h5>
 //                           <div className="flex flex-wrap gap-1">
 //                             {inspector.availability.occupied_slots.map((slot, index) => {
-//                               const hasConflictWithProposed = proposedStartTime && proposedEndTime && 
+//                               const hasConflictWithProposed = proposedStartTime && proposedEndTime &&
 //                                 hasTimeOverlap(proposedStartTime, proposedEndTime, slot.start, slot.end, 30);
-                              
+
 //                               return (
 //                                 <span
 //                                   key={index}
 //                                   className={`inline-flex items-center px-2 py-1 rounded-md text-xs ${
-//                                     hasConflictWithProposed 
-//                                       ? 'bg-red-200 text-red-800 border border-red-300' 
+//                                     hasConflictWithProposed
+//                                       ? 'bg-red-200 text-red-800 border border-red-300'
 //                                       : 'bg-gray-100 text-gray-700'
 //                                   }`}
 //                                 >
