@@ -7,7 +7,7 @@ import { Loader2 } from "lucide-react";
 import { Clock } from "lucide-react";
 import { CheckCircle2 } from "lucide-react";
 import { format } from "date-fns";
-import {  timeToMinutes } from "../../lib/timeUtils";
+import { timeToMinutes } from "../../lib/timeUtils";
 
 interface AvailabilitySlot {
   start: string;
@@ -45,6 +45,15 @@ const UserAvailability = ({
   const [availability, setAvailability] = useState<InspectorAvailability[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentTime, setCurrentTime] = useState<string>('');
+
+  useEffect(() => {
+    // Get current time in HH:mm format
+    const now = new Date();
+    const hours = now.getHours().toString().padStart(2, '0');
+    const minutes = now.getMinutes().toString().padStart(2, '0');
+    setCurrentTime(`${hours}:${minutes}`);
+  }, []);
 
   useEffect(() => {
     const fetchAvailability = async () => {
@@ -81,6 +90,34 @@ const UserAvailability = ({
     return `${displayHour}:${minutes} ${period}`;
   };
 
+  // Check if the selected date is today
+  const isToday = () => {
+    const today = new Date();
+    return (
+      date.getDate() === today.getDate() &&
+      date.getMonth() === today.getMonth() &&
+      date.getFullYear() === today.getFullYear()
+    );
+  };
+
+  // Filter free slots to only show those after current time (only for today)
+  const filterFutureSlots = (slots: AvailabilitySlot[]): AvailabilitySlot[] => {
+    // If it's not today, return all slots
+    if (!isToday()) {
+      return slots;
+    }
+    
+    // If it's today and we don't have current time yet, return empty array
+    if (!currentTime) return [];
+    
+    // Filter slots that start after current time (only for today)
+    return slots.filter(slot => {
+      const slotStartMinutes = timeToMinutes(slot.start);
+      const currentTimeMinutes = timeToMinutes(currentTime);
+      return slotStartMinutes > currentTimeMinutes;
+    });
+  };
+
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-2 sm:p-4">
       <div className="bg-white rounded-t-xl sm:rounded-xl shadow-2xl w-full max-w-md sm:max-w-lg max-h-[90vh] sm:max-h-[85vh] overflow-hidden flex flex-col">
@@ -114,84 +151,88 @@ const UserAvailability = ({
             <div className="text-red-500 text-center py-8 text-sm">{error}</div>
           ) : (
             <div className="space-y-3 p-4">
-              {availability.map((inspector) => (
-                <div
-                  key={inspector.user_id}
-                  className="bg-gray-50 rounded-lg p-3 border border-gray-200"
-                >
-                  {/* Inspector Header */}
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-medium text-gray-900 text-sm truncate">
-                        {inspector.user_name}
-                      </h4>
-                      <p className="text-xs text-gray-500 truncate">
-                        {inspector.email}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0 ml-2">
-                      {inspector.availability.is_completely_free ? (
-                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">
-                          <CheckCircle2 className="h-3 w-3 mr-1" />
-                          Available
-                        </span>
-                      ) : null}
-                      {onSelectInspector && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="text-xs h-7 px-2"
-                          onClick={() => {
-                            onSelectInspector(inspector.email, availability);
-                            onClose();
-                          }}
-                          disabled={!inspector.availability.free_slots.length}
-                        >
-                          Select
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Availability Details */}
-                  <div className="flex gap-3">
-                    {/* Free Slots */}
-                    {inspector.availability.free_slots.length > 0 && (
-                      <div>
-                        <h5 className="text-xs font-medium text-emerald-700 mb-1 flex items-center">
-                          <CheckCircle2 className="h-3 w-3 mr-1" />
-                          Available Times
-                        </h5>
-                        <div className="flex flex-wrap gap-1">
-                          {inspector.availability.free_slots.map((slot, index) => {
-                            const durationHours = 
-                              (timeToMinutes(slot.end) - timeToMinutes(slot.start)) / 60;
-                            return (
-                              <span
-                                key={index}
-                                className="inline-flex items-center px-2 py-1 rounded-md text-xs bg-gray-100 text-gray-700"
-                              >
-                                {formatTime(slot.start)} - {formatTime(slot.end)}
-                                <span className="text-gray-600 ml-1">
-                                  ({durationHours.toFixed(1)}h)
-                                </span>
-                              </span>
-                            );
-                          })}
-                        </div>
+              {availability.map((inspector) => {
+                const futureFreeSlots = filterFutureSlots(inspector.availability.free_slots);
+                const hasFutureSlots = futureFreeSlots.length > 0;
+                
+                return (
+                  <div
+                    key={inspector.user_id}
+                    className="bg-gray-50 rounded-lg p-3 border border-gray-200"
+                  >
+                    {/* Inspector Header */}
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-medium text-gray-900 text-sm truncate">
+                          {inspector.user_name}
+                        </h4>
+                        <p className="text-xs text-gray-500 truncate">
+                          {inspector.email}
+                        </p>
                       </div>
-                    )}
+                      <div className="flex items-center gap-2 shrink-0 ml-2">
+                        {hasFutureSlots ? (
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">
+                            <CheckCircle2 className="h-3 w-3 mr-1" />
+                            Available
+                          </span>
+                        ) : null}
+                        {onSelectInspector && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-xs h-7 px-2"
+                            onClick={() => {
+                              onSelectInspector(inspector.email, availability);
+                              onClose();
+                            }}
+                            disabled={!hasFutureSlots}
+                          >
+                            Select
+                          </Button>
+                        )}
+                      </div>
+                    </div>
 
-                    {/* No availability message */}
-                    {inspector.availability.free_slots.length === 0 &&
-                      inspector.availability.occupied_slots.length === 0 && (
+                    {/* Availability Details */}
+                    <div className="flex gap-3">
+                      {/* Free Slots */}
+                      {hasFutureSlots ? (
+                        <div>
+                          <h5 className="text-xs font-medium text-emerald-700 mb-1 flex items-center">
+                            <CheckCircle2 className="h-3 w-3 mr-1" />
+                            Available Times
+                          </h5>
+                          <div className="flex flex-wrap gap-1">
+                            {futureFreeSlots.map((slot, index) => {
+                              const durationHours = 
+                                (timeToMinutes(slot.end) - timeToMinutes(slot.start)) / 60;
+                              return (
+                                <span
+                                  key={index}
+                                  className="inline-flex items-center px-2 py-1 rounded-md text-xs bg-gray-100 text-gray-700"
+                                >
+                                  {formatTime(slot.start)} - {formatTime(slot.end)}
+                                  <span className="text-gray-600 ml-1">
+                                    ({durationHours.toFixed(1)}h)
+                                  </span>
+                                </span>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ) : (
                         <p className="text-xs text-gray-500 text-center py-2">
-                          No schedule information available
+                          {isToday() 
+                            ? "No available time slots remaining today" 
+                            : "No available time slots for this date"
+                          }
                         </p>
                       )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
 
               {availability.length === 0 && !loading && (
                 <div className="text-center py-8">

@@ -78,6 +78,8 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
   const [showAvailabilityModal, setShowAvailabilityModal] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [originalInspectorEmail, setOriginalInspectorEmail] = useState("");
+  const [originalStartTime, setOriginalStartTime] = useState(""); // Add this state
+  const [calendarOpen, setCalendarOpen] = useState(false);
   // const [inspectorAvailabilityData, setInspectorAvailabilityData] = useState<InspectorAvailability[]>([]);
 
   const getInquiryData = () => {
@@ -130,51 +132,70 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
     }
   };
 
-  const deleteExistingDWA = async (
-    inspectorEmail: string,
-    todoDate: string,
-    startTime: string
-  ) => {
-    try {
-      console.log(
-        `Attempting to delete DWA for ${inspectorEmail} on ${todoDate} at ${startTime}`
-      );
+ const deleteExistingDWA = async (
+  inspectorEmail: string,
+  todoDate: string, // Format: "YYYY-MM-DD"
+  startTime: string // Format: "HH:mm"
+) => {
+  try {
+    console.log(
+      `Attempting to delete DWA for ${inspectorEmail} on ${todoDate} at ${startTime}`
+    );
 
-      if (!inspectorEmail || !todoDate || !startTime) {
-        throw new Error("Missing required parameters for DWA deletion");
-      }
-
-      const employeeName = await findEmployeeByEmail(inspectorEmail);
-      console.log(`Found employee name: ${employeeName}`);
-
-      // Format the start time to match the expected format in DWA
-      const formattedStartTime = `${todoDate} ${startTime}:00`;
-
-      const dwaResponse = await frappeAPI.makeAuthenticatedRequest(
-        "GET",
-        `/api/resource/Daily Work Allocation?filters=[["custom_user","=","${employeeName}"],["date","=","${todoDate}"],["Work","expected_start_date","=","${formattedStartTime}"]]`
-      );
-
-      if (dwaResponse?.data?.length > 0) {
-        const existingDWA = dwaResponse.data[0];
-        console.log(`Deleting DWA: ${existingDWA.name}`);
-
-        await frappeAPI.makeAuthenticatedRequest(
-          "DELETE",
-          `/api/resource/Daily Work Allocation/${existingDWA.name}`
-        );
-
-        console.log(`Successfully deleted DWA: ${existingDWA.name}`);
-        return true;
-      } else {
-        console.log("No existing DWA found to delete");
-        return false;
-      }
-    } catch (error) {
-      console.error("Error in deleteExistingDWA:", error);
-      throw error;
+    if (!inspectorEmail || !todoDate || !startTime) {
+      throw new Error("Missing required parameters for DWA deletion");
     }
-  };
+
+    const employeeName = await findEmployeeByEmail(inspectorEmail);
+    if (!employeeName) {
+      throw new Error("Employee not found for the given email");
+    }
+    console.log(`Found employee name: ${employeeName}`);
+
+    // Convert date to DD-MM-YYYY format
+    const [year, month, day] = todoDate.split('-');
+    const formattedDate = `${day}-${month}-${year}`;
+
+    // Format time as HH:mm:ss
+    const formattedTime = startTime.includes(':') ? `${startTime}:00` : `${startTime.slice(0, 2)}:${startTime.slice(2)}:00`;
+
+    // Build filters
+    const filters = [
+      ["custom_user", "=", inspectorEmail],
+      ["date", "=", formattedDate],
+      ["Work", "expected_start_date", "=", formattedTime]
+    ];
+
+    // Make GET request to find existing DWA
+    const dwaResponse = await frappeAPI.makeAuthenticatedRequest(
+      "GET",
+      `/api/resource/Daily Work Allocation?filters=${encodeURIComponent(JSON.stringify(filters))}`
+    );
+
+    console.log('DWA search response:', dwaResponse);
+
+    // Check response structure and extract DWA name
+    if (dwaResponse?.data?.length > 0) {
+      const dwaName = dwaResponse.data[0].name;
+      console.log(`Found existing DWA: ${dwaName}`);
+
+      // Delete the found DWA
+      await frappeAPI.makeAuthenticatedRequest(
+        "DELETE",
+        `/api/resource/Daily Work Allocation/${dwaName}`
+      );
+
+      console.log(`Successfully deleted DWA: ${dwaName}`);
+      return true;
+    }
+
+    console.log("No existing DWA found to delete");
+    return false;
+  } catch (error) {
+    console.error("Error in deleteExistingDWA:", error);
+    throw error;
+  }
+};
 
   const createNewDWA = async (
     inspectorEmail: string,
@@ -228,6 +249,8 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
       setShowAvailabilityModal(false);
       setIsProcessing(false);
       setOriginalInspectorEmail("");
+      setOriginalStartTime(""); // Reset original start time
+      setCalendarOpen(false);
       // setInspectorAvailabilityData([]);
     }
   }, [open]);
@@ -265,6 +288,7 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
         if (data?.custom_start_time) {
           const startTime = data.custom_start_time.split(" ")[1].slice(0, 5);
           setRequestedTime(startTime);
+          setOriginalStartTime(startTime); // Store the original start time
         }
         if (data?.priority) {
           setPriority(data.priority);
@@ -304,11 +328,15 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
     setDate(selectedDate);
     setSelectedInspector(null);
     setSelectedSlot(null);
+    
+    // Close the calendar popover first
+    setCalendarOpen(false);
 
     if (selectedDate && mode === "create") {
+      // Use a longer delay to ensure popover is fully closed
       setTimeout(() => {
         setShowAvailabilityModal(true);
-      }, 300);
+      }, 500);
     }
 
     // For edit mode, fetch availability when date changes
@@ -482,6 +510,8 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
         navigate("/sales?tab=assign");
       } else {
         console.log("Updating todo with ID:", data.name);
+        console.log("Original Start Time:", originalStartTime);
+        console.log("New Start Time:", requestedTime);
 
         // For the original inspector (when changed)
         if (inspectorChanged) {
@@ -491,16 +521,16 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
           await deleteExistingDWA(
             originalInspectorEmail,
             preferredDate,
-            requestedTime
+            originalStartTime // Use original start time, not new one
           );
         }
 
-        // For the current inspector
-        if (currentInspectorEmail) {
+        // For the current inspector - delete old allocation if time changed or same inspector
+        if (currentInspectorEmail && (!inspectorChanged || originalStartTime !== requestedTime)) {
           await deleteExistingDWA(
             currentInspectorEmail,
             preferredDate,
-            requestedTime
+            originalStartTime // Use original start time, not new one
           );
         }
 
@@ -519,7 +549,7 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
           await createNewDWA(
             currentInspectorEmail,
             preferredDate,
-            requestedTime,
+            requestedTime, // Use new start time for creating new DWA
             parseFloat(duration),
             inquiryData?.custom_job_type || "Site Inspection",
             inquiryData?.custom_property_area || "Property Inspection"
@@ -648,7 +678,7 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
             <Label className="text-gray-700 text-sm font-medium">
               Select Inspection Date <span className="text-red-500">*</span>
             </Label>
-            <Popover>
+            <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
@@ -657,6 +687,7 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
                     (!date && " text-muted-foreground")
                   }
                   disabled={isProcessing}
+                  onClick={() => setCalendarOpen(true)}
                 >
                   <CalendarIcon className="h-4 w-4 mr-2" />
                   {date ? format(date, "dd/MM/yyyy") : <span>Select date</span>}
