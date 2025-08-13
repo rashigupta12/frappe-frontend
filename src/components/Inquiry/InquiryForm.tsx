@@ -4,12 +4,10 @@
 import { format } from "date-fns";
 import {
   Building,
-  CalendarCheck,
   Calendar as CalendarIcon,
   CheckCircle2,
   ChevronDown,
   ChevronUp,
-  Clock,
   FileText,
   Home,
   Loader2,
@@ -35,6 +33,7 @@ import {
   formatSubmissionData,
   type FormSection,
 } from "../../helpers/helper";
+import { timeToMinutes } from "../../lib/timeUtils";
 import { useAssignStore } from "../../store/assign";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
@@ -47,9 +46,8 @@ import {
   SelectValue,
 } from "../ui/select";
 import { Textarea } from "../ui/textarea";
-import PropertyAddressSection from "./PropertyAddress";
 import UserAvailability from "../ui/UserAvailability";
-import { timeToMinutes } from "../../lib/timeUtils";
+import PropertyAddressSection from "./PropertyAddress";
 
 type PriorityLevel = "Low" | "Medium" | "High";
 
@@ -131,8 +129,8 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
 
   const {
     fetchInspectors,
-    inspectors,
-    inspectorsLoading,
+    // inspectors,
+    // inspectorsLoading,
     createTodo,
     createTodoLoading,
     error: assignError,
@@ -143,8 +141,8 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
   const [phoneNumber, setPhoneNumber] = useState("+971 ");
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [priority, setPriority] = useState<PriorityLevel>("Medium");
-  const [inspectorEmail, setInspectorEmail] = useState("");
-  const [showAvailability, setShowAvailability] = useState(false);
+  // const [inspectorEmail, setInspectorEmail] = useState("");
+  // const [showAvailability, setShowAvailability] = useState(false);
 
   const [hasFetchedInitialData, setHasFetchedInitialData] = useState(false);
   const [formData, setFormData] = useState<LeadFormData>({
@@ -219,7 +217,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
           return section;
       }
     });
-  }, [formData, showReferenceInput, inspectorEmail]);
+  }, [formData, showReferenceInput, selectedInspector]);
 
   useEffect(() => {
     if (!hasFetchedInitialData && isOpen) {
@@ -309,7 +307,8 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
       toast.error(
         `Duration exceeds available time. Max ${availableHours.toFixed(
           1
-        )} hours available in this slot.`
+        )} hours available in this slot.`,
+        { duration: 2000 }
       );
     }
   };
@@ -438,9 +437,9 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     }
   };
 
-  const handleDateChange = (name: string, date: Date | undefined) => {
-    setFormData((prev) => ({ ...prev, [name]: date || null }));
-  };
+  // const handleDateChange = (name: string, date: Date | undefined) => {
+  //   setFormData((prev) => ({ ...prev, [name]: date || null }));
+  // };
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const input = e.target.value;
@@ -1053,14 +1052,6 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                                           )}
                                         </div>
                                       )}
-                                      {result.custom_combined_address && (
-                                        <div className="text-xs text-gray-500 mt-1 flex items-center">
-                                          <Home className="h-3 w-3 mr-1 flex-shrink-0" />
-                                          <span className="truncate">
-                                            {result.custom_combined_address}
-                                          </span>
-                                        </div>
-                                      )}
                                     </div>
                                   ))
                                 ) : (
@@ -1278,7 +1269,6 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
 
                       {section.id === "additional" && (
                         <div>
-                         
                           <div>
                             <Label
                               htmlFor="custom_special_requirements"
@@ -1332,9 +1322,10 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                                     : undefined;
                                   handleDateSelect(selectedDate);
                                 }}
-                                className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 pr-10 text-sm"
+                                className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 pr-10 text-sm appearance-none" // Added appearance-none
                               />
-                              <CalendarIcon className="absolute right-3 top-2.5 h-4 w-4 text-gray-400" />
+                              <CalendarIcon className="absolute right-3 top-2.5 h-4 w-4 text-gray-400 pointer-events-none" />{" "}
+                              {/* Added pointer-events-none */}
                             </div>
                           </div>
 
@@ -1561,8 +1552,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                                   !formData.custom_reference_name) ||
                                 !formData.custom_budget_range ||
                                 !formData.custom_project_urgency ||
-                                !formData.source ||
-                                !formData.custom_property_area
+                                !formData.source 
                               }
                               className="bg-gradient-to-r from-emerald-400 to-teal-500 hover:from-emerald-700 hover:to-teal-600 text-white"
                             >

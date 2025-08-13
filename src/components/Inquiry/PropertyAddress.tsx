@@ -1,7 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Loader2, Plus, Search, Home, Edit } from "lucide-react";
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import { toast } from "react-hot-toast";
+import { createPortal } from "react-dom";
 import { frappeAPI } from "../../api/frappeClient";
 import { useLeads } from "../../context/LeadContext";
 import { Button } from "../ui/button";
@@ -77,6 +78,10 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
 
   const { emirates, fetchEmirates } = useLeads();
 
+  // Refs for dropdown positioning
+  const inputRef = useRef<HTMLInputElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
   // State for address search
   const [addressSearchQuery, setAddressSearchQuery] = useState("");
   const [addressSearchResults, setAddressSearchResults] = useState<
@@ -85,6 +90,7 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
   const [isAddressSearching, setIsAddressSearching] = useState(false);
   const [showAddressDropdown, setShowAddressDropdown] = useState(false);
   const [showAddressDialog, setShowAddressDialog] = useState(false);
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
 
   // Address form state
   const [addressForm, setAddressForm] = useState<AddressSearchResult>({
@@ -116,6 +122,55 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
   const [newTypeName, setNewTypeName] = useState("");
   const [isAddingType, setIsAddingType] = useState(false);
 
+  // Calculate dropdown position when it should be shown
+  const calculateDropdownPosition = useCallback(() => {
+    if (!inputRef.current) return;
+
+    const inputRect = inputRef.current.getBoundingClientRect();
+    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+    const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+
+    setDropdownPosition({
+      top: inputRect.bottom + scrollTop,
+      left: inputRect.left + scrollLeft,
+      width: inputRect.width,
+    });
+  }, []);
+
+  // Update dropdown position when showing
+  useEffect(() => {
+    if (showAddressDropdown) {
+      calculateDropdownPosition();
+      // Recalculate on scroll or resize
+      const handleResize = () => calculateDropdownPosition();
+      window.addEventListener('resize', handleResize);
+      window.addEventListener('scroll', handleResize);
+      
+      return () => {
+        window.removeEventListener('resize', handleResize);
+        window.removeEventListener('scroll', handleResize);
+      };
+    }
+  }, [showAddressDropdown, calculateDropdownPosition]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node) &&
+        !inputRef.current?.contains(event.target as Node)
+      ) {
+        setShowAddressDropdown(false);
+      }
+    };
+
+    if (showAddressDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showAddressDropdown]);
+
   // Fetch initial data
   useEffect(() => {
     fetchEmirates();
@@ -123,26 +178,23 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
   }, [fetchEmirates]);
 
   // Update address form when formData changes
-  useEffect(() => {
-    setAddressForm({
-      custom_property_category: formData[propertyCategoryField] || "",
-      custom_property_type: formData[propertyTypeField] || "",
-      custom_emirate: formData[emirateField] || "",
-      custom_area: formData[areaField] || "",
-      custom_community: formData[communityField] || "",
-      custom_street_name: formData[streetNameField] || "",
-      custom_property_number: formData[propertyNumberField] || "",
-    });
-  }, [
-    formData,
-    propertyCategoryField,
-    propertyTypeField,
-    emirateField,
-    areaField,
-    communityField,
-    streetNameField,
-    propertyNumberField,
-  ]);
+ useEffect(() => {
+  setAddressForm({
+    custom_property_category: formData[propertyCategoryField] || "",
+    custom_property_type: formData[propertyTypeField] || "",
+    custom_emirate: formData[emirateField] || "",
+    custom_area: formData[areaField] || "",
+    custom_community: formData[communityField] || "",
+    custom_street_name: formData[streetNameField] || "",
+    custom_property_number: formData[propertyNumberField] || "",
+  });
+  
+  // Set the search query to the combined address if it exists
+  if (formData[propertyAreaField]) {
+    setAddressSearchQuery(formData[propertyAreaField]);
+  }
+}, [formData, propertyCategoryField, propertyTypeField, emirateField, areaField, 
+    communityField, streetNameField, propertyNumberField, propertyAreaField]);
 
   // Fetch property types when category changes
   useEffect(() => {
@@ -155,19 +207,20 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
 
   // Function to generate combined address from available fields
   const generateCombinedAddress = useCallback(
-    (address: AddressSearchResult) => {
-      const addressParts = [
-        address.custom_emirate,
-        address.custom_area,
-        address.custom_community,
-        address.custom_street_name,
-        address.custom_property_number,
-      ].filter((part) => part && part.trim() !== "");
+  (address: AddressSearchResult) => {
+    const addressParts = [
+      address.custom_emirate,
+      address.custom_area,
+      address.custom_community,
+      address.custom_street_name,
+      address.custom_property_number,
+    ].filter((part) => part && part.trim() !== "");
 
-      return addressParts.join(", ");
-    },
-    []
-  );
+    return addressParts.join(", ");
+  },
+  []
+);
+
 
   // Function to fetch property categories
   const fetchPropertyCategories = async () => {
@@ -338,30 +391,32 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
 
   const handleOpenAddressDialog = () => {
     setShowAddressDialog(true);
+    setShowAddressDropdown(false);
   };
 
-  const handleSaveAddress = () => {
-    const combinedAddress = generateCombinedAddress(addressForm);
+  // Update the handleSaveAddress function to use this:
+const handleSaveAddress = () => {
+  const combinedAddress = generateCombinedAddress(addressForm);
 
-    const updates = {
-      [propertyCategoryField]: addressForm.custom_property_category || "",
-      [propertyTypeField]: addressForm.custom_property_type || "",
-      [emirateField]: addressForm.custom_emirate || "",
-      [areaField]: addressForm.custom_area || "",
-      [communityField]: addressForm.custom_community || "",
-      [streetNameField]: addressForm.custom_street_name || "",
-      [propertyNumberField]: addressForm.custom_property_number || "",
-      [propertyAreaField]: combinedAddress,
-    };
-
-    Object.entries(updates).forEach(([field, value]) => {
-      handleSelectChange(field, value);
-    });
-
-    setAddressSearchQuery(combinedAddress);
-    setShowAddressDialog(false);
-    toast.success("Address updated successfully");
+  const updates = {
+    [propertyCategoryField]: addressForm.custom_property_category || "",
+    [propertyTypeField]: addressForm.custom_property_type || "",
+    [emirateField]: addressForm.custom_emirate || "",
+    [areaField]: addressForm.custom_area || "",
+    [communityField]: addressForm.custom_community || "",
+    [streetNameField]: addressForm.custom_street_name || "",
+    [propertyNumberField]: addressForm.custom_property_number || "",
+    [propertyAreaField]: combinedAddress,
   };
+
+  Object.entries(updates).forEach(([field, value]) => {
+    handleSelectChange(field, value);
+  });
+
+  setAddressSearchQuery(combinedAddress);
+  setShowAddressDialog(false);
+  toast.success("Address updated successfully");
+};
 
   const searchAreas = async (emirate: string, query: string) => {
     if (!emirate || !query.trim()) {
@@ -571,11 +626,73 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
     (addressSearchQuery && addressSearchQuery.trim())
   );
 
-  // Debug log to help troubleshoot
-  console.log('Debug - hasValidAddress:', hasValidAddress);
-  console.log('Debug - propertyAreaField:', propertyAreaField);
-  console.log('Debug - formData[propertyAreaField]:', formData[propertyAreaField]);
-  console.log('Debug - addressSearchQuery:', addressSearchQuery);
+  // Dropdown component that will be rendered as portal
+  const DropdownContent = () => (
+    <div
+      ref={dropdownRef}
+      className="fixed bg-white shadow-lg rounded-md border border-gray-200 max-h-60 overflow-y-auto"
+      style={{
+        top: dropdownPosition.top,
+        left: dropdownPosition.left,
+        width: dropdownPosition.width,
+        zIndex: 9999,
+      }}
+    >
+      {isAddressSearching ? (
+        <div className="px-4 py-2 text-sm text-gray-500 flex items-center">
+          <Loader2 className="h-4 w-4 animate-spin mr-2" />
+          Searching addresses...
+        </div>
+      ) : addressSearchResults.length > 0 ? (
+        <div className="overflow-y-auto max-h-[calc(60vh-100px)]">
+          {addressSearchResults.map((address, index) => (
+            <div
+              key={`address-${index}`}
+              className="px-4 py-3 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0"
+              onClick={() => handleAddressSelect(address)}
+            >
+              <div className="flex items-start justify-between">
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-gray-900 truncate">
+                    {
+                     address.custom_combined_address ||
+                      generateCombinedAddress(address)}
+                  </p>
+                  <div className="text-xs text-gray-500 mt-1 flex items-start">
+                    <Home className="h-3 w-3 mr-1 flex-shrink-0 mt-0.5" />
+                    <span className="break-all">
+                      {address.custom_combined_address ||
+                        generateCombinedAddress(address)}
+                    </span>
+                  </div>
+                </div>
+                <div className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded ml-2 flex-shrink-0">
+                  {address.found_via}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : addressSearchQuery ? (
+        <div
+          className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center justify-between"
+          onClick={handleOpenAddressDialog}
+        >
+          <div>
+            <p className="font-medium">
+              No addresses found for "{addressSearchQuery}"
+            </p>
+            <p className="text-xs text-gray-500">
+              Click to add a new address
+            </p>
+          </div>
+          <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded flex-shrink-0">
+            Add New
+          </span>
+        </div>
+      ) : null}
+    </div>
+  );
 
   return (
     <div className="space-y-4">
@@ -588,6 +705,7 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
           <div className="flex items-center">
             <Search className="absolute left-3 h-4 w-4 text-gray-400 z-10" />
             <Input
+              ref={inputRef}
               type="text"
               placeholder="Search by emirate, area, community, street name, or property number..."
               value={addressSearchQuery}
@@ -609,7 +727,6 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
               {/* Always show buttons when we have any address data or search query */}
               {!isAddressSearching && (hasValidAddress || addressSearchQuery.trim()) && (
                 <>
-                  
                   <button
                     type="button"
                     onClick={handleEditAddress}
@@ -630,65 +747,12 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
               )}
             </div>
           </div>
-
-          {showAddressDropdown && (
-            <div className="absolute z-50 mt-1 w-full bg-white shadow-lg rounded-md border border-gray-200 max-h-60 overflow-y-auto">
-              {isAddressSearching ? (
-                <div className="px-4 py-2 text-sm text-gray-500 flex items-center">
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  Searching addresses...
-                </div>
-              ) : addressSearchResults.length > 0 ? (
-                <div className="overflow-y-auto max-h-[calc(60vh-100px)]">
-                  {addressSearchResults.map((address, index) => (
-                    <div
-                      key={`address-${index}`}
-                      className="px-4 py-3 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0"
-                      onClick={() => handleAddressSelect(address)}
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-gray-900 truncate">
-                            {address.customer_name ||
-                              address.custom_combined_address ||
-                              generateCombinedAddress(address)}
-                          </p>
-                          <div className="text-xs text-gray-500 mt-1 flex items-start">
-                            <Home className="h-3 w-3 mr-1 flex-shrink-0 mt-0.5" />
-                            <span className="break-all">
-                              {address.custom_combined_address ||
-                                generateCombinedAddress(address)}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded ml-2 flex-shrink-0">
-                          {address.found_via}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : addressSearchQuery ? (
-                <div
-                  className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center justify-between"
-                  onClick={handleOpenAddressDialog}
-                >
-                  <div>
-                    <p className="font-medium">
-                      No addresses found for "{addressSearchQuery}"
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      Click to add a new address
-                    </p>
-                  </div>
-                  <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded flex-shrink-0">
-                    Add New
-                  </span>
-                </div>
-              ) : null}
-            </div>
-          )}
         </div>
+
+        {/* Render dropdown as portal to avoid clipping */}
+        {showAddressDropdown && typeof document !== 'undefined' && 
+          createPortal(<DropdownContent />, document.body)
+        }
       </div>
 
       {/* Address Dialog */}

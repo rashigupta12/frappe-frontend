@@ -419,19 +419,23 @@ fetchTodos: async () => {
     });
   },
   updateTodo: async (todoId: string, todoData: Record<string, unknown>) => {
+    console.log('Updating todo with ID:', todoId, 'and data:', todoData);
     try {
       set({ createTodoLoading: true, error: null });
+      console.log('Updating todo with ID:', todoId, 'and data:', todoData);
 
       // Update the todo
       const todoPayload = {
         status: 'Open',
         priority: todoData.priority,
-        date: todoData.inspectionDate,
-        allocated_to: todoData.inspector,
+        date: todoData.date,
+        allocated_to: todoData.allocated_to,
         description: `${todoData.specialRequirements || ''} ${todoData.description || ''}`,
         reference_type: 'Lead',
         assigned_by: todoData.assigned_by || get().currentUserEmail, // Use current user email if not provided
-        doctype: 'ToDo'
+        doctype: 'ToDo',
+        custom_start_time: todoData.custom_start_time,
+        custom_end_time: todoData.custom_end_time
       };
 
 

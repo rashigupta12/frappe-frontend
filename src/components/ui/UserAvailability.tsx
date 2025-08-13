@@ -6,7 +6,6 @@ import { frappeAPI } from "../../api/frappeClient";
 import { Loader2 } from "lucide-react";
 import { Clock } from "lucide-react";
 import { CheckCircle2 } from "lucide-react";
-import { XCircle } from "lucide-react";
 import { format } from "date-fns"; // Added missing import
 import { minutesToTime, timeToMinutes } from "../../lib/timeUtils";
 
@@ -175,10 +174,7 @@ const UserAvailability = ({
                           Available
                         </span>
                       ) : (
-                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
-                          <Clock className="h-3 w-3 mr-1" />
-                          Partial
-                        </span>
+                        null
                       )}
                       {onSelectInspector && (
                         <Button
@@ -252,7 +248,7 @@ const UserAvailability = ({
                     )}
 
                     {/* Occupied Slots */}
-                    {inspector.availability.occupied_slots.length > 0 && (
+                    {/* {inspector.availability.occupied_slots.length > 0 && (
                       <div>
                         <h5 className="text-xs font-medium text-red-700 mb-1 flex items-center">
                           <XCircle className="h-3 w-3 mr-1" />
@@ -272,7 +268,7 @@ const UserAvailability = ({
                           )}
                         </div>
                       </div>
-                    )}
+                    )} */}
 
                     {/* No availability message */}
                     {inspector.availability.free_slots.length === 0 &&
