@@ -703,7 +703,7 @@ const handleSaveAddress = () => {
         </label>
         <div className="relative">
           <div className="flex items-center">
-            <Search className="absolute left-3 h-4 w-4 text-gray-400 z-10" />
+            <Search className="absolute left-3 h-4 w-4 text-gray-400 " />
             <Input
               ref={inputRef}
               type="text"
@@ -733,7 +733,7 @@ const handleSaveAddress = () => {
                     className="text-gray-400 hover:text-blue-500 p-1 flex-shrink-0"
                     title="Edit address"
                   >
-                    <Edit className="h-4 w-4" />
+                    <Edit className="h-4 w-4 " />
                   </button>
                   <button
                     type="button"

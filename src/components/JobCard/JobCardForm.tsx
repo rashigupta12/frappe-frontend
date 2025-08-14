@@ -4,6 +4,7 @@ import {
   Calendar,
   ChevronDown,
   FileText,
+  Home,
   Loader2,
   Mail,
   Phone,
@@ -62,7 +63,6 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
 }) => {
   const { createJobCard, updateJobCard, loading, fetchEmployees } =
     useJobCards();
-  console.log("JobCardForm jobCard:", jobCard);
 
   const isReadOnly = jobCard?.docstatus === 1;
   const projectidname = jobCard?.name || jobCard?.project_id_no || "";
@@ -362,247 +362,72 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
       setShowDropdown(false);
       return;
     }
+
     setIsSearching(true);
     try {
-      const allResults: any[] = [];
-      const addressEndpoint =
-        "/api/method/eits_app.site_address_search.search_site_addresses";
-      const queryLower = query.toLowerCase().trim();
+      const response = await frappeAPI.makeAuthenticatedRequest(
+        "GET",
+        `/api/method/eits_app.site_address_search.search_site_addresses?search_term=${encodeURIComponent(
+          query
+        )}`
+      );
+      console.log("Search response:", response);
 
-      const searchPromises: Promise<any>[] = [];
-
-      if (queryLower.length >= 2) {
-        // Existing search promises for addresses
-        searchPromises.push(
-          frappeAPI
-            .makeAuthenticatedRequest(
-              "GET",
-              `${addressEndpoint}?custom_uae_area=${encodeURIComponent(query)}`
-            )
-            .then((response) => ({
-              type: "area",
-              data: response.message?.data || [],
-            }))
-            .catch(() => ({ type: "area", data: [] }))
-        );
-        searchPromises.push(
-          frappeAPI
-            .makeAuthenticatedRequest(
-              "GET",
-              `${addressEndpoint}?custom_community=${encodeURIComponent(query)}`
-            )
-            .then((response) => ({
-              type: "community",
-              data: response.message?.data || [],
-            }))
-            .catch(() => ({ type: "community", data: [] }))
-        );
-        searchPromises.push(
-          frappeAPI
-            .makeAuthenticatedRequest(
-              "GET",
-              `${addressEndpoint}?custom_street_name=${encodeURIComponent(
-                query
-              )}`
-            )
-            .then((response) => ({
-              type: "street",
-              data: response.message?.data || [],
-            }))
-            .catch(() => ({ type: "street", data: [] }))
-        );
-
-        // Search by Customer Name and Lead Name
-        searchPromises.push(
-          frappeAPI
-            .makeAuthenticatedRequest(
-              "GET",
-              `${addressEndpoint}?search_term=${encodeURIComponent(query)}`
-            )
-            .then((response) => ({
-              type: "customer_name",
-              data: response.message?.data || [],
-            }))
-            .catch(() => ({ type: "customer_name", data: [] }))
-        );
-        searchPromises.push(
-          frappeAPI
-            .makeAuthenticatedRequest(
-              "GET",
-              `${addressEndpoint}?search_term=${encodeURIComponent(query)}`
-            )
-            .then((response) => ({
-              type: "lead_name",
-              data: response.message?.data || [],
-            }))
-            .catch(() => ({ type: "lead_name", data: [] }))
-        );
-        // Always search, whether partial or full email
-        searchPromises.push(
-          frappeAPI
-            .makeAuthenticatedRequest(
-              "GET",
-              `${addressEndpoint}?search_term=${encodeURIComponent(query)}`
-            )
-            .then((response) => ({
-              type: "customer_email",
-              data: response.message?.data || [],
-            }))
-            .catch(() => ({ type: "customer_email", data: [] }))
-        );
-
-        searchPromises.push(
-          frappeAPI
-            .makeAuthenticatedRequest(
-              "GET",
-              `${addressEndpoint}?search_term=${encodeURIComponent(query)}`
-            )
-            .then((response) => ({
-              type: "lead_email",
-              data: response.message?.data || [],
-            }))
-            .catch(() => ({ type: "lead_email", data: [] }))
-        );
-
-        if (/^\d+$/.test(query)) {
-          searchPromises.push(
-            frappeAPI
-              .makeAuthenticatedRequest(
-                "GET",
-                `${addressEndpoint}?search_term=${encodeURIComponent(query)}`
-              )
-              .then((response) => ({
-                type: "property",
-                data: response.message?.data || [],
-              }))
-              .catch(() => ({ type: "property", data: [] }))
-          );
-        }
-
-        if (/^\+?\d+$/.test(query.replace(/[\s-]/g, ""))) {
-          const cleanPhone = query.replace(/[\s-]/g, "");
-          searchPromises.push(
-            frappeAPI
-              .makeAuthenticatedRequest(
-                "GET",
-                `${addressEndpoint}?search_term=${encodeURIComponent(
-                  cleanPhone
-                )}`
-              )
-              .then((response) => ({
-                type: "customer_phone",
-                data: response.message?.data || [],
-              }))
-              .catch(() => ({ type: "customer_phone", data: [] }))
-          );
-          searchPromises.push(
-            frappeAPI
-              .makeAuthenticatedRequest(
-                "GET",
-                `${addressEndpoint}?search_term=${encodeURIComponent(
-                  cleanPhone
-                )}`
-              )
-              .then((response) => ({
-                type: "lead_phone",
-                data: response.message?.data || [],
-              }))
-              .catch(() => ({ type: "lead_phone", data: [] }))
-          );
-        }
-
-        const knownEmirates = [
-          "dubai",
-          "abu dhabi",
-          "sharjah",
-          "ajman",
-          "umm al quwain",
-          "ras al khaimah",
-          "fujairah",
-        ];
-        if (
-          knownEmirates.some(
-            (emirate) =>
-              emirate.includes(queryLower) ||
-              queryLower.includes(emirate.replace(/\s/g, "")) ||
-              emirate.toLowerCase() === queryLower
-          )
-        ) {
-          searchPromises.push(
-            frappeAPI
-              .makeAuthenticatedRequest(
-                "GET",
-                `${addressEndpoint}?search_term=${encodeURIComponent(query)}`
-              )
-              .then((response) => ({
-                type: "emirate",
-                data: response.message?.data || [],
-              }))
-              .catch(() => ({ type: "emirate", data: [] }))
-          );
-        }
-
-        const searchResults = await Promise.all(searchPromises);
-
-        searchResults.forEach((result) => {
-          if (result.data && Array.isArray(result.data)) {
-            const transformedData = result.data.map((address: any) => ({
-              ...address,
-              search_type: "address",
-              found_via: result.type,
-              customer_name:
-                address.customer_details?.customer_name ||
-                address.lead_details?.lead_name ||
-                `Address: ${address.custom_combined_address}`,
-              mobile_no:
-                address.custom_customer_phone_number ||
-                address.custom_lead_phone_number ||
-                address.customer_details?.mobile_no ||
-                address.lead_details?.mobile_no,
-              email_id:
-                address.custom_customer_email ||
-                address.lead_details?.email_id ||
-                address.customer_details?.email_id,
-              name: address.customer_details?.name || address.custom_lead_name,
-              lead_name: address.custom_lead_name,
-              area: address.custom_combined_address,
-              address_details: {
-                emirate: address.custom_emirate,
-                area: address.custom_area,
-                community: address.custom_community,
-                street_name: address.custom_street_name,
-                property_number: address.custom_property_number,
-                combined_address: address.custom_combined_address,
-              },
-            }));
-            allResults.push(...transformedData);
-          }
-        });
+      // Check if response structure is correct
+      if (!response.message?.data) {
+        throw new Error("Invalid response structure");
       }
 
-      const uniqueResults = allResults.filter((result, index, self) => {
-        return (
-          index ===
-          self.findIndex(
-            (r) =>
-              r.custom_combined_address === result.custom_combined_address ||
-              (r.custom_lead_name &&
-                result.custom_lead_name &&
-                r.custom_lead_name === result.custom_lead_name) ||
-              (r.site_name &&
-                result.site_name &&
-                r.site_name === result.site_name)
-          )
-        );
+      const results = response.message.data;
+
+      // Transform the results
+      const transformedResults = results.map((result: any) => {
+        // Extract customer/lead name from site_name (format: "Name-Number,...")
+        const nameFromSite =
+          result.site_name?.split("-")[0]?.split(",")[0] || "Unknown";
+
+        return {
+          ...result,
+          search_type: "address",
+          customer_name:
+            result.lead_details?.lead_name ||
+            result.customer_details?.customer_name ||
+            nameFromSite,
+          mobile_no:
+            result.custom_lead_phone_number ||
+            result.lead_details?.mobile_no ||
+            result.custom_customer_phone_number ||
+            result.customer_details?.mobile_no,
+          email_id:
+            result.custom_lead_email ||
+            result.lead_details?.email_id ||
+            result.custom_customer_email ||
+            result.customer_details?.email_id,
+          name: result.customer_details?.name || result.lead_details?.name,
+          lead_name: result.lead_details?.name,
+          area: result.site_name,
+          address_details: {
+            emirate: result.custom_emirate,
+            area: result.custom_area,
+            community: result.custom_community,
+            street_name: result.custom_street_name,
+            property_number: result.custom_property_number,
+            combined_address: result.site_name,
+          },
+          match_info: result.match_info,
+        };
       });
 
-      setSearchResults(uniqueResults);
+      setSearchResults(transformedResults);
       setShowDropdown(true);
     } catch (error) {
       console.error("Search error:", error);
       setSearchResults([]);
-      setShowDropdown(true);
-      toast.error("Failed to search addresses. Please try again.");
+      setShowDropdown(false);
+      // Only show error if it's not a empty query case
+      if (query.trim()) {
+        toast.error("Failed to search. Please try again.");
+      }
     } finally {
       setIsSearching(false);
     }
@@ -626,24 +451,24 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
           custom_uae_area: "",
           custom_community: "",
           custom_street_name: "",
-          custom_property_name__number: "",
+          custom_property_number__name: "",
           custom_property_type: "",
         }));
         setSearchQuery(customer.customer_name);
       } else {
         // Handle existing customer/lead
         const customerData = {
-          party_name: customer.customer_name || customer.name || "",
-          customer_id: customer.name || "",
-          lead_id: customer.lead_name || "",
-          area: customer.address_details?.combined_address || "",
+          party_name:
+            customer.customer_name || customer.lead_details?.lead_name || "",
+          customer_id: customer.customer_details?.name || "",
+          lead_id: customer.lead_details?.name || "",
+          area: customer.site_name || "",
           custom_property_category: customer.custom_property_category || "",
-          custom_emirate: customer.address_details?.emirate || "",
-          custom_uae_area: customer.address_details?.area || "",
-          custom_community: customer.address_details?.community || "",
-          custom_street_name: customer.address_details?.street_name || "",
-          custom_property_name__number:
-            customer.address_details?.property_number || "",
+          custom_emirate: customer.custom_emirate || "",
+          custom_uae_area: customer.custom_area || "",
+          custom_community: customer.custom_community || "",
+          custom_street_name: customer.custom_street_name || "",
+          custom_property_number__name: customer.custom_property_number || "",
           custom_property_type: customer.custom_property_type || "",
         };
 
@@ -652,16 +477,20 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
           ...customerData,
         }));
 
-        setSearchQuery(customer.customer_name || customer.name || "");
+        setSearchQuery(
+          customer.customer_name || customer.lead_details?.lead_name || ""
+        );
       }
 
       setShowDropdown(false);
 
-      // If there's a lead_name, fetch additional lead details
-      if (customer.lead_name && !customer.is_new_customer) {
+      // If there's a lead, fetch additional lead details
+      if (customer.lead_details?.name && !customer.is_new_customer) {
         setFetchingLeadDetails(true);
         try {
-          const leadResponse = await frappeAPI.getLeadById(customer.lead_name);
+          const leadResponse = await frappeAPI.getLeadById(
+            customer.lead_details.name
+          );
 
           if (leadResponse.data) {
             const lead = leadResponse.data;
@@ -1098,6 +927,36 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
   const handleCancelDialogClose = () => {
     setShowCancelDialog(false);
   };
+  const extractCustomerNameFromSite = (siteName: string) => {
+    if (!siteName) return "Unknown";
+    // Format: "Name-Number,..." - extract everything before the first dash and number
+    const parts = siteName.split("-");
+    if (parts.length >= 2) {
+      // Check if the part after dash starts with a number
+      const afterDash = parts[1];
+      if (/^\d/.test(afterDash)) {
+        return parts[0].trim();
+      }
+    }
+    // Fallback: take first part before comma
+    return siteName.split(",")[0].trim();
+  };
+
+  // Helper function to extract address from site_name (remove customer name part)
+  const extractAddressFromSite = (siteName: string) => {
+    if (!siteName) return "";
+    // Format: "Name-Number,..." - extract everything after the first dash
+    const dashIndex = siteName.indexOf("-");
+    if (dashIndex !== -1) {
+      const afterDash = siteName.substring(dashIndex + 1);
+      // Check if what comes after dash starts with a number (address part)
+      if (/^\d/.test(afterDash)) {
+        return afterDash.trim();
+      }
+    }
+    // Fallback: return original if pattern doesn't match
+    return siteName;
+  };
 
   return (
     <>
@@ -1232,68 +1091,130 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                       </div>
 
                       {showDropdown && (
-                        <div className="absolute z-10 mt-1 w-full bg-white shadow-lg rounded-md border border-gray-200 max-h-60 overflow-y-auto">
-                          {searchResults.length > 0 ? (
-                            searchResults.map((result, index) => (
-                              <div
-                                key={`search-result-${index}`} // Fixed: Using index to ensure uniqueness
-                                className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                                onClick={() => handleCustomerSelect(result)}
+                        <>
+                          {/* Backdrop to handle clicks outside */}
+                          <div
+                            className="fixed inset-0 z-[9998]"
+                            onClick={() => setShowDropdown(false)}
+                          />
+
+                          {/* Dropdown content with higher z-index */}
+                          <div className="absolute z-[9999] mt-1 w-full bg-white shadow-xl rounded-md border border-gray-300 max-h-80 overflow-y-auto pb-40">
+                            {searchResults.length > 0 ? (
+                              searchResults.map((result, index) => {
+                                // Extract customer name properly
+                                const customerName =
+                                  result.customer_name ||
+                                  result.lead_details?.lead_name ||
+                                  extractCustomerNameFromSite(result.site_name);
+
+                                return (
+                                  <div
+                                    key={`search-result-${index}`}
+                                    className="px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0 transition-colors duration-150"
+                                    onClick={() => handleCustomerSelect(result)}
+                                  >
+                                    <div className="flex justify-between items-start gap-3">
+                                      <div className="flex-1 min-w-0">
+                                        {" "}
+                                        {/* min-w-0 prevents flex item from overflowing */}
+                                        <p className="font-medium text-gray-900 truncate text-sm">
+                                          {customerName}
+                                        </p>
+                                        {/* Contact info */}
+                                        <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-600">
+                                          {result.mobile_no && (
+                                            <span className="inline-flex items-center gap-1">
+                                              <Phone className="h-3 w-3 flex-shrink-0" />
+                                              <span className="truncate">
+                                                {result.mobile_no}
+                                              </span>
+                                            </span>
+                                          )}
+                                          {result.email_id && (
+                                            <span className="inline-flex items-center gap-1">
+                                              <Mail className="h-3 w-3 flex-shrink-0" />
+                                              <span className="truncate max-w-[150px]">
+                                                {result.email_id}
+                                              </span>
+                                            </span>
+                                          )}
+                                        </div>
+                                        {/* Address info with proper text wrapping */}
+                                        {result.site_name && (
+                                          <div className="mt-2 text-xs text-gray-500 flex items-start gap-1">
+                                            <Home className="h-3 w-3 flex-shrink-0 mt-0.5" />
+                                            <div className="flex-1 min-w-0">
+                                              <p className="break-words text-xs leading-tight">
+                                                {extractAddressFromSite(
+                                                  result.site_name
+                                                )}
+                                              </p>
+                                            </div>
+                                          </div>
+                                        )}
+                                        {/* Match info badges */}
+                                        {/* {result.match_info?.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {result.match_info.slice(0, 2).map((match, i) => ( // Limit to 2 badges
+                              <span
+                                key={i}
+                                className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800"
                               >
-                                <p className="font-medium truncate">
-                                  {result.customer_name}
-                                  {result.is_new_customer && (
-                                    <span className="ml-2 text-xs text-gray-500">
-                                      (New Customer)
-                                    </span>
-                                  )}
-                                </p>
-                                {(result.mobile_no || result.email_id) && (
-                                  <div className="text-xs text-gray-500 space-x-2">
-                                    {result.mobile_no && (
-                                      <span className="inline-flex items-center">
-                                        <Phone className="h-3 w-3 mr-1" />
-                                        {result.mobile_no}
-                                      </span>
-                                    )}
-                                    {result.email_id && (
-                                      <span className="inline-flex items-center">
-                                        <Mail className="h-3 w-3 mr-1" />
-                                        {result.email_id}
-                                      </span>
-                                    )}
-                                  </div>
-                                )}
-                                {/* {result.custom_combined_address && (
-                                  <div className="text-xs text-gray-500 mt-1 flex items-center">
-                                    <Home className="h-3 w-3 mr-1 flex-shrink-0" />
-                                    <span className="truncate">
-                                      {result.custom_combined_address}
-                                    </span>
-                                  </div>
-                                )} */}
-                              </div>
-                            ))
-                          ) : (
-                            <div
-                              key="no-results" // Added key for consistency
-                              className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center justify-between"
-                              onClick={handleAddNewCustomer}
-                            >
-                              <div>
-                                <p className="font-medium">
-                                  No customers found for "{searchQuery}"
-                                </p>
-                                <p className="text-xs text-gray-500">
-                                  Click to add a new customer
-                                </p>
-                              </div>
-                              <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
-                                Add New
+                                <span className="truncate max-w-[80px]">
+                                  {match.display_name}: {match.value}
+                                </span>
                               </span>
-                            </div>
-                          )}
-                        </div>
+                            ))}
+                            {result.match_info.length > 2 && (
+                              <span className="text-xs text-gray-400">
+                                +{result.match_info.length - 2} more
+                              </span>
+                            )}
+                          </div>
+                        )} */}
+                                      </div>
+
+                                      {/* Status badge - fixed width to prevent layout shift */}
+                                      {/* <div className="flex-shrink-0 w-16">
+                                        {result.lead_details ? (
+                                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
+                                            Lead
+                                          </span>
+                                        ) : result.customer_details ? (
+                                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                                            Customer
+                                          </span>
+                                        ) : (
+                                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
+                                            Address
+                                          </span>
+                                        )}
+                                      </div> */}
+                                    </div>
+                                  </div>
+                                );
+                              })
+                            ) : (
+                              <div
+                                className="px-4 py-3 hover:bg-gray-50 cursor-pointer flex items-center justify-between transition-colors duration-150"
+                                onClick={handleAddNewCustomer}
+                              >
+                                <div className="flex-1">
+                                  <p className="font-medium text-gray-700 text-sm">
+                                    No results found for "{searchQuery}"
+                                  </p>
+                                  <p className="text-xs text-gray-500 mt-0.5">
+                                    Click to add a new customer
+                                  </p>
+                                </div>
+                                <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded font-medium">
+                                  Add New
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </>
                       )}
                     </div>
 
@@ -1537,9 +1458,8 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                                   <Label className="text-xs text-gray-600">
                                     Thickness
                                   </Label>
-                                  <div className="flex w-full">
+                                  <div className="flex w-full items-center">
                                     <Input
-                                      
                                       value={charge.thickness}
                                       onChange={(e) =>
                                         updatePressingCharge(
@@ -1551,7 +1471,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                                       disabled={isReadOnly}
                                       className="h-9 text-sm w-[70%] rounded-r-none"
                                     />
-                                    <span className="flex items-center justify-center w-[30%] bg-gray-50 text-gray-800 text-sm border border-l-0">
+                                    <span className="flex items-center justify-center h-9 w-[30%] bg-gray-50 text-gray-800 text-sm border border-l-0 rounded-r px-2">
                                       mm
                                     </span>
                                   </div>
