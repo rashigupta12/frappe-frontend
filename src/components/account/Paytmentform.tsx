@@ -282,11 +282,11 @@ const PaymentForm = () => {
       }
     } catch (error) {
       console.error("Error creating supplier:", error);
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "Failed to create supplier. Please try again."
-      );
+      // toast.error(
+      //   error instanceof Error
+      //     ? error.message
+      //     : "Failed to create supplier. Please try again."
+      // );
     } finally {
       setCreatingSupplier(false);
     }

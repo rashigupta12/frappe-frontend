@@ -478,7 +478,6 @@ const PaymentImageUpload: React.FC<PaymentImageUploadProps> = ({
           
         } catch (error) {
           console.error(`Error uploading ${file.name}:`, error);
-          toast.error(`Failed to upload ${file.name}`);
         }
       }
 
@@ -533,7 +532,7 @@ const PaymentImageUpload: React.FC<PaymentImageUploadProps> = ({
       toast.success("Image captured successfully!");
     } catch (error) {
       console.error("Error processing captured image:", error);
-      toast.error("Failed to process captured image");
+      
     } finally {
       setIsUploading(false);
     }

@@ -911,9 +911,9 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
       setCustomerSearchResults([]);
       setShowCustomerDropdown(false);
       // Only show error if it's not a empty query case
-      if (query.trim()) {
-        toast.error("Failed to search. Please try again.");
-      }
+      // if (query.trim()) {
+      //   toast.error("Failed to search. Please try again.");
+      // }
     } finally {
       setIsCustomerSearching(false);
     }
