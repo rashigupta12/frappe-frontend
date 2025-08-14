@@ -354,9 +354,8 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     return;
   }
 
-    try {
-      // Show loading state
-      setIsCustomerSearching(true);
+  try {
+    setIsCustomerSearching(true);
 
     // Prepare lead data using the same format as your form submission
     const newLeadData = formatSubmissionData({
@@ -378,29 +377,14 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
       custom_special_requirements: "",
     });
 
-      // Call the createLead API
-      const createdLead = await createLead(newLeadData);
+    // Call the createLead API
+    const createdLead = await createLead(newLeadData);
 
-      if (!createdLead) {
-        throw new Error("Failed to create lead");
-      }
+    if (!createdLead) {
+      throw new Error("Failed to create lead");
+    }
 
-      // Update the main form with the created lead data
-      // Use the original form data as base, then override with API response
-      setFormData((prev) => ({
-        ...prev,
-        // Map API response fields back to form fields
-        lead_name: createdLead.lead_name || newCustomerForm.name,
-        email_id: createdLead.email_id || newCustomerForm.email,
-        mobile_no: createdLead.mobile_no || newCustomerForm.phone,
-        custom_job_type: createdLead.custom_job_type || newCustomerForm.jobType,
-
-        // Store the lead ID for future updates
-        name: createdLead.name, // This is typically the unique identifier from API
-       
-      }));
-    // Update the main form with the created lead data
-    // Use the original form data as base, then override with API response
+    // *** FIX 1: Update the main form with the created lead data AND set it as current inquiry ***
     setFormData((prev) => ({
       ...prev,
       // Map API response fields back to form fields
@@ -408,47 +392,48 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
       email_id: createdLead.email_id || newCustomerForm.email,
       mobile_no: createdLead.mobile_no || newCustomerForm.phone,
       custom_job_type: createdLead.custom_job_type || newCustomerForm.jobType,
-      
       // Store the lead ID for future updates
-      name: createdLead.name, // This is typically the unique identifier from API
+      name: createdLead.name, // This is the key - stores the lead ID
     }));
 
-      // Update UI state
-      setCustomerSearchQuery(newCustomerForm.name);
-      setShowNewCustomerFields(true);
-      setShowNewCustomerModal(false);
-      setShowCustomerDropdown(false);
+    // *** FIX 2: Update the current inquiry reference to enable edit mode ***
+    // You'll need to add this state or modify the parent component to pass this callback
+    // If you have access to update the inquiry prop from parent:
+    // onInquiryUpdate?.(createdLead); // Uncomment if you add this prop
 
-      // Reset new customer form
-      setNewCustomerForm({
-        name: "",
-        email: "",
-        phone: "+971 ",
-        jobType: jobTypes.length > 0 ? jobTypes[0].name : "",
-      });
+    // Update UI state
+    setCustomerSearchQuery(newCustomerForm.name);
+    setShowNewCustomerFields(true);
+    setShowNewCustomerModal(false);
+    setShowCustomerDropdown(false);
 
-      toast.success(`New Lead "${newCustomerForm.name}" created successfully!`);
+    // Reset new customer form
+    setNewCustomerForm({
+      name: "",
+      email: "",
+      phone: "+971 ",
+      jobType: jobTypes.length > 0 ? jobTypes[0].name : "",
+    });
 
-    } catch (error) {
-      console.error("Error creating new lead:", error);
+    toast.success(`New Lead "${newCustomerForm.name}" created successfully!`);
 
-      // Extract error message from different error formats
-      let errorMessage = "Failed to create lead. Please try again.";
+  } catch (error) {
+    console.error("Error creating new lead:", error);
+    let errorMessage = "Failed to create lead. Please try again.";
 
-      if (error && typeof error === "object") {
-        if ("message" in error) {
-          errorMessage = (error as { message: string }).message;
-        } else if ("error" in error) {
-          errorMessage = (error as { error: string }).error;
-        }
+    if (error && typeof error === "object") {
+      if ("message" in error) {
+        errorMessage = (error as { message: string }).message;
+      } else if ("error" in error) {
+        errorMessage = (error as { error: string }).error;
       }
-
-      toast.error(errorMessage);
-
-    } finally {
-      setIsCustomerSearching(false);
     }
-  };
+
+    toast.error(errorMessage);
+  } finally {
+    setIsCustomerSearching(false);
+  }
+};
 
   const validateRequestedTime = () => {
     if (!requestedTime || !selectedSlot) return false;
@@ -690,24 +675,37 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
   };
 
   const saveLead = async (): Promise<string | undefined> => {
-    try {
-      const submissionData = formatSubmissionData(formData);
+  try {
+    const submissionData = formatSubmissionData(formData);
 
-      if (inquiry?.name) {
-        await updateLead(inquiry.name, submissionData);
-        toast.success("Inquiry updated successfully!");
-        return inquiry.name;
-      } else {
-        const newInquiry = await createLead(submissionData);
-        toast.success("Inquiry created successfully!");
-        return newInquiry.name;
-      }
-    } catch (err) {
-      console.error("Error saving lead:", err);
-      toast.error("Failed to save inquiry. Please try again.");
-      return undefined;
+    // Check if we already have a lead ID (either from inquiry prop or from newly created lead)
+    const existingLeadId = inquiry?.name || formData.name;
+
+    if (existingLeadId) {
+      // Update existing lead
+      await updateLead(existingLeadId, submissionData);
+      toast.success("Inquiry updated successfully!");
+      return existingLeadId;
+    } else {
+      // Create new lead only if we don't have an ID
+      const newInquiry = await createLead(submissionData);
+      toast.success("Inquiry created successfully!");
+      
+      // *** FIX 4: Update formData with the new lead ID ***
+      setFormData(prev => ({
+        ...prev,
+        name: newInquiry.name
+      }));
+      
+      return newInquiry.name;
     }
-  };
+  } catch (err) {
+    console.error("Error saving lead:", err);
+    toast.error("Failed to save inquiry. Please try again.");
+    return undefined;
+  }
+};
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -750,80 +748,93 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     setShowConfirmModal(true);
   };
 
-  const confirmAssignment = async () => {
-    setShowConfirmModal(false);
+ const confirmAssignment = async () => {
+  setShowConfirmModal(false);
 
-    try {
-      const inquiryName = await saveLead();
-      if (!inquiryName) {
+  try {
+    // Get the lead ID - either from existing inquiry or from formData
+    const existingLeadId = inquiry?.name || formData.name;
+    
+    let inquiryName: string;
+    
+    if (existingLeadId) {
+      // If we already have a lead ID, just update it
+      const submissionData = formatSubmissionData(formData);
+      await updateLead(existingLeadId, submissionData);
+      inquiryName = existingLeadId;
+      toast.success("Inquiry updated successfully!");
+    } else {
+      // Only create new lead if we don't have an ID (shouldn't happen if saveNewCustomer worked correctly)
+      const savedLeadName = await saveLead();
+      if (!savedLeadName) {
         toast.error("Failed to save inquiry");
         return;
       }
+      inquiryName = savedLeadName;
+    }
 
-      const preferredDate = format(date!, "yyyy-MM-dd");
-      const endTime = calculateEndTime();
+    const preferredDate = format(date!, "yyyy-MM-dd");
+    const endTime = calculateEndTime();
+    const startDateTime = `${preferredDate} ${requestedTime}:00`;
+    const endDateTime = `${preferredDate} ${endTime}:00`;
 
-      const startDateTime = `${preferredDate} ${requestedTime}:00`;
-      const endDateTime = `${preferredDate} ${endTime}:00`;
+    await createTodo({
+      assigned_by: user?.username || "sales_rep@eits.com",
+      inquiry_id: inquiryName,
+      inspector_email: selectedInspector!.email,
+      description: formData.custom_special_requirements || "",
+      priority: priority,
+      preferred_date: preferredDate,
+      custom_start_time: startDateTime,
+      custom_end_time: endDateTime,
+    });
 
-      await createTodo({
-        assigned_by: user?.username || "sales_rep@eits.com",
-        inquiry_id: inquiryName,
-        inspector_email: selectedInspector!.email,
-        description: formData.custom_special_requirements || "",
-        priority: priority,
-        preferred_date: preferredDate,
-        custom_start_time: startDateTime,
-        custom_end_time: endDateTime,
-      });
+    // Rest of the assignment logic remains the same...
+    let employeeName = "";
+    const employeeResponse = await frappeAPI.makeAuthenticatedRequest(
+      "GET",
+      `/api/resource/Employee?filters=[["user_id","=","${selectedInspector!.email}"]]`
+    );
 
-      let employeeName = "";
-      const employeeResponse = await frappeAPI.makeAuthenticatedRequest(
-        "GET",
-        `/api/resource/Employee?filters=[["user_id","=","${selectedInspector!.email
-        }"]]`
-      );
+    if (employeeResponse?.data?.length > 0) {
+      employeeName = employeeResponse.data[0].name;
+    } else {
+      throw new Error(`Could not find employee record for ${selectedInspector!.email}`);
+    }
 
-      if (employeeResponse?.data?.length > 0) {
-        employeeName = employeeResponse.data[0].name;
-      } else {
-        throw new Error(
-          `Could not find employee record for ${selectedInspector!.email}`
-        );
-      }
+    const dwaPayload = {
+      employee_name: employeeName,
+      date: preferredDate,
+      custom_work_allocation: [
+        {
+          work_title: formData.custom_job_type || "Site Inspection",
+          work_description: formData.custom_property_area,
+          expected_start_date: requestedTime,
+          expected_time_in_hours: parseFloat(duration),
+        },
+      ],
+    };
 
-      const dwaPayload = {
-        employee_name: employeeName,
-        date: preferredDate,
-        custom_work_allocation: [
-          {
-            work_title: formData.custom_job_type || "Site Inspection",
-            work_description: formData.custom_property_area,
-            expected_start_date: requestedTime,
-            expected_time_in_hours: parseFloat(duration),
-          },
-        ],
-      };
+    await frappeAPI.makeAuthenticatedRequest(
+      "POST",
+      "/api/resource/Daily Work Allocation",
+      dwaPayload
+    );
 
-      await frappeAPI.makeAuthenticatedRequest(
-        "POST",
-        "/api/resource/Daily Work Allocation",
-        dwaPayload
-      );
-
-      toast.success("Inspector assigned successfully!");
-      navigate("/sales?tab=assign");
-      onClose();
-    } catch (error) {
-      console.error("Full error in assignment process:", error);
-      toast.error(
-        `Failed to complete assignment: ${error && typeof error === "object" && "message" in error
+    toast.success("Inspector assigned successfully!");
+    navigate("/sales?tab=assign");
+    onClose();
+  } catch (error) {
+    console.error("Full error in assignment process:", error);
+    toast.error(
+      `Failed to complete assignment: ${
+        error && typeof error === "object" && "message" in error
           ? (error as { message: string }).message
           : String(error)
-        }`
-      );
-    }
-  };
+      }`
+    );
+  }
+};
 
   const handleClose = () => {
     resetForm();
