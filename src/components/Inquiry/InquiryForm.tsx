@@ -215,6 +215,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     phone: "+971 ",
     jobType: jobTypes.length > 0 ? jobTypes[0].name : "",
   });
+  const [isCreatingCustomer, setIsCreatingCustomer] = useState(false);
 
   const navigate = useNavigate();
 
@@ -355,15 +356,13 @@ const saveNewCustomer = async () => {
   }
 
   try {
-    setIsCustomerSearching(true);
+    setIsCreatingCustomer(true); // Start loading
 
-    // Prepare lead data using the same format as your form submission
     const newLeadData = formatSubmissionData({
       lead_name: newCustomerForm.name.trim(),
       email_id: newCustomerForm.email || "",
       mobile_no: newCustomerForm.phone,
       custom_job_type: newCustomerForm.jobType,
-      // Include other required fields with default values
       custom_budget_range: "",
       custom_project_urgency: "",
       source: "",
@@ -377,32 +376,26 @@ const saveNewCustomer = async () => {
       custom_special_requirements: "",
     });
 
-    // Call the createLead API
     const createdLead = await createLead(newLeadData);
 
     if (!createdLead) {
       throw new Error("Failed to create lead");
     }
 
-    // Update the main form with the created lead data AND set it as current inquiry
     setFormData((prev) => ({
       ...prev,
-      // Map API response fields back to form fields
       lead_name: createdLead.lead_name || newCustomerForm.name,
       email_id: createdLead.email_id || newCustomerForm.email,
       mobile_no: createdLead.mobile_no || newCustomerForm.phone,
       custom_job_type: createdLead.custom_job_type || newCustomerForm.jobType,
-      // Store the lead ID for future updates
-      name: createdLead.name, // This is the key - stores the lead ID
+      name: createdLead.name,
     }));
 
-    // Update UI state
     setCustomerSearchQuery(newCustomerForm.name);
     setShowNewCustomerFields(true);
     setShowNewCustomerModal(false);
     setShowCustomerDropdown(false);
 
-    // Reset new customer form
     setNewCustomerForm({
       name: "",
       email: "",
@@ -411,11 +404,9 @@ const saveNewCustomer = async () => {
     });
 
     toast.success(`New Lead "${newCustomerForm.name}" created successfully!`);
-
   } catch (error) {
     console.error("Error creating new lead:", error);
     let errorMessage = "Failed to create lead. Please try again.";
-
     if (error && typeof error === "object") {
       if ("message" in error) {
         errorMessage = (error as { message: string }).message;
@@ -423,10 +414,9 @@ const saveNewCustomer = async () => {
         errorMessage = (error as { error: string }).error;
       }
     }
-
     toast.error(errorMessage);
   } finally {
-    setIsCustomerSearching(false);
+    setIsCreatingCustomer(false); // End loading
   }
 };
   const validateRequestedTime = () => {
@@ -1782,13 +1772,14 @@ const saveLead = async (): Promise<string | undefined> => {
                     Full Name <span className="text-red-500">*</span>
                   </Label>
                   <Input
-                    type="text"
-                    name="name"
-                    value={newCustomerForm.name}
-                    onChange={handleNewCustomerInputChange}
-                    placeholder="Enter customer name"
-                    required
-                  />
+  type="text"
+  name="name"
+  value={newCustomerForm.name}
+  onChange={handleNewCustomerInputChange}
+  placeholder="Enter customer name"
+  required
+  disabled={isCreatingCustomer}
+/>
                 </div>
 
                 <div>
@@ -1864,11 +1855,19 @@ const saveLead = async (): Promise<string | undefined> => {
                   Cancel
                 </Button>
                 <Button
-                  onClick={saveNewCustomer}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
-                >
-                  Save Customer
-                </Button>
+  onClick={saveNewCustomer}
+  className="bg-emerald-600 hover:bg-emerald-700 text-white"
+  disabled={isCreatingCustomer}
+>
+  {isCreatingCustomer ? (
+    <>
+      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+      Creating...
+    </>
+  ) : (
+    "Save Customer"
+  )}
+</Button>
               </div>
             </div>
           </div>
