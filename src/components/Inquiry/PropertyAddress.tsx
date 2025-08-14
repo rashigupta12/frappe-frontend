@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Loader2, Plus, Search, Home, Edit, MapIcon } from "lucide-react";
+import { Loader2, Plus, Search, Home, Edit, MapPin } from "lucide-react";
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import { toast } from "react-hot-toast";
 import { createPortal } from "react-dom";
@@ -698,8 +698,8 @@ const handleSaveAddress = () => {
     <div className="space-y-4">
       {/* Address Search - Single Field */}
       <div className="w-full">
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          <MapIcon className="inline-block mr-1 pb-1 h-4 w-4 text-gray-500" />
+        <label className="block text-sm font-medium text-black mb-1">
+          <MapPin className="inline-block mr-1 pb-1 h-4 w-4 text-black" />
           Site Address
         </label>
         <div className="relative">

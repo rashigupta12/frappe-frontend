@@ -799,7 +799,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                     {/* Customer Search - Full width on mobile, spans 2 cols on md, 1 col on lg */}
                     <div className="relative col-span-1 md:col-span-2 lg:col-span-1">
                       <label className="flex items-center space-x-2 text-sm md:text-base font-medium text-black mb-2">
-                        <User className="h-4 w-4 text-gray-500" />
+                        <User className="h-4 w-4 text-black" />
                         <span>
                           Customer{" "}
                           <span className="text-gray-500">
@@ -977,7 +977,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                           htmlFor="start_date"
                           className="flex items-center space-x-2"
                         >
-                          <Calendar className="h-4 w-4 text-gray-500" />
+                          <Calendar className="h-4 w-4 text-black" />
                           <span>
                             Start Date <span className="text-red-500">*</span>
                           </span>
@@ -1022,7 +1022,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                           htmlFor="finish_date"
                           className="flex items-center space-x-2"
                         >
-                          <Calendar className="h-4 w-4 text-gray-500" />
+                          <Calendar className="h-4 w-4 text-black" />
                           <span>
                             Finish Date <span className="text-red-500">*</span>
                           </span>
