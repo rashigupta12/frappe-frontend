@@ -16,7 +16,6 @@ import {
   User,
   X,
   AlertTriangle,
-  Plus,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
@@ -1186,21 +1185,40 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                                     </div>
                                   ))
                                 ) : (
-                                  <div className="px-4 py-2">
-                                    <Button
-                                      type="button"
-                                      variant="outline"
-                                      size="sm"
-                                      className="w-full flex items-center gap-2"
-                                      onClick={() => {
+                                  // <div className="px-4 py-2">
+                                  //   <Button
+                                  //     type="button"
+                                  //     variant="outline"
+                                  //     size="sm"
+                                  //     className="w-full flex items-center gap-2"
+                                  //     onClick={() => {
+                                  //       setShowNewCustomerModal(true);
+                                  //       setShowCustomerDropdown(false);
+                                  //     }}
+                                  //   >
+                                  //     <Plus className="h-4 w-4" />
+                                  //     Add New Customer
+                                  //   </Button>
+                                  // </div>
+                                  <div
+          className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center justify-between"
+          onClick={() => {
                                         setShowNewCustomerModal(true);
                                         setShowCustomerDropdown(false);
                                       }}
-                                    >
-                                      <Plus className="h-4 w-4" />
-                                      Add New Customer
-                                    </Button>
-                                  </div>
+        >
+          <div>
+            <p className="font-medium">
+              No customer found found for "{customerSearchQuery}"
+            </p>
+            <p className="text-xs text-gray-500">
+              Click to add a new customer
+            </p>
+          </div>
+          <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded flex-shrink-0">
+            Add New
+          </span>
+        </div>
                                 )}
                               </div>
                             )}
