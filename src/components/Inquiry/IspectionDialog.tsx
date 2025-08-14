@@ -23,6 +23,13 @@ import {
 import { Textarea } from "../ui/textarea";
 import UserAvailability from "../ui/UserAvailability";
 
+// Define the AvailabilitySlot type
+type AvailabilitySlot = {
+  start: string;
+  end: string;
+  duration_hours?: number;
+};
+
 type PriorityLevel = "Low" | "Medium" | "High";
 type DialogMode = "create" | "edit";
 
@@ -81,6 +88,7 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
   const [originalStartTime, setOriginalStartTime] = useState(""); // Add this state
   const [calendarOpen, setCalendarOpen] = useState(false);
   // const [inspectorAvailabilityData, setInspectorAvailabilityData] = useState<InspectorAvailability[]>([]);
+  const [showConfirmation, setShowConfirmation] = useState(false);
 
   const getInquiryData = () => {
     if (mode === "edit" && data?.inquiry_data) {
@@ -347,30 +355,37 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
   };
 
   const handleInspectorSelect = (
-    email: string,
-    availabilityData: InspectorAvailability[]
-  ) => {
-    const inspector = availabilityData.find(
-      (inspector) => inspector.email === email
-    );
-    if (inspector) {
-      setSelectedInspector(inspector);
-      // setInspectorAvailabilityData(availabilityData);
-      
-      if (inspector.availability.free_slots.length > 0) {
-        const firstSlot = inspector.availability.free_slots[0];
-        setSelectedSlot({
-          start: firstSlot.start,
-          end: firstSlot.end,
-        });
-        setRequestedTime(firstSlot.start);
-        
-      } else {
-        toast.success(`Selected ${inspector.user_name}`);
+  email: string,
+  availabilityData: InspectorAvailability[],
+  modifiedSlots: AvailabilitySlot[]
+) => {
+  const inspector = availabilityData.find(
+    (inspector) => inspector.email === email
+  );
+  if (inspector) {
+    // Create a new inspector object with the modified slots
+    const modifiedInspector = {
+      ...inspector,
+      availability: {
+        ...inspector.availability,
+        free_slots: modifiedSlots
       }
+    };
+    setSelectedInspector(modifiedInspector);
+    
+    if (modifiedSlots.length > 0) {
+      const firstSlot = modifiedSlots[0];
+      setSelectedSlot({
+        start: firstSlot.start,
+        end: firstSlot.end,
+      });
+      setRequestedTime(firstSlot.start);
+    } else {
+      toast.success(`Selected ${inspector.user_name}`);
     }
-    setShowAvailabilityModal(false);
-  };
+  }
+  setShowAvailabilityModal(false);
+};
 
   const handleSlotSelect = (slot: { start: string; end: string }) => {
     setSelectedSlot(slot);
@@ -438,6 +453,15 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
   };
 
   const handleAssign = async () => {
+    if (mode === "create") {
+      setShowConfirmation(true);
+    } else {
+      await proceedWithAssignment();
+    }
+  };
+
+  const proceedWithAssignment = async () => {
+    setShowConfirmation(false);
     if (!date) {
       toast.error("Please select an inspection date");
       return;
@@ -782,40 +806,40 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
           )}
 
           {/* Show available slots */}
-          {selectedInspector && selectedInspector.availability.free_slots.length > 0 && (
-            <div className="space-y-2 px-5 py-2 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <Label className="text-gray-700 text-sm font-medium">
-                {mode === "edit" ? "Available Time Slots (for rescheduling)" : "Available Time Slots"}
-              </Label>
-              <div className="grid grid-cols-2 gap-2">
-                {selectedInspector.availability.free_slots.map(
-                  (slot, index) => (
-                    <Button
-                      key={index}
-                      variant={
-                        selectedSlot?.start === slot.start &&
-                        selectedSlot?.end === slot.end
-                          ? "outline"
-                          : "default"
-                      }
-                      className="justify-center h-auto py-1.5 px-2 text-xs"
-                      onClick={() =>
-                        handleSlotSelect({ start: slot.start, end: slot.end })
-                      }
-                      disabled={isProcessing}
-                    >
-                      {slot.start} - {slot.end}
-                      {slot.duration_hours && (
-                        <span className="ml-1 text-xs opacity-70">
-                          ({slot.duration_hours}h)
-                        </span>
-                      )}
-                    </Button>
-                  )
-                )}
-              </div>
-            </div>
-          )}
+{selectedInspector && selectedInspector.availability.free_slots.length > 0 && (
+  <div className="space-y-2 px-5 py-2 bg-yellow-50 border border-yellow-200 rounded-lg">
+    <Label className="text-gray-700 text-sm font-medium">
+      {mode === "edit" ? "Available Time Slots (for rescheduling)" : "Available Time Slots"}
+    </Label>
+    <div className="grid grid-cols-2 gap-2">
+      {selectedInspector.availability.free_slots.map(
+        (slot, index) => (
+          <Button
+            key={index}
+            variant={
+              selectedSlot?.start === slot.start &&
+              selectedSlot?.end === slot.end
+                ? "outline"
+                : "default"
+            }
+            className="justify-center h-auto py-1.5 px-2 text-xs"
+            onClick={() =>
+              handleSlotSelect({ start: slot.start, end: slot.end })
+            }
+            disabled={isProcessing}
+          >
+            {slot.start} - {slot.end}
+            {slot.duration_hours && (
+              <span className="ml-1 text-xs opacity-70">
+                ({slot.duration_hours.toFixed(1)}h)
+              </span>
+            )}
+          </Button>
+        )
+      )}
+    </div>
+  </div>
+)}
 
           {/* Time and Duration Settings */}
           {(mode === "create" ? selectedSlot : true) && (
@@ -993,6 +1017,48 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
           onClose={() => setShowAvailabilityModal(false)}
           onSelectInspector={handleInspectorSelect}
         />
+      )}
+
+      {showConfirmation && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-6">
+          <div className="bg-white rounded-lg p-4 max-w-md w-full">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">Confirm Assignment</h3>
+              <button 
+                onClick={() => setShowConfirmation(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <p className="mb-6 text-gray-700">
+              After assignment, you won't be able to edit the customer information.
+            </p>
+            <div className="flex justify-end gap-3">
+              <Button
+                variant="outline"
+                onClick={() => setShowConfirmation(false)}
+                disabled={isProcessing}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={proceedWithAssignment}
+                disabled={isProcessing}
+                className="bg-emerald-700 hover:bg-emerald-800 text-white"
+              >
+                {isProcessing ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Assigning...
+                  </>
+                ) : (
+                  "Confirm Assignment"
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

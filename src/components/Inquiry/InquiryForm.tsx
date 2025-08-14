@@ -16,6 +16,7 @@ import {
   Save,
   User,
   X,
+  AlertTriangle,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
@@ -103,11 +104,48 @@ interface InspectorAvailability {
   };
 }
 
-interface InquiryFormProps {
+// Confirmation Modal Component
+const ConfirmationModal = ({ 
+  isOpen, 
+  onConfirm, 
+  onCancel, 
+  title, 
+  message 
+}: {
   isOpen: boolean;
-  onClose: () => void;
-  inquiry?: Lead | null;
-}
+  onConfirm: () => void;
+  onCancel: () => void;
+  title: string;
+  message: string;
+}) => {
+  if (!isOpen) return null;
+
+ return (
+  <>
+    <div 
+      className="fixed inset-0 bg-black/50 backdrop-blur-sm z-60 px-6" 
+      onClick={onCancel} 
+    />
+    <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg shadow-xl z-70 w-full max-w-md px-4">
+      <div className="p-6">
+        <div className="flex items-center gap-3 mb-4">
+          <AlertTriangle className="h-6 w-6 text-amber-500" />
+          <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
+        </div>
+        <p className="text-gray-600 mb-6">{message}</p>
+        <div className="flex justify-end gap-3">
+          <Button variant="outline" onClick={onCancel}>
+            Cancel
+          </Button>
+          <Button onClick={onConfirm} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+            Confirm Assignment
+          </Button>
+        </div>
+      </div>
+    </div>
+  </>
+);
+};
 
 const InquiryForm: React.FC<InquiryFormProps> = ({
   isOpen,
@@ -129,8 +167,6 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
 
   const {
     fetchInspectors,
-    // inspectors,
-    // inspectorsLoading,
     createTodo,
     createTodoLoading,
     error: assignError,
@@ -138,12 +174,8 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
   } = useAssignStore();
 
   const [activeSection, setActiveSection] = useState<string>("contact");
-  const [phoneNumber, setPhoneNumber] = useState("+971 ");
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [priority, setPriority] = useState<PriorityLevel>("Medium");
-  // const [inspectorEmail, setInspectorEmail] = useState("");
-  // const [showAvailability, setShowAvailability] = useState(false);
-
   const [hasFetchedInitialData, setHasFetchedInitialData] = useState(false);
   const [formData, setFormData] = useState<LeadFormData>({
     ...defaultFormData,
@@ -155,14 +187,12 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
   const [customerSearchResults, setCustomerSearchResults] = useState<any[]>([]);
   const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
   const [isCustomerSearching, setIsCustomerSearching] = useState(false);
-  const [customerSearchTimeout, setCustomerSearchTimeout] =
-    useState<NodeJS.Timeout | null>(null);
+  const [customerSearchTimeout, setCustomerSearchTimeout] = useState<NodeJS.Timeout | null>(null);
   const [fetchingCustomerDetails, setFetchingCustomerDetails] = useState(false);
   const [showNewCustomerFields, setShowNewCustomerFields] = useState(false);
 
-  // Add these new state variables for enhanced inspector assignment
-  const [selectedInspector, setSelectedInspector] =
-    useState<InspectorAvailability | null>(null);
+  // Inspector assignment states
+  const [selectedInspector, setSelectedInspector] = useState<InspectorAvailability | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<{
     start: string;
     end: string;
@@ -171,9 +201,8 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
   const [duration, setDuration] = useState("0.5");
   const [showAvailabilityModal, setShowAvailabilityModal] = useState(false);
 
-  // Remove these old variables (they'll be replaced):
-  // const [inspectorEmail, setInspectorEmail] = useState("");
-  // const [showAvailability, setShowAvailability] = useState(false);
+  // Confirmation modal state
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   const navigate = useNavigate();
 
@@ -212,7 +241,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                 !!formData.custom_preferred_inspection_time),
           };
         case "inspector":
-          return { ...section, completed: !!selectedInspector }; // Changed from inspectorEmail
+          return { ...section, completed: !!selectedInspector };
         default:
           return section;
       }
@@ -239,6 +268,13 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     fetchInspectors,
   ]);
 
+  const getCurrentTime = () => {
+    const now = new Date();
+    const hours = now.getHours().toString().padStart(2, "0");
+    const minutes = now.getMinutes().toString().padStart(2, "0");
+    return `${hours}:${minutes}`;
+  };
+
   useEffect(() => {
     if (!formData.custom_preferred_inspection_time) {
       setFormData((prev) => ({
@@ -248,27 +284,15 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     }
   }, []);
 
-  const getCurrentTime = () => {
-    const now = new Date();
-    const hours = now.getHours().toString().padStart(2, "0");
-    const minutes = now.getMinutes().toString().padStart(2, "0");
-    return `${hours}:${minutes}`;
-  };
-
-  // Add these helper functions for time validation and calculation
   const validateRequestedTime = () => {
-    if (!requestedTime) return false;
-    if (!selectedSlot) return false;
+    if (!requestedTime || !selectedSlot) return false;
 
     const requestedMinutes = timeToMinutes(requestedTime);
     const slotStartMinutes = timeToMinutes(selectedSlot.start);
     const slotEndMinutes = timeToMinutes(selectedSlot.end);
     const durationMinutes = Math.round(parseFloat(duration) * 60);
 
-    if (
-      requestedMinutes < slotStartMinutes ||
-      requestedMinutes >= slotEndMinutes
-    ) {
+    if (requestedMinutes < slotStartMinutes || requestedMinutes >= slotEndMinutes) {
       return false;
     }
 
@@ -289,9 +313,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     const hours = Math.floor(endMinutes / 60);
     const mins = endMinutes % 60;
 
-    return `${hours.toString().padStart(2, "0")}:${mins
-      .toString()
-      .padStart(2, "0")}`;
+    return `${hours.toString().padStart(2, "0")}:${mins.toString().padStart(2, "0")}`;
   };
 
   const validateTimeDuration = (durationValue: string) => {
@@ -305,43 +327,44 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     if (startMinutes + durationMinutes > slotEndMinutes) {
       const availableHours = (slotEndMinutes - startMinutes) / 60;
       toast.error(
-        `Duration exceeds available time. Max ${availableHours.toFixed(
-          1
-        )} hours available in this slot.`,
+        `Duration exceeds available time. Max ${availableHours.toFixed(1)} hours available in this slot.`,
         { duration: 2000 }
       );
     }
   };
 
-  const handleInspectorSelect = (
-    email: string,
-    availabilityData: InspectorAvailability[]
-  ) => {
-    const inspector = availabilityData.find(
-      (inspector) => inspector.email === email
-    );
-    if (inspector) {
-      setSelectedInspector(inspector);
-      if (inspector.availability.free_slots.length > 0) {
-        const firstSlot = inspector.availability.free_slots[0];
-        setSelectedSlot({
-          start: firstSlot.start,
-          end: firstSlot.end,
-        });
-        setRequestedTime(firstSlot.start);
-        setFormData((prev) => ({
-          ...prev,
-          custom_preferred_inspection_time: firstSlot.start,
-        }));
-        toast.success(
-          `Selected ${inspector.user_name} - Time slot auto-selected`
-        );
-      } else {
-        toast.success(`Selected ${inspector.user_name}`);
+   const handleInspectorSelect = (
+  email: string,
+  availabilityData: InspectorAvailability[],
+  modifiedSlots: { start: string; end: string; duration_hours?: number }[]
+) => {
+  const inspector = availabilityData.find(
+    (inspector) => inspector.email === email
+  );
+  if (inspector) {
+    // Create a new inspector object with the modified slots
+    const modifiedInspector = {
+      ...inspector,
+      availability: {
+        ...inspector.availability,
+        free_slots: modifiedSlots
       }
+    };
+    setSelectedInspector(modifiedInspector);
+    
+    if (modifiedSlots.length > 0) {
+      const firstSlot = modifiedSlots[0];
+      setSelectedSlot({
+        start: firstSlot.start,
+        end: firstSlot.end,
+      });
+      setRequestedTime(firstSlot.start);
+    } else {
+      toast.success(`Selected ${inspector.user_name}`);
     }
-    setShowAvailabilityModal(false);
-  };
+  }
+  setShowAvailabilityModal(false);
+};
 
   const handleSlotSelect = (slot: { start: string; end: string }) => {
     setSelectedSlot(slot);
@@ -364,7 +387,8 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
       }, 300);
     }
   };
-useEffect(() => {
+
+  useEffect(() => {
     if (inquiry && hasFetchedInitialData) {
       setFormData({
         ...defaultFormData,
@@ -377,35 +401,26 @@ useEffect(() => {
             ? new Date(inquiry.custom_preferred_inspection_date)
             : null,
       });
-      setPhoneNumber(inquiry.mobile_no || "+971 ");
       setDate(
         inquiry.custom_preferred_inspection_date
           ? new Date(inquiry.custom_preferred_inspection_date)
           : new Date()
       );
       setShowReferenceInput(
-        inquiry.source === "Reference" ||
-          inquiry.source === "Supplier Reference"
+        inquiry.source === "Reference" || inquiry.source === "Supplier Reference"
       );
       
-      // FIX: Set the customer search query with the existing lead name
       setCustomerSearchQuery(inquiry.lead_name || "");
-      // Also ensure we show the customer fields since we have existing data
       setShowNewCustomerFields(true);
     }
   }, [inquiry, hasFetchedInitialData]);
 
   const resetForm = () => {
     setFormData({ ...defaultFormData });
-    setPhoneNumber("+971 ");
-    // Replace these lines:
-    // setInspectorEmail("");
-    // With these:
     setSelectedInspector(null);
     setSelectedSlot(null);
     setRequestedTime("");
     setDuration("0.5");
-
     setPriority("Medium");
     setDate(new Date());
     setHasFetchedInitialData(false);
@@ -414,7 +429,7 @@ useEffect(() => {
     setCustomerSearchResults([]);
     setShowCustomerDropdown(false);
     setShowNewCustomerFields(false);
-    setShowAvailabilityModal(false); // Add this
+    setShowAvailabilityModal(false);
   };
 
   const toggleSection = (sectionId: string) => {
@@ -435,15 +450,9 @@ useEffect(() => {
       ...(name === "source" && { custom_reference_name: "" }),
     }));
     if (name === "source") {
-      setShowReferenceInput(
-        value === "Reference" || value === "Supplier Reference"
-      );
+      setShowReferenceInput(value === "Reference" || value === "Supplier Reference");
     }
   };
-
-  // const handleDateChange = (name: string, date: Date | undefined) => {
-  //   setFormData((prev) => ({ ...prev, [name]: date || null }));
-  // };
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const input = e.target.value;
@@ -484,40 +493,71 @@ useEffect(() => {
   };
 
   const validateForm = (): boolean => {
-    if (!formData.lead_name) {
-      toast.error("Name is required");
-      return false;
-    }
-    if (!formData.mobile_no) {
-      toast.error("Mobile number is required");
-      return false;
-    }
-    if (!formData.custom_job_type) {
-      toast.error("Job type is required");
-      return false;
-    }
-    if (!formData.custom_budget_range) {
-      toast.error("Budget range is required");
-      return false;
-    }
-    if (!formData.custom_project_urgency) {
-      toast.error("Project urgency is required");
-      return false;
-    }
-    if (!formData.source) {
-      toast.error("Source of inquiry is required");
-      return false;
-    }
-    if (
-      (formData.source === "Reference" ||
-        formData.source === "Supplier Reference") &&
-      !formData.custom_reference_name
-    ) {
-      toast.error("Reference name is required");
-      return false;
-    }
-    return true;
-  };
+  // Customer Details validation
+  if (!formData.lead_name) {
+    toast.error("Customer name is required");
+    return false;
+  }
+  if (!formData.mobile_no || formData.mobile_no.length < 5) { // "+971 " is 5 chars
+    toast.error("Valid mobile number is required");
+    return false;
+  }
+
+  // Job Details validation
+  if (!formData.custom_job_type) {
+    toast.error("Job type is required");
+    return false;
+  }
+  if (!formData.custom_budget_range) {
+    toast.error("Budget range is required");
+    return false;
+  }
+  if (!formData.custom_project_urgency) {
+    toast.error("Project urgency is required");
+    return false;
+  }
+  if (!formData.source) {
+    toast.error("Source of inquiry is required");
+    return false;
+  }
+  if ((formData.source === "Reference" || formData.source === "Supplier Reference") && 
+      !formData.custom_reference_name) {
+    toast.error("Reference name is required");
+    return false;
+  }
+
+  // Property Information validation
+  if (!formData.custom_property_name__number) {
+    toast.error("Property name/number is required");
+    return false;
+  }
+  if (!formData.custom_property_category) {
+    toast.error("Property category is required");
+    return false;
+  }
+  if (!formData.custom_property_area) {
+    toast.error("Property area is required");
+    return false;
+  }
+  if (!formData.custom_street_name) {
+    toast.error("Street name is required");
+    return false;
+  }
+  if (!formData.custom_emirate) {
+    toast.error("Emirate is required");
+    return false;
+  }
+  if (!formData.custom_community) {
+    toast.error("Community is required");
+    return false;
+  }
+  if (!formData.custom_area) {
+    toast.error("Area is required");
+    return false;
+  }
+
+  return true;
+};
 
   const saveLead = async (): Promise<string | undefined> => {
     try {
@@ -540,38 +580,48 @@ useEffect(() => {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!validateForm()) return;
+  e.preventDefault();
+  
+  // Only validate on submit
+  if (!validateForm()) return;
 
-    try {
-      await saveLead();
-      onClose();
-    } catch (err) {
-      console.error("Form submission error:", err);
-      toast.error("Failed to create inquiry. Please try again.");
-    }
-  };
+  try {
+    await saveLead();
+    onClose();
+  } catch (err) {
+    console.error("Form submission error:", err);
+    toast.error("Failed to create inquiry. Please try again.");
+  }
+};
 
-  const handleAssignAndSave = async () => {
-    if (!validateForm()) return;
-    if (!selectedInspector) {
-      toast.error("Please select an inspector");
-      return;
-    }
-    if (!date) {
-      toast.error("Please select an inspection date");
-      return;
-    }
-    if (!requestedTime) {
-      toast.error("Please enter the requested inspection time");
-      return;
-    }
-    if (!validateRequestedTime()) {
-      toast.error(
-        `Requested time must be within the selected slot (${selectedSlot?.start} - ${selectedSlot?.end})`
-      );
-      return;
-    }
+  const handleAssignAndSave = () => {
+  // Only validate on submit
+  if (!validateForm()) return;
+  
+  if (!selectedInspector) {
+    toast.error("Please select an inspector");
+    return;
+  }
+  if (!date) {
+    toast.error("Please select an inspection date");
+    return;
+  }
+  if (!requestedTime) {
+    toast.error("Please enter the requested inspection time");
+    return;
+  }
+  if (!validateRequestedTime()) {
+    toast.error(
+      `Requested time must be within the selected slot (${selectedSlot?.start} - ${selectedSlot?.end})`
+    );
+    return;
+  }
+
+  setShowConfirmModal(true);
+};
+
+  const confirmAssignment = async () => {
+    setShowConfirmModal(false);
 
     try {
       const inquiryName = await saveLead();
@@ -580,18 +630,16 @@ useEffect(() => {
         return;
       }
 
-      const preferredDate = format(date, "yyyy-MM-dd");
+      const preferredDate = format(date!, "yyyy-MM-dd");
       const endTime = calculateEndTime();
 
-      // Combine date and time for DATETIME fields
       const startDateTime = `${preferredDate} ${requestedTime}:00`;
       const endDateTime = `${preferredDate} ${endTime}:00`;
 
-      // Create todo
       await createTodo({
         assigned_by: user?.username || "sales_rep@eits.com",
         inquiry_id: inquiryName,
-        inspector_email: selectedInspector.email,
+        inspector_email: selectedInspector!.email,
         description: formData.custom_special_requirements || "",
         priority: priority,
         preferred_date: preferredDate,
@@ -599,22 +647,18 @@ useEffect(() => {
         custom_end_time: endDateTime,
       });
 
-      // Get employee name for DWA
       let employeeName = "";
       const employeeResponse = await frappeAPI.makeAuthenticatedRequest(
         "GET",
-        `/api/resource/Employee?filters=[["user_id","=","${selectedInspector.email}"]]`
+        `/api/resource/Employee?filters=[["user_id","=","${selectedInspector!.email}"]]`
       );
 
       if (employeeResponse?.data?.length > 0) {
         employeeName = employeeResponse.data[0].name;
       } else {
-        throw new Error(
-          `Could not find employee record for ${selectedInspector.email}`
-        );
+        throw new Error(`Could not find employee record for ${selectedInspector!.email}`);
       }
 
-      // Create DWA
       const dwaPayload = {
         employee_name: employeeName,
         date: preferredDate,
@@ -654,7 +698,6 @@ useEffect(() => {
     onClose();
   };
 
-  // Updated customer search function - only search by name, email, and phone
   const handleCustomerSearch = useCallback(async (query: string) => {
     if (!query.trim()) {
       setCustomerSearchResults([]);
@@ -666,14 +709,12 @@ useEffect(() => {
     setIsCustomerSearching(true);
     try {
       const allResults: any[] = [];
-      const addressEndpoint =
-        "/api/method/eits_app.site_address_search.search_site_addresses";
+      const addressEndpoint = "/api/method/eits_app.site_address_search.search_site_addresses";
       const queryLower = query.toLowerCase().trim();
 
       const searchPromises: Promise<any>[] = [];
 
       if (queryLower.length >= 2) {
-        // Search by Customer Name
         searchPromises.push(
           frappeAPI
             .makeAuthenticatedRequest(
@@ -687,51 +728,6 @@ useEffect(() => {
             .catch(() => ({ type: "customer_name", data: [] }))
         );
 
-        // Search by Lead Name
-        searchPromises.push(
-          frappeAPI
-            .makeAuthenticatedRequest(
-              "GET",
-              `${addressEndpoint}?custom_lead_customer_name=${encodeURIComponent(
-                query
-              )}`
-            )
-            .then((response) => ({
-              type: "lead_name",
-              data: response.message?.data || [],
-            }))
-            .catch(() => ({ type: "lead_name", data: [] }))
-        );
-
-        // Search by Customer Email
-        searchPromises.push(
-          frappeAPI
-            .makeAuthenticatedRequest(
-              "GET",
-              `${addressEndpoint}?search_term=${encodeURIComponent(query)}`
-            )
-            .then((response) => ({
-              type: "customer_email",
-              data: response.message?.data || [],
-            }))
-            .catch(() => ({ type: "customer_email", data: [] }))
-        );
-
-        // Search by Lead Email
-        searchPromises.push(
-          frappeAPI
-            .makeAuthenticatedRequest(
-              "GET",
-              `${addressEndpoint}?search_term=${encodeURIComponent(query)}`
-            )
-            .then((response) => ({
-              type: "lead_email",
-              data: response.message?.data || [],
-            }))
-            .catch(() => ({ type: "lead_email", data: [] }))
-        );
-
-        // Search by Phone (if query looks like a phone number)
         if (/^\+?\d+$/.test(query.replace(/[\s-]/g, ""))) {
           const cleanPhone = query.replace(/[\s-]/g, "");
 
@@ -739,30 +735,13 @@ useEffect(() => {
             frappeAPI
               .makeAuthenticatedRequest(
                 "GET",
-                `${addressEndpoint}?search_term=${encodeURIComponent(
-                  cleanPhone
-                )}`
+                `${addressEndpoint}?search_term=${encodeURIComponent(cleanPhone)}`
               )
               .then((response) => ({
                 type: "customer_phone",
                 data: response.message?.data || [],
               }))
               .catch(() => ({ type: "customer_phone", data: [] }))
-          );
-
-          searchPromises.push(
-            frappeAPI
-              .makeAuthenticatedRequest(
-                "GET",
-                `${addressEndpoint}?search_term=${encodeURIComponent(
-                  cleanPhone
-                )}`
-              )
-              .then((response) => ({
-                type: "lead_phone",
-                data: response.message?.data || [],
-              }))
-              .catch(() => ({ type: "lead_phone", data: [] }))
           );
         }
 
@@ -790,7 +769,6 @@ useEffect(() => {
                 address.customer_details?.email_id,
               name: address.customer_details?.name || address.custom_lead_name,
               lead_name: address.custom_lead_name,
-              // Address information (if available)
               address_details: {
                 emirate: address.custom_emirate || "",
                 area: address.custom_area || "",
@@ -824,7 +802,6 @@ useEffect(() => {
       setCustomerSearchResults(uniqueResults);
       setShowCustomerDropdown(true);
 
-      // Show new customer fields immediately if no results found
       if (uniqueResults.length === 0) {
         setShowNewCustomerFields(true);
       } else {
@@ -846,7 +823,6 @@ useEffect(() => {
     setShowNewCustomerFields(false);
 
     try {
-      // Set customer data
       const customerData = {
         lead_name: result.customer_name,
         email_id: result.email_id || "",
@@ -855,17 +831,14 @@ useEffect(() => {
         lead_id: result.custom_lead_name || "",
       };
 
-      // Set address data if available
       const addressData = result.address_details
         ? {
-            custom_property_category:
-              result.address_details.property_category || "",
+            custom_property_category: result.address_details.property_category || "",
             custom_emirate: result.address_details.emirate || "",
             custom_community: result.address_details.community || "",
             custom_area: result.address_details.area || "",
             custom_street_name: result.address_details.street_name || "",
-            custom_property_name__number:
-              result.address_details.property_number || "",
+            custom_property_name__number: result.address_details.property_number || "",
             custom_property_area: result.address_details.combined_address || "",
           }
         : {};
@@ -883,9 +856,7 @@ useEffect(() => {
     }
   };
 
-  const handleCustomerSearchChange = (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
+  const handleCustomerSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value;
     setCustomerSearchQuery(query);
 
@@ -908,11 +879,7 @@ useEffect(() => {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (
-      [8, 9, 13, 16, 17, 18, 20, 27, 35, 36, 37, 38, 39, 40, 45, 46].includes(
-        e.keyCode
-      )
-    ) {
+    if ([8, 9, 13, 16, 17, 18, 20, 27, 35, 36, 37, 38, 39, 40, 45, 46].includes(e.keyCode)) {
       return;
     }
 
@@ -921,6 +888,45 @@ useEffect(() => {
       e.preventDefault();
     }
   };
+
+ const validateFormSilent = (): boolean => {
+  // Customer Details validation
+  if (!formData.lead_name) return false;
+  if (!formData.mobile_no || formData.mobile_no.length < 5) return false;
+
+  // Job Details validation
+  if (!formData.custom_job_type) return false;
+  if (!formData.custom_budget_range) return false;
+  if (!formData.custom_project_urgency) return false;
+  if (!formData.source) return false;
+  if ((formData.source === "Reference" || formData.source === "Supplier Reference") && 
+      !formData.custom_reference_name) return false;
+
+  // Property Information validation
+  if (!formData.custom_property_name__number) return false;
+  if (!formData.custom_property_category) return false;
+  if (!formData.custom_property_area) return false;
+  if (!formData.custom_street_name) return false;
+  if (!formData.custom_emirate) return false;
+  if (!formData.custom_community) return false;
+  if (!formData.custom_area) return false;
+
+  return true;
+};
+
+// Update the isAssignmentReady function to use the silent validation
+const isAssignmentReady = () => {
+  return (
+    validateFormSilent() && // Use silent validation instead
+    selectedInspector &&
+    date &&
+    requestedTime &&
+    validateRequestedTime() &&
+    !createTodoLoading &&
+    !loading
+  );
+};
+
 
   if (!isOpen) return null;
 
@@ -1032,15 +1038,12 @@ useEffect(() => {
                                     <div
                                       key={`customer-result-${index}`}
                                       className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                                      onClick={() =>
-                                        handleCustomerSelect(result)
-                                      }
+                                      onClick={() => handleCustomerSelect(result)}
                                     >
                                       <p className="font-medium truncate">
                                         {result.customer_name}
                                       </p>
-                                      {(result.mobile_no ||
-                                        result.email_id) && (
+                                      {(result.mobile_no || result.email_id) && (
                                         <div className="text-xs text-gray-500 space-x-2">
                                           {result.mobile_no && (
                                             <span className="inline-flex items-center">
@@ -1061,12 +1064,10 @@ useEffect(() => {
                                 ) : (
                                   <div className="px-4 py-2 text-center">
                                     <p className="font-medium text-gray-700">
-                                      No customers found for "
-                                      {customerSearchQuery}"
+                                      No customers found for "{customerSearchQuery}"
                                     </p>
                                     <p className="text-xs text-gray-500 mt-1">
-                                      Fill in the details below to add a new
-                                      customer
+                                      Fill in the details below to add a new customer
                                     </p>
                                   </div>
                                 )}
@@ -1074,24 +1075,20 @@ useEffect(() => {
                             )}
                           </div>
 
-                          {/* Show customer fields when needed */}
-                          {(showNewCustomerFields ||
-                            formData.lead_name ||
-                            customerSearchQuery) && (
+                          {(showNewCustomerFields || formData.lead_name || customerSearchQuery) && (
                             <>
                               <div className="col-span-1">
                                 <Label
                                   htmlFor="phone"
                                   className="text-sm font-medium text-gray-700"
                                 >
-                                  Phone Number{" "}
-                                  <span className="text-red-500">*</span>
+                                  Phone Number <span className="text-red-500">*</span>
                                 </Label>
                                 <Input
                                   type="tel"
                                   id="phone"
                                   name="mobile_no"
-                                  value={formData.mobile_no || phoneNumber}
+                                  value={formData.mobile_no || "+971 "}
                                   onChange={handlePhoneChange}
                                   onKeyDown={handleKeyDown}
                                   placeholder="+971 XX XXX XXXX"
@@ -1125,8 +1122,7 @@ useEffect(() => {
                               htmlFor="source"
                               className="text-sm font-medium text-gray-700"
                             >
-                              Source Of Inquiry{" "}
-                              <span className="text-red-500">*</span>
+                              Source Of Inquiry <span className="text-red-500">*</span>
                             </Label>
                             <Select
                               value={formData.source || ""}
@@ -1141,10 +1137,7 @@ useEffect(() => {
                                 {[...utmSource]
                                   .sort((a, b) => a.name.localeCompare(b.name))
                                   .map((utms) => (
-                                    <SelectItem
-                                      key={utms.name}
-                                      value={utms.name}
-                                    >
+                                    <SelectItem key={utms.name} value={utms.name}>
                                       {utms.name}
                                     </SelectItem>
                                   ))}
@@ -1157,8 +1150,7 @@ useEffect(() => {
                                   htmlFor="custom_reference_name"
                                   className="text-sm font-medium text-gray-700"
                                 >
-                                  Reference Name{" "}
-                                  <span className="text-red-500">*</span>
+                                  Reference Name <span className="text-red-500">*</span>
                                 </Label>
                                 <Input
                                   type="text"
@@ -1195,10 +1187,7 @@ useEffect(() => {
                               </SelectTrigger>
                               <SelectContent className="bg-white">
                                 {jobTypes.map((jobType) => (
-                                  <SelectItem
-                                    key={jobType.name}
-                                    value={jobType.name}
-                                  >
+                                  <SelectItem key={jobType.name} value={jobType.name}>
                                     {jobType.name}
                                   </SelectItem>
                                 ))}
@@ -1211,7 +1200,7 @@ useEffect(() => {
                               htmlFor="custom_budget_range"
                               className="text-sm font-medium text-gray-700"
                             >
-                              Budget Range
+                              Budget Range <span className="text-red-500">*</span>
                             </Label>
                             <Select
                               value={formData.custom_budget_range || ""}
@@ -1234,15 +1223,12 @@ useEffect(() => {
 
                           <div>
                             <Label className="text-sm font-medium text-gray-700">
-                              Project Urgency
+                              Project Urgency <span className="text-red-500">*</span>
                             </Label>
                             <Select
                               value={formData.custom_project_urgency || ""}
                               onValueChange={(value) =>
-                                handleSelectChange(
-                                  "custom_project_urgency",
-                                  value
-                                )
+                                handleSelectChange("custom_project_urgency", value)
                               }
                             >
                               <SelectTrigger className="w-full">
@@ -1250,10 +1236,7 @@ useEffect(() => {
                               </SelectTrigger>
                               <SelectContent className="bg-white">
                                 {projectUrgency.map((urgency) => (
-                                  <SelectItem
-                                    key={urgency.name}
-                                    value={urgency.name}
-                                  >
+                                  <SelectItem key={urgency.name} value={urgency.name}>
                                     {urgency.name}
                                   </SelectItem>
                                 ))}
@@ -1268,16 +1251,15 @@ useEffect(() => {
                           formData={formData}
                           handleSelectChange={handleSelectChange}
                           fieldNames={{
-                          propertyNumber: "custom_property_name__number",
-                          emirate: "custom_emirate",
-                          area: "custom_area", // This is the individual area field
-                          community: "custom_community",
-                          streetName: "custom_street_name",
-                          propertyArea: "custom_property_area", // This maps to the actual 'area' field in backend
-                          propertyCategory: "custom_property_category",
-                          propertyType: "custom_property_type",
-                        }}
-                          
+                            propertyNumber: "custom_property_name__number",
+                            emirate: "custom_emirate",
+                            area: "custom_area",
+                            community: "custom_community",
+                            streetName: "custom_street_name",
+                            propertyArea: "custom_property_area",
+                            propertyCategory: "custom_property_category",
+                            propertyType: "custom_property_type",
+                          }}
                         />
                       )}
 
@@ -1306,9 +1288,7 @@ useEffect(() => {
                         <div className="space-y-4">
                           {assignError && (
                             <div className="bg-red-50 border border-red-200 rounded-md p-2">
-                              <div className="text-red-700 text-sm">
-                                {assignError}
-                              </div>
+                              <div className="text-red-700 text-sm">{assignError}</div>
                             </div>
                           )}
                           {assignSuccess && (
@@ -1319,11 +1299,9 @@ useEffect(() => {
                             </div>
                           )}
 
-                          {/* Step 1: Date Selection */}
                           <div className="space-y-2">
                             <Label className="text-gray-700 text-sm font-medium">
-                              Select Inspection Date{" "}
-                              <span className="text-red-500">*</span>
+                              Select Inspection Date <span className="text-red-500">*</span>
                             </Label>
                             <div className="relative">
                               <input
@@ -1336,14 +1314,12 @@ useEffect(() => {
                                     : undefined;
                                   handleDateSelect(selectedDate);
                                 }}
-                                className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 pr-10 text-sm appearance-none" // Added appearance-none
+                                className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 pr-10 text-sm appearance-none"
                               />
-                              <CalendarIcon className="absolute right-3 top-2.5 h-4 w-4 text-gray-400 pointer-events-none" />{" "}
-                              {/* Added pointer-events-none */}
+                              <CalendarIcon className="absolute right-3 top-2.5 h-4 w-4 text-gray-400 pointer-events-none" />
                             </div>
                           </div>
 
-                          {/* Step 2: Inspector Selection */}
                           {date && (
                             <div className="space-y-2">
                               <Label className="text-gray-700 text-sm font-medium">
@@ -1378,10 +1354,8 @@ useEffect(() => {
                             </div>
                           )}
 
-                          {/* Step 3: Time Slot Selection */}
-                          {selectedInspector &&
-                            selectedInspector.availability.free_slots.length >
-                              0 && (
+                          {/* {selectedInspector &&
+                            selectedInspector.availability.free_slots.length > 0 && (
                               <div className="space-y-2 p-3 bg-yellow-50 rounded-lg">
                                 <Label className="text-gray-700 text-sm font-medium">
                                   Available Time Slots
@@ -1417,9 +1391,44 @@ useEffect(() => {
                                   )}
                                 </div>
                               </div>
+                            )} */}
+
+
+                            {selectedInspector && selectedInspector.availability.free_slots.length > 0 && (
+                              <div className="space-y-2 px-5 py-2 bg-yellow-50 border border-yellow-200 rounded-lg">
+                                <Label className="text-gray-700 text-sm font-medium">
+                                 Available Time Slots
+                                </Label>
+                                <div className="grid grid-cols-2 gap-2">
+                                  {selectedInspector.availability.free_slots.map(
+                                    (slot, index) => (
+                                      <Button
+                                        key={index}
+                                        variant={
+                                          selectedSlot?.start === slot.start &&
+                                          selectedSlot?.end === slot.end
+                                            ? "outline"
+                                            : "default"
+                                        }
+                                        className="justify-center h-auto py-1.5 px-2 text-xs"
+                                        onClick={() =>
+                                          handleSlotSelect({ start: slot.start, end: slot.end })
+                                        }
+                                       
+                                      >
+                                        {slot.start} - {slot.end}
+                                        {slot.duration_hours && (
+                                          <span className="ml-1 text-xs opacity-70">
+                                            ({slot.duration_hours}h)
+                                          </span>
+                                        )}
+                                      </Button>
+                                    )
+                                  )}
+                                </div>
+                              </div>
                             )}
 
-                          {/* Step 4: Time and Duration Input */}
                           {selectedSlot && (
                             <div className="space-y-3 p-3 border rounded-lg">
                               <Label className="text-gray-700 text-sm font-medium">
@@ -1438,12 +1447,8 @@ useEffect(() => {
                                       if (!selectedSlot) return;
 
                                       const newMinutes = timeToMinutes(newTime);
-                                      const slotStart = timeToMinutes(
-                                        selectedSlot.start
-                                      );
-                                      const slotEnd = timeToMinutes(
-                                        selectedSlot.end
-                                      );
+                                      const slotStart = timeToMinutes(selectedSlot.start);
+                                      const slotEnd = timeToMinutes(selectedSlot.end);
 
                                       if (
                                         newMinutes >= slotStart &&
@@ -1452,8 +1457,7 @@ useEffect(() => {
                                         setRequestedTime(newTime);
                                         setFormData((prev) => ({
                                           ...prev,
-                                          custom_preferred_inspection_time:
-                                            newTime,
+                                          custom_preferred_inspection_time: newTime,
                                         }));
                                       } else {
                                         toast.error(
@@ -1465,10 +1469,6 @@ useEffect(() => {
                                     max={selectedSlot?.end || ""}
                                     className="text-sm h-8"
                                   />
-                                  {/* <div className="text-xs text-gray-500">
-                                    Between {selectedSlot.start} -{" "}
-                                    {selectedSlot.end}
-                                  </div> */}
                                 </div>
                                 <div className="space-y-1">
                                   <Label className="text-xs text-gray-600">
@@ -1510,16 +1510,13 @@ useEffect(() => {
                             </div>
                           )}
 
-                          {/* Priority Selection */}
                           <div className="space-y-2">
                             <Label className="text-gray-700 text-sm font-medium">
                               Priority
                             </Label>
                             <Select
                               value={priority}
-                              onValueChange={(value) =>
-                                setPriority(value as PriorityLevel)
-                              }
+                              onValueChange={(value) => setPriority(value as PriorityLevel)}
                             >
                               <SelectTrigger className="w-full bg-white border border-gray-300">
                                 <SelectValue placeholder="Priority" />
@@ -1547,35 +1544,17 @@ useEffect(() => {
                             </Select>
                           </div>
 
-                          {/* Save & Assign Button */}
                           <div className="flex justify-end">
                             <Button
                               type="button"
                               onClick={handleAssignAndSave}
-                              disabled={
-                                createTodoLoading ||
-                                loading ||
-                                !selectedInspector ||
-                                !date ||
-                                !requestedTime ||
-                                !validateRequestedTime() ||
-                                !formData.lead_name ||
-                                !formData.mobile_no ||
-                                !formData.custom_job_type ||
-                                (showReferenceInput &&
-                                  !formData.custom_reference_name) ||
-                                !formData.custom_budget_range ||
-                                !formData.custom_project_urgency ||
-                                !formData.source 
-                              }
-                              className="bg-gradient-to-r from-emerald-400 to-teal-500 hover:from-emerald-700 hover:to-teal-600 text-white"
+                              disabled={!isAssignmentReady()}
+                              className="bg-gradient-to-r from-emerald-400 to-teal-500 hover:from-emerald-700 hover:to-teal-600 text-white disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                               {createTodoLoading || loading ? (
                                 <>
                                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                  {loading
-                                    ? "Saving & Assigning..."
-                                    : "Assigning..."}
+                                  {loading ? "Saving & Assigning..." : "Assigning..."}
                                 </>
                               ) : (
                                 "Save & Assign Inspector"
@@ -1583,7 +1562,6 @@ useEffect(() => {
                             </Button>
                           </div>
 
-                          {/* UserAvailability Modal */}
                           {showAvailabilityModal && (
                             <UserAvailability
                               date={date || new Date()}
@@ -1597,6 +1575,7 @@ useEffect(() => {
                   </div>
                 </div>
               ))}
+              
               <div className="flex justify-end gap-3 pt-6">
                 <Button
                   type="button"
@@ -1628,6 +1607,14 @@ useEffect(() => {
           </div>
         </div>
       </div>
+
+      <ConfirmationModal
+        isOpen={showConfirmModal}
+        onConfirm={confirmAssignment}
+        onCancel={() => setShowConfirmModal(false)}
+        title="Confirm Inspector Assignment"
+        message={`Are you sure you want to assign ${selectedInspector?.user_name} for the inspection on ${date ? format(date, "MMM dd, yyyy") : ""} at ${requestedTime}? Once assigned, customer details cannot be modified for this inquiry.`}
+      />
     </>
   );
 };

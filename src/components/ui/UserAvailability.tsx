@@ -33,7 +33,8 @@ interface UserAvailabilityProps {
   onClose: () => void;
   onSelectInspector?: (
     email: string,
-    availabilityData: InspectorAvailability[]
+    availabilityData: InspectorAvailability[],
+    modifiedSlots: AvailabilitySlot[]
   ) => void;
 }
 
@@ -45,15 +46,25 @@ const UserAvailability = ({
   const [availability, setAvailability] = useState<InspectorAvailability[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [currentTime, setCurrentTime] = useState<string>('');
+  const [currentTime, setCurrentTime] = useState<string>("");
 
   useEffect(() => {
     // Get current time in HH:mm format
     const now = new Date();
-    const hours = now.getHours().toString().padStart(2, '0');
-    const minutes = now.getMinutes().toString().padStart(2, '0');
+    const hours = now.getHours().toString().padStart(2, "0");
+    const minutes = now.getMinutes().toString().padStart(2, "0");
     setCurrentTime(`${hours}:${minutes}`);
   }, []);
+
+  // const handleInspectorSelect = (
+  //   email: string,
+  //   availabilityData: InspectorAvailability[],
+  //   modifiedSlots: AvailabilitySlot[] // Add this parameter
+  // ) => {
+  //   if (onSelectInspector) {
+  //     onSelectInspector(email, availabilityData, modifiedSlots);
+  //   }
+  // };
 
   useEffect(() => {
     const fetchAvailability = async () => {
@@ -100,22 +111,42 @@ const UserAvailability = ({
     );
   };
 
-  // Filter free slots to only show those after current time (only for today)
+  // Filter free slots and adjust them to show remaining time if current time is within a slot
   const filterFutureSlots = (slots: AvailabilitySlot[]): AvailabilitySlot[] => {
     // If it's not today, return all slots
     if (!isToday()) {
       return slots;
     }
-    
+
     // If it's today and we don't have current time yet, return empty array
     if (!currentTime) return [];
-    
-    // Filter slots that start after current time (only for today)
-    return slots.filter(slot => {
-      const slotStartMinutes = timeToMinutes(slot.start);
-      const currentTimeMinutes = timeToMinutes(currentTime);
-      return slotStartMinutes > currentTimeMinutes;
-    });
+
+    const currentMinutes = timeToMinutes(currentTime);
+
+    return slots.reduce<AvailabilitySlot[]>((filteredSlots, slot) => {
+      const slotStart = timeToMinutes(slot.start);
+      const slotEnd = timeToMinutes(slot.end);
+
+      if (slotEnd <= currentMinutes) {
+        // Slot has already ended - exclude it
+        return filteredSlots;
+      }
+
+      if (slotStart > currentMinutes) {
+        // Slot is in the future - include as-is
+        filteredSlots.push(slot);
+      } else {
+        // Current time is within this slot - create a modified slot from current time to end time
+        const minutesToEnd = slotEnd - currentMinutes;
+        filteredSlots.push({
+          start: currentTime,
+          end: slot.end,
+          duration_hours: minutesToEnd / 60,
+        });
+      }
+
+      return filteredSlots;
+    }, []);
   };
 
   return (
@@ -152,9 +183,11 @@ const UserAvailability = ({
           ) : (
             <div className="space-y-3 p-4">
               {availability.map((inspector) => {
-                const futureFreeSlots = filterFutureSlots(inspector.availability.free_slots);
+                const futureFreeSlots = filterFutureSlots(
+                  inspector.availability.free_slots
+                );
                 const hasFutureSlots = futureFreeSlots.length > 0;
-                
+
                 return (
                   <div
                     key={inspector.user_id}
@@ -183,7 +216,11 @@ const UserAvailability = ({
                             variant="outline"
                             className="text-xs h-7 px-2"
                             onClick={() => {
-                              onSelectInspector(inspector.email, availability);
+                              onSelectInspector(
+                                inspector.email,
+                                availability,
+                                futureFreeSlots
+                              );
                               onClose();
                             }}
                             disabled={!hasFutureSlots}
@@ -205,14 +242,17 @@ const UserAvailability = ({
                           </h5>
                           <div className="flex flex-wrap gap-1">
                             {futureFreeSlots.map((slot, index) => {
-                              const durationHours = 
-                                (timeToMinutes(slot.end) - timeToMinutes(slot.start)) / 60;
+                              const durationHours =
+                                (timeToMinutes(slot.end) -
+                                  timeToMinutes(slot.start)) /
+                                60;
                               return (
                                 <span
                                   key={index}
                                   className="inline-flex items-center px-2 py-1 rounded-md text-xs bg-gray-100 text-gray-700"
                                 >
-                                  {formatTime(slot.start)} - {formatTime(slot.end)}
+                                  {formatTime(slot.start)} -{" "}
+                                  {formatTime(slot.end)}
                                   <span className="text-gray-600 ml-1">
                                     ({durationHours.toFixed(1)}h)
                                   </span>
@@ -223,10 +263,9 @@ const UserAvailability = ({
                         </div>
                       ) : (
                         <p className="text-xs text-gray-500 text-center py-2">
-                          {isToday() 
-                            ? "No available time slots remaining today" 
-                            : "No available time slots for this date"
-                          }
+                          {isToday()
+                            ? "No available time slots remaining today"
+                            : "No available time slots for this date"}
                         </p>
                       )}
                     </div>
