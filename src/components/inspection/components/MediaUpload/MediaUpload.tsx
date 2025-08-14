@@ -33,7 +33,8 @@ const MediaPreviewModal: React.FC<{
   onRemove: () => void;
   onEditRemark?: () => void;
   inspectionStatus?: string;
-}> = ({ isOpen, onClose, media, onRemove, onEditRemark, inspectionStatus }) => {
+  isReadOnly?: boolean;
+}> = ({ isOpen, onClose, media, onRemove, onEditRemark,  isReadOnly }) => {
   const imageurl = "https://eits.thebigocommunity.org";
 
   if (!isOpen) return null;
@@ -105,19 +106,22 @@ const MediaPreviewModal: React.FC<{
         <div className="flex gap-3">
           {onEditRemark && (
             <Button
+              type="button"
               variant="outline"
               className="flex-1 bg-blue-600 hover:bg-blue-700 text-white border-blue-600"
               onClick={onEditRemark}
+              disabled={isReadOnly}
             >
               <Edit3 className="h-4 w-4 mr-2" />
               Edit Remark
             </Button>
           )}
           <Button
+            type="button"
             variant="destructive"
             className="flex-1 bg-red-600 hover:bg-red-700"
             onClick={onRemove}
-            disabled={inspectionStatus === "Completed"}
+            disabled={isReadOnly}
           >
             <Trash2 className="h-4 w-4 mr-2" />
             Delete
@@ -182,10 +186,11 @@ const RemarksDialog: React.FC<{
           </div>
 
           <div className="flex gap-3">
-            <Button onClick={handleSkip} variant="outline" className="flex-1">
+            <Button onClick={handleSkip} variant="outline" className="flex-1" type="button">
               Skip
             </Button>
             <Button
+              type="button"
               onClick={handleSave}
               className="flex-1 bg-blue-600 hover:bg-blue-700"
             >
@@ -227,10 +232,11 @@ const DeleteConfirmationDialog: React.FC<{
         </div>
 
         <div className="flex gap-3">
-          <Button onClick={onClose} variant="outline" className="flex-1">
+          <Button onClick={onClose} variant="outline" className="flex-1" type="button">
             Cancel
           </Button>
           <Button
+
             onClick={onConfirm}
             variant="destructive"
             className="flex-1 bg-red-600 hover:bg-red-700"
@@ -391,6 +397,7 @@ const AudioRecordingDialog: React.FC<{
 
           <div className="flex items-center justify-center gap-4">
             <Button
+              type="button"
               onClick={stopRecording}
               disabled={!isRecording}
               className="bg-red-500 hover:bg-red-600 text-white px-8 py-3 rounded-full flex items-center gap-2 transition-all duration-200"
@@ -400,6 +407,7 @@ const AudioRecordingDialog: React.FC<{
             </Button>
 
             <Button
+              type="button"
               onClick={onClose}
               variant="outline"
               className="px-6 py-3 rounded-full"
@@ -440,6 +448,7 @@ const CameraOptionsModal: React.FC<{
         <div className="space-y-3">
           {allowedTypes.includes("image") && (
             <Button
+              type="button"
               onClick={onSelectImage}
               className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg"
             >
@@ -448,6 +457,7 @@ const CameraOptionsModal: React.FC<{
           )}
           {allowedTypes.includes("video") && (
             <Button
+              type="button"
               onClick={onSelectVideo}
               className="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg"
             >
@@ -455,6 +465,7 @@ const CameraOptionsModal: React.FC<{
             </Button>
           )}
           <Button
+            type="button"
             onClick={onClose}
             variant="outline"
             className="w-full py-3 rounded-lg"
@@ -575,7 +586,6 @@ const VideoRecordingDialog: React.FC<{
       onComplete(file);
     } catch (error) {
       console.error("Video processing error:", error);
-      toast.error("Failed to process recorded video");
     } finally {
       setIsUploading(false);
       cleanup();
@@ -657,6 +667,7 @@ const VideoRecordingDialog: React.FC<{
           {recordedVideo ? (
             <div className="flex gap-4">
               <button
+                type="button"
                 onClick={retakeVideo}
                 disabled={isUploading}
                 className="px-6 py-2 bg-gray-600 text-white rounded-lg disabled:opacity-50"
@@ -664,6 +675,7 @@ const VideoRecordingDialog: React.FC<{
                 Retake
               </button>
               <button
+                type="button"
                 onClick={useVideo}
                 disabled={isUploading}
                 className="px-6 py-2 bg-blue-600 text-white rounded-lg flex items-center gap-2 disabled:opacity-50"
@@ -680,6 +692,7 @@ const VideoRecordingDialog: React.FC<{
             </div>
           ) : (
             <button
+              type="button"
               onClick={stopRecording}
               disabled={!isRecording}
               className="w-16 h-16 bg-red-500 rounded-full border-4 border-white shadow-lg flex items-center justify-center disabled:opacity-50"
@@ -765,7 +778,6 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
         onChange(undefined);
       }
 
-      toast.success("Media file removed.");
     }
 
     setShowDeleteConfirm(false);
@@ -1413,6 +1425,7 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
           media={selectedMedia}
           onRemove={handleRemoveFromModal}
           onEditRemark={() => handleEditRemark(selectedMedia.id)}
+          isReadOnly={isReadOnly}
           inspectionStatus={inspectionStatus}
         />
       )}

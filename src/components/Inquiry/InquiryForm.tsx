@@ -17,6 +17,7 @@ import {
   User,
   X,
   AlertTriangle,
+  Plus,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
@@ -57,7 +58,12 @@ interface InquiryFormProps {
   onClose: () => void;
   inquiry?: Lead | null;
 }
-
+interface NewCustomerFormData {
+  name: string;
+  email: string;
+  phone: string;
+  jobType: string;
+}
 const sections: FormSection[] = [
   {
     id: "contact",
@@ -208,6 +214,13 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
 
   // Confirmation modal state
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [showNewCustomerModal, setShowNewCustomerModal] = useState(false);
+  const [newCustomerForm, setNewCustomerForm] = useState<NewCustomerFormData>({
+    name: "",
+    email: "",
+    phone: "+971 ",
+    jobType: jobTypes.length > 0 ? jobTypes[0].name : "",
+  });
 
   const navigate = useNavigate();
 
@@ -288,6 +301,149 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
       }));
     }
   }, []);
+
+  const handleNewCustomerInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target;
+    setNewCustomerForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleNewCustomerPhoneChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const input = e.target.value;
+
+    if (!input.startsWith("+971 ")) {
+      setNewCustomerForm((prev) => ({ ...prev, phone: "+971 " }));
+      return;
+    }
+
+    const digits = input.replace(/\D/g, "").substring(3);
+    const limitedDigits = digits.substring(0, 9);
+
+    let formattedNumber = "+971 ";
+
+    if (limitedDigits.length > 0) {
+      const isMobile = limitedDigits.startsWith("5");
+
+      if (isMobile) {
+        formattedNumber += limitedDigits.substring(0, 3);
+        if (limitedDigits.length > 3) {
+          formattedNumber += " " + limitedDigits.substring(3, 6);
+          if (limitedDigits.length > 6) {
+            formattedNumber += " " + limitedDigits.substring(6, 9);
+          }
+        }
+      } else {
+        formattedNumber += limitedDigits.substring(0, 2);
+        if (limitedDigits.length > 2) {
+          formattedNumber += " " + limitedDigits.substring(2, 5);
+          if (limitedDigits.length > 5) {
+            formattedNumber += " " + limitedDigits.substring(5, 9);
+          }
+        }
+      }
+    }
+
+    setNewCustomerForm((prev) => ({ ...prev, phone: formattedNumber }));
+  };
+
+ const saveNewCustomer = async () => {
+  if (!newCustomerForm.name.trim()) {
+    toast.error("Customer name is required");
+    return;
+  }
+
+  if (!newCustomerForm.phone || newCustomerForm.phone.length < 5) {
+    toast.error("Valid mobile number is required");
+    return;
+  }
+
+  try {
+    // Show loading state
+    setIsCustomerSearching(true);
+
+    // Prepare lead data using the same format as your form submission
+    const newLeadData = formatSubmissionData({
+      lead_name: newCustomerForm.name.trim(),
+      email_id: newCustomerForm.email || "",
+      mobile_no: newCustomerForm.phone,
+      custom_job_type: newCustomerForm.jobType,
+      // Include other required fields with default values
+      custom_budget_range: "",
+      custom_project_urgency: "",
+      source: "Direct",
+      custom_property_name__number: "",
+      custom_emirate: "",
+      custom_area: "",
+      custom_community: "",
+      custom_street_name: "",
+      custom_property_area: "",
+      custom_property_category: "",
+      custom_special_requirements: "",
+    });
+
+    // Call the createLead API
+    const createdLead = await createLead(newLeadData);
+    
+    if (!createdLead) {
+      throw new Error("Failed to create lead");
+    }
+
+    // Update the main form with the created lead data
+    // Use the original form data as base, then override with API response
+    setFormData((prev) => ({
+      ...prev,
+      // Map API response fields back to form fields
+      lead_name: createdLead.lead_name || newCustomerForm.name,
+      email_id: createdLead.email_id || newCustomerForm.email,
+      mobile_no: createdLead.mobile_no || newCustomerForm.phone,
+      custom_job_type: createdLead.custom_job_type || newCustomerForm.jobType,
+      
+      // Store the lead ID for future updates
+      name: createdLead.name, // This is typically the unique identifier from API
+      
+      // Set source as Direct since it's a new lead
+      source: createdLead.source || "Direct",
+    }));
+
+    // Update UI state
+    setCustomerSearchQuery(newCustomerForm.name);
+    setShowNewCustomerFields(true);
+    setShowNewCustomerModal(false);
+    setShowCustomerDropdown(false);
+
+    // Reset new customer form
+    setNewCustomerForm({
+      name: "",
+      email: "",
+      phone: "+971 ",
+      jobType: jobTypes.length > 0 ? jobTypes[0].name : "",
+    });
+
+    toast.success(`New Lead "${newCustomerForm.name}" created successfully!`);
+
+  } catch (error) {
+    console.error("Error creating new lead:", error);
+    
+    // Extract error message from different error formats
+    let errorMessage = "Failed to create lead. Please try again.";
+    
+    if (error && typeof error === "object") {
+      if ("message" in error) {
+        errorMessage = (error as { message: string }).message;
+      } else if ("error" in error) {
+        errorMessage = (error as { error: string }).error;
+      }
+    }
+    
+    toast.error(errorMessage);
+    
+  } finally {
+    setIsCustomerSearching(false);
+  }
+};
 
   const validateRequestedTime = () => {
     if (!requestedTime || !selectedSlot) return false;
@@ -524,57 +680,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
       toast.error("Job type is required");
       return false;
     }
-    if (!formData.custom_budget_range) {
-      toast.error("Budget range is required");
-      return false;
-    }
-    if (!formData.custom_project_urgency) {
-      toast.error("Project urgency is required");
-      return false;
-    }
-    if (!formData.source) {
-      toast.error("Source of inquiry is required");
-      return false;
-    }
-    if (
-      (formData.source === "Reference" ||
-        formData.source === "Supplier Reference") &&
-      !formData.custom_reference_name
-    ) {
-      toast.error("Reference name is required");
-      return false;
-    }
-
-    // Property Information validation
-    if (!formData.custom_property_name__number) {
-      toast.error("Property name/number is required");
-      return false;
-    }
-    if (!formData.custom_property_category) {
-      toast.error("Property category is required");
-      return false;
-    }
-    if (!formData.custom_property_area) {
-      toast.error("Property area is required");
-      return false;
-    }
-    if (!formData.custom_street_name) {
-      toast.error("Street name is required");
-      return false;
-    }
-    if (!formData.custom_emirate) {
-      toast.error("Emirate is required");
-      return false;
-    }
-    if (!formData.custom_community) {
-      toast.error("Community is required");
-      return false;
-    }
-    if (!formData.custom_area) {
-      toast.error("Area is required");
-      return false;
-    }
-
+    
     return true;
   };
 
@@ -720,127 +826,6 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     resetForm();
     onClose();
   };
-
-  // const handleCustomerSearch = useCallback(async (query: string) => {
-  //   if (!query.trim()) {
-  //     setCustomerSearchResults([]);
-  //     setShowCustomerDropdown(false);
-  //     setShowNewCustomerFields(false);
-  //     return;
-  //   }
-
-  //   setIsCustomerSearching(true);
-  //   try {
-  //     const allResults: any[] = [];
-  //     const addressEndpoint = "/api/method/eits_app.site_address_search.search_site_addresses";
-  //     const queryLower = query.toLowerCase().trim();
-
-  //     const searchPromises: Promise<any>[] = [];
-
-  //     if (queryLower.length >= 2) {
-  //       searchPromises.push(
-  //         frappeAPI
-  //           .makeAuthenticatedRequest(
-  //             "GET",
-  //             `${addressEndpoint}?search_term=${encodeURIComponent(query)}`
-  //           )
-  //           .then((response) => ({
-  //             type: "customer_name",
-  //             data: response.message?.data || [],
-  //           }))
-  //           .catch(() => ({ type: "customer_name", data: [] }))
-  //       );
-
-  //       if (/^\+?\d+$/.test(query.replace(/[\s-]/g, ""))) {
-  //         const cleanPhone = query.replace(/[\s-]/g, "");
-
-  //         searchPromises.push(
-  //           frappeAPI
-  //             .makeAuthenticatedRequest(
-  //               "GET",
-  //               `${addressEndpoint}?search_term=${encodeURIComponent(cleanPhone)}`
-  //             )
-  //             .then((response) => ({
-  //               type: "customer_phone",
-  //               data: response.message?.data || [],
-  //             }))
-  //             .catch(() => ({ type: "customer_phone", data: [] }))
-  //         );
-  //       }
-
-  //       const searchResults = await Promise.all(searchPromises);
-
-  //       searchResults.forEach((result) => {
-  //         if (result.data && Array.isArray(result.data)) {
-  //           const transformedData = result.data.map((address: any) => ({
-  //             ...address,
-  //             search_type: "customer",
-  //             found_via: result.type,
-  //             customer_name:
-  //               address.customer_details?.customer_name ||
-  //               address.lead_details?.lead_name ||
-  //               address.custom_lead_customer_name ||
-  //               `Customer`,
-  //             mobile_no:
-  //               address.custom_customer_phone_number ||
-  //               address.custom_lead_phone_number ||
-  //               address.customer_details?.mobile_no ||
-  //               address.lead_details?.mobile_no,
-  //             email_id:
-  //               address.custom_customer_email ||
-  //               address.lead_details?.email_id ||
-  //               address.customer_details?.email_id,
-  //             name: address.customer_details?.name || address.custom_lead_name,
-  //             lead_name: address.custom_lead_name,
-  //             address_details: {
-  //               emirate: address.custom_emirate || "",
-  //               area: address.custom_area || "",
-  //               community: address.custom_community || "",
-  //               street_name: address.custom_street_name || "",
-  //               property_number: address.custom_property_number || "",
-  //               property_category: address.custom_property_category || "",
-  //               combined_address: address.custom_combined_address || "",
-  //             },
-  //           }));
-  //           allResults.push(...transformedData);
-  //         }
-  //       });
-  //     }
-
-  //     const uniqueResults = allResults.filter((result, index, self) => {
-  //       return (
-  //         index ===
-  //         self.findIndex(
-  //           (r) =>
-  //             (r.customer_name === result.customer_name &&
-  //               r.email_id === result.email_id &&
-  //               r.mobile_no === result.mobile_no) ||
-  //             (r.custom_lead_name &&
-  //               result.custom_lead_name &&
-  //               r.custom_lead_name === result.custom_lead_name)
-  //         )
-  //       );
-  //     });
-
-  //     setCustomerSearchResults(uniqueResults);
-  //     setShowCustomerDropdown(true);
-
-  //     if (uniqueResults.length === 0) {
-  //       setShowNewCustomerFields(true);
-  //     } else {
-  //       setShowNewCustomerFields(false);
-  //     }
-  //   } catch (error) {
-  //     console.error("Customer search error:", error);
-  //     setCustomerSearchResults([]);
-  //     setShowCustomerDropdown(false);
-  //     setShowNewCustomerFields(true);
-  //     toast.error("Failed to search customers. Please try again.");
-  //   } finally {
-  //     setIsCustomerSearching(false);
-  //   }
-  // }, []);
-
   const handleCustomerSearch = useCallback(async (query: string) => {
     if (!query.trim()) {
       setCustomerSearchResults([]);
@@ -857,21 +842,16 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
           query
         )}`
       );
-      console.log("Search response:", response);
 
-      // Check if response structure is correct
       if (!response.message?.data) {
         throw new Error("Invalid response structure");
       }
 
       const results = response.message.data;
 
-      // Transform the results
       const transformedResults = results.map((result: any) => {
-        // Extract customer/lead name from site_name (format: "Name-Number,...")
         const nameFromSite =
           result.site_name?.split("-")[0]?.split(",")[0] || "Unknown";
-
         return {
           ...result,
           search_type: "address",
@@ -898,7 +878,9 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
             community: result.custom_community,
             street_name: result.custom_street_name,
             property_number: result.custom_property_number,
-            combined_address: (extractAddressFromSite(result.site_name)),
+            combined_address: result.custom_combine_address || extractAddressFromSite(result.site_name),
+            property_category: result.custom_property_category,
+            property_type: result.custom_property_type,
           },
           match_info: result.match_info,
         };
@@ -906,14 +888,18 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
 
       setCustomerSearchResults(transformedResults);
       setShowCustomerDropdown(true);
+
+      // Show new customer fields if there are no results
+      setShowNewCustomerFields(transformedResults.length === 0);
     } catch (error) {
       console.error("Search error:", error);
       setCustomerSearchResults([]);
+
+      // Hide dropdown on error
       setShowCustomerDropdown(false);
-      // Only show error if it's not a empty query case
-      // if (query.trim()) {
-      //   toast.error("Failed to search. Please try again.");
-      // }
+
+      // Show new customer fields on error
+      setShowNewCustomerFields(true);
     } finally {
       setIsCustomerSearching(false);
     }
@@ -943,6 +929,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
             custom_property_name__number:
               result.address_details.property_number || "",
             custom_property_area: result.address_details.combined_address || "",
+            custom_property_type: result.address_details.property_type || "",
           }
         : {};
 
@@ -1015,15 +1002,6 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     )
       return false;
 
-    // Property Information validation
-    if (!formData.custom_property_name__number) return false;
-    if (!formData.custom_property_category) return false;
-    if (!formData.custom_property_area) return false;
-    if (!formData.custom_street_name) return false;
-    if (!formData.custom_emirate) return false;
-    if (!formData.custom_community) return false;
-    if (!formData.custom_area) return false;
-
     return true;
   };
 
@@ -1034,26 +1012,12 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
       selectedInspector &&
       date &&
       requestedTime &&
-      validateRequestedTime() &&
+      // validateRequestedTime() &&
       !createTodoLoading &&
       !loading
     );
   };
 
-  //  const extractCustomerNameFromSite = (siteName: string) => {
-  //   if (!siteName) return "Unknown";
-  //   // Format: "Name-Number,..." - extract everything before the first dash and number
-  //   const parts = siteName.split("-");
-  //   if (parts.length >= 2) {
-  //     // Check if the part after dash starts with a number
-  //     const afterDash = parts[1];
-  //     if (/^\d/.test(afterDash)) {
-  //       return parts[0].trim();
-  //     }
-  //   }
-  //   // Fallback: take first part before comma
-  //   return siteName.split(",")[0].trim();
-  // };
 
   const extractAddressFromSite = (siteName: string) => {
     if (!siteName) return "";
@@ -1090,6 +1054,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                 {inquiry ? "Edit Inquiry" : "New Inquiry"}
               </h3>
               <Button
+              type="button"
                 variant="ghost"
                 size="sm"
                 className="h-8 w-8 p-0 rounded-full text-white hover:bg-white/10"
@@ -1219,15 +1184,20 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                                     </div>
                                   ))
                                 ) : (
-                                  <div className="px-4 py-2 text-center">
-                                    <p className="font-medium text-gray-700">
-                                      No customers found for "
-                                      {customerSearchQuery}"
-                                    </p>
-                                    <p className="text-xs text-gray-500 mt-1">
-                                      Fill in the details below to add a new
-                                      customer
-                                    </p>
+                                  <div className="px-4 py-2">
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="sm"
+                                      className="w-full flex items-center gap-2"
+                                      onClick={() => {
+                                        setShowNewCustomerModal(true);
+                                        setShowCustomerDropdown(false);
+                                      }}
+                                    >
+                                      <Plus className="h-4 w-4" />
+                                      Add New Customer
+                                    </Button>
                                   </div>
                                 )}
                               </div>
@@ -1268,7 +1238,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                                   Email
                                 </Label>
                                 <Input
-                                  type="email"
+                                  type="text"
                                   id="email_id"
                                   name="email_id"
                                   value={formData.email_id || ""}
@@ -1285,7 +1255,6 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                               className="text-sm font-medium text-gray-700"
                             >
                               Source Of Inquiry{" "}
-                              <span className="text-red-500">*</span>
                             </Label>
                             <Select
                               value={formData.source || ""}
@@ -1371,7 +1340,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                               className="text-sm font-medium text-gray-700"
                             >
                               Budget Range{" "}
-                              <span className="text-red-500">*</span>
+                             
                             </Label>
                             <Select
                               value={formData.custom_budget_range || ""}
@@ -1395,7 +1364,6 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                           <div>
                             <Label className="text-sm font-medium text-gray-700">
                               Project Urgency{" "}
-                              <span className="text-red-500">*</span>
                             </Label>
                             <Select
                               value={formData.custom_project_urgency || ""}
@@ -1546,6 +1514,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                                   {selectedInspector.availability.free_slots.map(
                                     (slot, index) => (
                                       <Button
+                                      type="button"
                                         key={index}
                                         variant={
                                           selectedSlot?.start === slot.start &&
@@ -1562,11 +1531,11 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                                         }
                                       >
                                         {slot.start} - {slot.end}
-                                        {slot.duration_hours && (
+                                        {/* {slot.duration_hours && (
                                           <span className="ml-1 text-xs opacity-70">
                                             ({slot.duration_hours}h)
                                           </span>
-                                        )}
+                                        )} */}
                                       </Button>
                                     )
                                   )}
@@ -1761,6 +1730,125 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
           </div>
         </div>
       </div>
+
+      {showNewCustomerModal && (
+        <>
+          <div
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-60 px-6"
+            onClick={() => setShowNewCustomerModal(false)}
+          />
+          <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg shadow-xl z-80 w-full max-w-md px-4">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Add New Lead
+                </h3>
+                <button
+                  onClick={() => setShowNewCustomerModal(false)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <Label className="block text-sm font-medium text-gray-700 mb-1">
+                    Full Name <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    type="text"
+                    name="name"
+                    value={newCustomerForm.name}
+                    onChange={handleNewCustomerInputChange}
+                    placeholder="Enter customer name"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <Label className="block text-sm font-medium text-gray-700 mb-1">
+                    Phone Number <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    type="tel"
+                    name="phone"
+                    value={newCustomerForm.phone}
+                    onChange={handleNewCustomerPhoneChange}
+                    onKeyDown={handleKeyDown}
+                    placeholder="+971 XX XXX XXXX"
+                    maxLength={17}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <Label className="block text-sm font-medium text-gray-700 mb-1">
+                    Email
+                  </Label>
+                  <Input
+                    type="email"
+                    name="email"
+                    value={newCustomerForm.email}
+                    onChange={handleNewCustomerInputChange}
+                    placeholder="Enter email"
+                  />
+                </div>
+
+                <div>
+                  <Label className="block text-sm font-medium text-gray-700 mb-1">
+                    Job Type
+                  </Label>
+                  {jobTypes.length > 0 ? (
+                    <Select
+                      value={newCustomerForm.jobType}
+                      onValueChange={(value) =>
+                        setNewCustomerForm((prev) => ({
+                          ...prev,
+                          jobType: value,
+                        }))
+                      }
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select job type" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-white z-[100]">
+                        {" "}
+                        {/* Increased z-index */}
+                        {jobTypes.map((jobType) => (
+                          <SelectItem key={jobType.name} value={jobType.name}>
+                            {jobType.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <div className="text-sm text-gray-500 flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Loading job types...
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 mt-6">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowNewCustomerModal(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={saveNewCustomer}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                >
+                  Save Customer
+                </Button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
 
       <ConfirmationModal
         isOpen={showConfirmModal}

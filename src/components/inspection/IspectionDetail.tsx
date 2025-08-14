@@ -86,6 +86,7 @@ const CreateInspection = () => {
     [inspection?.docstatus]
   );
   const isReadOnly = useMemo(() => isSubmitted, [isSubmitted]);
+  console.log("inspection", inspection);
 
   const {
     createInspection,

@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Loader2, Plus, Search, Home, Edit } from "lucide-react";
+import { Loader2, Plus, Search, Home, Edit, MapIcon } from "lucide-react";
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import { toast } from "react-hot-toast";
 import { createPortal } from "react-dom";
@@ -699,6 +699,7 @@ const handleSaveAddress = () => {
       {/* Address Search - Single Field */}
       <div className="w-full">
         <label className="block text-sm font-medium text-gray-700 mb-1">
+          <MapIcon className="inline-block mr-1 pb-1 h-4 w-4 text-gray-500" />
           Site Address
         </label>
         <div className="relative">
@@ -730,7 +731,7 @@ const handleSaveAddress = () => {
                   <button
                     type="button"
                     onClick={handleEditAddress}
-                    className="text-gray-400 hover:text-blue-500 p-1 flex-shrink-0"
+                    className="text-black hover:text-blue-500  p-1 flex-shrink-0"
                     title="Edit address"
                   >
                     <Edit className="h-4 w-4 " />
@@ -738,7 +739,7 @@ const handleSaveAddress = () => {
                   <button
                     type="button"
                     onClick={handleClearAddress}
-                    className="text-gray-400 hover:text-gray-600 p-1 flex-shrink-0"
+                    className="text-black hover:text-gray-600 p-1 flex-shrink-0"
                     title="Clear address"
                   >
                     <span className="text-lg leading-none">×</span>
