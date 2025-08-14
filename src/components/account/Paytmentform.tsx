@@ -6,6 +6,7 @@ import { useAuth } from "../../context/AuthContext";
 import { frappeAPI } from "../../api/frappeClient";
 import { usePaymentStore } from "../../store/payment";
 import PaymentImageUpload from "./imageupload/ImageUpload";
+import { useNavigate } from "react-router-dom";
 
 interface ImageItem {
   id: string;
@@ -54,6 +55,7 @@ const PaymentForm = () => {
     mobile_no: "",
     email_id: "",
   });
+  const navigate = useNavigate();
 
   // Add a ref to track if images were manually set to prevent overriding
   const isManualImageUpdate = useRef(false);
@@ -405,6 +407,8 @@ const handleImageUpload = async (file: File): Promise<string> => {
     } else {
       toast.error(`Error: ${result.error}`);
     }
+    navigate("/accountUser?tab=payment-summary");
+
   };
 
   // Then modify your getModeOfPaymentValue function to handle the default case:

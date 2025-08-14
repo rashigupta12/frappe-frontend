@@ -7,6 +7,7 @@ import { frappeAPI } from "../../api/frappeClient";
 
 import PaymentImageUpload from "./imageupload/ImageUpload";
 import { useReciptStore } from "../../store/recipt";
+import { useNavigate } from "react-router-dom";
 
 interface ImageItem {
   id: string;
@@ -55,6 +56,7 @@ const ReceiptForm = () => {
     mobile_no: "",
     email_id: "",
   });
+  const navigate = useNavigate();
 
   useEffect(() => {
     // Set default payment mode to Cash if not already set
@@ -372,6 +374,8 @@ useEffect(() => {
     } else {
       toast.error(`Error: ${result.error}`);
     }
+    navigate("/accountUser?tab=receipt-summary");
+
   };
 
   const getModeOfPaymentValue = () => {
