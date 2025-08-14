@@ -343,7 +343,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     setNewCustomerForm((prev) => ({ ...prev, phone: formattedNumber }));
   };
 
- const saveNewCustomer = async () => {
+const saveNewCustomer = async () => {
   if (!newCustomerForm.name.trim()) {
     toast.error("Customer name is required");
     return;
@@ -384,7 +384,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
       throw new Error("Failed to create lead");
     }
 
-    // *** FIX 1: Update the main form with the created lead data AND set it as current inquiry ***
+    // Update the main form with the created lead data AND set it as current inquiry
     setFormData((prev) => ({
       ...prev,
       // Map API response fields back to form fields
@@ -395,11 +395,6 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
       // Store the lead ID for future updates
       name: createdLead.name, // This is the key - stores the lead ID
     }));
-
-    // *** FIX 2: Update the current inquiry reference to enable edit mode ***
-    // You'll need to add this state or modify the parent component to pass this callback
-    // If you have access to update the inquiry prop from parent:
-    // onInquiryUpdate?.(createdLead); // Uncomment if you add this prop
 
     // Update UI state
     setCustomerSearchQuery(newCustomerForm.name);
@@ -434,7 +429,6 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     setIsCustomerSearching(false);
   }
 };
-
   const validateRequestedTime = () => {
     if (!requestedTime || !selectedSlot) return false;
 
@@ -674,7 +668,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     return true;
   };
 
-  const saveLead = async (): Promise<string | undefined> => {
+const saveLead = async (): Promise<string | undefined> => {
   try {
     const submissionData = formatSubmissionData(formData);
 
@@ -691,7 +685,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
       const newInquiry = await createLead(submissionData);
       toast.success("Inquiry created successfully!");
       
-      // *** FIX 4: Update formData with the new lead ID ***
+      // Update formData with the new lead ID
       setFormData(prev => ({
         ...prev,
         name: newInquiry.name
