@@ -56,16 +56,6 @@ const UserAvailability = ({
     setCurrentTime(`${hours}:${minutes}`);
   }, []);
 
-  // const handleInspectorSelect = (
-  //   email: string,
-  //   availabilityData: InspectorAvailability[],
-  //   modifiedSlots: AvailabilitySlot[] // Add this parameter
-  // ) => {
-  //   if (onSelectInspector) {
-  //     onSelectInspector(email, availabilityData, modifiedSlots);
-  //   }
-  // };
-
   useEffect(() => {
     const fetchAvailability = async () => {
       try {
@@ -149,6 +139,12 @@ const UserAvailability = ({
     }, []);
   };
 
+  // Filter inspectors to only show those with available time slots
+  const availableInspectors = availability.filter((inspector) => {
+    const futureFreeSlots = filterFutureSlots(inspector.availability.free_slots);
+    return futureFreeSlots.length > 0;
+  });
+
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-2 sm:p-4">
       <div className="bg-white rounded-t-xl sm:rounded-xl shadow-2xl w-full max-w-md sm:max-w-lg max-h-[90vh] sm:max-h-[85vh] overflow-hidden flex flex-col">
@@ -182,11 +178,10 @@ const UserAvailability = ({
             <div className="text-red-500 text-center py-8 text-sm">{error}</div>
           ) : (
             <div className="space-y-3 p-4">
-              {availability.map((inspector) => {
+              {availableInspectors.map((inspector) => {
                 const futureFreeSlots = filterFutureSlots(
                   inspector.availability.free_slots
                 );
-                const hasFutureSlots = futureFreeSlots.length > 0;
 
                 return (
                   <div
@@ -204,12 +199,10 @@ const UserAvailability = ({
                         </p>
                       </div>
                       <div className="flex items-center gap-2 shrink-0 ml-2">
-                        {hasFutureSlots ? (
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">
-                            <CheckCircle2 className="h-3 w-3 mr-1" />
-                            Available
-                          </span>
-                        ) : null}
+                        {/* <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">
+                          <CheckCircle2 className="h-3 w-3 mr-1" />
+                          Available
+                        </span> */}
                         {onSelectInspector && (
                           <Button
                             size="sm"
@@ -223,7 +216,6 @@ const UserAvailability = ({
                               );
                               onClose();
                             }}
-                            disabled={!hasFutureSlots}
                           >
                             Select
                           </Button>
@@ -234,50 +226,45 @@ const UserAvailability = ({
                     {/* Availability Details */}
                     <div className="flex gap-3">
                       {/* Free Slots */}
-                      {hasFutureSlots ? (
-                        <div>
-                          <h5 className="text-xs font-medium text-emerald-700 mb-1 flex items-center">
-                            <CheckCircle2 className="h-3 w-3 mr-1" />
-                            Available Times
-                          </h5>
-                          <div className="flex flex-wrap gap-1">
-                            {futureFreeSlots.map((slot, index) => {
-                              const durationHours =
-                                (timeToMinutes(slot.end) -
-                                  timeToMinutes(slot.start)) /
-                                60;
-                              return (
-                                <span
-                                  key={index}
-                                  className="inline-flex items-center px-2 py-1 rounded-md text-xs bg-gray-100 text-gray-700"
-                                >
-                                  {formatTime(slot.start)} -{" "}
-                                  {formatTime(slot.end)}
-                                  <span className="text-gray-600 ml-1">
-                                    ({durationHours.toFixed(1)}h)
-                                  </span>
+                      <div>
+                        <h5 className="text-xs font-medium text-emerald-700 mb-1 flex items-center">
+                          <CheckCircle2 className="h-3 w-3 mr-1" />
+                          Available Times
+                        </h5>
+                        <div className="flex flex-wrap gap-1">
+                          {futureFreeSlots.map((slot, index) => {
+                            const durationHours =
+                              (timeToMinutes(slot.end) -
+                                timeToMinutes(slot.start)) /
+                              60;
+                            return (
+                              <span
+                                key={index}
+                                className="inline-flex items-center px-2 py-1 rounded-md text-xs bg-gray-100 text-gray-700"
+                              >
+                                {formatTime(slot.start)} -{" "}
+                                {formatTime(slot.end)}
+                                <span className="text-gray-600 ml-1">
+                                  ({durationHours.toFixed(1)}h)
                                 </span>
-                              );
-                            })}
-                          </div>
+                              </span>
+                            );
+                          })}
                         </div>
-                      ) : (
-                        <p className="text-xs text-gray-500 text-center py-2">
-                          {isToday()
-                            ? "No available time slots remaining today"
-                            : "No available time slots for this date"}
-                        </p>
-                      )}
+                      </div>
                     </div>
                   </div>
                 );
               })}
 
-              {availability.length === 0 && !loading && (
+              {availableInspectors.length === 0 && !loading && (
                 <div className="text-center py-8">
                   <Clock className="h-8 w-8 text-gray-300 mx-auto mb-2" />
                   <p className="text-sm text-gray-500">
-                    No inspectors found for this date
+                    {availability.length > 0 
+                      ? "No inspectors are available for this date"
+                      : "No inspectors found for this date"
+                    }
                   </p>
                 </div>
               )}
