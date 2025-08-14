@@ -27,13 +27,6 @@ import { Alert, AlertDescription } from "../ui/alert";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
-// import {
-//   Select,
-//   SelectContent,
-//   SelectItem,
-//   SelectTrigger,
-//   SelectValue,
-// } from "../ui/select";
 import { format } from "date-fns";
 import InquiryForm from "./InquiryForm";
 import InspectionDialog from "./IspectionDialog";
@@ -55,7 +48,7 @@ const InquiryPage = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedInquiryForDialog, setSelectedInquiryForDialog] =
     useState<Lead | null>(null);
-  
+
   // Added loading state
   const [isLoading, setIsLoading] = useState(true);
 
@@ -86,7 +79,7 @@ const InquiryPage = () => {
           fetchUtmSource?.(),
         ]);
       } catch (error) {
-        console.error('Error loading data:', error);
+        console.error("Error loading data:", error);
       } finally {
         setIsLoading(false);
       }
@@ -141,16 +134,6 @@ const InquiryPage = () => {
           searchTerm.toLowerCase()
         )
     );
-
-  // Loading Component
-  // const LoadingComponent = () => (
-  //   <div className="flex items-center justify-center py-12">
-  //     <div className="text-center">
-  //       <Loader2 className="h-8 w-8 animate-spin text-emerald-500 mx-auto mb-4" />
-  //       <p className="text-gray-500 text-sm">Loading inquiries...</p>
-  //     </div>
-  //   </div>
-  // );
 
   // Skeleton loader for inquiry cards
   const SkeletonCard = () => (
@@ -297,9 +280,11 @@ const InquiryPage = () => {
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
-                        <h4 className="font-semibold text-sm  text-gray-800 truncate group-hover:text-emerald-700 transition-colors">
-                          {inquiry.lead_name}
+                        <h4 className="font-semibold text-sm text-gray-800 truncate group-hover:text-emerald-700 transition-colors">
+                          {inquiry.lead_name.charAt(0).toUpperCase() +
+                            inquiry.lead_name.slice(1)}
                         </h4>
+
                         {inquiry.custom_job_type && (
                           <Badge
                             variant="outline"
@@ -449,15 +434,14 @@ const InquiryPage = () => {
       </div>
 
       {/* Fixed: Moved dialog outside of map and used correct inquiry state */}
-     {isDialogOpen && selectedInquiryForDialog && (
-  <InspectionDialog
-    open={isDialogOpen}
-    onClose={handleCloseDialog}
-    data={selectedInquiryForDialog}
-    mode="create"
-  />
-)}
-
+      {isDialogOpen && selectedInquiryForDialog && (
+        <InspectionDialog
+          open={isDialogOpen}
+          onClose={handleCloseDialog}
+          data={selectedInquiryForDialog}
+          mode="create"
+        />
+      )}
 
       <InquiryForm
         isOpen={isFormOpen}
@@ -551,7 +535,10 @@ const InquiryPage = () => {
                 <div className="text-sm">
                   <div className="break-words">
                     <span className="text-gray-900">
-                      {[viewInquiry.custom_property_category, viewInquiry.custom_property_area]
+                      {[
+                        viewInquiry.custom_property_category,
+                        viewInquiry.custom_property_area,
+                      ]
                         .filter(Boolean)
                         .join(" | ")}
                     </span>

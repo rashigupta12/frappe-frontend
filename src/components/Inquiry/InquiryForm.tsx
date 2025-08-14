@@ -16,7 +16,6 @@ import {
   User,
   X,
   AlertTriangle,
-  Plus,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
@@ -172,7 +171,6 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     fetchInspectors,
     createTodo,
     createTodoLoading,
-    error: assignError,
     success: assignSuccess,
   } = useAssignStore();
 
@@ -215,6 +213,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     phone: "+971 ",
     jobType: jobTypes.length > 0 ? jobTypes[0].name : "",
   });
+  const [isCreatingCustomer, setIsCreatingCustomer] = useState(false);
 
   const navigate = useNavigate();
 
@@ -343,83 +342,58 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     setNewCustomerForm((prev) => ({ ...prev, phone: formattedNumber }));
   };
 
- const saveNewCustomer = async () => {
-  if (!newCustomerForm.name.trim()) {
-    toast.error("Customer name is required");
-    return;
-  }
+  const saveNewCustomer = async () => {
+    if (!newCustomerForm.name.trim()) {
+      toast.error("Customer name is required");
+      return;
+    }
 
-  if (!newCustomerForm.phone || newCustomerForm.phone.length < 5) {
-    toast.error("Valid mobile number is required");
-    return;
-  }
+    if (!newCustomerForm.phone || newCustomerForm.phone.length < 5) {
+      toast.error("Valid mobile number is required");
+      return;
+    }
 
     try {
-      // Show loading state
-      setIsCustomerSearching(true);
+      setIsCreatingCustomer(true); // Start loading
 
-    // Prepare lead data using the same format as your form submission
-    const newLeadData = formatSubmissionData({
-      lead_name: newCustomerForm.name.trim(),
-      email_id: newCustomerForm.email || "",
-      mobile_no: newCustomerForm.phone,
-      custom_job_type: newCustomerForm.jobType,
-      // Include other required fields with default values
-      custom_budget_range: "",
-      custom_project_urgency: "",
-      source: "",
-      custom_property_name__number: "",
-      custom_emirate: "",
-      custom_area: "",
-      custom_community: "",
-      custom_street_name: "",
-      custom_property_area: "",
-      custom_property_category: "",
-      custom_special_requirements: "",
-    });
+      const newLeadData = formatSubmissionData({
+        lead_name: newCustomerForm.name.trim(),
+        email_id: newCustomerForm.email || "",
+        mobile_no: newCustomerForm.phone,
+        custom_job_type: newCustomerForm.jobType,
+        custom_budget_range: "",
+        custom_project_urgency: "",
+        source: "",
+        custom_property_name__number: "",
+        custom_emirate: "",
+        custom_area: "",
+        custom_community: "",
+        custom_street_name: "",
+        custom_property_area: "",
+        custom_property_category: "",
+        custom_special_requirements: "",
+      });
 
-      // Call the createLead API
       const createdLead = await createLead(newLeadData);
 
       if (!createdLead) {
         throw new Error("Failed to create lead");
       }
 
-      // Update the main form with the created lead data
-      // Use the original form data as base, then override with API response
       setFormData((prev) => ({
         ...prev,
-        // Map API response fields back to form fields
         lead_name: createdLead.lead_name || newCustomerForm.name,
         email_id: createdLead.email_id || newCustomerForm.email,
         mobile_no: createdLead.mobile_no || newCustomerForm.phone,
         custom_job_type: createdLead.custom_job_type || newCustomerForm.jobType,
-
-        // Store the lead ID for future updates
-        name: createdLead.name, // This is typically the unique identifier from API
-       
+        name: createdLead.name,
       }));
-    // Update the main form with the created lead data
-    // Use the original form data as base, then override with API response
-    setFormData((prev) => ({
-      ...prev,
-      // Map API response fields back to form fields
-      lead_name: createdLead.lead_name || newCustomerForm.name,
-      email_id: createdLead.email_id || newCustomerForm.email,
-      mobile_no: createdLead.mobile_no || newCustomerForm.phone,
-      custom_job_type: createdLead.custom_job_type || newCustomerForm.jobType,
-      
-      // Store the lead ID for future updates
-      name: createdLead.name, // This is typically the unique identifier from API
-    }));
 
-      // Update UI state
       setCustomerSearchQuery(newCustomerForm.name);
       setShowNewCustomerFields(true);
       setShowNewCustomerModal(false);
       setShowCustomerDropdown(false);
 
-      // Reset new customer form
       setNewCustomerForm({
         name: "",
         email: "",
@@ -428,13 +402,9 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
       });
 
       toast.success(`New Lead "${newCustomerForm.name}" created successfully!`);
-
     } catch (error) {
       console.error("Error creating new lead:", error);
-
-      // Extract error message from different error formats
       let errorMessage = "Failed to create lead. Please try again.";
-
       if (error && typeof error === "object") {
         if ("message" in error) {
           errorMessage = (error as { message: string }).message;
@@ -442,14 +412,11 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
           errorMessage = (error as { error: string }).error;
         }
       }
-
       toast.error(errorMessage);
-
     } finally {
-      setIsCustomerSearching(false);
+      setIsCreatingCustomer(false); // End loading
     }
   };
-
   const validateRequestedTime = () => {
     if (!requestedTime || !selectedSlot) return false;
 
@@ -581,7 +548,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
       );
       setShowReferenceInput(
         inquiry.source === "Reference" ||
-        inquiry.source === "Supplier Reference"
+          inquiry.source === "Supplier Reference"
       );
 
       setCustomerSearchQuery(inquiry.lead_name || "");
@@ -693,13 +660,25 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     try {
       const submissionData = formatSubmissionData(formData);
 
-      if (inquiry?.name) {
-        await updateLead(inquiry.name, submissionData);
+      // Check if we already have a lead ID (either from inquiry prop or from newly created lead)
+      const existingLeadId = inquiry?.name || formData.name;
+
+      if (existingLeadId) {
+        // Update existing lead
+        await updateLead(existingLeadId, submissionData);
         toast.success("Inquiry updated successfully!");
-        return inquiry.name;
+        return existingLeadId;
       } else {
+        // Create new lead only if we don't have an ID
         const newInquiry = await createLead(submissionData);
         toast.success("Inquiry created successfully!");
+
+        // Update formData with the new lead ID
+        setFormData((prev) => ({
+          ...prev,
+          name: newInquiry.name,
+        }));
+
         return newInquiry.name;
       }
     } catch (err) {
@@ -754,15 +733,29 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     setShowConfirmModal(false);
 
     try {
-      const inquiryName = await saveLead();
-      if (!inquiryName) {
-        toast.error("Failed to save inquiry");
-        return;
+      // Get the lead ID - either from existing inquiry or from formData
+      const existingLeadId = inquiry?.name || formData.name;
+
+      let inquiryName: string;
+
+      if (existingLeadId) {
+        // If we already have a lead ID, just update it
+        const submissionData = formatSubmissionData(formData);
+        await updateLead(existingLeadId, submissionData);
+        inquiryName = existingLeadId;
+        toast.success("Inquiry updated successfully!");
+      } else {
+        // Only create new lead if we don't have an ID (shouldn't happen if saveNewCustomer worked correctly)
+        const savedLeadName = await saveLead();
+        if (!savedLeadName) {
+          toast.error("Failed to save inquiry");
+          return;
+        }
+        inquiryName = savedLeadName;
       }
 
       const preferredDate = format(date!, "yyyy-MM-dd");
       const endTime = calculateEndTime();
-
       const startDateTime = `${preferredDate} ${requestedTime}:00`;
       const endDateTime = `${preferredDate} ${endTime}:00`;
 
@@ -777,10 +770,12 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
         custom_end_time: endDateTime,
       });
 
+      // Rest of the assignment logic remains the same...
       let employeeName = "";
       const employeeResponse = await frappeAPI.makeAuthenticatedRequest(
         "GET",
-        `/api/resource/Employee?filters=[["user_id","=","${selectedInspector!.email
+        `/api/resource/Employee?filters=[["user_id","=","${
+          selectedInspector!.email
         }"]]`
       );
 
@@ -817,9 +812,10 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     } catch (error) {
       console.error("Full error in assignment process:", error);
       toast.error(
-        `Failed to complete assignment: ${error && typeof error === "object" && "message" in error
-          ? (error as { message: string }).message
-          : String(error)
+        `Failed to complete assignment: ${
+          error && typeof error === "object" && "message" in error
+            ? (error as { message: string }).message
+            : String(error)
         }`
       );
     }
@@ -881,7 +877,9 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
             community: result.custom_community,
             street_name: result.custom_street_name,
             property_number: result.custom_property_number,
-            combined_address: result.custom_combine_address || extractAddressFromSite(result.site_name),
+            combined_address:
+              result.custom_combine_address ||
+              extractAddressFromSite(result.site_name),
             property_category: result.custom_property_category,
             property_type: result.custom_property_type,
           },
@@ -923,17 +921,17 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
 
       const addressData = result.address_details
         ? {
-          custom_property_category:
-            result.address_details.property_category || "",
-          custom_emirate: result.address_details.emirate || "",
-          custom_community: result.address_details.community || "",
-          custom_area: result.address_details.area || "",
-          custom_street_name: result.address_details.street_name || "",
-          custom_property_name__number:
-            result.address_details.property_number || "",
-          custom_property_area: result.address_details.combined_address || "",
-          custom_property_type: result.address_details.property_type || "",
-        }
+            custom_property_category:
+              result.address_details.property_category || "",
+            custom_emirate: result.address_details.emirate || "",
+            custom_community: result.address_details.community || "",
+            custom_area: result.address_details.area || "",
+            custom_street_name: result.address_details.street_name || "",
+            custom_property_name__number:
+              result.address_details.property_number || "",
+            custom_property_area: result.address_details.combined_address || "",
+            custom_property_type: result.address_details.property_type || "",
+          }
         : {};
 
       setFormData((prev) => ({
@@ -1021,7 +1019,6 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     );
   };
 
-
   const extractAddressFromSite = (siteName: string) => {
     if (!siteName) return "";
     // Format: "Name-Number,..." - extract everything after the first dash
@@ -1077,8 +1074,9 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                 >
                   <button
                     type="button"
-                    className={`w-full flex justify-between items-center p-4 text-left hover:bg-gray-50 transition-colors ${activeSection === section.id ? "bg-gray-50" : ""
-                      }`}
+                    className={`w-full flex justify-between items-center p-4 text-left hover:bg-gray-50 transition-colors ${
+                      activeSection === section.id ? "bg-gray-50" : ""
+                    }`}
                     onClick={() => toggleSection(section.id)}
                   >
                     <div className="flex items-center gap-3">
@@ -1098,10 +1096,11 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                   </button>
 
                   <div
-                    className={`transition-all duration-300 overflow-hidden ${activeSection === section.id
+                    className={`transition-all duration-300 overflow-hidden ${
+                      activeSection === section.id
                         ? "max-h-[1000px] opacity-100"
                         : "max-h-0 opacity-0"
-                      }`}
+                    }`}
                   >
                     <div className="p-4 pt-2 space-y-4">
                       {section.id === "contact" && (
@@ -1112,7 +1111,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                               className="flex items-center space-x-2"
                             >
                               <User className="h-4 w-4 text-gray-500" />
-                              <span className="text-sm font-medium text-gray-700">
+                              <span className="text-md font-medium text-gray-700 ">
                                 Customer{" "}
                                 <span className="text-gray-500">
                                   (name/email/phone)
@@ -1155,21 +1154,21 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                                       </p>
                                       {(result.mobile_no ||
                                         result.email_id) && (
-                                          <div className="text-xs text-gray-500 space-x-2">
-                                            {result.mobile_no && (
-                                              <span className="inline-flex items-center">
-                                                <Phone className="h-3 w-3 mr-1" />
-                                                {result.mobile_no}
-                                              </span>
-                                            )}
-                                            {result.email_id && (
-                                              <span className="inline-flex items-center">
-                                                <Mail className="h-3 w-3 mr-1" />
-                                                {result.email_id}
-                                              </span>
-                                            )}
-                                          </div>
-                                        )}
+                                        <div className="text-xs text-gray-500 space-x-2">
+                                          {result.mobile_no && (
+                                            <span className="inline-flex items-center">
+                                              <Phone className="h-3 w-3 mr-1" />
+                                              {result.mobile_no}
+                                            </span>
+                                          )}
+                                          {result.email_id && (
+                                            <span className="inline-flex items-center">
+                                              <Mail className="h-3 w-3 mr-1" />
+                                              {result.email_id}
+                                            </span>
+                                          )}
+                                        </div>
+                                      )}
                                       {result.site_name && (
                                         <div className="mt-2 text-xs text-gray-500 flex items-start gap-1">
                                           <Home className="h-3 w-3 flex-shrink-0 mt-0.5" />
@@ -1185,21 +1184,40 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                                     </div>
                                   ))
                                 ) : (
-                                  <div className="px-4 py-2">
-                                    <Button
-                                      type="button"
-                                      variant="outline"
-                                      size="sm"
-                                      className="w-full flex items-center gap-2"
-                                      onClick={() => {
+                                  // <div className="px-4 py-2">
+                                  //   <Button
+                                  //     type="button"
+                                  //     variant="outline"
+                                  //     size="sm"
+                                  //     className="w-full flex items-center gap-2"
+                                  //     onClick={() => {
+                                  //       setShowNewCustomerModal(true);
+                                  //       setShowCustomerDropdown(false);
+                                  //     }}
+                                  //   >
+                                  //     <Plus className="h-4 w-4" />
+                                  //     Add New Customer
+                                  //   </Button>
+                                  // </div>
+                                  <div
+          className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center justify-between"
+          onClick={() => {
                                         setShowNewCustomerModal(true);
                                         setShowCustomerDropdown(false);
                                       }}
-                                    >
-                                      <Plus className="h-4 w-4" />
-                                      Add New Customer
-                                    </Button>
-                                  </div>
+        >
+          <div>
+            <p className="font-medium">
+              No customer found found for "{customerSearchQuery}"
+            </p>
+            <p className="text-xs text-gray-500">
+              Click to add a new customer
+            </p>
+          </div>
+          <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded flex-shrink-0">
+            Add New
+          </span>
+        </div>
                                 )}
                               </div>
                             )}
@@ -1208,52 +1226,52 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                           {(showNewCustomerFields ||
                             formData.lead_name ||
                             customerSearchQuery) && (
-                              <>
-                                <div className="col-span-1">
-                                  <Label
-                                    htmlFor="phone"
-                                    className="text-sm font-medium text-gray-700"
-                                  >
-                                    Phone Number{" "}
-                                    <span className="text-red-500">*</span>
-                                  </Label>
-                                  <Input
-                                    type="tel"
-                                    id="phone"
-                                    name="mobile_no"
-                                    value={formData.mobile_no || "+971 "}
-                                    onChange={handlePhoneChange}
-                                    onKeyDown={handleKeyDown}
-                                    placeholder="+971 XX XXX XXXX"
-                                    className="w-full"
-                                    maxLength={17}
-                                    required
-                                  />
-                                </div>
+                            <>
+                              <div className="col-span-1">
+                                <Label
+                                  htmlFor="phone"
+                                  className="text-md font-medium text-gray-700 mb-1"
+                                >
+                                  Phone Number{" "}
+                                  <span className="text-red-500">*</span>
+                                </Label>
+                                <Input
+                                  type="tel"
+                                  id="phone"
+                                  name="mobile_no"
+                                  value={formData.mobile_no || "+971 "}
+                                  onChange={handlePhoneChange}
+                                  onKeyDown={handleKeyDown}
+                                  placeholder="+971 XX XXX XXXX"
+                                  className="w-full"
+                                  maxLength={17}
+                                  required
+                                />
+                              </div>
 
-                                <div className="col-span-1">
-                                  <Label
-                                    htmlFor="email_id"
-                                    className="text-sm font-medium text-gray-700"
-                                  >
-                                    Email
-                                  </Label>
-                                  <Input
-                                    type="text"
-                                    id="email_id"
-                                    name="email_id"
-                                    value={formData.email_id || ""}
-                                    onChange={handleInputChange}
-                                    placeholder="Enter email"
-                                  />
-                                </div>
-                              </>
-                            )}
+                              <div className="col-span-1">
+                                <Label
+                                  htmlFor="email_id"
+                                  className="text-md font-medium text-gray-700 mb-1"
+                                >
+                                  Email
+                                </Label>
+                                <Input
+                                  type="text"
+                                  id="email_id"
+                                  name="email_id"
+                                  value={formData.email_id || ""}
+                                  onChange={handleInputChange}
+                                  placeholder="Enter email"
+                                />
+                              </div>
+                            </>
+                          )}
 
                           <div className="col-span-1 md:col-span-2">
                             <Label
                               htmlFor="source"
-                              className="text-sm font-medium text-gray-700"
+                              className="text-md font-medium text-gray-700 mb-1"
                             >
                               Source Of Inquiry{" "}
                             </Label>
@@ -1284,7 +1302,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                               <div className="mt-4">
                                 <Label
                                   htmlFor="custom_reference_name"
-                                  className="text-sm font-medium text-gray-700"
+                                  className="text-md font-medium text-gray-700"
                                 >
                                   Reference Name{" "}
                                   <span className="text-red-500">*</span>
@@ -1309,7 +1327,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                           <div>
                             <Label
                               htmlFor="custom_job_type"
-                              className="text-sm font-medium text-gray-700"
+                              className="text-md font-medium text-gray-700 mb-1"
                             >
                               Job Type <span className="text-red-500">*</span>
                             </Label>
@@ -1338,10 +1356,9 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                           <div>
                             <Label
                               htmlFor="custom_budget_range"
-                              className="text-sm font-medium text-gray-700"
+                              className="text-md font-medium text-gray-700 mb-1"
                             >
                               Budget Range{" "}
-
                             </Label>
                             <Select
                               value={formData.custom_budget_range || ""}
@@ -1363,7 +1380,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                           </div>
 
                           <div>
-                            <Label className="text-sm font-medium text-gray-700">
+                            <Label className="text-md font-medium text-gray-700 mb-1">
                               Project Urgency{" "}
                             </Label>
                             <Select
@@ -1433,13 +1450,13 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
 
                       {section.id === "inspector" && (
                         <div className="space-y-4">
-                          {assignError && (
+                          {/* {assignError && (
                             <div className="bg-red-50 border border-red-200 rounded-md p-2">
                               <div className="text-red-700 text-sm">
                                 {assignError}
                               </div>
                             </div>
-                          )}
+                          )} */}
                           {assignSuccess && (
                             <div className="bg-emerald-50 border border-emerald-200 rounded-md p-2">
                               <div className="text-emerald-700 text-sm">
@@ -1449,7 +1466,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                           )}
 
                           <div className="space-y-2">
-                            <Label className="text-gray-700 text-sm font-medium">
+                            <Label className="text-gray-700 text-md font-medium mb-1">
                               Select Inspection Date{" "}
                               <span className="text-red-500">*</span>
                             </Label>
@@ -1472,7 +1489,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
 
                           {date && (
                             <div className="space-y-2">
-                              <Label className="text-gray-700 text-sm font-medium">
+                              <Label className="text-gray-700 text-md font-medium mb-1">
                                 Inspector Selected
                               </Label>
                               <div className="flex items-center justify-between">
@@ -1506,9 +1523,9 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
 
                           {selectedInspector &&
                             selectedInspector.availability.free_slots.length >
-                            0 && (
+                              0 && (
                               <div className="space-y-2 px-5 py-2 bg-yellow-50 border border-yellow-200 rounded-lg">
-                                <Label className="text-gray-700 text-sm font-medium">
+                                <Label className="text-gray-700 text-md font-medium mb-1">
                                   Available Time Slots
                                 </Label>
                                 <div className="grid grid-cols-2 gap-2">
@@ -1519,7 +1536,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                                         key={index}
                                         variant={
                                           selectedSlot?.start === slot.start &&
-                                            selectedSlot?.end === slot.end
+                                          selectedSlot?.end === slot.end
                                             ? "outline"
                                             : "default"
                                         }
@@ -1546,7 +1563,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
 
                           {selectedSlot && (
                             <div className="space-y-3 p-3 border rounded-lg">
-                              <Label className="text-gray-700 text-sm font-medium">
+                              <Label className="text-gray-700 text-md font-medium mb-1">
                                 Finalize Time & Duration
                               </Label>
                               <div className="grid grid-cols-3 gap-3">
@@ -1631,7 +1648,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                           )}
 
                           <div className="space-y-2">
-                            <Label className="text-gray-700 text-sm font-medium">
+                            <Label className="text-gray-700 text-md font-medium mb-1">
                               Priority
                             </Label>
                             <Select
@@ -1695,9 +1712,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                           )}
                         </div>
                       )}
-
                     </div>
-
                   </div>
                 </div>
               ))}
@@ -1705,7 +1720,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                 <div className="px-2">
                   <Label
                     htmlFor="custom_special_requirements"
-                    className="text-xs pb-2 font-medium text-gray-700"
+                    className="text-md mb-1 font-medium text-gray-700"
                   >
                     Special Requirements
                   </Label>
@@ -1773,7 +1788,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
 
               <div className="space-y-4">
                 <div>
-                  <Label className="block text-sm font-medium text-gray-700 mb-1">
+                  <Label className="block text-md font-medium text-gray-700 mb-1">
                     Full Name <span className="text-red-500">*</span>
                   </Label>
                   <Input
@@ -1783,11 +1798,12 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                     onChange={handleNewCustomerInputChange}
                     placeholder="Enter customer name"
                     required
+                    disabled={isCreatingCustomer}
                   />
                 </div>
 
                 <div>
-                  <Label className="block text-sm font-medium text-gray-700 mb-1">
+                  <Label className="block text-md font-medium text-gray-700 mb-1">
                     Phone Number <span className="text-red-500">*</span>
                   </Label>
                   <Input
@@ -1803,7 +1819,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                 </div>
 
                 <div>
-                  <Label className="block text-sm font-medium text-gray-700 mb-1">
+                  <Label className="block text-md font-medium text-gray-700 mb-1">
                     Email
                   </Label>
                   <Input
@@ -1816,7 +1832,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                 </div>
 
                 <div>
-                  <Label className="block text-sm font-medium text-gray-700 mb-1">
+                  <Label className="block text-md font-medium text-gray-700 mb-1">
                     Job Type
                   </Label>
                   {jobTypes.length > 0 ? (
@@ -1832,7 +1848,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                       <SelectTrigger className="w-full">
                         <SelectValue placeholder="Select job type" />
                       </SelectTrigger>
-                      <SelectContent className="bg-white z-[100]">
+                      <SelectContent className="bg-white z-[100] text-md">
                         {" "}
                         {/* Increased z-index */}
                         {jobTypes.map((jobType) => (
@@ -1861,8 +1877,16 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                 <Button
                   onClick={saveNewCustomer}
                   className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                  disabled={isCreatingCustomer}
                 >
-                  Save Customer
+                  {isCreatingCustomer ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Creating...
+                    </>
+                  ) : (
+                    "Save Customer"
+                  )}
                 </Button>
               </div>
             </div>
@@ -1875,9 +1899,11 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
         onConfirm={confirmAssignment}
         onCancel={() => setShowConfirmModal(false)}
         title="Confirm Inspector Assignment"
-        message={`Are you sure you want to assign ${selectedInspector?.user_name
-          } for the inspection on ${date ? format(date, "MMM dd, yyyy") : ""
-          } at ${requestedTime}? Once assigned, customer details cannot be modified for this inquiry.`}
+        message={`Are you sure you want to assign ${
+          selectedInspector?.user_name
+        } for the inspection on ${
+          date ? format(date, "MMM dd, yyyy") : ""
+        } at ${requestedTime}? Once assigned, customer details cannot be modified for this inquiry.`}
       />
     </>
   );
