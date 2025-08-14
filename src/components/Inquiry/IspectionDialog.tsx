@@ -100,19 +100,24 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
   const inquiryData = getInquiryData();
 
   // Fetch inspector availability for edit mode
-  const fetchInspectorAvailability = async (inspectorEmail: string, dateStr: string) => {
+  const fetchInspectorAvailability = async (
+    inspectorEmail: string,
+    dateStr: string
+  ) => {
     try {
       const response = await frappeAPI.makeAuthenticatedRequest(
         "GET",
         `/api/method/eits_app.inspector_availability.get_employee_availability?date=${dateStr}`
       );
-      
+
       if (response.message && response.message.status === "success") {
         const availabilityData = response.message.data;
         // setInspectorAvailabilityData(availabilityData);
-        
+
         // Find the specific inspector's availability
-        const inspectorData = availabilityData.find((insp: InspectorAvailability) => insp.email === inspectorEmail);
+        const inspectorData = availabilityData.find(
+          (insp: InspectorAvailability) => insp.email === inspectorEmail
+        );
         if (inspectorData) {
           setSelectedInspector(inspectorData);
         }
@@ -140,70 +145,74 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
     }
   };
 
- const deleteExistingDWA = async (
-  inspectorEmail: string,
-  todoDate: string, // Format: "YYYY-MM-DD"
-  startTime: string // Format: "HH:mm"
-) => {
-  try {
-    console.log(
-      `Attempting to delete DWA for ${inspectorEmail} on ${todoDate} at ${startTime}`
-    );
-
-    if (!inspectorEmail || !todoDate || !startTime) {
-      throw new Error("Missing required parameters for DWA deletion");
-    }
-
-    const employeeName = await findEmployeeByEmail(inspectorEmail);
-    if (!employeeName) {
-      throw new Error("Employee not found for the given email");
-    }
-    console.log(`Found employee name: ${employeeName}`);
-
-    // Convert date to DD-MM-YYYY format
-    const [year, month, day] = todoDate.split('-');
-    const formattedDate = `${day}-${month}-${year}`;
-
-    // Format time as HH:mm:ss
-    const formattedTime = startTime.includes(':') ? `${startTime}:00` : `${startTime.slice(0, 2)}:${startTime.slice(2)}:00`;
-
-    // Build filters
-    const filters = [
-      ["custom_user", "=", inspectorEmail],
-      ["date", "=", formattedDate],
-      ["Work", "expected_start_date", "=", formattedTime]
-    ];
-
-    // Make GET request to find existing DWA
-    const dwaResponse = await frappeAPI.makeAuthenticatedRequest(
-      "GET",
-      `/api/resource/Daily Work Allocation?filters=${encodeURIComponent(JSON.stringify(filters))}`
-    );
-
-    console.log('DWA search response:', dwaResponse);
-
-    // Check response structure and extract DWA name
-    if (dwaResponse?.data?.length > 0) {
-      const dwaName = dwaResponse.data[0].name;
-      console.log(`Found existing DWA: ${dwaName}`);
-
-      // Delete the found DWA
-      await frappeAPI.makeAuthenticatedRequest(
-        "DELETE",
-        `/api/resource/Daily Work Allocation/${dwaName}`
+  const deleteExistingDWA = async (
+    inspectorEmail: string,
+    todoDate: string, // Format: "YYYY-MM-DD"
+    startTime: string // Format: "HH:mm"
+  ) => {
+    try {
+      console.log(
+        `Attempting to delete DWA for ${inspectorEmail} on ${todoDate} at ${startTime}`
       );
 
-      console.log(`Successfully deleted DWA: ${dwaName}`);
-      return true;
-    }
+      if (!inspectorEmail || !todoDate || !startTime) {
+        throw new Error("Missing required parameters for DWA deletion");
+      }
 
-    console.log("No existing DWA found to delete");
-    return false;
-  } catch (error) {
-    console.error("Error in deleteExistingDWA:", error);
-    throw error;
-  }
-};
+      const employeeName = await findEmployeeByEmail(inspectorEmail);
+      if (!employeeName) {
+        throw new Error("Employee not found for the given email");
+      }
+      console.log(`Found employee name: ${employeeName}`);
+
+      // Convert date to DD-MM-YYYY format
+      const [year, month, day] = todoDate.split("-");
+      const formattedDate = `${day}-${month}-${year}`;
+
+      // Format time as HH:mm:ss
+      const formattedTime = startTime.includes(":")
+        ? `${startTime}:00`
+        : `${startTime.slice(0, 2)}:${startTime.slice(2)}:00`;
+
+      // Build filters
+      const filters = [
+        ["custom_user", "=", inspectorEmail],
+        ["date", "=", formattedDate],
+        ["Work", "expected_start_date", "=", formattedTime],
+      ];
+
+      // Make GET request to find existing DWA
+      const dwaResponse = await frappeAPI.makeAuthenticatedRequest(
+        "GET",
+        `/api/resource/Daily Work Allocation?filters=${encodeURIComponent(
+          JSON.stringify(filters)
+        )}`
+      );
+
+      console.log("DWA search response:", dwaResponse);
+
+      // Check response structure and extract DWA name
+      if (dwaResponse?.data?.length > 0) {
+        const dwaName = dwaResponse.data[0].name;
+        console.log(`Found existing DWA: ${dwaName}`);
+
+        // Delete the found DWA
+        await frappeAPI.makeAuthenticatedRequest(
+          "DELETE",
+          `/api/resource/Daily Work Allocation/${dwaName}`
+        );
+
+        console.log(`Successfully deleted DWA: ${dwaName}`);
+        return true;
+      }
+
+      console.log("No existing DWA found to delete");
+      return false;
+    } catch (error) {
+      console.error("Error in deleteExistingDWA:", error);
+      throw error;
+    }
+  };
 
   const createNewDWA = async (
     inspectorEmail: string,
@@ -238,7 +247,6 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
       );
 
       console.log("Successfully created new DWA");
-      
     } catch (error) {
       console.error("Error creating new DWA:", error);
       throw error;
@@ -287,7 +295,7 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
         if (data?.date) {
           const selectedDate = new Date(data.date);
           setDate(selectedDate);
-          
+
           // Fetch availability for edit mode
           if (data.allocated_to) {
             fetchInspectorAvailability(data.allocated_to, data.date);
@@ -336,7 +344,7 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
     setDate(selectedDate);
     setSelectedInspector(null);
     setSelectedSlot(null);
-    
+
     // Close the calendar popover first
     setCalendarOpen(false);
 
@@ -355,37 +363,37 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
   };
 
   const handleInspectorSelect = (
-  email: string,
-  availabilityData: InspectorAvailability[],
-  modifiedSlots: AvailabilitySlot[]
-) => {
-  const inspector = availabilityData.find(
-    (inspector) => inspector.email === email
-  );
-  if (inspector) {
-    // Create a new inspector object with the modified slots
-    const modifiedInspector = {
-      ...inspector,
-      availability: {
-        ...inspector.availability,
-        free_slots: modifiedSlots
+    email: string,
+    availabilityData: InspectorAvailability[],
+    modifiedSlots: AvailabilitySlot[]
+  ) => {
+    const inspector = availabilityData.find(
+      (inspector) => inspector.email === email
+    );
+    if (inspector) {
+      // Create a new inspector object with the modified slots
+      const modifiedInspector = {
+        ...inspector,
+        availability: {
+          ...inspector.availability,
+          free_slots: modifiedSlots,
+        },
+      };
+      setSelectedInspector(modifiedInspector);
+
+      if (modifiedSlots.length > 0) {
+        const firstSlot = modifiedSlots[0];
+        setSelectedSlot({
+          start: firstSlot.start,
+          end: firstSlot.end,
+        });
+        setRequestedTime(firstSlot.start);
+      } else {
+        toast.success(`Selected ${inspector.user_name}`);
       }
-    };
-    setSelectedInspector(modifiedInspector);
-    
-    if (modifiedSlots.length > 0) {
-      const firstSlot = modifiedSlots[0];
-      setSelectedSlot({
-        start: firstSlot.start,
-        end: firstSlot.end,
-      });
-      setRequestedTime(firstSlot.start);
-    } else {
-      toast.success(`Selected ${inspector.user_name}`);
     }
-  }
-  setShowAvailabilityModal(false);
-};
+    setShowAvailabilityModal(false);
+  };
 
   const handleSlotSelect = (slot: { start: string; end: string }) => {
     setSelectedSlot(slot);
@@ -550,7 +558,10 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
         }
 
         // For the current inspector - delete old allocation if time changed or same inspector
-        if (currentInspectorEmail && (!inspectorChanged || originalStartTime !== requestedTime)) {
+        if (
+          currentInspectorEmail &&
+          (!inspectorChanged || originalStartTime !== requestedTime)
+        ) {
           await deleteExistingDWA(
             currentInspectorEmail,
             preferredDate,
@@ -580,12 +591,10 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
           );
         }
 
-  
         onClose();
       }
     } catch (error) {
       console.error("Error during process:", error);
-      
     } finally {
       setIsProcessing(false);
     }
@@ -791,61 +800,67 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
           )}
 
           {/* Show current allocated slot in edit mode */}
-          {mode === "edit" && data?.custom_start_time && data?.custom_end_time && (
-            <div className="space-y-2 px-5 py-2 bg-blue-50 border border-blue-200 rounded-lg">
-              <Label className="text-gray-700 text-sm font-medium">
-                Currently Allocated Time
-              </Label>
-              <div className="inline-flex items-center px-3 py-1.5 bg-blue-100 text-blue-800 rounded-md text-sm font-medium">
-                {data.custom_start_time.split(" ")[1].slice(0, 5)} - {data.custom_end_time.split(" ")[1].slice(0, 5)}
-                <span className="ml-2 text-xs opacity-70">
-                  (Current Assignment)
-                </span>
+          {mode === "edit" &&
+            data?.custom_start_time &&
+            data?.custom_end_time && (
+              <div className="space-y-2 px-5 py-2 bg-blue-50 border border-blue-200 rounded-lg">
+                <Label className="text-gray-700 text-sm font-medium">
+                  Currently Allocated Time
+                </Label>
+                <div className="inline-flex items-center px-3 py-1.5 bg-blue-100 text-blue-800 rounded-md text-sm font-medium">
+                  {data.custom_start_time.split(" ")[1].slice(0, 5)} -{" "}
+                  {data.custom_end_time.split(" ")[1].slice(0, 5)}
+                  <span className="ml-2 text-xs opacity-70"></span>
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
           {/* Show available slots */}
-{selectedInspector && selectedInspector.availability.free_slots.length > 0 && (
-  <div className="space-y-2 px-5 py-2 bg-yellow-50 border border-yellow-200 rounded-lg">
-    <Label className="text-gray-700 text-sm font-medium">
-      {mode === "edit" ? "Available Time Slots (for rescheduling)" : "Available Time Slots"}
-    </Label>
-    <div className="grid grid-cols-2 gap-2">
-      {selectedInspector.availability.free_slots.map(
-        (slot, index) => (
-          <Button
-            key={index}
-            variant={
-              selectedSlot?.start === slot.start &&
-              selectedSlot?.end === slot.end
-                ? "outline"
-                : "default"
-            }
-            className="justify-center h-auto py-1.5 px-2 text-xs"
-            onClick={() =>
-              handleSlotSelect({ start: slot.start, end: slot.end })
-            }
-            disabled={isProcessing}
-          >
-            {slot.start} - {slot.end}
-            {slot.duration_hours && (
-              <span className="ml-1 text-xs opacity-70">
-                ({slot.duration_hours.toFixed(1)}h)
-              </span>
+          {selectedInspector &&
+            selectedInspector.availability.free_slots.length > 0 && (
+              <div className="space-y-2 px-5 py-2 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <Label className="text-gray-700 text-sm font-medium">
+                  {mode === "edit"
+                    ? "Available Time Slots (for rescheduling)"
+                    : "Available Time Slots"}
+                </Label>
+                <div className="grid grid-cols-2 gap-2">
+                  {selectedInspector.availability.free_slots.map(
+                    (slot, index) => (
+                      <Button
+                        key={index}
+                        variant={
+                          selectedSlot?.start === slot.start &&
+                          selectedSlot?.end === slot.end
+                            ? "outline"
+                            : "default"
+                        }
+                        className="justify-center h-auto py-1.5 px-2 text-xs"
+                        onClick={() =>
+                          handleSlotSelect({ start: slot.start, end: slot.end })
+                        }
+                        disabled={isProcessing}
+                      >
+                        {slot.start} - {slot.end}
+                        {slot.duration_hours && (
+                          <span className="ml-1 text-xs opacity-70">
+                            ({slot.duration_hours.toFixed(1)}h)
+                          </span>
+                        )}
+                      </Button>
+                    )
+                  )}
+                </div>
+              </div>
             )}
-          </Button>
-        )
-      )}
-    </div>
-  </div>
-)}
 
           {/* Time and Duration Settings */}
           {(mode === "create" ? selectedSlot : true) && (
             <div className="space-y-3 px-4 py-2 ">
               <Label className="text-gray-700 text-sm font-medium">
-                {mode === "edit" ? "Update Time & Duration" : "Finalize Time & Duration"}
+                {mode === "edit"
+                  ? "Update Time & Duration"
+                  : "Finalize Time & Duration"}
               </Label>
               <div className="grid grid-cols-3 gap-3">
                 <div className="space-y-1">
@@ -1024,7 +1039,7 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
           <div className="bg-white rounded-lg p-4 max-w-md w-full">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-semibold">Confirm Assignment</h3>
-              <button 
+              <button
                 onClick={() => setShowConfirmation(false)}
                 className="text-gray-500 hover:text-gray-700"
               >
@@ -1032,7 +1047,8 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
               </button>
             </div>
             <p className="mb-6 text-gray-700">
-              After assignment, you won't be able to edit the customer information.
+              After assignment, you won't be able to edit the customer
+              information.
             </p>
             <div className="flex justify-end gap-3">
               <Button

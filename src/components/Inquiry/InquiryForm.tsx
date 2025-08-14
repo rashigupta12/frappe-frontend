@@ -171,7 +171,6 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     fetchInspectors,
     createTodo,
     createTodoLoading,
-    error: assignError,
     success: assignSuccess,
   } = useAssignStore();
 
@@ -1112,7 +1111,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                               className="flex items-center space-x-2"
                             >
                               <User className="h-4 w-4 text-gray-500" />
-                              <span className="text-sm font-medium text-gray-700">
+                              <span className="text-md font-medium text-gray-700 ">
                                 Customer{" "}
                                 <span className="text-gray-500">
                                   (name/email/phone)
@@ -1231,7 +1230,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                               <div className="col-span-1">
                                 <Label
                                   htmlFor="phone"
-                                  className="text-sm font-medium text-gray-700"
+                                  className="text-md font-medium text-gray-700 mb-1"
                                 >
                                   Phone Number{" "}
                                   <span className="text-red-500">*</span>
@@ -1253,7 +1252,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                               <div className="col-span-1">
                                 <Label
                                   htmlFor="email_id"
-                                  className="text-sm font-medium text-gray-700"
+                                  className="text-md font-medium text-gray-700 mb-1"
                                 >
                                   Email
                                 </Label>
@@ -1272,7 +1271,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                           <div className="col-span-1 md:col-span-2">
                             <Label
                               htmlFor="source"
-                              className="text-sm font-medium text-gray-700"
+                              className="text-md font-medium text-gray-700 mb-1"
                             >
                               Source Of Inquiry{" "}
                             </Label>
@@ -1303,7 +1302,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                               <div className="mt-4">
                                 <Label
                                   htmlFor="custom_reference_name"
-                                  className="text-sm font-medium text-gray-700"
+                                  className="text-md font-medium text-gray-700"
                                 >
                                   Reference Name{" "}
                                   <span className="text-red-500">*</span>
@@ -1328,7 +1327,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                           <div>
                             <Label
                               htmlFor="custom_job_type"
-                              className="text-sm font-medium text-gray-700"
+                              className="text-md font-medium text-gray-700 mb-1"
                             >
                               Job Type <span className="text-red-500">*</span>
                             </Label>
@@ -1357,7 +1356,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                           <div>
                             <Label
                               htmlFor="custom_budget_range"
-                              className="text-sm font-medium text-gray-700"
+                              className="text-md font-medium text-gray-700 mb-1"
                             >
                               Budget Range{" "}
                             </Label>
@@ -1381,7 +1380,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                           </div>
 
                           <div>
-                            <Label className="text-sm font-medium text-gray-700">
+                            <Label className="text-md font-medium text-gray-700 mb-1">
                               Project Urgency{" "}
                             </Label>
                             <Select
@@ -1451,13 +1450,13 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
 
                       {section.id === "inspector" && (
                         <div className="space-y-4">
-                          {assignError && (
+                          {/* {assignError && (
                             <div className="bg-red-50 border border-red-200 rounded-md p-2">
                               <div className="text-red-700 text-sm">
                                 {assignError}
                               </div>
                             </div>
-                          )}
+                          )} */}
                           {assignSuccess && (
                             <div className="bg-emerald-50 border border-emerald-200 rounded-md p-2">
                               <div className="text-emerald-700 text-sm">
@@ -1467,7 +1466,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                           )}
 
                           <div className="space-y-2">
-                            <Label className="text-gray-700 text-sm font-medium">
+                            <Label className="text-gray-700 text-md font-medium mb-1">
                               Select Inspection Date{" "}
                               <span className="text-red-500">*</span>
                             </Label>
@@ -1490,7 +1489,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
 
                           {date && (
                             <div className="space-y-2">
-                              <Label className="text-gray-700 text-sm font-medium">
+                              <Label className="text-gray-700 text-md font-medium mb-1">
                                 Inspector Selected
                               </Label>
                               <div className="flex items-center justify-between">
@@ -1526,7 +1525,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                             selectedInspector.availability.free_slots.length >
                               0 && (
                               <div className="space-y-2 px-5 py-2 bg-yellow-50 border border-yellow-200 rounded-lg">
-                                <Label className="text-gray-700 text-sm font-medium">
+                                <Label className="text-gray-700 text-md font-medium mb-1">
                                   Available Time Slots
                                 </Label>
                                 <div className="grid grid-cols-2 gap-2">
@@ -1564,7 +1563,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
 
                           {selectedSlot && (
                             <div className="space-y-3 p-3 border rounded-lg">
-                              <Label className="text-gray-700 text-sm font-medium">
+                              <Label className="text-gray-700 text-md font-medium mb-1">
                                 Finalize Time & Duration
                               </Label>
                               <div className="grid grid-cols-3 gap-3">
@@ -1649,7 +1648,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                           )}
 
                           <div className="space-y-2">
-                            <Label className="text-gray-700 text-sm font-medium">
+                            <Label className="text-gray-700 text-md font-medium mb-1">
                               Priority
                             </Label>
                             <Select
@@ -1721,7 +1720,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                 <div className="px-2">
                   <Label
                     htmlFor="custom_special_requirements"
-                    className="text-xs pb-2 font-medium text-gray-700"
+                    className="text-md mb-1 font-medium text-gray-700"
                   >
                     Special Requirements
                   </Label>
@@ -1789,7 +1788,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
 
               <div className="space-y-4">
                 <div>
-                  <Label className="block text-sm font-medium text-gray-700 mb-1">
+                  <Label className="block text-md font-medium text-gray-700 mb-1">
                     Full Name <span className="text-red-500">*</span>
                   </Label>
                   <Input
@@ -1804,7 +1803,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                 </div>
 
                 <div>
-                  <Label className="block text-sm font-medium text-gray-700 mb-1">
+                  <Label className="block text-md font-medium text-gray-700 mb-1">
                     Phone Number <span className="text-red-500">*</span>
                   </Label>
                   <Input
@@ -1820,7 +1819,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                 </div>
 
                 <div>
-                  <Label className="block text-sm font-medium text-gray-700 mb-1">
+                  <Label className="block text-md font-medium text-gray-700 mb-1">
                     Email
                   </Label>
                   <Input
@@ -1833,7 +1832,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                 </div>
 
                 <div>
-                  <Label className="block text-sm font-medium text-gray-700 mb-1">
+                  <Label className="block text-md font-medium text-gray-700 mb-1">
                     Job Type
                   </Label>
                   {jobTypes.length > 0 ? (
@@ -1849,7 +1848,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                       <SelectTrigger className="w-full">
                         <SelectValue placeholder="Select job type" />
                       </SelectTrigger>
-                      <SelectContent className="bg-white z-[100]">
+                      <SelectContent className="bg-white z-[100] text-md">
                         {" "}
                         {/* Increased z-index */}
                         {jobTypes.map((jobType) => (
