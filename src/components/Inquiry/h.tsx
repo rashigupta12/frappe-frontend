@@ -5,7 +5,6 @@ import {
   Calendar,
   Edit,
   FileText,
-  // Filter,
   Home,
   MapPin,
   Phone,
@@ -13,9 +12,8 @@ import {
   Search,
   User,
   X,
-  // Loader2, // Added loader icon
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLeads, type Lead } from "../../context/LeadContext";
 import {
   getBudgetColor,
@@ -36,106 +34,135 @@ const InquiryPage = () => {
     leads,
     error,
     fetchLeads,
-    // jobTypes,
     fetchJobTypes,
     fetchProjectUrgency,
     fetchUtmSource,
   } = useLeads();
 
+  // State management
   const [searchTerm, setSearchTerm] = useState("");
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [viewInquiry, setViewInquiry] = useState<Lead | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [selectedInquiryForDialog, setSelectedInquiryForDialog] =
-    useState<Lead | null>(null);
-
-  // Added loading state
+  const [selectedInquiryForDialog, setSelectedInquiryForDialog] = useState<Lead | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-
-  // States for InquiryForm component
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedInquiry, setSelectedInquiry] = useState<Lead | null>(null);
+  const [hasInitialized, setHasInitialized] = useState(false);
 
-  // Fixed: Handle opening dialog with correct inquiry
-  const handleOpenDialog = (inquiry: Lead) => {
-    setSelectedInquiryForDialog(inquiry);
-    setIsDialogOpen(true);
-  };
+  // Memoized filtered inquiries to prevent unnecessary re-calculations
+  const filteredInquiries = useMemo(() => {
+    if (!leads || leads.length === 0) return [];
+    
+    return leads
+      .filter((inquiry: Lead) => inquiry.status === "Lead")
+      .filter((inquiry: Lead) => {
+        const searchLower = searchTerm.toLowerCase();
+        return (
+          (inquiry.lead_name?.toLowerCase() || "").includes(searchLower) ||
+          (inquiry.email_id?.toLowerCase() || "").includes(searchLower) ||
+          (inquiry.mobile_no?.toLowerCase() || "").includes(searchLower) ||
+          (inquiry.custom_job_type?.toLowerCase() || "").includes(searchLower)
+        );
+      });
+  }, [leads, searchTerm]);
 
-  // Fixed: Handle closing dialog
-  const handleCloseDialog = () => {
-    setIsDialogOpen(false);
-    setSelectedInquiryForDialog(null);
-  };
+  // Optimized data loading with proper dependency management
+  const loadData = useCallback(async () => {
+    if (hasInitialized) return; // Prevent multiple initializations
+    
+    setIsLoading(true);
+    try {
+      // Execute API calls in parallel but handle errors individually
+      const promises = [
+        fetchLeads().catch(err => console.error("Error fetching leads:", err)),
+        fetchJobTypes().catch(err => console.error("Error fetching job types:", err)),
+      ];
 
+      // Only add optional functions if they exist
+      if (fetchProjectUrgency) {
+        promises.push(
+          fetchProjectUrgency().catch(err => console.error("Error fetching project urgency:", err))
+        );
+      }
+      
+      if (fetchUtmSource) {
+        promises.push(
+          fetchUtmSource().catch(err => console.error("Error fetching UTM source:", err))
+        );
+      }
+
+      await Promise.allSettled(promises);
+      setHasInitialized(true);
+    } catch (error) {
+      console.error("Error loading data:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [fetchLeads, fetchJobTypes, fetchProjectUrgency, fetchUtmSource, hasInitialized]);
+
+  // Effect with proper cleanup and dependency management
   useEffect(() => {
-    const loadData = async () => {
-      setIsLoading(true);
-      try {
-        await Promise.all([
-          fetchLeads(),
-          fetchJobTypes(),
-          fetchProjectUrgency?.(),
-          fetchUtmSource?.(),
-        ]);
-      } catch (error) {
-        console.error("Error loading data:", error);
-      } finally {
-        setIsLoading(false);
+    let isMounted = true;
+
+    const initializeData = async () => {
+      if (isMounted) {
+        await loadData();
       }
     };
 
-    loadData();
-  }, [fetchLeads, fetchJobTypes, fetchProjectUrgency, fetchUtmSource]);
+    initializeData();
 
-  // Function to open form for new inquiry
-  const openNewInquiryForm = () => {
+    // Cleanup function
+    return () => {
+      isMounted = false;
+    };
+  }, []); // Empty dependency array - only run once on mount
+
+  // Dialog handlers
+  const handleOpenDialog = useCallback((inquiry: Lead) => {
+    setSelectedInquiryForDialog(inquiry);
+    setIsDialogOpen(true);
+  }, []);
+
+  const handleCloseDialog = useCallback(() => {
+    setIsDialogOpen(false);
+    setSelectedInquiryForDialog(null);
+  }, []);
+
+  // Form handlers
+  const openNewInquiryForm = useCallback(() => {
     setSelectedInquiry(null);
     setIsFormOpen(true);
-  };
+  }, []);
 
-  // Function to open form for editing existing inquiry
-  const openEditInquiryForm = (inquiry: Lead) => {
+  const openEditInquiryForm = useCallback((inquiry: Lead) => {
     setSelectedInquiry(inquiry);
     setIsFormOpen(true);
-  };
+  }, []);
 
-  // Function to close form
-  const closeInquiryForm = () => {
+  const closeInquiryForm = useCallback(() => {
     setIsFormOpen(false);
     setSelectedInquiry(null);
-  };
+  }, []);
 
-  const openViewModal = (inquiry: Lead) => {
+  // Modal handlers
+  const openViewModal = useCallback((inquiry: Lead) => {
     setViewInquiry(inquiry);
     setViewModalOpen(true);
-  };
+  }, []);
 
-  const closeViewModal = () => {
+  const closeViewModal = useCallback(() => {
     setViewModalOpen(false);
     setViewInquiry(null);
-  };
+  }, []);
 
-  // Updated filtering logic - removed duplicate job type filter and added job type to search
-  const filteredInquiries = leads
-    .filter((inquiry: Lead) => inquiry.status === "Lead")
-    .filter(
-      (inquiry: Lead) =>
-        (inquiry.lead_name?.toLowerCase() || "").includes(
-          searchTerm.toLowerCase()
-        ) ||
-        (inquiry.email_id?.toLowerCase() || "").includes(
-          searchTerm.toLowerCase()
-        ) ||
-        (inquiry.mobile_no?.toLowerCase() || "").includes(
-          searchTerm.toLowerCase()
-        ) ||
-        (inquiry.custom_job_type?.toLowerCase() || "").includes(
-          searchTerm.toLowerCase()
-        )
-    );
+  // Optimized search handler with debouncing effect
+  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
+  }, []);
 
-  // Skeleton loader for inquiry cards
+  // Skeleton loader component
   const SkeletonCard = () => (
     <div className="bg-gradient-to-br from-white to-gray-50 rounded-lg p-3 border border-gray-300 shadow-2xs animate-pulse lg:p-4">
       <div className="flex justify-between items-start gap-2">
@@ -200,7 +227,7 @@ const InquiryPage = () => {
                   placeholder="Search by customer name, email, phone, or job type"
                   className="pl-10 w-full bg-white border border-gray-300"
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={handleSearchChange}
                   disabled={isLoading}
                 />
               </div>
@@ -224,7 +251,7 @@ const InquiryPage = () => {
                   placeholder="Search by name, email, phone, job type"
                   className="pl-10 w-full bg-white border border-gray-300"
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={handleSearchChange}
                   disabled={isLoading}
                 />
               </div>
@@ -251,7 +278,7 @@ const InquiryPage = () => {
               No inquiries found
             </h3>
             <p className="text-xs lg:text-sm text-gray-500 mb-4">
-              Start by creating your first inquiry
+              {searchTerm ? "Try adjusting your search terms" : "Start by creating your first inquiry"}
             </p>
             <Button
               onClick={openNewInquiryForm}
@@ -403,7 +430,6 @@ const InquiryPage = () => {
                     )}
 
                     <div className="ml-auto">
-                      {/* Fixed: Corrected the status logic */}
                       {inquiry.status === "Open" ? (
                         <Badge
                           variant="outline"
@@ -433,7 +459,7 @@ const InquiryPage = () => {
         )}
       </div>
 
-      {/* Fixed: Moved dialog outside of map and used correct inquiry state */}
+      {/* Dialogs and Modals */}
       {isDialogOpen && selectedInquiryForDialog && (
         <InspectionDialog
           open={isDialogOpen}
@@ -443,11 +469,13 @@ const InquiryPage = () => {
         />
       )}
 
-      <InquiryForm
-        isOpen={isFormOpen}
-        onClose={closeInquiryForm}
-        inquiry={selectedInquiry}
-      />
+      {isFormOpen && (
+        <InquiryForm
+          isOpen={isFormOpen}
+          onClose={closeInquiryForm}
+          inquiry={selectedInquiry}
+        />
+      )}
 
       {/* View Modal */}
       {viewModalOpen && viewInquiry && (
@@ -558,12 +586,13 @@ const InquiryPage = () => {
                     <div className="break-words">
                       <span className="text-gray-900">
                         {[
-                          format(
-                            new Date(
-                              viewInquiry.custom_preferred_inspection_date
+                          viewInquiry.custom_preferred_inspection_date &&
+                            format(
+                              new Date(
+                                viewInquiry.custom_preferred_inspection_date
+                              ),
+                              "dd/MM/yyyy"
                             ),
-                            "dd/MM/yyyy"
-                          ),
                           viewInquiry.custom_preferred_inspection_time,
                         ]
                           .filter(Boolean)

@@ -210,30 +210,39 @@ export default function TodoPage() {
                         </Badge>
                       </div>
                     </div>
-                    
+
                     <div className="space-y-1 text-xs">
-  <div className="flex items-center gap-2">
-    <CalendarIcon className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
-    <span className="text-gray-600">
-      Date: <span className="font-medium">
-        {todo.date
-          ? format(new Date(todo.date), "dd/MM/yyyy")
-          : "Not specified"}
-      </span>
-    </span>
-  </div>
-  {todo.custom_start_time && todo.custom_end_time && (
-    <div className="flex items-center gap-2">
-      <ClockIcon className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
-      <span className="text-gray-600">
-        Time: <span className="font-medium">
-          {format(new Date(todo.custom_start_time), "hh:mm a")} -{" "}
-          {format(new Date(todo.custom_end_time), "hh:mm a")}
-        </span>
-      </span>
-    </div>
-  )}
-</div>
+                      <div className="flex items-center gap-2">
+                        <CalendarIcon className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
+                        <span className="text-gray-600">
+                          Date:{" "}
+                          <span className="font-medium">
+                            {todo.date
+                              ? format(new Date(todo.date), "dd/MM/yyyy")
+                              : "Not specified"}
+                          </span>
+                        </span>
+                      </div>
+                      {todo.custom_start_time && todo.custom_end_time && (
+                        <div className="flex items-center gap-2">
+                          <ClockIcon className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
+                          <span className="text-gray-600">
+                            Time:{" "}
+                            <span className="font-medium">
+                              {format(
+                                new Date(todo.custom_start_time),
+                                "hh:mm a"
+                              )}{" "}
+                              -{" "}
+                              {format(
+                                new Date(todo.custom_end_time),
+                                "hh:mm a"
+                              )}
+                            </span>
+                          </span>
+                        </div>
+                      )}
+                    </div>
                     {/* Additional details below */}
                     <div className=" space-y-1.5 text-xs">
                       <div className="flex items-center gap-2">
