@@ -682,7 +682,19 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
               </div>
             </div>
           </div>
-
+ {mode === "edit" && data?.custom_start_time && data?.custom_end_time && (
+            <div className="bg-gray-50 px-4 py-2 rounded-lg">
+              <Label className="text-black text-md font-medium">
+                Current Allocation
+              </Label>
+              <div className="inline-flex items-center px-1 py-1.5 rounded-md text-sm font-medium">
+                {data.custom_start_time.split(" ")[1].slice(0, 5)} - {data.custom_end_time.split(" ")[1].slice(0, 5)}
+                <span className="ml-2 text-sm">
+                  ({data.user_id})
+                </span>
+              </div>
+            </div>
+          )}
           {assignError && (
             <div className="bg-red-50 border border-red-200 rounded-md p-2">
               <div className="text-red-700 text-sm">{assignError}</div>
@@ -791,25 +803,13 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
           )}
 
           {/* Show current allocated slot in edit mode */}
-          {mode === "edit" && data?.custom_start_time && data?.custom_end_time && (
-            <div className="space-y-2 px-5 py-2 bg-blue-50 border border-blue-200 rounded-lg">
-              <Label className="text-gray-700 text-sm font-medium">
-                Currently Allocated Time
-              </Label>
-              <div className="inline-flex items-center px-3 py-1.5 bg-blue-100 text-blue-800 rounded-md text-sm font-medium">
-                {data.custom_start_time.split(" ")[1].slice(0, 5)} - {data.custom_end_time.split(" ")[1].slice(0, 5)}
-                <span className="ml-2 text-xs opacity-70">
-                  (Current Assignment)
-                </span>
-              </div>
-            </div>
-          )}
+         
 
           {/* Show available slots */}
 {selectedInspector && selectedInspector.availability.free_slots.length > 0 && (
   <div className="space-y-2 px-5 py-2 bg-yellow-50 border border-yellow-200 rounded-lg">
     <Label className="text-gray-700 text-sm font-medium">
-      {mode === "edit" ? "Available Time Slots (for rescheduling)" : "Available Time Slots"}
+      {mode === "edit" ? "Available Time Slots " : "Available Time Slots"}
     </Label>
     <div className="grid grid-cols-2 gap-2">
       {selectedInspector.availability.free_slots.map(
