@@ -344,81 +344,81 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     setNewCustomerForm((prev) => ({ ...prev, phone: formattedNumber }));
   };
 
-const saveNewCustomer = async () => {
-  if (!newCustomerForm.name.trim()) {
-    toast.error("Customer name is required");
-    return;
-  }
-
-  if (!newCustomerForm.phone || newCustomerForm.phone.length < 5) {
-    toast.error("Valid mobile number is required");
-    return;
-  }
-
-  try {
-    setIsCreatingCustomer(true); // Start loading
-
-    const newLeadData = formatSubmissionData({
-      lead_name: newCustomerForm.name.trim(),
-      email_id: newCustomerForm.email || "",
-      mobile_no: newCustomerForm.phone,
-      custom_job_type: newCustomerForm.jobType,
-      custom_budget_range: "",
-      custom_project_urgency: "",
-      source: "",
-      custom_property_name__number: "",
-      custom_emirate: "",
-      custom_area: "",
-      custom_community: "",
-      custom_street_name: "",
-      custom_property_area: "",
-      custom_property_category: "",
-      custom_special_requirements: "",
-    });
-
-    const createdLead = await createLead(newLeadData);
-
-    if (!createdLead) {
-      throw new Error("Failed to create lead");
+  const saveNewCustomer = async () => {
+    if (!newCustomerForm.name.trim()) {
+      toast.error("Customer name is required");
+      return;
     }
 
-    setFormData((prev) => ({
-      ...prev,
-      lead_name: createdLead.lead_name || newCustomerForm.name,
-      email_id: createdLead.email_id || newCustomerForm.email,
-      mobile_no: createdLead.mobile_no || newCustomerForm.phone,
-      custom_job_type: createdLead.custom_job_type || newCustomerForm.jobType,
-      name: createdLead.name,
-    }));
+    if (!newCustomerForm.phone || newCustomerForm.phone.length < 5) {
+      toast.error("Valid mobile number is required");
+      return;
+    }
 
-    setCustomerSearchQuery(newCustomerForm.name);
-    setShowNewCustomerFields(true);
-    setShowNewCustomerModal(false);
-    setShowCustomerDropdown(false);
+    try {
+      setIsCreatingCustomer(true); // Start loading
 
-    setNewCustomerForm({
-      name: "",
-      email: "",
-      phone: "+971 ",
-      jobType: jobTypes.length > 0 ? jobTypes[0].name : "",
-    });
+      const newLeadData = formatSubmissionData({
+        lead_name: newCustomerForm.name.trim(),
+        email_id: newCustomerForm.email || "",
+        mobile_no: newCustomerForm.phone,
+        custom_job_type: newCustomerForm.jobType,
+        custom_budget_range: "",
+        custom_project_urgency: "",
+        source: "",
+        custom_property_name__number: "",
+        custom_emirate: "",
+        custom_area: "",
+        custom_community: "",
+        custom_street_name: "",
+        custom_property_area: "",
+        custom_property_category: "",
+        custom_special_requirements: "",
+      });
 
-    toast.success(`New Lead "${newCustomerForm.name}" created successfully!`);
-  } catch (error) {
-    console.error("Error creating new lead:", error);
-    let errorMessage = "Failed to create lead. Please try again.";
-    if (error && typeof error === "object") {
-      if ("message" in error) {
-        errorMessage = (error as { message: string }).message;
-      } else if ("error" in error) {
-        errorMessage = (error as { error: string }).error;
+      const createdLead = await createLead(newLeadData);
+
+      if (!createdLead) {
+        throw new Error("Failed to create lead");
       }
+
+      setFormData((prev) => ({
+        ...prev,
+        lead_name: createdLead.lead_name || newCustomerForm.name,
+        email_id: createdLead.email_id || newCustomerForm.email,
+        mobile_no: createdLead.mobile_no || newCustomerForm.phone,
+        custom_job_type: createdLead.custom_job_type || newCustomerForm.jobType,
+        name: createdLead.name,
+      }));
+
+      setCustomerSearchQuery(newCustomerForm.name);
+      setShowNewCustomerFields(true);
+      setShowNewCustomerModal(false);
+      setShowCustomerDropdown(false);
+
+      setNewCustomerForm({
+        name: "",
+        email: "",
+        phone: "+971 ",
+        jobType: jobTypes.length > 0 ? jobTypes[0].name : "",
+      });
+
+      toast.success(`New Lead "${newCustomerForm.name}" created successfully!`);
+    } catch (error) {
+      console.error("Error creating new lead:", error);
+      let errorMessage = "Failed to create lead. Please try again.";
+      if (error && typeof error === "object") {
+        if ("message" in error) {
+          errorMessage = (error as { message: string }).message;
+        } else if ("error" in error) {
+          errorMessage = (error as { error: string }).error;
+        }
+      }
+      toast.error(errorMessage);
+    } finally {
+      setIsCreatingCustomer(false); // End loading
     }
-    toast.error(errorMessage);
-  } finally {
-    setIsCreatingCustomer(false); // End loading
-  }
-};
+  };
   const validateRequestedTime = () => {
     if (!requestedTime || !selectedSlot) return false;
 
@@ -550,7 +550,7 @@ const saveNewCustomer = async () => {
       );
       setShowReferenceInput(
         inquiry.source === "Reference" ||
-        inquiry.source === "Supplier Reference"
+          inquiry.source === "Supplier Reference"
       );
 
       setCustomerSearchQuery(inquiry.lead_name || "");
@@ -658,38 +658,37 @@ const saveNewCustomer = async () => {
     return true;
   };
 
-const saveLead = async (): Promise<string | undefined> => {
-  try {
-    const submissionData = formatSubmissionData(formData);
+  const saveLead = async (): Promise<string | undefined> => {
+    try {
+      const submissionData = formatSubmissionData(formData);
 
-    // Check if we already have a lead ID (either from inquiry prop or from newly created lead)
-    const existingLeadId = inquiry?.name || formData.name;
+      // Check if we already have a lead ID (either from inquiry prop or from newly created lead)
+      const existingLeadId = inquiry?.name || formData.name;
 
-    if (existingLeadId) {
-      // Update existing lead
-      await updateLead(existingLeadId, submissionData);
-      toast.success("Inquiry updated successfully!");
-      return existingLeadId;
-    } else {
-      // Create new lead only if we don't have an ID
-      const newInquiry = await createLead(submissionData);
-      toast.success("Inquiry created successfully!");
-      
-      // Update formData with the new lead ID
-      setFormData(prev => ({
-        ...prev,
-        name: newInquiry.name
-      }));
-      
-      return newInquiry.name;
+      if (existingLeadId) {
+        // Update existing lead
+        await updateLead(existingLeadId, submissionData);
+        toast.success("Inquiry updated successfully!");
+        return existingLeadId;
+      } else {
+        // Create new lead only if we don't have an ID
+        const newInquiry = await createLead(submissionData);
+        toast.success("Inquiry created successfully!");
+
+        // Update formData with the new lead ID
+        setFormData((prev) => ({
+          ...prev,
+          name: newInquiry.name,
+        }));
+
+        return newInquiry.name;
+      }
+    } catch (err) {
+      console.error("Error saving lead:", err);
+      toast.error("Failed to save inquiry. Please try again.");
+      return undefined;
     }
-  } catch (err) {
-    console.error("Error saving lead:", err);
-    toast.error("Failed to save inquiry. Please try again.");
-    return undefined;
-  }
-};
-
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -732,93 +731,97 @@ const saveLead = async (): Promise<string | undefined> => {
     setShowConfirmModal(true);
   };
 
- const confirmAssignment = async () => {
-  setShowConfirmModal(false);
+  const confirmAssignment = async () => {
+    setShowConfirmModal(false);
 
-  try {
-    // Get the lead ID - either from existing inquiry or from formData
-    const existingLeadId = inquiry?.name || formData.name;
-    
-    let inquiryName: string;
-    
-    if (existingLeadId) {
-      // If we already have a lead ID, just update it
-      const submissionData = formatSubmissionData(formData);
-      await updateLead(existingLeadId, submissionData);
-      inquiryName = existingLeadId;
-      toast.success("Inquiry updated successfully!");
-    } else {
-      // Only create new lead if we don't have an ID (shouldn't happen if saveNewCustomer worked correctly)
-      const savedLeadName = await saveLead();
-      if (!savedLeadName) {
-        toast.error("Failed to save inquiry");
-        return;
+    try {
+      // Get the lead ID - either from existing inquiry or from formData
+      const existingLeadId = inquiry?.name || formData.name;
+
+      let inquiryName: string;
+
+      if (existingLeadId) {
+        // If we already have a lead ID, just update it
+        const submissionData = formatSubmissionData(formData);
+        await updateLead(existingLeadId, submissionData);
+        inquiryName = existingLeadId;
+        toast.success("Inquiry updated successfully!");
+      } else {
+        // Only create new lead if we don't have an ID (shouldn't happen if saveNewCustomer worked correctly)
+        const savedLeadName = await saveLead();
+        if (!savedLeadName) {
+          toast.error("Failed to save inquiry");
+          return;
+        }
+        inquiryName = savedLeadName;
       }
-      inquiryName = savedLeadName;
+
+      const preferredDate = format(date!, "yyyy-MM-dd");
+      const endTime = calculateEndTime();
+      const startDateTime = `${preferredDate} ${requestedTime}:00`;
+      const endDateTime = `${preferredDate} ${endTime}:00`;
+
+      await createTodo({
+        assigned_by: user?.username || "sales_rep@eits.com",
+        inquiry_id: inquiryName,
+        inspector_email: selectedInspector!.email,
+        description: formData.custom_special_requirements || "",
+        priority: priority,
+        preferred_date: preferredDate,
+        custom_start_time: startDateTime,
+        custom_end_time: endDateTime,
+      });
+
+      // Rest of the assignment logic remains the same...
+      let employeeName = "";
+      const employeeResponse = await frappeAPI.makeAuthenticatedRequest(
+        "GET",
+        `/api/resource/Employee?filters=[["user_id","=","${
+          selectedInspector!.email
+        }"]]`
+      );
+
+      if (employeeResponse?.data?.length > 0) {
+        employeeName = employeeResponse.data[0].name;
+      } else {
+        throw new Error(
+          `Could not find employee record for ${selectedInspector!.email}`
+        );
+      }
+
+      const dwaPayload = {
+        employee_name: employeeName,
+        date: preferredDate,
+        custom_work_allocation: [
+          {
+            work_title: formData.custom_job_type || "Site Inspection",
+            work_description: formData.custom_property_area,
+            expected_start_date: requestedTime,
+            expected_time_in_hours: parseFloat(duration),
+          },
+        ],
+      };
+
+      await frappeAPI.makeAuthenticatedRequest(
+        "POST",
+        "/api/resource/Daily Work Allocation",
+        dwaPayload
+      );
+
+      toast.success("Inspector assigned successfully!");
+      navigate("/sales?tab=assign");
+      onClose();
+    } catch (error) {
+      console.error("Full error in assignment process:", error);
+      toast.error(
+        `Failed to complete assignment: ${
+          error && typeof error === "object" && "message" in error
+            ? (error as { message: string }).message
+            : String(error)
+        }`
+      );
     }
-
-    const preferredDate = format(date!, "yyyy-MM-dd");
-    const endTime = calculateEndTime();
-    const startDateTime = `${preferredDate} ${requestedTime}:00`;
-    const endDateTime = `${preferredDate} ${endTime}:00`;
-
-    await createTodo({
-      assigned_by: user?.username || "sales_rep@eits.com",
-      inquiry_id: inquiryName,
-      inspector_email: selectedInspector!.email,
-      description: formData.custom_special_requirements || "",
-      priority: priority,
-      preferred_date: preferredDate,
-      custom_start_time: startDateTime,
-      custom_end_time: endDateTime,
-    });
-
-    // Rest of the assignment logic remains the same...
-    let employeeName = "";
-    const employeeResponse = await frappeAPI.makeAuthenticatedRequest(
-      "GET",
-      `/api/resource/Employee?filters=[["user_id","=","${selectedInspector!.email}"]]`
-    );
-
-    if (employeeResponse?.data?.length > 0) {
-      employeeName = employeeResponse.data[0].name;
-    } else {
-      throw new Error(`Could not find employee record for ${selectedInspector!.email}`);
-    }
-
-    const dwaPayload = {
-      employee_name: employeeName,
-      date: preferredDate,
-      custom_work_allocation: [
-        {
-          work_title: formData.custom_job_type || "Site Inspection",
-          work_description: formData.custom_property_area,
-          expected_start_date: requestedTime,
-          expected_time_in_hours: parseFloat(duration),
-        },
-      ],
-    };
-
-    await frappeAPI.makeAuthenticatedRequest(
-      "POST",
-      "/api/resource/Daily Work Allocation",
-      dwaPayload
-    );
-
-    toast.success("Inspector assigned successfully!");
-    navigate("/sales?tab=assign");
-    onClose();
-  } catch (error) {
-    console.error("Full error in assignment process:", error);
-    toast.error(
-      `Failed to complete assignment: ${
-        error && typeof error === "object" && "message" in error
-          ? (error as { message: string }).message
-          : String(error)
-      }`
-    );
-  }
-};
+  };
 
   const handleClose = () => {
     resetForm();
@@ -876,7 +879,9 @@ const saveLead = async (): Promise<string | undefined> => {
             community: result.custom_community,
             street_name: result.custom_street_name,
             property_number: result.custom_property_number,
-            combined_address: result.custom_combine_address || extractAddressFromSite(result.site_name),
+            combined_address:
+              result.custom_combine_address ||
+              extractAddressFromSite(result.site_name),
             property_category: result.custom_property_category,
             property_type: result.custom_property_type,
           },
@@ -918,17 +923,17 @@ const saveLead = async (): Promise<string | undefined> => {
 
       const addressData = result.address_details
         ? {
-          custom_property_category:
-            result.address_details.property_category || "",
-          custom_emirate: result.address_details.emirate || "",
-          custom_community: result.address_details.community || "",
-          custom_area: result.address_details.area || "",
-          custom_street_name: result.address_details.street_name || "",
-          custom_property_name__number:
-            result.address_details.property_number || "",
-          custom_property_area: result.address_details.combined_address || "",
-          custom_property_type: result.address_details.property_type || "",
-        }
+            custom_property_category:
+              result.address_details.property_category || "",
+            custom_emirate: result.address_details.emirate || "",
+            custom_community: result.address_details.community || "",
+            custom_area: result.address_details.area || "",
+            custom_street_name: result.address_details.street_name || "",
+            custom_property_name__number:
+              result.address_details.property_number || "",
+            custom_property_area: result.address_details.combined_address || "",
+            custom_property_type: result.address_details.property_type || "",
+          }
         : {};
 
       setFormData((prev) => ({
@@ -1016,7 +1021,6 @@ const saveLead = async (): Promise<string | undefined> => {
     );
   };
 
-
   const extractAddressFromSite = (siteName: string) => {
     if (!siteName) return "";
     // Format: "Name-Number,..." - extract everything after the first dash
@@ -1072,8 +1076,9 @@ const saveLead = async (): Promise<string | undefined> => {
                 >
                   <button
                     type="button"
-                    className={`w-full flex justify-between items-center p-4 text-left hover:bg-gray-50 transition-colors ${activeSection === section.id ? "bg-gray-50" : ""
-                      }`}
+                    className={`w-full flex justify-between items-center p-4 text-left hover:bg-gray-50 transition-colors ${
+                      activeSection === section.id ? "bg-gray-50" : ""
+                    }`}
                     onClick={() => toggleSection(section.id)}
                   >
                     <div className="flex items-center gap-3">
@@ -1093,10 +1098,11 @@ const saveLead = async (): Promise<string | undefined> => {
                   </button>
 
                   <div
-                    className={`transition-all duration-300 overflow-hidden ${activeSection === section.id
+                    className={`transition-all duration-300 overflow-hidden ${
+                      activeSection === section.id
                         ? "max-h-[1000px] opacity-100"
                         : "max-h-0 opacity-0"
-                      }`}
+                    }`}
                   >
                     <div className="p-4 pt-2 space-y-4">
                       {section.id === "contact" && (
@@ -1150,21 +1156,21 @@ const saveLead = async (): Promise<string | undefined> => {
                                       </p>
                                       {(result.mobile_no ||
                                         result.email_id) && (
-                                          <div className="text-xs text-gray-500 space-x-2">
-                                            {result.mobile_no && (
-                                              <span className="inline-flex items-center">
-                                                <Phone className="h-3 w-3 mr-1" />
-                                                {result.mobile_no}
-                                              </span>
-                                            )}
-                                            {result.email_id && (
-                                              <span className="inline-flex items-center">
-                                                <Mail className="h-3 w-3 mr-1" />
-                                                {result.email_id}
-                                              </span>
-                                            )}
-                                          </div>
-                                        )}
+                                        <div className="text-xs text-gray-500 space-x-2">
+                                          {result.mobile_no && (
+                                            <span className="inline-flex items-center">
+                                              <Phone className="h-3 w-3 mr-1" />
+                                              {result.mobile_no}
+                                            </span>
+                                          )}
+                                          {result.email_id && (
+                                            <span className="inline-flex items-center">
+                                              <Mail className="h-3 w-3 mr-1" />
+                                              {result.email_id}
+                                            </span>
+                                          )}
+                                        </div>
+                                      )}
                                       {result.site_name && (
                                         <div className="mt-2 text-xs text-gray-500 flex items-start gap-1">
                                           <Home className="h-3 w-3 flex-shrink-0 mt-0.5" />
@@ -1203,47 +1209,47 @@ const saveLead = async (): Promise<string | undefined> => {
                           {(showNewCustomerFields ||
                             formData.lead_name ||
                             customerSearchQuery) && (
-                              <>
-                                <div className="col-span-1">
-                                  <Label
-                                    htmlFor="phone"
-                                    className="text-sm font-medium text-gray-700"
-                                  >
-                                    Phone Number{" "}
-                                    <span className="text-red-500">*</span>
-                                  </Label>
-                                  <Input
-                                    type="tel"
-                                    id="phone"
-                                    name="mobile_no"
-                                    value={formData.mobile_no || "+971 "}
-                                    onChange={handlePhoneChange}
-                                    onKeyDown={handleKeyDown}
-                                    placeholder="+971 XX XXX XXXX"
-                                    className="w-full"
-                                    maxLength={17}
-                                    required
-                                  />
-                                </div>
+                            <>
+                              <div className="col-span-1">
+                                <Label
+                                  htmlFor="phone"
+                                  className="text-sm font-medium text-gray-700"
+                                >
+                                  Phone Number{" "}
+                                  <span className="text-red-500">*</span>
+                                </Label>
+                                <Input
+                                  type="tel"
+                                  id="phone"
+                                  name="mobile_no"
+                                  value={formData.mobile_no || "+971 "}
+                                  onChange={handlePhoneChange}
+                                  onKeyDown={handleKeyDown}
+                                  placeholder="+971 XX XXX XXXX"
+                                  className="w-full"
+                                  maxLength={17}
+                                  required
+                                />
+                              </div>
 
-                                <div className="col-span-1">
-                                  <Label
-                                    htmlFor="email_id"
-                                    className="text-sm font-medium text-gray-700"
-                                  >
-                                    Email
-                                  </Label>
-                                  <Input
-                                    type="text"
-                                    id="email_id"
-                                    name="email_id"
-                                    value={formData.email_id || ""}
-                                    onChange={handleInputChange}
-                                    placeholder="Enter email"
-                                  />
-                                </div>
-                              </>
-                            )}
+                              <div className="col-span-1">
+                                <Label
+                                  htmlFor="email_id"
+                                  className="text-sm font-medium text-gray-700"
+                                >
+                                  Email
+                                </Label>
+                                <Input
+                                  type="text"
+                                  id="email_id"
+                                  name="email_id"
+                                  value={formData.email_id || ""}
+                                  onChange={handleInputChange}
+                                  placeholder="Enter email"
+                                />
+                              </div>
+                            </>
+                          )}
 
                           <div className="col-span-1 md:col-span-2">
                             <Label
@@ -1336,7 +1342,6 @@ const saveLead = async (): Promise<string | undefined> => {
                               className="text-sm font-medium text-gray-700"
                             >
                               Budget Range{" "}
-
                             </Label>
                             <Select
                               value={formData.custom_budget_range || ""}
@@ -1501,7 +1506,7 @@ const saveLead = async (): Promise<string | undefined> => {
 
                           {selectedInspector &&
                             selectedInspector.availability.free_slots.length >
-                            0 && (
+                              0 && (
                               <div className="space-y-2 px-5 py-2 bg-yellow-50 border border-yellow-200 rounded-lg">
                                 <Label className="text-gray-700 text-sm font-medium">
                                   Available Time Slots
@@ -1514,7 +1519,7 @@ const saveLead = async (): Promise<string | undefined> => {
                                         key={index}
                                         variant={
                                           selectedSlot?.start === slot.start &&
-                                            selectedSlot?.end === slot.end
+                                          selectedSlot?.end === slot.end
                                             ? "outline"
                                             : "default"
                                         }
@@ -1690,9 +1695,7 @@ const saveLead = async (): Promise<string | undefined> => {
                           )}
                         </div>
                       )}
-
                     </div>
-
                   </div>
                 </div>
               ))}
@@ -1772,14 +1775,14 @@ const saveLead = async (): Promise<string | undefined> => {
                     Full Name <span className="text-red-500">*</span>
                   </Label>
                   <Input
-  type="text"
-  name="name"
-  value={newCustomerForm.name}
-  onChange={handleNewCustomerInputChange}
-  placeholder="Enter customer name"
-  required
-  disabled={isCreatingCustomer}
-/>
+                    type="text"
+                    name="name"
+                    value={newCustomerForm.name}
+                    onChange={handleNewCustomerInputChange}
+                    placeholder="Enter customer name"
+                    required
+                    disabled={isCreatingCustomer}
+                  />
                 </div>
 
                 <div>
@@ -1855,19 +1858,19 @@ const saveLead = async (): Promise<string | undefined> => {
                   Cancel
                 </Button>
                 <Button
-  onClick={saveNewCustomer}
-  className="bg-emerald-600 hover:bg-emerald-700 text-white"
-  disabled={isCreatingCustomer}
->
-  {isCreatingCustomer ? (
-    <>
-      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-      Creating...
-    </>
-  ) : (
-    "Save Customer"
-  )}
-</Button>
+                  onClick={saveNewCustomer}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                  disabled={isCreatingCustomer}
+                >
+                  {isCreatingCustomer ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Creating...
+                    </>
+                  ) : (
+                    "Save Customer"
+                  )}
+                </Button>
               </div>
             </div>
           </div>
@@ -1879,9 +1882,11 @@ const saveLead = async (): Promise<string | undefined> => {
         onConfirm={confirmAssignment}
         onCancel={() => setShowConfirmModal(false)}
         title="Confirm Inspector Assignment"
-        message={`Are you sure you want to assign ${selectedInspector?.user_name
-          } for the inspection on ${date ? format(date, "MMM dd, yyyy") : ""
-          } at ${requestedTime}? Once assigned, customer details cannot be modified for this inquiry.`}
+        message={`Are you sure you want to assign ${
+          selectedInspector?.user_name
+        } for the inspection on ${
+          date ? format(date, "MMM dd, yyyy") : ""
+        } at ${requestedTime}? Once assigned, customer details cannot be modified for this inquiry.`}
       />
     </>
   );
