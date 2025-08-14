@@ -8,7 +8,6 @@ import {
   CheckCircle2,
   ChevronDown,
   ChevronUp,
-  FileText,
   Home,
   Loader2,
   Mail,
