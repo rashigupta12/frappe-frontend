@@ -358,25 +358,6 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
       // Show loading state
       setIsCustomerSearching(true);
 
-      // Prepare lead data using the same format as your form submission
-      const newLeadData = formatSubmissionData({
-        lead_name: newCustomerForm.name.trim(),
-        email_id: newCustomerForm.email || "",
-        mobile_no: newCustomerForm.phone,
-        custom_job_type: newCustomerForm.jobType,
-        // Include other required fields with default values
-        custom_budget_range: "",
-        custom_project_urgency: "",
-        source: "Direct",
-        custom_property_name__number: "",
-        custom_emirate: "",
-        custom_area: "",
-        custom_community: "",
-        custom_street_name: "",
-        custom_property_area: "",
-        custom_property_category: "",
-        custom_special_requirements: "",
-      });
     // Prepare lead data using the same format as your form submission
     const newLeadData = formatSubmissionData({
       lead_name: newCustomerForm.name.trim(),
@@ -416,9 +397,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
 
         // Store the lead ID for future updates
         name: createdLead.name, // This is typically the unique identifier from API
-
-        // Set source as Direct since it's a new lead
-        source: createdLead.source || "Direct",
+       
       }));
     // Update the main form with the created lead data
     // Use the original form data as base, then override with API response
