@@ -1064,7 +1064,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 py-4">
                     <div className="relative col-span-1 md:col-span-2 lg:col-span-1">
                       <label className="flex items-center space-x-2 text-sm md:text-base font-medium text-gray-700 mb-2">
-                        <User className="h-4 w-4 text-gray-500" />
+                        <User className="h-4 w-4 text-black" />
                         <span className="text-black">
                           Customer{" "}
                           <span className="text-gray-500">
@@ -1245,7 +1245,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                           htmlFor="start_date"
                           className="flex items-center space-x-1"
                         >
-                          <Calendar className="h-4 w-4 text-gray-500" />
+                          <Calendar className="h-4 w-4 text-black" />
                           <span>
                             Start Date <span className="text-red-500">*</span>
                           </span>
@@ -1294,7 +1294,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                           htmlFor="finish_date"
                           className="flex items-center space-x-2"
                         >
-                          <Calendar className="h-4 w-4 text-gray-500" />
+                          <Calendar className="h-4 w-4 text-black" />
                           <span>
                             Finish Date <span className="text-red-500">*</span>
                           </span>
