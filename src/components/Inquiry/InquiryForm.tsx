@@ -105,12 +105,12 @@ interface InspectorAvailability {
 }
 
 // Confirmation Modal Component
-const ConfirmationModal = ({ 
-  isOpen, 
-  onConfirm, 
-  onCancel, 
-  title, 
-  message 
+const ConfirmationModal = ({
+  isOpen,
+  onConfirm,
+  onCancel,
+  title,
+  message,
 }: {
   isOpen: boolean;
   onConfirm: () => void;
@@ -120,31 +120,34 @@ const ConfirmationModal = ({
 }) => {
   if (!isOpen) return null;
 
- return (
-  <>
-    <div 
-      className="fixed inset-0 bg-black/50 backdrop-blur-sm z-60 px-6" 
-      onClick={onCancel} 
-    />
-    <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg shadow-xl z-70 w-full max-w-md px-4">
-      <div className="p-6">
-        <div className="flex items-center gap-3 mb-4">
-          <AlertTriangle className="h-6 w-6 text-amber-500" />
-          <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
-        </div>
-        <p className="text-gray-600 mb-6">{message}</p>
-        <div className="flex justify-end gap-3">
-          <Button variant="outline" onClick={onCancel}>
-            Cancel
-          </Button>
-          <Button onClick={onConfirm} className="bg-emerald-600 hover:bg-emerald-700 text-white">
-            Confirm Assignment
-          </Button>
+  return (
+    <>
+      <div
+        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-60 px-6"
+        onClick={onCancel}
+      />
+      <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg shadow-xl z-70 w-full max-w-md px-4">
+        <div className="p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <AlertTriangle className="h-6 w-6 text-amber-500" />
+            <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
+          </div>
+          <p className="text-gray-600 mb-6">{message}</p>
+          <div className="flex justify-end gap-3">
+            <Button variant="outline" onClick={onCancel}>
+              Cancel
+            </Button>
+            <Button
+              onClick={onConfirm}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+            >
+              Confirm Assignment
+            </Button>
+          </div>
         </div>
       </div>
-    </div>
-  </>
-);
+    </>
+  );
 };
 
 const InquiryForm: React.FC<InquiryFormProps> = ({
@@ -187,12 +190,14 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
   const [customerSearchResults, setCustomerSearchResults] = useState<any[]>([]);
   const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
   const [isCustomerSearching, setIsCustomerSearching] = useState(false);
-  const [customerSearchTimeout, setCustomerSearchTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [customerSearchTimeout, setCustomerSearchTimeout] =
+    useState<NodeJS.Timeout | null>(null);
   const [fetchingCustomerDetails, setFetchingCustomerDetails] = useState(false);
   const [showNewCustomerFields, setShowNewCustomerFields] = useState(false);
 
   // Inspector assignment states
-  const [selectedInspector, setSelectedInspector] = useState<InspectorAvailability | null>(null);
+  const [selectedInspector, setSelectedInspector] =
+    useState<InspectorAvailability | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<{
     start: string;
     end: string;
@@ -292,7 +297,10 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     const slotEndMinutes = timeToMinutes(selectedSlot.end);
     const durationMinutes = Math.round(parseFloat(duration) * 60);
 
-    if (requestedMinutes < slotStartMinutes || requestedMinutes >= slotEndMinutes) {
+    if (
+      requestedMinutes < slotStartMinutes ||
+      requestedMinutes >= slotEndMinutes
+    ) {
       return false;
     }
 
@@ -313,7 +321,9 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     const hours = Math.floor(endMinutes / 60);
     const mins = endMinutes % 60;
 
-    return `${hours.toString().padStart(2, "0")}:${mins.toString().padStart(2, "0")}`;
+    return `${hours.toString().padStart(2, "0")}:${mins
+      .toString()
+      .padStart(2, "0")}`;
   };
 
   const validateTimeDuration = (durationValue: string) => {
@@ -327,44 +337,46 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     if (startMinutes + durationMinutes > slotEndMinutes) {
       const availableHours = (slotEndMinutes - startMinutes) / 60;
       toast.error(
-        `Duration exceeds available time. Max ${availableHours.toFixed(1)} hours available in this slot.`,
+        `Duration exceeds available time. Max ${availableHours.toFixed(
+          1
+        )} hours available in this slot.`,
         { duration: 2000 }
       );
     }
   };
 
-   const handleInspectorSelect = (
-  email: string,
-  availabilityData: InspectorAvailability[],
-  modifiedSlots: { start: string; end: string; duration_hours?: number }[]
-) => {
-  const inspector = availabilityData.find(
-    (inspector) => inspector.email === email
-  );
-  if (inspector) {
-    // Create a new inspector object with the modified slots
-    const modifiedInspector = {
-      ...inspector,
-      availability: {
-        ...inspector.availability,
-        free_slots: modifiedSlots
+  const handleInspectorSelect = (
+    email: string,
+    availabilityData: InspectorAvailability[],
+    modifiedSlots: { start: string; end: string; duration_hours?: number }[]
+  ) => {
+    const inspector = availabilityData.find(
+      (inspector) => inspector.email === email
+    );
+    if (inspector) {
+      // Create a new inspector object with the modified slots
+      const modifiedInspector = {
+        ...inspector,
+        availability: {
+          ...inspector.availability,
+          free_slots: modifiedSlots,
+        },
+      };
+      setSelectedInspector(modifiedInspector);
+
+      if (modifiedSlots.length > 0) {
+        const firstSlot = modifiedSlots[0];
+        setSelectedSlot({
+          start: firstSlot.start,
+          end: firstSlot.end,
+        });
+        setRequestedTime(firstSlot.start);
+      } else {
+        toast.success(`Selected ${inspector.user_name}`);
       }
-    };
-    setSelectedInspector(modifiedInspector);
-    
-    if (modifiedSlots.length > 0) {
-      const firstSlot = modifiedSlots[0];
-      setSelectedSlot({
-        start: firstSlot.start,
-        end: firstSlot.end,
-      });
-      setRequestedTime(firstSlot.start);
-    } else {
-      toast.success(`Selected ${inspector.user_name}`);
     }
-  }
-  setShowAvailabilityModal(false);
-};
+    setShowAvailabilityModal(false);
+  };
 
   const handleSlotSelect = (slot: { start: string; end: string }) => {
     setSelectedSlot(slot);
@@ -407,9 +419,10 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
           : new Date()
       );
       setShowReferenceInput(
-        inquiry.source === "Reference" || inquiry.source === "Supplier Reference"
+        inquiry.source === "Reference" ||
+          inquiry.source === "Supplier Reference"
       );
-      
+
       setCustomerSearchQuery(inquiry.lead_name || "");
       setShowNewCustomerFields(true);
     }
@@ -450,7 +463,9 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
       ...(name === "source" && { custom_reference_name: "" }),
     }));
     if (name === "source") {
-      setShowReferenceInput(value === "Reference" || value === "Supplier Reference");
+      setShowReferenceInput(
+        value === "Reference" || value === "Supplier Reference"
+      );
     }
   };
 
@@ -493,71 +508,75 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
   };
 
   const validateForm = (): boolean => {
-  // Customer Details validation
-  if (!formData.lead_name) {
-    toast.error("Customer name is required");
-    return false;
-  }
-  if (!formData.mobile_no || formData.mobile_no.length < 5) { // "+971 " is 5 chars
-    toast.error("Valid mobile number is required");
-    return false;
-  }
+    // Customer Details validation
+    if (!formData.lead_name) {
+      toast.error("Customer name is required");
+      return false;
+    }
+    if (!formData.mobile_no || formData.mobile_no.length < 5) {
+      // "+971 " is 5 chars
+      toast.error("Valid mobile number is required");
+      return false;
+    }
 
-  // Job Details validation
-  if (!formData.custom_job_type) {
-    toast.error("Job type is required");
-    return false;
-  }
-  if (!formData.custom_budget_range) {
-    toast.error("Budget range is required");
-    return false;
-  }
-  if (!formData.custom_project_urgency) {
-    toast.error("Project urgency is required");
-    return false;
-  }
-  if (!formData.source) {
-    toast.error("Source of inquiry is required");
-    return false;
-  }
-  if ((formData.source === "Reference" || formData.source === "Supplier Reference") && 
-      !formData.custom_reference_name) {
-    toast.error("Reference name is required");
-    return false;
-  }
+    // Job Details validation
+    if (!formData.custom_job_type) {
+      toast.error("Job type is required");
+      return false;
+    }
+    if (!formData.custom_budget_range) {
+      toast.error("Budget range is required");
+      return false;
+    }
+    if (!formData.custom_project_urgency) {
+      toast.error("Project urgency is required");
+      return false;
+    }
+    if (!formData.source) {
+      toast.error("Source of inquiry is required");
+      return false;
+    }
+    if (
+      (formData.source === "Reference" ||
+        formData.source === "Supplier Reference") &&
+      !formData.custom_reference_name
+    ) {
+      toast.error("Reference name is required");
+      return false;
+    }
 
-  // Property Information validation
-  if (!formData.custom_property_name__number) {
-    toast.error("Property name/number is required");
-    return false;
-  }
-  if (!formData.custom_property_category) {
-    toast.error("Property category is required");
-    return false;
-  }
-  if (!formData.custom_property_area) {
-    toast.error("Property area is required");
-    return false;
-  }
-  if (!formData.custom_street_name) {
-    toast.error("Street name is required");
-    return false;
-  }
-  if (!formData.custom_emirate) {
-    toast.error("Emirate is required");
-    return false;
-  }
-  if (!formData.custom_community) {
-    toast.error("Community is required");
-    return false;
-  }
-  if (!formData.custom_area) {
-    toast.error("Area is required");
-    return false;
-  }
+    // Property Information validation
+    if (!formData.custom_property_name__number) {
+      toast.error("Property name/number is required");
+      return false;
+    }
+    if (!formData.custom_property_category) {
+      toast.error("Property category is required");
+      return false;
+    }
+    if (!formData.custom_property_area) {
+      toast.error("Property area is required");
+      return false;
+    }
+    if (!formData.custom_street_name) {
+      toast.error("Street name is required");
+      return false;
+    }
+    if (!formData.custom_emirate) {
+      toast.error("Emirate is required");
+      return false;
+    }
+    if (!formData.custom_community) {
+      toast.error("Community is required");
+      return false;
+    }
+    if (!formData.custom_area) {
+      toast.error("Area is required");
+      return false;
+    }
 
-  return true;
-};
+    return true;
+  };
 
   const saveLead = async (): Promise<string | undefined> => {
     try {
@@ -580,45 +599,45 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  
-  // Only validate on submit
-  if (!validateForm()) return;
+    e.preventDefault();
 
-  try {
-    await saveLead();
-    onClose();
-  } catch (err) {
-    console.error("Form submission error:", err);
-    toast.error("Failed to create inquiry. Please try again.");
-  }
-};
+    // Only validate on submit
+    if (!validateForm()) return;
+
+    try {
+      await saveLead();
+      onClose();
+    } catch (err) {
+      console.error("Form submission error:", err);
+      toast.error("Failed to create inquiry. Please try again.");
+    }
+  };
 
   const handleAssignAndSave = () => {
-  // Only validate on submit
-  if (!validateForm()) return;
-  
-  if (!selectedInspector) {
-    toast.error("Please select an inspector");
-    return;
-  }
-  if (!date) {
-    toast.error("Please select an inspection date");
-    return;
-  }
-  if (!requestedTime) {
-    toast.error("Please enter the requested inspection time");
-    return;
-  }
-  if (!validateRequestedTime()) {
-    toast.error(
-      `Requested time must be within the selected slot (${selectedSlot?.start} - ${selectedSlot?.end})`
-    );
-    return;
-  }
+    // Only validate on submit
+    if (!validateForm()) return;
 
-  setShowConfirmModal(true);
-};
+    if (!selectedInspector) {
+      toast.error("Please select an inspector");
+      return;
+    }
+    if (!date) {
+      toast.error("Please select an inspection date");
+      return;
+    }
+    if (!requestedTime) {
+      toast.error("Please enter the requested inspection time");
+      return;
+    }
+    if (!validateRequestedTime()) {
+      toast.error(
+        `Requested time must be within the selected slot (${selectedSlot?.start} - ${selectedSlot?.end})`
+      );
+      return;
+    }
+
+    setShowConfirmModal(true);
+  };
 
   const confirmAssignment = async () => {
     setShowConfirmModal(false);
@@ -650,13 +669,17 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
       let employeeName = "";
       const employeeResponse = await frappeAPI.makeAuthenticatedRequest(
         "GET",
-        `/api/resource/Employee?filters=[["user_id","=","${selectedInspector!.email}"]]`
+        `/api/resource/Employee?filters=[["user_id","=","${
+          selectedInspector!.email
+        }"]]`
       );
 
       if (employeeResponse?.data?.length > 0) {
         employeeName = employeeResponse.data[0].name;
       } else {
-        throw new Error(`Could not find employee record for ${selectedInspector!.email}`);
+        throw new Error(
+          `Could not find employee record for ${selectedInspector!.email}`
+        );
       }
 
       const dwaPayload = {
@@ -698,6 +721,126 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     onClose();
   };
 
+  // const handleCustomerSearch = useCallback(async (query: string) => {
+  //   if (!query.trim()) {
+  //     setCustomerSearchResults([]);
+  //     setShowCustomerDropdown(false);
+  //     setShowNewCustomerFields(false);
+  //     return;
+  //   }
+
+  //   setIsCustomerSearching(true);
+  //   try {
+  //     const allResults: any[] = [];
+  //     const addressEndpoint = "/api/method/eits_app.site_address_search.search_site_addresses";
+  //     const queryLower = query.toLowerCase().trim();
+
+  //     const searchPromises: Promise<any>[] = [];
+
+  //     if (queryLower.length >= 2) {
+  //       searchPromises.push(
+  //         frappeAPI
+  //           .makeAuthenticatedRequest(
+  //             "GET",
+  //             `${addressEndpoint}?search_term=${encodeURIComponent(query)}`
+  //           )
+  //           .then((response) => ({
+  //             type: "customer_name",
+  //             data: response.message?.data || [],
+  //           }))
+  //           .catch(() => ({ type: "customer_name", data: [] }))
+  //       );
+
+  //       if (/^\+?\d+$/.test(query.replace(/[\s-]/g, ""))) {
+  //         const cleanPhone = query.replace(/[\s-]/g, "");
+
+  //         searchPromises.push(
+  //           frappeAPI
+  //             .makeAuthenticatedRequest(
+  //               "GET",
+  //               `${addressEndpoint}?search_term=${encodeURIComponent(cleanPhone)}`
+  //             )
+  //             .then((response) => ({
+  //               type: "customer_phone",
+  //               data: response.message?.data || [],
+  //             }))
+  //             .catch(() => ({ type: "customer_phone", data: [] }))
+  //         );
+  //       }
+
+  //       const searchResults = await Promise.all(searchPromises);
+
+  //       searchResults.forEach((result) => {
+  //         if (result.data && Array.isArray(result.data)) {
+  //           const transformedData = result.data.map((address: any) => ({
+  //             ...address,
+  //             search_type: "customer",
+  //             found_via: result.type,
+  //             customer_name:
+  //               address.customer_details?.customer_name ||
+  //               address.lead_details?.lead_name ||
+  //               address.custom_lead_customer_name ||
+  //               `Customer`,
+  //             mobile_no:
+  //               address.custom_customer_phone_number ||
+  //               address.custom_lead_phone_number ||
+  //               address.customer_details?.mobile_no ||
+  //               address.lead_details?.mobile_no,
+  //             email_id:
+  //               address.custom_customer_email ||
+  //               address.lead_details?.email_id ||
+  //               address.customer_details?.email_id,
+  //             name: address.customer_details?.name || address.custom_lead_name,
+  //             lead_name: address.custom_lead_name,
+  //             address_details: {
+  //               emirate: address.custom_emirate || "",
+  //               area: address.custom_area || "",
+  //               community: address.custom_community || "",
+  //               street_name: address.custom_street_name || "",
+  //               property_number: address.custom_property_number || "",
+  //               property_category: address.custom_property_category || "",
+  //               combined_address: address.custom_combined_address || "",
+  //             },
+  //           }));
+  //           allResults.push(...transformedData);
+  //         }
+  //       });
+  //     }
+
+  //     const uniqueResults = allResults.filter((result, index, self) => {
+  //       return (
+  //         index ===
+  //         self.findIndex(
+  //           (r) =>
+  //             (r.customer_name === result.customer_name &&
+  //               r.email_id === result.email_id &&
+  //               r.mobile_no === result.mobile_no) ||
+  //             (r.custom_lead_name &&
+  //               result.custom_lead_name &&
+  //               r.custom_lead_name === result.custom_lead_name)
+  //         )
+  //       );
+  //     });
+
+  //     setCustomerSearchResults(uniqueResults);
+  //     setShowCustomerDropdown(true);
+
+  //     if (uniqueResults.length === 0) {
+  //       setShowNewCustomerFields(true);
+  //     } else {
+  //       setShowNewCustomerFields(false);
+  //     }
+  //   } catch (error) {
+  //     console.error("Customer search error:", error);
+  //     setCustomerSearchResults([]);
+  //     setShowCustomerDropdown(false);
+  //     setShowNewCustomerFields(true);
+  //     toast.error("Failed to search customers. Please try again.");
+  //   } finally {
+  //     setIsCustomerSearching(false);
+  //   }
+  // }, []);
+
   const handleCustomerSearch = useCallback(async (query: string) => {
     if (!query.trim()) {
       setCustomerSearchResults([]);
@@ -708,111 +851,69 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
 
     setIsCustomerSearching(true);
     try {
-      const allResults: any[] = [];
-      const addressEndpoint = "/api/method/eits_app.site_address_search.search_site_addresses";
-      const queryLower = query.toLowerCase().trim();
+      const response = await frappeAPI.makeAuthenticatedRequest(
+        "GET",
+        `/api/method/eits_app.site_address_search.search_site_addresses?search_term=${encodeURIComponent(
+          query
+        )}`
+      );
+      console.log("Search response:", response);
 
-      const searchPromises: Promise<any>[] = [];
-
-      if (queryLower.length >= 2) {
-        searchPromises.push(
-          frappeAPI
-            .makeAuthenticatedRequest(
-              "GET",
-              `${addressEndpoint}?search_term=${encodeURIComponent(query)}`
-            )
-            .then((response) => ({
-              type: "customer_name",
-              data: response.message?.data || [],
-            }))
-            .catch(() => ({ type: "customer_name", data: [] }))
-        );
-
-        if (/^\+?\d+$/.test(query.replace(/[\s-]/g, ""))) {
-          const cleanPhone = query.replace(/[\s-]/g, "");
-
-          searchPromises.push(
-            frappeAPI
-              .makeAuthenticatedRequest(
-                "GET",
-                `${addressEndpoint}?search_term=${encodeURIComponent(cleanPhone)}`
-              )
-              .then((response) => ({
-                type: "customer_phone",
-                data: response.message?.data || [],
-              }))
-              .catch(() => ({ type: "customer_phone", data: [] }))
-          );
-        }
-
-        const searchResults = await Promise.all(searchPromises);
-
-        searchResults.forEach((result) => {
-          if (result.data && Array.isArray(result.data)) {
-            const transformedData = result.data.map((address: any) => ({
-              ...address,
-              search_type: "customer",
-              found_via: result.type,
-              customer_name:
-                address.customer_details?.customer_name ||
-                address.lead_details?.lead_name ||
-                address.custom_lead_customer_name ||
-                `Customer`,
-              mobile_no:
-                address.custom_customer_phone_number ||
-                address.custom_lead_phone_number ||
-                address.customer_details?.mobile_no ||
-                address.lead_details?.mobile_no,
-              email_id:
-                address.custom_customer_email ||
-                address.lead_details?.email_id ||
-                address.customer_details?.email_id,
-              name: address.customer_details?.name || address.custom_lead_name,
-              lead_name: address.custom_lead_name,
-              address_details: {
-                emirate: address.custom_emirate || "",
-                area: address.custom_area || "",
-                community: address.custom_community || "",
-                street_name: address.custom_street_name || "",
-                property_number: address.custom_property_number || "",
-                property_category: address.custom_property_category || "",
-                combined_address: address.custom_combined_address || "",
-              },
-            }));
-            allResults.push(...transformedData);
-          }
-        });
+      // Check if response structure is correct
+      if (!response.message?.data) {
+        throw new Error("Invalid response structure");
       }
 
-      const uniqueResults = allResults.filter((result, index, self) => {
-        return (
-          index ===
-          self.findIndex(
-            (r) =>
-              (r.customer_name === result.customer_name &&
-                r.email_id === result.email_id &&
-                r.mobile_no === result.mobile_no) ||
-              (r.custom_lead_name &&
-                result.custom_lead_name &&
-                r.custom_lead_name === result.custom_lead_name)
-          )
-        );
+      const results = response.message.data;
+
+      // Transform the results
+      const transformedResults = results.map((result: any) => {
+        // Extract customer/lead name from site_name (format: "Name-Number,...")
+        const nameFromSite =
+          result.site_name?.split("-")[0]?.split(",")[0] || "Unknown";
+
+        return {
+          ...result,
+          search_type: "address",
+          customer_name:
+            result.lead_details?.lead_name ||
+            result.customer_details?.customer_name ||
+            nameFromSite,
+          mobile_no:
+            result.custom_lead_phone_number ||
+            result.lead_details?.mobile_no ||
+            result.custom_customer_phone_number ||
+            result.customer_details?.mobile_no,
+          email_id:
+            result.custom_lead_email ||
+            result.lead_details?.email_id ||
+            result.custom_customer_email ||
+            result.customer_details?.email_id,
+          name: result.customer_details?.name || result.lead_details?.name,
+          lead_name: result.lead_details?.name,
+          area: result.site_name,
+          address_details: {
+            emirate: result.custom_emirate,
+            area: result.custom_area,
+            community: result.custom_community,
+            street_name: result.custom_street_name,
+            property_number: result.custom_property_number,
+            combined_address: (extractAddressFromSite(result.site_name)),
+          },
+          match_info: result.match_info,
+        };
       });
 
-      setCustomerSearchResults(uniqueResults);
+      setCustomerSearchResults(transformedResults);
       setShowCustomerDropdown(true);
-
-      if (uniqueResults.length === 0) {
-        setShowNewCustomerFields(true);
-      } else {
-        setShowNewCustomerFields(false);
-      }
     } catch (error) {
-      console.error("Customer search error:", error);
+      console.error("Search error:", error);
       setCustomerSearchResults([]);
       setShowCustomerDropdown(false);
-      setShowNewCustomerFields(true);
-      toast.error("Failed to search customers. Please try again.");
+      // Only show error if it's not a empty query case
+      if (query.trim()) {
+        toast.error("Failed to search. Please try again.");
+      }
     } finally {
       setIsCustomerSearching(false);
     }
@@ -833,12 +934,14 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
 
       const addressData = result.address_details
         ? {
-            custom_property_category: result.address_details.property_category || "",
+            custom_property_category:
+              result.address_details.property_category || "",
             custom_emirate: result.address_details.emirate || "",
             custom_community: result.address_details.community || "",
             custom_area: result.address_details.area || "",
             custom_street_name: result.address_details.street_name || "",
-            custom_property_name__number: result.address_details.property_number || "",
+            custom_property_name__number:
+              result.address_details.property_number || "",
             custom_property_area: result.address_details.combined_address || "",
           }
         : {};
@@ -856,7 +959,9 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     }
   };
 
-  const handleCustomerSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCustomerSearchChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const query = e.target.value;
     setCustomerSearchQuery(query);
 
@@ -879,7 +984,11 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if ([8, 9, 13, 16, 17, 18, 20, 27, 35, 36, 37, 38, 39, 40, 45, 46].includes(e.keyCode)) {
+    if (
+      [8, 9, 13, 16, 17, 18, 20, 27, 35, 36, 37, 38, 39, 40, 45, 46].includes(
+        e.keyCode
+      )
+    ) {
       return;
     }
 
@@ -889,44 +998,77 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     }
   };
 
- const validateFormSilent = (): boolean => {
-  // Customer Details validation
-  if (!formData.lead_name) return false;
-  if (!formData.mobile_no || formData.mobile_no.length < 5) return false;
+  const validateFormSilent = (): boolean => {
+    // Customer Details validation
+    if (!formData.lead_name) return false;
+    if (!formData.mobile_no || formData.mobile_no.length < 5) return false;
 
-  // Job Details validation
-  if (!formData.custom_job_type) return false;
-  if (!formData.custom_budget_range) return false;
-  if (!formData.custom_project_urgency) return false;
-  if (!formData.source) return false;
-  if ((formData.source === "Reference" || formData.source === "Supplier Reference") && 
-      !formData.custom_reference_name) return false;
+    // Job Details validation
+    if (!formData.custom_job_type) return false;
+    if (!formData.custom_budget_range) return false;
+    if (!formData.custom_project_urgency) return false;
+    if (!formData.source) return false;
+    if (
+      (formData.source === "Reference" ||
+        formData.source === "Supplier Reference") &&
+      !formData.custom_reference_name
+    )
+      return false;
 
-  // Property Information validation
-  if (!formData.custom_property_name__number) return false;
-  if (!formData.custom_property_category) return false;
-  if (!formData.custom_property_area) return false;
-  if (!formData.custom_street_name) return false;
-  if (!formData.custom_emirate) return false;
-  if (!formData.custom_community) return false;
-  if (!formData.custom_area) return false;
+    // Property Information validation
+    if (!formData.custom_property_name__number) return false;
+    if (!formData.custom_property_category) return false;
+    if (!formData.custom_property_area) return false;
+    if (!formData.custom_street_name) return false;
+    if (!formData.custom_emirate) return false;
+    if (!formData.custom_community) return false;
+    if (!formData.custom_area) return false;
 
-  return true;
-};
+    return true;
+  };
 
-// Update the isAssignmentReady function to use the silent validation
-const isAssignmentReady = () => {
-  return (
-    validateFormSilent() && // Use silent validation instead
-    selectedInspector &&
-    date &&
-    requestedTime &&
-    validateRequestedTime() &&
-    !createTodoLoading &&
-    !loading
-  );
-};
+  // Update the isAssignmentReady function to use the silent validation
+  const isAssignmentReady = () => {
+    return (
+      validateFormSilent() && // Use silent validation instead
+      selectedInspector &&
+      date &&
+      requestedTime &&
+      validateRequestedTime() &&
+      !createTodoLoading &&
+      !loading
+    );
+  };
 
+  //  const extractCustomerNameFromSite = (siteName: string) => {
+  //   if (!siteName) return "Unknown";
+  //   // Format: "Name-Number,..." - extract everything before the first dash and number
+  //   const parts = siteName.split("-");
+  //   if (parts.length >= 2) {
+  //     // Check if the part after dash starts with a number
+  //     const afterDash = parts[1];
+  //     if (/^\d/.test(afterDash)) {
+  //       return parts[0].trim();
+  //     }
+  //   }
+  //   // Fallback: take first part before comma
+  //   return siteName.split(",")[0].trim();
+  // };
+
+  const extractAddressFromSite = (siteName: string) => {
+    if (!siteName) return "";
+    // Format: "Name-Number,..." - extract everything after the first dash
+    const dashIndex = siteName.indexOf("-");
+    if (dashIndex !== -1) {
+      const afterDash = siteName.substring(dashIndex + 1);
+      // Check if what comes after dash starts with a number (address part)
+      if (/^\d/.test(afterDash)) {
+        return afterDash.trim();
+      }
+    }
+    // Fallback: return original if pattern doesn't match
+    return siteName;
+  };
 
   if (!isOpen) return null;
 
@@ -1038,12 +1180,15 @@ const isAssignmentReady = () => {
                                     <div
                                       key={`customer-result-${index}`}
                                       className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                                      onClick={() => handleCustomerSelect(result)}
+                                      onClick={() =>
+                                        handleCustomerSelect(result)
+                                      }
                                     >
                                       <p className="font-medium truncate">
                                         {result.customer_name}
                                       </p>
-                                      {(result.mobile_no || result.email_id) && (
+                                      {(result.mobile_no ||
+                                        result.email_id) && (
                                         <div className="text-xs text-gray-500 space-x-2">
                                           {result.mobile_no && (
                                             <span className="inline-flex items-center">
@@ -1059,15 +1204,29 @@ const isAssignmentReady = () => {
                                           )}
                                         </div>
                                       )}
+                                      {result.site_name && (
+                                        <div className="mt-2 text-xs text-gray-500 flex items-start gap-1">
+                                          <Home className="h-3 w-3 flex-shrink-0 mt-0.5" />
+                                          <div className="flex-1 min-w-0">
+                                            <p className="break-words text-xs leading-tight">
+                                              {extractAddressFromSite(
+                                                result.site_name
+                                              )}
+                                            </p>
+                                          </div>
+                                        </div>
+                                      )}
                                     </div>
                                   ))
                                 ) : (
                                   <div className="px-4 py-2 text-center">
                                     <p className="font-medium text-gray-700">
-                                      No customers found for "{customerSearchQuery}"
+                                      No customers found for "
+                                      {customerSearchQuery}"
                                     </p>
                                     <p className="text-xs text-gray-500 mt-1">
-                                      Fill in the details below to add a new customer
+                                      Fill in the details below to add a new
+                                      customer
                                     </p>
                                   </div>
                                 )}
@@ -1075,14 +1234,17 @@ const isAssignmentReady = () => {
                             )}
                           </div>
 
-                          {(showNewCustomerFields || formData.lead_name || customerSearchQuery) && (
+                          {(showNewCustomerFields ||
+                            formData.lead_name ||
+                            customerSearchQuery) && (
                             <>
                               <div className="col-span-1">
                                 <Label
                                   htmlFor="phone"
                                   className="text-sm font-medium text-gray-700"
                                 >
-                                  Phone Number <span className="text-red-500">*</span>
+                                  Phone Number{" "}
+                                  <span className="text-red-500">*</span>
                                 </Label>
                                 <Input
                                   type="tel"
@@ -1122,7 +1284,8 @@ const isAssignmentReady = () => {
                               htmlFor="source"
                               className="text-sm font-medium text-gray-700"
                             >
-                              Source Of Inquiry <span className="text-red-500">*</span>
+                              Source Of Inquiry{" "}
+                              <span className="text-red-500">*</span>
                             </Label>
                             <Select
                               value={formData.source || ""}
@@ -1137,7 +1300,10 @@ const isAssignmentReady = () => {
                                 {[...utmSource]
                                   .sort((a, b) => a.name.localeCompare(b.name))
                                   .map((utms) => (
-                                    <SelectItem key={utms.name} value={utms.name}>
+                                    <SelectItem
+                                      key={utms.name}
+                                      value={utms.name}
+                                    >
                                       {utms.name}
                                     </SelectItem>
                                   ))}
@@ -1150,7 +1316,8 @@ const isAssignmentReady = () => {
                                   htmlFor="custom_reference_name"
                                   className="text-sm font-medium text-gray-700"
                                 >
-                                  Reference Name <span className="text-red-500">*</span>
+                                  Reference Name{" "}
+                                  <span className="text-red-500">*</span>
                                 </Label>
                                 <Input
                                   type="text"
@@ -1187,7 +1354,10 @@ const isAssignmentReady = () => {
                               </SelectTrigger>
                               <SelectContent className="bg-white">
                                 {jobTypes.map((jobType) => (
-                                  <SelectItem key={jobType.name} value={jobType.name}>
+                                  <SelectItem
+                                    key={jobType.name}
+                                    value={jobType.name}
+                                  >
                                     {jobType.name}
                                   </SelectItem>
                                 ))}
@@ -1200,7 +1370,8 @@ const isAssignmentReady = () => {
                               htmlFor="custom_budget_range"
                               className="text-sm font-medium text-gray-700"
                             >
-                              Budget Range <span className="text-red-500">*</span>
+                              Budget Range{" "}
+                              <span className="text-red-500">*</span>
                             </Label>
                             <Select
                               value={formData.custom_budget_range || ""}
@@ -1223,12 +1394,16 @@ const isAssignmentReady = () => {
 
                           <div>
                             <Label className="text-sm font-medium text-gray-700">
-                              Project Urgency <span className="text-red-500">*</span>
+                              Project Urgency{" "}
+                              <span className="text-red-500">*</span>
                             </Label>
                             <Select
                               value={formData.custom_project_urgency || ""}
                               onValueChange={(value) =>
-                                handleSelectChange("custom_project_urgency", value)
+                                handleSelectChange(
+                                  "custom_project_urgency",
+                                  value
+                                )
                               }
                             >
                               <SelectTrigger className="w-full">
@@ -1236,7 +1411,10 @@ const isAssignmentReady = () => {
                               </SelectTrigger>
                               <SelectContent className="bg-white">
                                 {projectUrgency.map((urgency) => (
-                                  <SelectItem key={urgency.name} value={urgency.name}>
+                                  <SelectItem
+                                    key={urgency.name}
+                                    value={urgency.name}
+                                  >
                                     {urgency.name}
                                   </SelectItem>
                                 ))}
@@ -1288,7 +1466,9 @@ const isAssignmentReady = () => {
                         <div className="space-y-4">
                           {assignError && (
                             <div className="bg-red-50 border border-red-200 rounded-md p-2">
-                              <div className="text-red-700 text-sm">{assignError}</div>
+                              <div className="text-red-700 text-sm">
+                                {assignError}
+                              </div>
                             </div>
                           )}
                           {assignSuccess && (
@@ -1301,7 +1481,8 @@ const isAssignmentReady = () => {
 
                           <div className="space-y-2">
                             <Label className="text-gray-700 text-sm font-medium">
-                              Select Inspection Date <span className="text-red-500">*</span>
+                              Select Inspection Date{" "}
+                              <span className="text-red-500">*</span>
                             </Label>
                             <div className="relative">
                               <input
@@ -1354,9 +1535,10 @@ const isAssignmentReady = () => {
                             </div>
                           )}
 
-                          {/* {selectedInspector &&
-                            selectedInspector.availability.free_slots.length > 0 && (
-                              <div className="space-y-2 p-3 bg-yellow-50 rounded-lg">
+                          {selectedInspector &&
+                            selectedInspector.availability.free_slots.length >
+                              0 && (
+                              <div className="space-y-2 px-5 py-2 bg-yellow-50 border border-yellow-200 rounded-lg">
                                 <Label className="text-gray-700 text-sm font-medium">
                                   Available Time Slots
                                 </Label>
@@ -1365,7 +1547,6 @@ const isAssignmentReady = () => {
                                     (slot, index) => (
                                       <Button
                                         key={index}
-                                        type="button"
                                         variant={
                                           selectedSlot?.start === slot.start &&
                                           selectedSlot?.end === slot.end
@@ -1379,42 +1560,6 @@ const isAssignmentReady = () => {
                                             end: slot.end,
                                           })
                                         }
-                                      >
-                                        {slot.start} - {slot.end}
-                                        {slot.duration_hours && (
-                                          <span className="ml-1 text-xs opacity-70">
-                                            ({slot.duration_hours}h)
-                                          </span>
-                                        )}
-                                      </Button>
-                                    )
-                                  )}
-                                </div>
-                              </div>
-                            )} */}
-
-
-                            {selectedInspector && selectedInspector.availability.free_slots.length > 0 && (
-                              <div className="space-y-2 px-5 py-2 bg-yellow-50 border border-yellow-200 rounded-lg">
-                                <Label className="text-gray-700 text-sm font-medium">
-                                 Available Time Slots
-                                </Label>
-                                <div className="grid grid-cols-2 gap-2">
-                                  {selectedInspector.availability.free_slots.map(
-                                    (slot, index) => (
-                                      <Button
-                                        key={index}
-                                        variant={
-                                          selectedSlot?.start === slot.start &&
-                                          selectedSlot?.end === slot.end
-                                            ? "outline"
-                                            : "default"
-                                        }
-                                        className="justify-center h-auto py-1.5 px-2 text-xs"
-                                        onClick={() =>
-                                          handleSlotSelect({ start: slot.start, end: slot.end })
-                                        }
-                                       
                                       >
                                         {slot.start} - {slot.end}
                                         {slot.duration_hours && (
@@ -1447,8 +1592,12 @@ const isAssignmentReady = () => {
                                       if (!selectedSlot) return;
 
                                       const newMinutes = timeToMinutes(newTime);
-                                      const slotStart = timeToMinutes(selectedSlot.start);
-                                      const slotEnd = timeToMinutes(selectedSlot.end);
+                                      const slotStart = timeToMinutes(
+                                        selectedSlot.start
+                                      );
+                                      const slotEnd = timeToMinutes(
+                                        selectedSlot.end
+                                      );
 
                                       if (
                                         newMinutes >= slotStart &&
@@ -1457,7 +1606,8 @@ const isAssignmentReady = () => {
                                         setRequestedTime(newTime);
                                         setFormData((prev) => ({
                                           ...prev,
-                                          custom_preferred_inspection_time: newTime,
+                                          custom_preferred_inspection_time:
+                                            newTime,
                                         }));
                                       } else {
                                         toast.error(
@@ -1516,7 +1666,9 @@ const isAssignmentReady = () => {
                             </Label>
                             <Select
                               value={priority}
-                              onValueChange={(value) => setPriority(value as PriorityLevel)}
+                              onValueChange={(value) =>
+                                setPriority(value as PriorityLevel)
+                              }
                             >
                               <SelectTrigger className="w-full bg-white border border-gray-300">
                                 <SelectValue placeholder="Priority" />
@@ -1554,7 +1706,9 @@ const isAssignmentReady = () => {
                               {createTodoLoading || loading ? (
                                 <>
                                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                  {loading ? "Saving & Assigning..." : "Assigning..."}
+                                  {loading
+                                    ? "Saving & Assigning..."
+                                    : "Assigning..."}
                                 </>
                               ) : (
                                 "Save & Assign Inspector"
@@ -1575,7 +1729,7 @@ const isAssignmentReady = () => {
                   </div>
                 </div>
               ))}
-              
+
               <div className="flex justify-end gap-3 pt-6">
                 <Button
                   type="button"
@@ -1613,7 +1767,11 @@ const isAssignmentReady = () => {
         onConfirm={confirmAssignment}
         onCancel={() => setShowConfirmModal(false)}
         title="Confirm Inspector Assignment"
-        message={`Are you sure you want to assign ${selectedInspector?.user_name} for the inspection on ${date ? format(date, "MMM dd, yyyy") : ""} at ${requestedTime}? Once assigned, customer details cannot be modified for this inquiry.`}
+        message={`Are you sure you want to assign ${
+          selectedInspector?.user_name
+        } for the inspection on ${
+          date ? format(date, "MMM dd, yyyy") : ""
+        } at ${requestedTime}? Once assigned, customer details cannot be modified for this inquiry.`}
       />
     </>
   );
