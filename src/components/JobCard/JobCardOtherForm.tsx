@@ -739,7 +739,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                   )}
                   <div className="flex items-center space-x-2">
                     <span className="text-sm text-white font-medium">
-                      Date: proj
+                      Date: 
                     </span>
                     <span className="text-sm font-medium">
   {new Date().toLocaleDateString("en-GB", {
@@ -798,7 +798,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {/* Customer Search - Full width on mobile, spans 2 cols on md, 1 col on lg */}
                     <div className="relative col-span-1 md:col-span-2 lg:col-span-1">
-                      <label className="flex items-center space-x-2 text-sm md:text-base font-medium text-gray-700 mb-2">
+                      <label className="flex items-center space-x-2 text-sm md:text-base font-medium text-black mb-2">
                         <User className="h-4 w-4 text-gray-500" />
                         <span>
                           Customer{" "}
