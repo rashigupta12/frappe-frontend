@@ -60,12 +60,15 @@ const ImagePreviewModal: React.FC<{
   };
 
   const getImageUrl = (image: ImageItem) => {
+    // If it's already a complete URL (http/https) or blob URL, return as is
     if (image.url.startsWith("http") || image.url.startsWith("blob:")) {
       return image.url;
     }
+    // If it starts with /, prepend base URL
     if (image.url.startsWith("/")) {
       return `${imageurl}${image.url}`;
     }
+    // Otherwise, assume it's a relative path and add both base URL and /
     return `${imageurl}/${image.url}`;
   };
 
@@ -91,6 +94,7 @@ const ImagePreviewModal: React.FC<{
           </p>
         </div>
         <button
+          type="button"
           onClick={onClose}
           className="text-white hover:bg-white/20 rounded-full p-2 transition-colors"
         >
@@ -128,6 +132,7 @@ const ImagePreviewModal: React.FC<{
         {images.length > 1 && (
           <>
             <button
+              type="button"
               onClick={handlePrevious}
               className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-3 transition-colors"
             >
@@ -146,6 +151,7 @@ const ImagePreviewModal: React.FC<{
               </svg>
             </button>
             <button
+              type="button"
               onClick={handleNext}
               className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-3 transition-colors"
             >
@@ -174,6 +180,7 @@ const ImagePreviewModal: React.FC<{
             {images.map((image, index) => (
               <button
                 key={image.id}
+                type="button"
                 onClick={() => onIndexChange(index)}
                 className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-colors ${
                   index === currentIndex
@@ -204,6 +211,7 @@ const ImagePreviewModal: React.FC<{
       <div className="bg-black/50 backdrop-blur-sm p-4">
         <div className="flex justify-center">
           <button
+            type="button"
             onClick={handleDelete}
             className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg flex items-center gap-2 transition-colors"
           >
@@ -236,6 +244,7 @@ const CameraModal: React.FC<{
       }
     };
   }, [isOpen]);
+  
   const startCamera = React.useCallback(async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -308,6 +317,7 @@ const CameraModal: React.FC<{
             />
             <div className="absolute bottom-8 left-0 right-0 flex justify-center">
               <button
+                type="button"
                 onClick={captureImage}
                 className="w-16 h-16 bg-white rounded-full border-4 border-white shadow-lg hover:scale-105 transition-transform"
               >
@@ -324,12 +334,14 @@ const CameraModal: React.FC<{
             />
             <div className="flex justify-between p-4 bg-black/50">
               <button
+                type="button"
                 onClick={handleRetake}
                 className="px-6 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors"
               >
                 Retake
               </button>
               <button
+                type="button"
                 onClick={handleUsePhoto}
                 className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
               >
@@ -341,6 +353,7 @@ const CameraModal: React.FC<{
       </div>
 
       <button
+        type="button"
         onClick={onClose}
         className="absolute top-4 right-4 p-2 bg-black/50 hover:bg-black/70 rounded-full text-white transition-colors"
       >
@@ -366,11 +379,38 @@ const PaymentImageUpload: React.FC<PaymentImageUploadProps> = ({
   const [showCamera, setShowCamera] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
 
+  // Counter for generating truly unique IDs
+  const [idCounter, setIdCounter] = useState(0);
+
   const getFileType = (file: File): "image" | "pdf" | "doc" => {
     if (file.type.includes("pdf")) return "pdf";
     if (file.type.includes("msword") || file.type.includes("wordprocessingml"))
       return "doc";
     return "image";
+  };
+
+  // Improved unique ID generation
+  const generateUniqueId = (prefix: string, fileName?: string) => {
+    const timestamp = Date.now();
+    const random = Math.random().toString(36).substr(2, 9);
+    const counter = idCounter;
+    setIdCounter(prev => prev + 1);
+    const fileHash = fileName ? fileName.replace(/[^a-zA-Z0-9]/g, '') : '';
+    return `${prefix}-${timestamp}-${counter}-${random}-${fileHash}`;
+  };
+
+  // Fixed getImageUrl function to handle URLs consistently
+  const getImageUrl = (image: ImageItem) => {
+    // If it's already a complete URL (http/https) or blob URL, return as is
+    if (image.url.startsWith("http") || image.url.startsWith("blob:")) {
+      return image.url;
+    }
+    // If it starts with /, prepend base URL
+    if (image.url.startsWith("/")) {
+      return `${imageurl}${image.url}`;
+    }
+    // Otherwise, assume it's a relative path and add both base URL and /
+    return `${imageurl}/${image.url}`;
   };
 
   const handleFileUpload = async (
@@ -403,6 +443,7 @@ const PaymentImageUpload: React.FC<PaymentImageUploadProps> = ({
         ];
 
         if (!validTypes.includes(file.type)) {
+          toast.error(`File type not supported: ${file.name}`);
           continue;
         }
 
@@ -412,24 +453,39 @@ const PaymentImageUpload: React.FC<PaymentImageUploadProps> = ({
         }
 
         try {
-          const url = onUpload
-            ? await onUpload(file)
-            : URL.createObjectURL(file);
-          newImages.push({
-            id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          let url: string;
+          
+          if (onUpload) {
+            // If onUpload is provided, use it to upload the file
+            url = await onUpload(file);
+          } else {
+            // Otherwise create object URL for preview
+            url = URL.createObjectURL(file);
+          }
+          
+          // Generate unique ID with file name for better uniqueness
+          const uniqueId = generateUniqueId('upload', file.name);
+          
+          const newImage: ImageItem = {
+            id: uniqueId,
             url,
             file: onUpload ? undefined : file,
             remarks: file.name,
             type: getFileType(file),
-          });
+          };
+          
+          newImages.push(newImage);
+          
         } catch (error) {
           console.error(`Error uploading ${file.name}:`, error);
-        
+          toast.error(`Failed to upload ${file.name}`);
         }
       }
 
       if (newImages.length > 0) {
-        onImagesChange([...images, ...newImages]);
+        // Add new images to existing ones
+        const updatedImages = [...images, ...newImages];
+        onImagesChange(updatedImages);
         toast.success(`${newImages.length} file(s) uploaded successfully!`);
       }
     } finally {
@@ -452,6 +508,7 @@ const PaymentImageUpload: React.FC<PaymentImageUploadProps> = ({
       let url = imageData;
 
       if (onUpload) {
+        // Convert data URL to blob
         const blob = await fetch(imageData).then((res) => res.blob());
         const file = new File([blob], `captured-${Date.now()}.jpg`, {
           type: "image/jpeg",
@@ -460,17 +517,23 @@ const PaymentImageUpload: React.FC<PaymentImageUploadProps> = ({
         url = await onUpload(file);
       }
 
+      // Generate unique ID for captured image
+      const uniqueId = generateUniqueId('captured');
+
       const newImage: ImageItem = {
-        id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        id: uniqueId,
         url,
-        remarks: "Captured Image",
+        remarks: `Captured Image ${Date.now()}`,
         type: "image",
       };
 
-      onImagesChange([...images, newImage]);
+      // Add new captured image to existing ones
+      const updatedImages = [...images, newImage];
+      onImagesChange(updatedImages);
       toast.success("Image captured successfully!");
     } catch (error) {
       console.error("Error processing captured image:", error);
+      toast.error("Failed to process captured image");
     } finally {
       setIsUploading(false);
     }
@@ -560,9 +623,10 @@ const PaymentImageUpload: React.FC<PaymentImageUploadProps> = ({
                 >
                   {image.type === "image" ? (
                     <img
-                      src={`${imageurl}${image.url}`}
+                      src={getImageUrl(image)}
                       alt=""
                       className="w-full h-full object-cover"
+                      key={`img-${image.id}`} // Force re-render with unique key
                     />
                   ) : (
                     <div className="text-center p-1">

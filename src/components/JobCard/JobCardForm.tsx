@@ -62,7 +62,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
 }) => {
   const { createJobCard, updateJobCard, loading, fetchEmployees } =
     useJobCards();
-    console.log("JobCardForm jobCard:", jobCard);
+  console.log("JobCardForm jobCard:", jobCard);
 
   const isReadOnly = jobCard?.docstatus === 1;
   const projectidname = jobCard?.name || jobCard?.project_id_no || "";
@@ -132,7 +132,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
       formData.custom_community,
       formData.custom_street_name,
       formData.custom_property_number__name,
-      formData.custom_property_type
+      formData.custom_property_type,
     ]
       .filter((part) => part && part.trim() !== "")
       .join(", ");
@@ -274,7 +274,8 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
         custom_uae_area: jobCard.custom_uae_area || "",
         custom_community: jobCard.custom_community || "",
         custom_street_name: jobCard.custom_street_name || "",
-        custom_property_number__name: jobCard.custom_property_number__name || "",
+        custom_property_number__name:
+          jobCard.custom_property_number__name || "",
         custom_property_type: jobCard.custom_property_type || "",
       });
 
@@ -1066,7 +1067,8 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
         custom_uae_area: formData.custom_uae_area || "",
         custom_community: formData.custom_community || "",
         custom_street_name: formData.custom_street_name || "",
-        custom_property_number__name: formData.custom_property_number__name || "",
+        custom_property_number__name:
+          formData.custom_property_number__name || "",
         custom_property_type: formData.custom_property_type || "",
       };
 
@@ -1532,22 +1534,27 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                                 </div>
 
                                 <div className="w-[30%] space-y-2">
-                                  <Label className="text-xs  text-gray-600">
+                                  <Label className="text-xs text-gray-600">
                                     Thickness
                                   </Label>
-                                  <Input
-                                    placeholder="mm"
-                                    value={charge.thickness}
-                                    onChange={(e) =>
-                                      updatePressingCharge(
-                                        index,
-                                        "thickness",
-                                        e.target.value
-                                      )
-                                    }
-                                    disabled={isReadOnly}
-                                    className="h-9 text-sm w-full"
-                                  />
+                                  <div className="flex w-full">
+                                    <Input
+                                      
+                                      value={charge.thickness}
+                                      onChange={(e) =>
+                                        updatePressingCharge(
+                                          index,
+                                          "thickness",
+                                          e.target.value
+                                        )
+                                      }
+                                      disabled={isReadOnly}
+                                      className="h-9 text-sm w-[70%] rounded-r-none"
+                                    />
+                                    <span className="flex items-center justify-center w-[30%] bg-gray-50 text-gray-800 text-sm border border-l-0">
+                                      mm
+                                    </span>
+                                  </div>
                                 </div>
 
                                 <div className="w-[30%] space-y-2">

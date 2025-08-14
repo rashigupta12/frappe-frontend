@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Loader2, Mail, Phone, User, X } from "lucide-react";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState, useRef } from "react";
 import { toast } from "react-hot-toast";
 import { useAuth } from "../../context/AuthContext";
 import { frappeAPI } from "../../api/frappeClient";
@@ -55,6 +55,9 @@ const PaymentForm = () => {
     email_id: "",
   });
 
+  // Add a ref to track if images were manually set to prevent overriding
+  const isManualImageUpdate = useRef(false);
+
   useEffect(() => {
     // Set default payment mode to Cash if not already set
     if (!custom_mode_of_payment) {
@@ -74,33 +77,44 @@ const PaymentForm = () => {
     }
   }, [paid_to, searchQuery]);
 
-  // Convert custom_attachments to images format
-useEffect(() => {
-  const convertedImages: ImageItem[] = custom_attachments.map(
-    (attachment, index) => {
-      let url = attachment.image;
-      if (!url.startsWith("http") && !url.startsWith("/")) {
-        url = `/${url}`;
-      }
-      
-      // Determine file type from URL
-      let type: 'image' | 'pdf' | 'doc' = 'image';
-      if (url.toLowerCase().endsWith('.pdf')) {
-        type = 'pdf';
-      } else if (url.toLowerCase().endsWith('.doc') || url.toLowerCase().endsWith('.docx')) {
-        type = 'doc';
-      }
-      
-      return {
-        id: `existing-${index}-${url}`,
-        url: url,
-        remarks: attachment.remarks || `Attachment ${index + 1}`,
-        type: type
-      };
+  // Convert custom_attachments to images format - but only if not manually updated
+  useEffect(() => {
+    // Only update images from store if they weren't manually set
+    if (!isManualImageUpdate.current) {
+      const convertedImages: ImageItem[] = custom_attachments.map(
+        (attachment, index) => {
+          let url = attachment.image;
+          if (!url.startsWith("http") && !url.startsWith("/")) {
+            url = `/${url}`;
+          }
+          
+          // Determine file type from URL
+          let type: 'image' | 'pdf' | 'doc' = 'image';
+          if (url.toLowerCase().endsWith('.pdf')) {
+            type = 'pdf';
+          } else if (url.toLowerCase().endsWith('.doc') || url.toLowerCase().endsWith('.docx')) {
+            type = 'doc';
+          }
+          
+          return {
+            id: `store-${index}-${Date.now()}-${url}`,
+            url: url,
+            remarks: attachment.remarks || `Attachment ${index + 1}`,
+            type: type
+          };
+        }
+      );
+      setImages(convertedImages);
     }
-  );
-  setImages(convertedImages);
-}, [custom_attachments]);
+    
+    // Reset the manual update flag after a short delay
+    if (isManualImageUpdate.current) {
+      const timer = setTimeout(() => {
+        isManualImageUpdate.current = false;
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [custom_attachments]);
 
   const handleSupplierSearch = useCallback(async (query: string) => {
   if (!query.trim()) {
@@ -304,6 +318,9 @@ useEffect(() => {
   };
 
 const handleImagesChange = (newImages: ImageItem[]) => {
+  // Set flag to indicate manual image update
+  isManualImageUpdate.current = true;
+  
   setImages(newImages);
   const convertedAttachments = newImages.map((image) => ({
     image: image.url,
@@ -317,7 +334,7 @@ const handleImageUpload = async (file: File): Promise<string> => {
     // First upload the file
     await uploadAndAddAttachment(file);
     
-    // Wait for the store to update (you might need to adjust this delay)
+    // Wait for the store to update
     await new Promise((resolve) => setTimeout(resolve, 500));
     
     // Get the latest attachment safely
@@ -340,7 +357,6 @@ const handleImageUpload = async (file: File): Promise<string> => {
     return imageUrl;
   } catch (error) {
     console.error("Upload error:", error);
-    
     throw error;
   }
 };
@@ -364,7 +380,6 @@ const handleImageUpload = async (file: File): Promise<string> => {
       return;
     }
 
-
     // Validate at least one image is uploaded
     if (images.length === 0) {
       toast.error("Please upload at least one payment evidence image");
@@ -386,6 +401,7 @@ const handleImageUpload = async (file: File): Promise<string> => {
       setField("custom_attachments", []);
       setImages([]);
       setSearchQuery("");
+      isManualImageUpdate.current = false; // Reset flag
     } else {
       toast.error(`Error: ${result.error}`);
     }
@@ -445,7 +461,7 @@ const handleImageUpload = async (file: File): Promise<string> => {
       )}
 
       {/* Form Content */}
-      <form onSubmit={handleSubmit} className="p-4 md:p-6">
+      <form onSubmit={handleSubmit} className="p-4 md:p-6" noValidate>
         <div className="space-y-4 md:space-y-6">
           {/* Payment Evidence Section */}
           <div>
@@ -485,7 +501,6 @@ const handleImageUpload = async (file: File): Promise<string> => {
                   }
                   className="flex-1 px-3 py-2 border border-gray-300 rounded-l-md  outline-none"
                   placeholder="0.00"
-                  required
                 />
                 <div className="px-3 py-2 bg-gray-100 border border-l-0 border-gray-300 rounded-r-md text-gray-700 font-medium">
                   AED
@@ -502,7 +517,6 @@ const handleImageUpload = async (file: File): Promise<string> => {
                 value={getModeOfPaymentValue()}
                 onChange={(e) => setModeOfPayment(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white"
-                required
               >
                 <option value="cash">Cash</option>
                 <option value="card">Card</option>
@@ -510,8 +524,6 @@ const handleImageUpload = async (file: File): Promise<string> => {
                 <option value="credit">Credit</option>
               </select>
             </div>
-
-            {/* Date */}
 
             {/* Conditional Fields Based on Payment Mode */}
             {custom_mode_of_payment === "Bank" && (
@@ -528,7 +540,6 @@ const handleImageUpload = async (file: File): Promise<string> => {
                     }
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                     placeholder="Enter Bank Name"
-                    required
                   />
                 </div>
                 <div>
@@ -543,7 +554,6 @@ const handleImageUpload = async (file: File): Promise<string> => {
                     }
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                     placeholder="Enter Account Number"
-                    required
                   />
                 </div>
                 <div>
@@ -597,7 +607,6 @@ const handleImageUpload = async (file: File): Promise<string> => {
                     }
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                     placeholder="Enter Bank Name"
-                    required
                   />
                 </div>
                 <div>
@@ -612,7 +621,6 @@ const handleImageUpload = async (file: File): Promise<string> => {
                     }
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                     placeholder="Enter Card Number"
-                    required
                   />
                 </div>
               </>
@@ -631,7 +639,6 @@ const handleImageUpload = async (file: File): Promise<string> => {
                 }
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                 placeholder="Enter Bill No"
-                
               />
             </div>
 
@@ -655,7 +662,6 @@ const handleImageUpload = async (file: File): Promise<string> => {
                   onChange={handleSearchChange}
                   placeholder="Search by name, phone, or email"
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none pr-10"
-                  required
                 />
                 {isSearching && (
                   <Loader2 className="absolute right-3 top-3 h-4 w-4 animate-spin text-gray-500" />
@@ -730,7 +736,6 @@ const handleImageUpload = async (file: File): Promise<string> => {
               }
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none"
               placeholder="Enter Purpose of Payment"
-              required
             />
           </div>
 
@@ -767,6 +772,7 @@ const handleImageUpload = async (file: File): Promise<string> => {
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg font-semibold">Add New Supplier</h3>
                 <button
+                  type="button"
                   onClick={handleCloseSupplierDialog}
                   className="text-gray-500 hover:text-gray-700"
                 >
@@ -785,7 +791,6 @@ const handleImageUpload = async (file: File): Promise<string> => {
                     onChange={handleNewSupplierInputChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                     placeholder="Enter supplier name"
-                    required
                   />
                 </div>
                 <div>

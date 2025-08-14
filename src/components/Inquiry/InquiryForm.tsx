@@ -1465,10 +1465,10 @@ useEffect(() => {
                                     max={selectedSlot?.end || ""}
                                     className="text-sm h-8"
                                   />
-                                  <div className="text-xs text-gray-500">
+                                  {/* <div className="text-xs text-gray-500">
                                     Between {selectedSlot.start} -{" "}
                                     {selectedSlot.end}
-                                  </div>
+                                  </div> */}
                                 </div>
                                 <div className="space-y-1">
                                   <Label className="text-xs text-gray-600">

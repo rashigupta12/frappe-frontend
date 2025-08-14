@@ -1082,7 +1082,7 @@ const handleSaveAddress = () => {
             >
               Cancel
             </Button>
-            <Button onClick={handleSaveAddress}>Save Address</Button>
+            <Button onClick={handleSaveAddress} variant="outline">Save Address</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
