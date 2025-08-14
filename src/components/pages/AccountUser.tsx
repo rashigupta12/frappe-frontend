@@ -1,4 +1,4 @@
-import { CreditCard, FileText, LogOut, Menu, MessageCircle, X } from "lucide-react";
+import { AlertCircle, CreditCard, FileText, LogOut, Menu, MessageCircle, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
@@ -12,11 +12,21 @@ import ReceiptForm from "../account/Recipt";
 import ReceiptContainer from "../account/ReciptContainer";
 import FeedbackComponent from "../../common/FeedbackManagement";
 import { RoleSwitcherMinimal } from "../../common/RoleSwitcher";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+} from "../ui/alert-dialog";
 
 export default function AccountDashboard() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { user, logout, isMultiRole } = useAuth();
+   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   // Default to summary, with payment-summary as the default toggle
   const initialTab = searchParams.get("tab") || "payment-summary";
@@ -37,6 +47,14 @@ export default function AccountDashboard() {
   const handleLogout = async () => {
     await logout();
     navigate("/");
+  };
+
+  const confirmLogout = () => {
+    setShowLogoutConfirm(true);
+  };
+
+  const cancelLogout = () => {
+    setShowLogoutConfirm(false);
   };
 
   const toggleMobileSidebar = () => {
@@ -96,7 +114,9 @@ export default function AccountDashboard() {
             <div className="flex items-center">
               <img className="h-8 w-auto" src="/logo.jpg" alt="Logo" />
               <span className="ml-2 text-xl font-bold text-emerald-800">
-                MyApp
+                {activeTab === "payment-summary" || activeTab === "payment-form"
+                  ? "Payment Dashboard"
+                  : "Receipt Dashboard"}
               </span>
             </div>
             <button
@@ -142,7 +162,7 @@ export default function AccountDashboard() {
                 {user?.full_name || user?.username || "User"}
               </p>
               <button
-                onClick={handleLogout}
+                onClick={confirmLogout}
                 className="text-xs font-medium text-gray-500 hover:text-gray-700"
               >
                 Sign out
@@ -204,15 +224,15 @@ export default function AccountDashboard() {
                   <span className="sr-only">Feedback</span>
                 </Button>
               </FeedbackComponent>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleLogout}
-                className="lg:hidden p-1.5 rounded-lg hover:bg-red-50 text-red-600 hover:text-red-700 transition-colors"
-              >
-                <LogOut className="h-4 w-4" />
-                <span className="sr-only">Logout</span>
-              </Button>
+               <Button
+              variant="ghost"
+              size="icon"
+              onClick={confirmLogout} // Changed from handleLogout to confirmLogout
+              className="lg:hidden p-1.5 rounded-lg hover:bg-red-50 text-red-600 hover:text-red-700 transition-colors"
+            >
+              <LogOut className="h-4 w-4" />
+              <span className="sr-only">Logout</span>
+            </Button>
 
               <Popover>
                 <PopoverTrigger asChild>
@@ -250,7 +270,7 @@ export default function AccountDashboard() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={handleLogout}
+                    onClick={confirmLogout} // Changed from handleLogout to confirmLogout
                     className="w-full justify-start gap-2 text-red-600 hover:bg-red-100 hover:text-red-700 transition-colors"
                   >
                     <LogOut className="h-4 w-4" />
@@ -321,6 +341,27 @@ export default function AccountDashboard() {
           </div>
         </div>
       </div>
+       <AlertDialog open={showLogoutConfirm} onOpenChange={setShowLogoutConfirm}>
+        <AlertDialogContent className="bg-white">
+          <AlertDialogHeader className="justify-center items-center">
+            <AlertCircle className="h-10 w-10 text-red-600" />
+            <AlertDialogDescription>
+              Are you sure you want to exit the app?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex flex-row justify-center space-x-2">
+            <AlertDialogCancel onClick={cancelLogout} className="mt-0">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleLogout}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Logout
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

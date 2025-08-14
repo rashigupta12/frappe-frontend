@@ -8,6 +8,7 @@ import {
   Users,
   X,
   MessageCircle,
+  AlertCircle,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
@@ -20,10 +21,21 @@ import TodoPage from "../Inquiry/Assign";
 import InquiryForm from "../Inquiry/InquiryForm";
 import FeedbackComponent from "../../common/FeedbackManagement";
 import { RoleSwitcherMinimal } from "../../common/RoleSwitcher";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+} from "../ui/alert-dialog";
 
 export default function SalesDashboard() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedInquiry, setSelectedInquiry] = useState(null);
+
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   const openInquiryForm = () => {
     setSelectedInquiry(null);
@@ -70,6 +82,14 @@ export default function SalesDashboard() {
   const handleLogout = async () => {
     await logout();
     navigate("/");
+  };
+
+  const confirmLogout = () => {
+    setShowLogoutConfirm(true);
+  };
+
+  const cancelLogout = () => {
+    setShowLogoutConfirm(false);
   };
 
   const renderContent = () => {
@@ -172,7 +192,7 @@ export default function SalesDashboard() {
             <Button
               variant="ghost"
               size="icon"
-              onClick={handleLogout}
+              onClick={confirmLogout} // Changed from handleLogout to confirmLogout
               className="lg:hidden p-1.5 rounded-lg hover:bg-red-50 text-red-600 hover:text-red-700 transition-colors"
             >
               <LogOut className="h-4 w-4" />
@@ -219,7 +239,7 @@ export default function SalesDashboard() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={handleLogout}
+                    onClick={confirmLogout} // Changed from handleLogout to confirmLogout
                     className="w-full justify-start gap-2 text-red-600 hover:bg-red-100 hover:text-red-700 transition-colors"
                   >
                     <LogOut className="h-4 w-4" />
@@ -268,7 +288,7 @@ export default function SalesDashboard() {
               <HomeIcon className="h-5 w-5" />
               <span className="font-medium">Inquiries</span>
             </Button>
-            <Button 
+            <Button
               variant="ghost"
               onClick={openInquiryForm}
               className="w-full justify-start gap-3 rounded-xl p-3 text-left transition-all duration-200 text-emerald-700 hover:bg-emerald-50 hover:shadow-md"
@@ -398,6 +418,27 @@ export default function SalesDashboard() {
           </div>
         </div>
       </div>
+      <AlertDialog open={showLogoutConfirm} onOpenChange={setShowLogoutConfirm}>
+        <AlertDialogContent className="bg-white">
+          <AlertDialogHeader className="justify-center items-center">
+            <AlertCircle className="h-10 w-10 text-red-600" />
+            <AlertDialogDescription>
+              Are you sure you want to exit the app?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex flex-row justify-center space-x-2">
+            <AlertDialogCancel onClick={cancelLogout} className="mt-0">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleLogout}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Logout
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import {
+  AlertCircle,
   FileText,
   LogOut,
   Menu,
@@ -19,6 +20,15 @@ import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import JobCardList from "../JobCard/JobCardList";
 import FeedbackComponent from "../../common/FeedbackManagement";
 import { RoleSwitcherMinimal } from "../../common/RoleSwitcher";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+} from "../ui/alert-dialog";
 
 
 export default function ProjectManagerDashboard() {
@@ -26,6 +36,7 @@ export default function ProjectManagerDashboard() {
   const [isJobCardOtherFormOpen, setIsJobCardOtherFormOpen] = useState(false);
   const [selectedJobCard, setSelectedJobCard] = useState(null);
   const [selectedJobCardOther, setSelectedJobCardOther] = useState(null);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -57,9 +68,17 @@ export default function ProjectManagerDashboard() {
     setSidebarOpen(false);
   };
 
-  const handleLogout = async () => {
+const handleLogout = async () => {
     await logout();
     navigate("/");
+  };
+
+  const confirmLogout = () => {
+    setShowLogoutConfirm(true);
+  };
+
+  const cancelLogout = () => {
+    setShowLogoutConfirm(false);
   };
 
   // Job Card Functions
@@ -207,7 +226,7 @@ export default function ProjectManagerDashboard() {
             <Button
               variant="ghost"
               size="icon"
-              onClick={handleLogout}
+              onClick={confirmLogout}
               className="lg:hidden p-1.5 rounded-lg hover:bg-red-50 text-red-600 hover:text-red-700 transition-colors"
             >
               <LogOut className="h-4 w-4" />
@@ -253,7 +272,7 @@ export default function ProjectManagerDashboard() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={handleLogout}
+                  onClick={confirmLogout}
                   className="w-full justify-start gap-2 text-red-600 hover:bg-red-100 hover:text-red-700 transition-colors"
                 >
                   <LogOut className="h-4 w-4" />
@@ -372,6 +391,27 @@ export default function ProjectManagerDashboard() {
           jobCard={selectedJobCardOther}
         />
       )}
+      <AlertDialog open={showLogoutConfirm} onOpenChange={setShowLogoutConfirm}>
+        <AlertDialogContent className="bg-white">
+          <AlertDialogHeader className="justify-center items-center">
+            <AlertCircle className="h-10 w-10 text-red-600" />
+            <AlertDialogDescription>
+              Are you sure you want to exit the app?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex flex-row justify-center space-x-2">
+            <AlertDialogCancel onClick={cancelLogout} className="mt-0">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleLogout}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Logout
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

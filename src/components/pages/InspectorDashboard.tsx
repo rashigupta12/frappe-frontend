@@ -1,4 +1,5 @@
 import {
+  AlertCircle,
   ClipboardList,
   ListTodo,
   LogOut,
@@ -17,6 +18,15 @@ import MobileInspectionList from "../inspection/InspectionList";
 import CreateInspection from "../inspection/IspectionDetail";
 import { Button } from "../ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+} from "../ui/alert-dialog";
 
 export default function InspectorDashboard() {
   const navigate = useNavigate();
@@ -26,6 +36,7 @@ export default function InspectorDashboard() {
   const initialTab = searchParams.get("tab") || "todos";
   const [activeTab, setActiveTab] = useState(initialTab);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   useEffect(() => {
     setActiveTab(initialTab);
@@ -40,6 +51,14 @@ export default function InspectorDashboard() {
   const handleLogout = async () => {
     await logout();
     navigate("/");
+  };
+
+  const confirmLogout = () => {
+    setShowLogoutConfirm(true);
+  };
+
+  const cancelLogout = () => {
+    setShowLogoutConfirm(false);
   };
 
   const renderContent = () => {
@@ -131,10 +150,10 @@ export default function InspectorDashboard() {
             </FeedbackComponent>
 
             {/* Mobile Logout Button */}
-            <Button
+           <Button
               variant="ghost"
               size="icon"
-              onClick={handleLogout}
+              onClick={confirmLogout} // Changed from handleLogout to confirmLogout
               className="lg:hidden p-1.5 rounded-lg hover:bg-red-50 text-red-600 hover:text-red-700 transition-colors"
             >
               <LogOut className="h-4 w-4" />
@@ -175,15 +194,15 @@ export default function InspectorDashboard() {
                     Feedback
                   </Button>
                 </FeedbackComponent>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleLogout}
-                  className="w-full justify-start gap-2 text-red-600 hover:bg-red-100 hover:text-red-700 transition-colors"
-                >
-                  <LogOut className="h-4 w-4" />
-                  Logout
-                </Button>
+                 <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={confirmLogout} // Changed from handleLogout to confirmLogout
+                    className="w-full justify-start gap-2 text-red-600 hover:bg-red-100 hover:text-red-700 transition-colors"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    Logout
+                  </Button>
               </PopoverContent>
             </Popover>
           </div>
@@ -306,6 +325,27 @@ export default function InspectorDashboard() {
           </div>
         </div>
       </div>
+      <AlertDialog open={showLogoutConfirm} onOpenChange={setShowLogoutConfirm}>
+        <AlertDialogContent className="bg-white">
+          <AlertDialogHeader className="justify-center items-center">
+            <AlertCircle className="h-10 w-10 text-red-600" />
+            <AlertDialogDescription>
+              Are you sure you want to exit the app?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex flex-row justify-center space-x-2">
+            <AlertDialogCancel onClick={cancelLogout} className="mt-0">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleLogout}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Logout
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
