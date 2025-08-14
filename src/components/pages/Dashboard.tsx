@@ -156,9 +156,9 @@ export default function SalesDashboard() {
 
           {/* Title with Role Switcher */}
           <div className="flex items-center gap-2">
-            <h1 className="text-center text-lg sm:text-xl font-bold text-emerald-800">
+            {/* <h1 className="text-center text-lg sm:text-xl font-bold text-emerald-800">
               Sales Representative
-            </h1>
+            </h1> */}
             {/* Show role switcher if user has multiple roles */}
             {isMultiRole && (
               <div className="hidden sm:block">

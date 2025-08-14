@@ -114,11 +114,11 @@ export default function AccountDashboard() {
           <div className="flex items-center justify-between px-4 mb-6">
             <div className="flex items-center">
               <img className="h-8 w-auto" src="/logo.jpg" alt="Logo" />
-              <span className="ml-2 text-xl font-bold text-emerald-800">
+              {/* <span className="ml-2 text-xl font-bold text-emerald-800">
                 {activeTab === "payment-summary" || activeTab === "payment-form"
                   ? "Payment Dashboard"
                   : "Receipt Dashboard"}
-              </span>
+              </span> */}
             </div>
             <button
               onClick={toggleMobileSidebar}
@@ -195,10 +195,10 @@ export default function AccountDashboard() {
             </div>
 
             <div className="flex items-center gap-2">
-              <h1 className="text-center text-lg sm:text-xl font-bold text-emerald-800">
+              {/* <h1 className="text-center text-lg sm:text-xl font-bold text-emerald-800">
                 {activeTab === "payment-summary" || activeTab === "payment-form" ? "Payment" : "Receipt"}{" "}
                 Dashboard
-              </h1>
+              </h1> */}
               {/* Show role switcher if user has multiple roles */}
               {isMultiRole && (
                 <div className="hidden sm:block">

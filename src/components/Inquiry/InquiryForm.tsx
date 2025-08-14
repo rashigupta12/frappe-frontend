@@ -373,7 +373,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
       // Include other required fields with default values
       custom_budget_range: "",
       custom_project_urgency: "",
-      source: "Direct",
+      source: "",
       custom_property_name__number: "",
       custom_emirate: "",
       custom_area: "",
@@ -403,9 +403,6 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
       
       // Store the lead ID for future updates
       name: createdLead.name, // This is typically the unique identifier from API
-      
-      // Set source as Direct since it's a new lead
-      source: createdLead.source || "Direct",
     }));
 
     // Update UI state

@@ -313,6 +313,9 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
                     street_name: current.custom_street_name,
                     property_number: current.custom_property_number,
                     combined_address: combined,
+                    custom_combined_address: current.custom_combined_address,
+                    propertycategory: current.custom_property_category,
+                    propertytype: current.custom_property_type,
                   },
                 });
               }
