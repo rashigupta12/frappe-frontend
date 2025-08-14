@@ -53,6 +53,12 @@ interface InspectionDialogProps {
   mode: DialogMode;
 }
 
+interface InspectorDetails {
+  name: string;
+  email: string;
+  full_name: string;
+}
+
 const InspectionDialog: React.FC<InspectionDialogProps> = ({
   open,
   onClose,
@@ -63,8 +69,8 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
   const {
     createTodo,
     updateTodo,
-    fetchInspectors,
-    inspectors,
+    // fetchInspectors,
+    // inspectors,
     error: assignError,
     success: assignSuccess,
   } = useAssignStore();
@@ -89,6 +95,10 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
   const [calendarOpen, setCalendarOpen] = useState(false);
   // const [inspectorAvailabilityData, setInspectorAvailabilityData] = useState<InspectorAvailability[]>([]);
   const [showConfirmation, setShowConfirmation] = useState(false);
+  const [currentInspectorDetails, setCurrentInspectorDetails] =
+    useState<InspectorDetails | null>(null);
+  const [isLoadingInspectorDetails, setIsLoadingInspectorDetails] =
+    useState(false);
 
   const getInquiryData = () => {
     if (mode === "edit" && data?.inquiry_data) {
@@ -253,6 +263,52 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
     }
   };
 
+  const getInspectorName = async (email: string): Promise<InspectorDetails> => {
+    try {
+      const userDetailsResponse = await frappeAPI.makeAuthenticatedRequest(
+        "GET",
+        `/api/resource/User/${email}`
+      );
+
+      const userDetails = userDetailsResponse.data;
+      console.log(`Fetched details for user ${email}:`, userDetails);
+
+      return {
+        name: userDetails.name || userDetails.email,
+        email: userDetails.email,
+        full_name:
+          userDetails.full_name || userDetails.name || userDetails.email,
+      };
+    } catch (error) {
+      console.error("Error fetching inspector details:", error);
+      return {
+        name: email,
+        email,
+        full_name: email,
+      };
+    }
+  };
+
+  // Function to load inspector details for edit mode
+  const loadInspectorDetails = async (inspectorEmail: string) => {
+    if (!inspectorEmail) return;
+
+    setIsLoadingInspectorDetails(true);
+    try {
+      const details = await getInspectorName(inspectorEmail);
+      setCurrentInspectorDetails(details);
+    } catch (error) {
+      console.error("Failed to load inspector details:", error);
+      setCurrentInspectorDetails({
+        name: inspectorEmail,
+        email: inspectorEmail,
+        full_name: inspectorEmail,
+      });
+    } finally {
+      setIsLoadingInspectorDetails(false);
+    }
+  };
+
   useEffect(() => {
     if (!open) {
       setSelectedInspector(null);
@@ -267,6 +323,8 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
       setOriginalInspectorEmail("");
       setOriginalStartTime(""); // Reset original start time
       setCalendarOpen(false);
+      setCurrentInspectorDetails(null);
+      setIsLoadingInspectorDetails(false);
       // setInspectorAvailabilityData([]);
     }
   }, [open]);
@@ -314,6 +372,9 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
           setOriginalInspectorEmail(data.allocated_to);
           console.log("Setting original inspector email:", data.allocated_to);
 
+          // Load inspector details for edit mode
+          loadInspectorDetails(data.allocated_to);
+
           // Set the selected slot for the current allocation
           if (data.custom_start_time && data.custom_end_time) {
             setSelectedSlot({
@@ -334,11 +395,28 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
         }
       }
     }
-  }, [data, mode, inspectors]);
+  }, [data, mode]);
 
-  useEffect(() => {
-    fetchInspectors();
-  }, [fetchInspectors]);
+  // useEffect(() => {
+  //   fetchInspectors();
+  // }, [fetchInspectors]);
+
+  const validateRequiredFields = (inquiryData: any) => {
+  const requiredFields = [
+    'custom_property_area', // Property Address
+    'lead_name', // Name
+    'mobile_no', // Phone Number
+    'custom_job_type', // Job Type
+    'custom_project_urgency' // Urgency
+  ];
+
+  const missingFields = requiredFields.filter(field => !inquiryData?.[field]);
+
+  return {
+    isValid: missingFields.length === 0,
+    missingFields
+  };
+};
 
   const handleDateSelect = (selectedDate: Date | undefined) => {
     setDate(selectedDate);
@@ -460,13 +538,34 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
     }
   };
 
-  const handleAssign = async () => {
-    if (mode === "create") {
-      setShowConfirmation(true);
-    } else {
-      await proceedWithAssignment();
+ const handleAssign = async () => {
+  // First validate required fields in create mode
+  if (mode === "create") {
+    const validation = validateRequiredFields(inquiryData);
+    if (!validation.isValid) {
+      const missingFieldNames = validation.missingFields.map(field => {
+        switch(field) {
+          case 'custom_property_area': return 'Property Address';
+          case 'lead_name': return 'Customer Name';
+          case 'mobile_no': return 'Phone Number';
+          case 'custom_job_type': return 'Job Type';
+          case 'custom_project_urgency': return 'Urgency';
+          default: return field;
+        }
+      }).join(', ');
+      
+      toast.error(`Please complete the following information: ${missingFieldNames}`);
+      return;
     }
-  };
+  }
+
+  // Proceed with existing checks
+  if (mode === "create") {
+    setShowConfirmation(true);
+  } else {
+    await proceedWithAssignment();
+  }
+};
 
   const proceedWithAssignment = async () => {
     setShowConfirmation(false);
@@ -691,32 +790,33 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
               </div>
             </div>
           </div>
- {/* {mode === "edit" && data?.custom_start_time && data?.custom_end_time && (
-            <div className="bg-gray-50 px-4 py-2 rounded-lg">
-              <Label className="text-black text-md font-medium">
-                Current Allocation
-              </Label>
-              <div className="inline-flex items-center px-1 py-1.5 rounded-md text-sm font-medium">
-                {data.custom_start_time.split(" ")[1].slice(0, 5)} - {data.custom_end_time.split(" ")[1].slice(0, 5)}
-                <span className="ml-2 text-sm">
-                  ({data.user_id})
-                </span>
+
+          {mode === "edit" &&
+            data?.custom_start_time &&
+            data?.custom_end_time && (
+              <div className="bg-gray-50 px-4 py-2 rounded-lg">
+                <Label className="text-black text-md font-medium">
+                  Current Allocation
+                </Label>
+                <div className="inline-flex items-center px-1 py-1.5 rounded-md text-sm font-medium">
+                  {data.custom_start_time.split(" ")[1].slice(0, 5)} -{" "}
+                  {data.custom_end_time.split(" ")[1].slice(0, 5)}
+                  <span className="ml-2 text-sm">
+                    {isLoadingInspectorDetails ? (
+                      <span className="flex items-center gap-1">
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                        Loading...
+                      </span>
+                    ) : (
+                      `(${
+                        currentInspectorDetails?.full_name ||
+                        originalInspectorEmail
+                      })`
+                    )}
+                  </span>
+                </div>
               </div>
-            </div>
-          )} */}
-          {mode === "edit" && data?.custom_start_time && data?.custom_end_time && (
-  <div className="bg-gray-50 px-4 py-2 rounded-lg">
-    <Label className="text-black text-md font-medium">
-      Current Allocation
-    </Label>
-    <div className="inline-flex items-center px-1 py-1.5 rounded-md text-sm font-medium">
-      {data.custom_start_time.split(" ")[1].slice(0, 5)} - {data.custom_end_time.split(" ")[1].slice(0, 5)}
-      <span className="ml-2 text-sm">
-        ({inspectors.find((inspector) => inspector.email === data.allocated_to)?.full_name || data.user_id || data.allocated_to})
-      </span>
-    </div>
-  </div>
-)}
+            )}
           {assignError && (
             <div className="bg-red-50 border border-red-200 rounded-md p-2">
               <div className="text-red-700 text-sm">{assignError}</div>
@@ -794,10 +894,10 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
                 ) : mode === "edit" && data?.allocated_to ? (
                   <div className="flex items-center gap-2">
                     <div>
-                      <div className="font-medium text-sm">
+                      {/* <div className="font-medium text-sm">
                         {inspectors.find((i) => i.email === data.allocated_to)
                           ?.full_name || data.allocated_to}
-                      </div>
+                      </div> */}
                       <div className="text-xs text-gray-500">
                         {data.allocated_to}
                       </div>
@@ -825,7 +925,6 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
           )}
 
           {/* Show current allocated slot in edit mode */}
-          
 
           {/* Show available slots */}
           {selectedInspector &&
