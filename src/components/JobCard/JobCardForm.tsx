@@ -1111,14 +1111,14 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
         style={{ transform: isOpen ? "translateX(0)" : "translateX(100%)" }}
       >
         {/* Header */}
-        <div className="bg-emerald-500 text-white shadow-lg transform scale-105 hover:emerald-600 hover:blue-600 p-4 sm:rounded-t-xl">
+        <div className="bg-green-100 shadow-lg text-black transform scale-105 hover:emerald-600 hover:blue-600 p-4 sm:rounded-t-xl">
           <div className="flex justify-between items-start">
             <div className="flex items-start space-x-4">
-              <div className="bg-white/20 p-2 rounded-lg mt-1">
+              <div className=" p-2 rounded-lg mt-1">
                 <FileText className="h-6 w-6" />
               </div>
               <div>
-                <h3 className="text-xl font-bold">
+                <h3 className="text-xl text-black font-bold">
                   {jobCard
                     ? isReadOnly
                       ? "View Job Card"
@@ -1128,28 +1128,30 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                 <div className="flex flex-wrap items-center gap-x-6 gap-y-2 mt-1">
                   {projectidname && (
                     <div className="flex items-center space-x-2">
-                      <span className="text-xs text-blue-100">Project ID:</span>
+                      <span className="text-xs ">Project ID:</span>
                       <span className="text-sm font-medium">
                         {projectidname}
                       </span>
                     </div>
                   )}
                   <div className="flex items-center space-x-2">
-                    <span className="text-sm text-white font-medium">
+                    <span className="text-sm font-medium">
                       Date:
                     </span>
+                    
                     <span className="text-sm font-medium">
-                      {new Date().toLocaleDateString("en-US", {
-                        year: "numeric",
-                        month: "short",
-                        day: "numeric",
-                      })}
-                    </span>
+  {new Date().toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  })}
+</span>
+
                   </div>
                 </div>
-                <p className="text-blue-100 text-sm mt-1">
+                {/* <p className="text-blue-100 text-sm mt-1">
                   Veneer Pressing Details
-                </p>
+                </p> */}
               </div>
             </div>
             {isReadOnly && (
@@ -1160,7 +1162,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
             <Button
               variant="ghost"
               size="sm"
-              className="h-8 w-8 p-0 rounded-full text-white hover:bg-white/10 transition-colors"
+              className="h-8 w-8 p-0 rounded-full text-black hover:bg-white/10 transition-colors"
               onClick={handleCancelClick}
             >
               <X className="h-4 w-4" />
@@ -1204,7 +1206,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                     <div className="relative col-span-1 md:col-span-2 lg:col-span-1">
                       <label className="flex items-center space-x-2 text-sm md:text-base font-medium text-gray-700 mb-2">
                         <User className="h-4 w-4 text-gray-500" />
-                        <span>
+                        <span className="text-black">
                           Customer{" "}
                           <span className="text-gray-500">
                             (name/email/phone)
@@ -1320,7 +1322,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                       <div className="space-y-2">
                         <Label
                           htmlFor="start_date"
-                          className="flex items-center space-x-2"
+                          className="flex items-center space-x-1"
                         >
                           <Calendar className="h-4 w-4 text-gray-500" />
                           <span>
@@ -1360,9 +1362,9 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                             min={new Date().toISOString().split("T")[0]}
                             required
                             disabled={isReadOnly}
-                            className="w-full rounded-md border border-gray-300 px-3 py-2 pr-10 text-sm text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 disabled:bg-gray-50 disabled:text-gray-500"
+                            className="w-full rounded-md border border-gray-300 px-2 py-2  text-md text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 disabled:bg-gray-50 disabled:text-gray-500"
                           />
-                          <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                          <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none pl-0" />
                         </div>
                       </div>
 
@@ -1412,7 +1414,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                             }
                             required
                             disabled={isReadOnly}
-                            className="w-full rounded-md border border-gray-300 px-3 py-2 pr-10 text-sm text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 disabled:bg-gray-50 disabled:text-gray-500"
+                            className="w-full rounded-md border border-gray-300 px-2 py-2 text-md text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 disabled:bg-gray-50 disabled:text-gray-500"
                           />
                           <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
                         </div>
@@ -1550,10 +1552,12 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                                       }
                                       disabled={isReadOnly}
                                       className="h-9 text-sm w-[70%] rounded-r-none"
+                                      
                                     />
-                                    <span className="flex items-center justify-center w-[30%] bg-gray-50 text-gray-800 text-sm border border-l-0">
+                                     <span className="flex items-center rounded-r-md justify-center w-[30%] bg-gray-50 text-gray-800 text-sm border border-l-0">
                                       mm
                                     </span>
+                                   
                                   </div>
                                 </div>
 
@@ -1905,7 +1909,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
             </button>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            <div className="space-y-2">
+            <div className=" space-y-2">
               <Label htmlFor="customer_name">
                 Customer Name <span className="text-red-500">*</span>
               </Label>

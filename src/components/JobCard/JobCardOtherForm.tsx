@@ -881,7 +881,6 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                 <h3 className="text-xl font-bold">
                   {jobCard ? "Edit Job Card" : "New Job Card"}
                 </h3>
-                <p className="text-blue-100 text-sm">Other Services Details</p>
                 <div className="flex flex-wrap items-center gap-x-6 gap-y-2 mt-1">
                   {formData.project_id_no && (
                     <div className="flex items-center space-x-2">
@@ -893,15 +892,15 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                   )}
                   <div className="flex items-center space-x-2">
                     <span className="text-sm text-white font-medium">
-                      Date:
+                      Date: proj
                     </span>
                     <span className="text-sm font-medium">
-                      {new Date().toLocaleDateString("en-US", {
-                        year: "numeric",
-                        month: "short",
-                        day: "numeric",
-                      })}
-                    </span>
+  {new Date().toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  })}
+</span>
                   </div>
                 </div>
               </div>
@@ -933,7 +932,6 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                       <h4 className="text-lg font-semibold text-gray-900">
                         Basic Information
                       </h4>
-                      <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded"></span>
                     </div>
                     <ChevronDown
                       className={`h-5 w-5 text-gray-500 transition-transform duration-200 ${
@@ -1105,7 +1103,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                             }}
                             min={new Date().toISOString().split("T")[0]}
                             required
-                            className="w-full rounded-md border border-gray-300 px-3 py-2 pr-10 text-sm text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                            className="w-full rounded-md border border-gray-300 px-2 py-2 text-md text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                           />
                           <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
                         </div>
@@ -1152,7 +1150,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                               new Date().toISOString().split("T")[0]
                             }
                             required
-                            className="w-full rounded-md border border-gray-300 px-3 py-2 pr-10 text-sm text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                            className="w-full rounded-md border border-gray-300 px-2 py-2 text-md text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                           />
                           <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
                         </div>
@@ -1259,7 +1257,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                                   }}
                                   min={formData.start_date}
                                   max={formData.finish_date}
-                                  className="w-full rounded-md border border-gray-300 px-3 py-2 pr-10 text-sm text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                  className="w-full rounded-md border border-gray-300 px-2 py-2 text-sm text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                 />
                                 <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
                               </div>
@@ -1315,7 +1313,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                                     formData.start_date || service.start_date
                                   }
                                   max={formData.finish_date}
-                                  className="w-full rounded-md border border-gray-300 px-3 py-2 pr-10 text-sm text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                  className="w-full rounded-md border border-gray-300 px-2 py-2 text-sm text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                 />
                                 <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
                               </div>

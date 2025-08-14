@@ -29,7 +29,7 @@ const JobCardOtherDetails: React.FC<Props> = ({ card, onClose }) => {
     <DialogContent className="max-w-[99vw] sm:max-w-4xl w-full max-h-[90vh] overflow-y-auto bg-white mx-auto">
       <DialogHeader>
         <DialogTitle className="text-lg sm:text-xl leading-tight">
-          Job Card – Other Services – {card.party_name || card.name}
+          Job Card – Other Services 
         </DialogTitle>
       </DialogHeader>
 
