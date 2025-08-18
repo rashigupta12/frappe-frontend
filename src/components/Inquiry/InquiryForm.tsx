@@ -343,104 +343,103 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
   };
 
   const extractPhoneFromQuery = (query: string): string => {
-  // Look for phone number patterns in the search query
-  const phoneRegex = /(\+971\s?\d{1,2}\s?\d{3}\s?\d{4}|\d{9,10})/;
-  const match = query.match(phoneRegex);
-  
-  if (match) {
-    let phone = match[0];
-    // If it doesn't start with +971, add it
-    if (!phone.startsWith('+971')) {
-      phone = '+971 ' + phone.replace(/\D/g, '');
-    }
-    return phone;
-  }
-  return '+971 ';
-};
+    // Look for phone number patterns in the search query
+    const phoneRegex = /(\+971\s?\d{1,2}\s?\d{3}\s?\d{4}|\d{9,10})/;
+    const match = query.match(phoneRegex);
 
-const extractNameFromQuery = (query: string): string => {
-  // Remove phone numbers from the query to get just the name
-  const phoneRegex = /(\+971\s?\d{1,2}\s?\d{3}\s?\d{4}|\d{9,10})/g;
-  return query.replace(phoneRegex, '').trim();
-};
+    if (match) {
+      let phone = match[0];
+      // If it doesn't start with +971, add it
+      if (!phone.startsWith("+971")) {
+        phone = "+971 " + phone.replace(/\D/g, "");
+      }
+      return phone;
+    }
+    return "+971 ";
+  };
+
+  const extractNameFromQuery = (query: string): string => {
+    // Remove phone numbers from the query to get just the name
+    const phoneRegex = /(\+971\s?\d{1,2}\s?\d{3}\s?\d{4}|\d{9,10})/g;
+    return query.replace(phoneRegex, "").trim();
+  };
 
   const saveNewCustomer = async () => {
-  if (!newCustomerForm.name.trim()) {
-    toast.error("Customer name is required");
-    return;
-  }
-
-  if (!newCustomerForm.phone || newCustomerForm.phone.length < 5) {
-    toast.error("Valid mobile number is required");
-    return;
-  }
-
-  try {
-    setIsCreatingCustomer(true);
-
-    const newLeadData = formatSubmissionData({
-      lead_name: newCustomerForm.name.trim(),
-      email_id: newCustomerForm.email || "",
-      mobile_no: newCustomerForm.phone,
-      custom_jobtype: newCustomerForm.jobType, // Now using the array
-      custom_budget_range: "",
-      custom_project_urgency: "",
-      source: "",
-      custom_property_name__number: "",
-      custom_emirate: "",
-      custom_area: "",
-      custom_community: "",
-      custom_street_name: "",
-      custom_property_area: "",
-      custom_property_category: "",
-      custom_special_requirements: "",
-    });
-
-    const createdLead = await createLead(newLeadData);
-
-    if (!createdLead) {
-      throw new Error("Failed to create lead");
+    if (!newCustomerForm.name.trim()) {
+      toast.error("Customer name is required");
+      return;
     }
 
-    setFormData((prev) => ({
-      ...prev,
-      lead_name: createdLead.lead_name || newCustomerForm.name,
-      email_id: createdLead.email_id || newCustomerForm.email,
-      mobile_no: createdLead.mobile_no || newCustomerForm.phone,
-      custom_jobtype: createdLead.custom_jobtype?.map(
-        (item: any) => item.job_type
-      ) || [],
-      name: createdLead.name,
-    }));
+    if (!newCustomerForm.phone || newCustomerForm.phone.length < 5) {
+      toast.error("Valid mobile number is required");
+      return;
+    }
 
-    setCustomerSearchQuery(newCustomerForm.name);
-    setShowNewCustomerFields(true);
-    setShowNewCustomerModal(false);
-    setShowCustomerDropdown(false);
+    try {
+      setIsCreatingCustomer(true);
 
-    setNewCustomerForm({
-      name: "",
-      email: "",
-      phone: "+971 ",
-      jobType: [],
-    });
+      const newLeadData = formatSubmissionData({
+        lead_name: newCustomerForm.name.trim(),
+        email_id: newCustomerForm.email || "",
+        mobile_no: newCustomerForm.phone,
+        custom_jobtype: newCustomerForm.jobType, // Now using the array
+        custom_budget_range: "",
+        custom_project_urgency: "",
+        source: "",
+        custom_property_name__number: "",
+        custom_emirate: "",
+        custom_area: "",
+        custom_community: "",
+        custom_street_name: "",
+        custom_property_area: "",
+        custom_property_category: "",
+        custom_special_requirements: "",
+      });
 
-    toast.success(`New Lead "${newCustomerForm.name}" created successfully!`);
-  } catch (error) {
-    console.error("Error creating new lead:", error);
-    let errorMessage = "Failed to create lead. Please try again.";
-    if (error && typeof error === "object") {
-      if ("message" in error) {
-        errorMessage = (error as { message: string }).message;
-      } else if ("error" in error) {
-        errorMessage = (error as { error: string }).error;
+      const createdLead = await createLead(newLeadData);
+
+      if (!createdLead) {
+        throw new Error("Failed to create lead");
       }
+
+      setFormData((prev) => ({
+        ...prev,
+        lead_name: createdLead.lead_name || newCustomerForm.name,
+        email_id: createdLead.email_id || newCustomerForm.email,
+        mobile_no: createdLead.mobile_no || newCustomerForm.phone,
+        custom_jobtype:
+          createdLead.custom_jobtype?.map((item: any) => item.job_type) || [],
+        name: createdLead.name,
+      }));
+
+      setCustomerSearchQuery(newCustomerForm.name);
+      setShowNewCustomerFields(true);
+      setShowNewCustomerModal(false);
+      setShowCustomerDropdown(false);
+
+      setNewCustomerForm({
+        name: "",
+        email: "",
+        phone: "+971 ",
+        jobType: [],
+      });
+
+      toast.success(`New Lead "${newCustomerForm.name}" created successfully!`);
+    } catch (error) {
+      console.error("Error creating new lead:", error);
+      let errorMessage = "Failed to create lead. Please try again.";
+      if (error && typeof error === "object") {
+        if ("message" in error) {
+          errorMessage = (error as { message: string }).message;
+        } else if ("error" in error) {
+          errorMessage = (error as { error: string }).error;
+        }
+      }
+      toast.error(errorMessage);
+    } finally {
+      setIsCreatingCustomer(false);
     }
-    toast.error(errorMessage);
-  } finally {
-    setIsCreatingCustomer(false);
-  }
-};
+  };
   const validateRequestedTime = () => {
     if (!requestedTime || !selectedSlot) return false;
 
@@ -672,10 +671,10 @@ const extractNameFromQuery = (query: string): string => {
       return false;
     }
 
-   if (!formData.custom_jobtype || formData.custom_jobtype.length === 0) {
-    toast.error("At least one job type is required");
-    return false;
-  }
+    if (!formData.custom_jobtype || formData.custom_jobtype.length === 0) {
+      toast.error("At least one job type is required");
+      return false;
+    }
     return true;
   };
 
@@ -727,28 +726,140 @@ const extractNameFromQuery = (query: string): string => {
   };
 
   const handleAssignAndSave = () => {
-    // Only validate on submit
-    if (!validateForm()) return;
-
-    if (!selectedInspector) {
-      toast.error("Please select an inspector");
+    // Validate form fields and show specific error messages
+    if (!formData.lead_name) {
+      toast.error(
+        "Please complete customer details: Customer name is required"
+      );
+      setActiveSection("contact");
       return;
     }
+
+    if (!formData.mobile_no || formData.mobile_no.length < 5) {
+      toast.error(
+        "Please complete customer details: Valid mobile number is required"
+      );
+      setActiveSection("contact");
+      return;
+    }
+
+    if (!formData.custom_jobtype || formData.custom_jobtype.length === 0) {
+      toast.error(
+        "Please complete job details: At least one job type is required"
+      );
+      setActiveSection("job");
+      return;
+    }
+
+    if (!formData.custom_budget_range) {
+      toast.error("Please complete job details: Budget range is required");
+      setActiveSection("job");
+      return;
+    }
+
+    if (!formData.custom_project_urgency) {
+      toast.error("Please complete job details: Project urgency is required");
+      setActiveSection("job");
+      return;
+    }
+
+    if (!formData.source) {
+      toast.error(
+        "Please complete customer details: Source of inquiry is required"
+      );
+      setActiveSection("contact");
+      return;
+    }
+
+    if (
+      (formData.source === "Reference" ||
+        formData.source === "Supplier Reference") &&
+      !formData.custom_reference_name
+    ) {
+      toast.error(
+        "Please complete customer details: Reference name is required"
+      );
+      setActiveSection("contact");
+      return;
+    }
+
+    // Property validation
+    if (!formData.custom_property_name__number) {
+      toast.error(
+        "Please complete property details: Property number is required"
+      );
+      setActiveSection("property");
+      return;
+    }
+
+    if (!formData.custom_property_category) {
+      toast.error(
+        "Please complete property details: Property category is required"
+      );
+      setActiveSection("property");
+      return;
+    }
+
+    if (!formData.custom_property_area) {
+      toast.error(
+        "Please complete property details: Property area is required"
+      );
+      setActiveSection("property");
+      return;
+    }
+
+    if (!formData.custom_street_name) {
+      toast.error("Please complete property details: Street name is required");
+      setActiveSection("property");
+      return;
+    }
+
+    if (!formData.custom_emirate) {
+      toast.error("Please complete property details: Emirate is required");
+      setActiveSection("property");
+      return;
+    }
+
+    if (!formData.custom_community) {
+      toast.error("Please complete property details: Community is required");
+      setActiveSection("property");
+      return;
+    }
+
+    if (!formData.custom_area) {
+      toast.error("Please complete property details: Area is required");
+      setActiveSection("property");
+      return;
+    }
+
+    // Inspector assignment validation
+    if (!selectedInspector) {
+      toast.error("Please select an inspector for assignment");
+      setActiveSection("inspector");
+      return;
+    }
+
     if (!date) {
       toast.error("Please select an inspection date");
+      setActiveSection("inspector");
       return;
     }
+
     if (!requestedTime) {
       toast.error("Please enter the requested inspection time");
+      setActiveSection("inspector");
       return;
     }
+
     if (!validateRequestedTime()) {
       toast.error(
         `Requested time must be within the selected slot (${selectedSlot?.start} - ${selectedSlot?.end})`
       );
+      setActiveSection("inspector");
       return;
     }
 
+    // If all validations pass, show confirmation modal
     setShowConfirmModal(true);
   };
 
@@ -1003,38 +1114,38 @@ const extractNameFromQuery = (query: string): string => {
     }
   };
 
-  const validateFormSilent = (): boolean => {
-    // Customer Details validation
-    if (!formData.lead_name) return false;
-    if (!formData.mobile_no || formData.mobile_no.length < 5) return false;
+  // const validateFormSilent = (): boolean => {
+  //   // Customer Details validation
+  //   if (!formData.lead_name) return false;
+  //   if (!formData.mobile_no || formData.mobile_no.length < 5) return false;
 
-    // Job Details validation
-    if (!formData.custom_job_type) return false;
-    if (!formData.custom_budget_range) return false;
-    if (!formData.custom_project_urgency) return false;
-    if (!formData.source) return false;
-    if (
-      (formData.source === "Reference" ||
-        formData.source === "Supplier Reference") &&
-      !formData.custom_reference_name
-    )
-      return false;
+  //   // Job Details validation
+  //   if (!formData.custom_job_type) return false;
+  //   if (!formData.custom_budget_range) return false;
+  //   if (!formData.custom_project_urgency) return false;
+  //   if (!formData.source) return false;
+  //   if (
+  //     (formData.source === "Reference" ||
+  //       formData.source === "Supplier Reference") &&
+  //     !formData.custom_reference_name
+  //   )
+  //     return false;
 
-    return true;
-  };
+  //   return true;
+  // };
 
-  // Update the isAssignmentReady function to use the silent validation
-  const isAssignmentReady = () => {
-    return (
-      validateFormSilent() && // Use silent validation instead
-      selectedInspector &&
-      date &&
-      requestedTime &&
-      // validateRequestedTime() &&
-      !createTodoLoading &&
-      !loading
-    );
-  };
+  // // Update the isAssignmentReady function to use the silent validation
+  // const isAssignmentReady = () => {
+  //   return (
+  //     validateFormSilent() && // Use silent validation instead
+  //     selectedInspector &&
+  //     date &&
+  //     requestedTime &&
+  //     // validateRequestedTime() &&
+  //     !createTodoLoading &&
+  //     !loading
+  //   );
+  // };
 
   const extractAddressFromSite = (siteName: string) => {
     if (!siteName) return "";
@@ -1199,58 +1310,75 @@ const extractNameFromQuery = (query: string): string => {
                                         </div>
                                       )}
                                       <div
-                                    className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center justify-between"
-                                    onClick={() => {
-                                      // Pre-fill the form with searched data
-                                      const extractedName = extractNameFromQuery(customerSearchQuery);
-                                      const extractedPhone = extractPhoneFromQuery(customerSearchQuery);
-                                      
-                                      setNewCustomerForm({
-                                        name: extractedName,
-                                        email: "",
-                                        phone: extractedPhone,
-                                        jobType: jobTypes.length > 0 ? [jobTypes[0].name] : [],
-                                      });
-                                      
-                                      setShowNewCustomerModal(true);
-                                      setShowCustomerDropdown(false);
-                                    }}
-                                  >
-                                    <div>
-                                     
-                                      <p className="text-xs pl-0 text-gray-500">
-                                        Click to add a new customer
-                                      </p>
-                                    </div>
-                                    <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded flex-shrink-0">
-                                      Add New
-                                    </span>
-                                  </div>
+                                        className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center justify-between"
+                                        onClick={() => {
+                                          // Pre-fill the form with searched data
+                                          const extractedName =
+                                            extractNameFromQuery(
+                                              customerSearchQuery
+                                            );
+                                          const extractedPhone =
+                                            extractPhoneFromQuery(
+                                              customerSearchQuery
+                                            );
+
+                                          setNewCustomerForm({
+                                            name: extractedName,
+                                            email: "",
+                                            phone: extractedPhone,
+                                            jobType:
+                                              jobTypes.length > 0
+                                                ? [jobTypes[0].name]
+                                                : [],
+                                          });
+
+                                          setShowNewCustomerModal(true);
+                                          setShowCustomerDropdown(false);
+                                        }}
+                                      >
+                                        <div>
+                                          <p className="text-xs pl-0 text-gray-500">
+                                            Click to add a new customer
+                                          </p>
+                                        </div>
+                                        <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded flex-shrink-0">
+                                          Add New
+                                        </span>
+                                      </div>
                                     </div>
                                   ))
                                 ) : (
-                                 
                                   <div
                                     className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center justify-between"
                                     onClick={() => {
                                       // Pre-fill the form with searched data
-                                      const extractedName = extractNameFromQuery(customerSearchQuery);
-                                      const extractedPhone = extractPhoneFromQuery(customerSearchQuery);
-                                      
+                                      const extractedName =
+                                        extractNameFromQuery(
+                                          customerSearchQuery
+                                        );
+                                      const extractedPhone =
+                                        extractPhoneFromQuery(
+                                          customerSearchQuery
+                                        );
+
                                       setNewCustomerForm({
                                         name: extractedName,
                                         email: "",
                                         phone: extractedPhone,
-                                        jobType: jobTypes.length > 0 ? [jobTypes[0].name] : [],
+                                        jobType:
+                                          jobTypes.length > 0
+                                            ? [jobTypes[0].name]
+                                            : [],
                                       });
-                                      
+
                                       setShowNewCustomerModal(true);
                                       setShowCustomerDropdown(false);
                                     }}
                                   >
                                     <div>
                                       <p className="font-medium">
-                                        No customer found for "{customerSearchQuery}"
+                                        No customer found for "
+                                        {customerSearchQuery}"
                                       </p>
                                       <p className="text-xs text-gray-500">
                                         Click to add a new customer
@@ -1745,8 +1873,7 @@ const extractNameFromQuery = (query: string): string => {
                             <Button
                               type="button"
                               onClick={handleAssignAndSave}
-                              disabled={!isAssignmentReady()}
-                              className="bg-gradient-to-r from-emerald-400 to-teal-500 hover:from-emerald-700 hover:to-teal-600 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                              className="bg-gradient-to-r from-emerald-400 to-teal-500 hover:from-emerald-700 hover:to-teal-600 text-white"
                             >
                               {createTodoLoading || loading ? (
                                 <>
@@ -1889,35 +2016,45 @@ const extractNameFromQuery = (query: string): string => {
                   />
                 </div>
 
-               <div className="space-y-2">
-  <Label className="block text-md font-medium text-gray-700 mb-1">
-    Job Types
-  </Label>
-  <div className="grid grid-cols-1 gap-2">
-    {jobTypes.map((jobType) => (
-      <div key={jobType.name} className="flex items-center space-x-2">
-        <input
-          type="checkbox"
-          id={`new-job-type-${jobType.name}`}
-          checked={newCustomerForm.jobType.includes(jobType.name)}
-          onChange={(e) => {
-            const isChecked = e.target.checked;
-            setNewCustomerForm((prev) => ({
-              ...prev,
-              jobType: isChecked
-                ? [...prev.jobType, jobType.name]
-                : prev.jobType.filter((type) => type !== jobType.name),
-            }));
-          }}
-          className="h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
-        />
-        <Label htmlFor={`new-job-type-${jobType.name}`} className="text-sm">
-          {jobType.name}
-        </Label>
-      </div>
-    ))}
-  </div>
-</div>
+                <div className="space-y-2">
+                  <Label className="block text-md font-medium text-gray-700 mb-1">
+                    Job Types
+                  </Label>
+                  <div className="grid grid-cols-1 gap-2">
+                    {jobTypes.map((jobType) => (
+                      <div
+                        key={jobType.name}
+                        className="flex items-center space-x-2"
+                      >
+                        <input
+                          type="checkbox"
+                          id={`new-job-type-${jobType.name}`}
+                          checked={newCustomerForm.jobType.includes(
+                            jobType.name
+                          )}
+                          onChange={(e) => {
+                            const isChecked = e.target.checked;
+                            setNewCustomerForm((prev) => ({
+                              ...prev,
+                              jobType: isChecked
+                                ? [...prev.jobType, jobType.name]
+                                : prev.jobType.filter(
+                                    (type) => type !== jobType.name
+                                  ),
+                            }));
+                          }}
+                          className="h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                        />
+                        <Label
+                          htmlFor={`new-job-type-${jobType.name}`}
+                          className="text-sm"
+                        >
+                          {jobType.name}
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
 
               <div className="flex justify-end gap-3 mt-6">

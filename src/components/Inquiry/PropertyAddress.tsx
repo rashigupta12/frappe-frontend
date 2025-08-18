@@ -937,7 +937,7 @@ const handleSaveAddress = () => {
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select emirate" />
                 </SelectTrigger>
-                <SelectContent className="bg-white">
+                <SelectContent className="bg-white ">
                   {emirates.map((emirate) => (
                     <SelectItem key={emirate.name} value={emirate.name}>
                       {emirate.name}
@@ -981,7 +981,7 @@ const handleSaveAddress = () => {
                   {areaResults.map((area) => (
                     <div
                       key={area.name}
-                      className="px-3 py-2 text-sm hover:bg-gray-100 cursor-pointer"
+                      className="px-3 py-2  hover:bg-gray-100 cursor-pointer"
                       onClick={() => {
                         setAddressForm((prev) => ({
                           ...prev,
@@ -1031,7 +1031,7 @@ const handleSaveAddress = () => {
                   {communityResults.map((community) => (
                     <div
                       key={community.name}
-                      className="px-3 py-2 text-sm hover:bg-gray-100 cursor-pointer"
+                      className="px-3 py-2  hover:bg-gray-100 cursor-pointer"
                       onClick={() => {
                         setAddressForm((prev) => ({
                           ...prev,

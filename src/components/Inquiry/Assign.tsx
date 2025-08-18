@@ -183,7 +183,9 @@ export default function TodoPage() {
                     <div className="flex items-center justify-between gap-2 w-full">
                       {/* Lead name with truncation */}
                       <h4 className="font-semibold text-sm text-gray-800 truncate flex-1 mb-2">
-                        {todo.inquiry_data?.lead_name || todo.reference_name}
+                        
+                        {todo.inquiry_data?.lead_name.charAt(0).toUpperCase() +
+                            todo.inquiry_data?.lead_name.slice(1)}
                       </h4>
 
                       {/* Priority and Status badges aligned to right */}

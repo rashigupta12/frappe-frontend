@@ -1043,25 +1043,33 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
                   )}
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs text-gray-600">
-                    Duration (hrs) *
-                  </Label>
-                  <Input
-                    type="number"
-                    step="0.5"
-                    min="0.5"
-                    value={duration}
-                    onChange={(e) => {
-                      const newDuration = e.target.value;
-                      setDuration(newDuration);
-                      if (mode === "create" && selectedSlot && requestedTime) {
-                        validateTimeDuration(newDuration);
-                      }
-                    }}
-                    placeholder="1.5"
-                    className="text-sm h-8"
-                    disabled={isProcessing}
-                  />
+                  <Label className="text-xs text-gray-600">Duration *</Label>
+                  <div className="flex w-full">
+                    <Input
+                      type="number"
+                      step="0.5"
+                      min="0.5"
+                      value={duration}
+                      onChange={(e) => {
+                        const newDuration = e.target.value;
+                        setDuration(newDuration);
+                        if (
+                          mode === "create" &&
+                          selectedSlot &&
+                          requestedTime
+                        ) {
+                          validateTimeDuration(newDuration);
+                        }
+                      }}
+                      // placeholder="1.5"  // This placeholder won't show because value is always set
+                      className="text-sm h-9 rounded-r-none"
+                      disabled={isProcessing}
+                    />
+
+                    <span className="flex items-center justify-center px-1 text-xs text-gray-800 border rounded-r-md bg-white">
+                      Hrs
+                    </span>
+                  </div>
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs text-gray-600">End Time</Label>
