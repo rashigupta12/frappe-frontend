@@ -1053,16 +1053,12 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
                       onChange={(e) => {
                         const newDuration = e.target.value;
                         setDuration(newDuration);
-                        if (
-                          mode === "create" &&
-                          selectedSlot &&
-                          requestedTime
-                        ) {
+                        
                           validateTimeDuration(newDuration);
-                        }
+                        
                       }}
                       // placeholder="1.5"  // This placeholder won't show because value is always set
-                      className="text-sm h-9 rounded-r-none"
+                      className="text-sm h-8 rounded-r-none"
                       disabled={isProcessing}
                     />
 

@@ -1,26 +1,24 @@
 import {
+  AlertCircle,
   Home,
   HomeIcon,
   LogOut,
   Menu,
+  MessageCircle,
   Plus,
   UserPlus,
   Users,
   X,
-  MessageCircle,
-  AlertCircle,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
-import { useAuth } from "../../context/AuthContext";
-import InquiryPage from "../Inquiry/h";
-import { Button } from "../ui/button";
-import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
-import TodoPage from "../Inquiry/Assign";
-import InquiryForm from "../Inquiry/InquiryForm";
 import FeedbackComponent from "../../common/FeedbackManagement";
 import { RoleSwitcherMinimal } from "../../common/RoleSwitcher";
+import { useAuth } from "../../context/AuthContext";
+import TodoPage from "../Inquiry/Assign";
+import InquiryPage from "../Inquiry/h";
+import InquiryForm from "../Inquiry/InquiryForm";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,8 +27,10 @@ import {
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
+  AlertDialogTitle,
 } from "../ui/alert-dialog";
-import { AlertTitle } from "../ui/alert";
+import { Button } from "../ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 
 export default function SalesDashboard() {
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -127,9 +127,9 @@ export default function SalesDashboard() {
     <div className="h-screen flex flex-col overflow-hidden">
       {/* Top Navigation Bar - Fixed */}
       <nav className="bg-white shadow-lg border-b-2 border-emerald-200 px-3 sm:px-2 py-2 flex-shrink-0 z-50">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between relative">
+          {/* Left Section - Mobile Menu Button */}
           <div className="flex items-center gap-2 sm:gap-3">
-            {/* Mobile Menu Button */}
             <Button
               variant="ghost"
               size="icon"
@@ -142,113 +142,108 @@ export default function SalesDashboard() {
                 <Menu className="h-5 w-5" />
               )}
             </Button>
-
-            {/* Logo */}
-            <Link to="/" className="flex items-center gap-1.5">
-              <div className="rounded-lg p-1 flex items-center justify-center">
-                <img
-                  src="/logo.jpg"
-                  alt="Logo"
-                  className="w-8 h-8 sm:w-10 sm:h-10 object-contain"
-                />
-              </div>
-            </Link>
           </div>
 
-          {/* Title with Role Switcher */}
+          {/* Center Section - Logo */}
+          <Link
+            to="/"
+            className="absolute left-1/2 transform -translate-x-1/2 flex items-center gap-1.5"
+          >
+            <div className="rounded-lg p-1 flex items-center justify-center">
+              <img
+                src="/logo.jpg"
+                alt="Logo"
+                className="w-8 h-8 sm:w-10 sm:h-10 object-contain"
+              />
+            </div>
+          </Link>
+
+          {/* Right Section - Title / Role Switcher / User Menu */}
           <div className="flex items-center gap-2">
-            {/* <h1 className="text-center text-lg sm:text-xl font-bold text-emerald-800">
-              Sales Representative
-            </h1> */}
-            {/* Show role switcher if user has multiple roles */}
-            {isMultiRole && (
-              <div className="hidden sm:block">
-                <RoleSwitcherMinimal />
-              </div>
-            )}
-          </div>
+            
 
-          {/* User Menu */}
-          <div className="flex items-center gap-1 sm:gap-2">
-            {/* Mobile Role Switcher */}
-            {isMultiRole && (
-              <div className="sm:hidden">
-                <RoleSwitcherMinimal />
-              </div>
-            )}
+            {/* User Menu */}
+            <div className="flex items-center gap-1 sm:gap-2">
+              {/* Mobile Role Switcher */}
+              {isMultiRole && (
+                <div className="lg:hidden">
+                  <RoleSwitcherMinimal />
+                </div>
+              )}
 
-            {/* Mobile Feedback Button */}
-            <FeedbackComponent className="lg:hidden">
+              {/* Mobile Feedback Button */}
+              <FeedbackComponent className="lg:hidden">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="p-1.5 rounded-lg hover:bg-blue-50 text-white bg-emerald-700 hover:text-blue-700 transition-colors"
+                >
+                  <MessageCircle className="h-4 w-4" />
+                  <span className="sr-only">Feedback</span>
+                </Button>
+              </FeedbackComponent>
+
+              {/* Mobile Logout Button */}
               <Button
                 variant="ghost"
                 size="icon"
-                className="p-1.5 rounded-lg hover:bg-blue-50 text-white bg-emerald-700 hover:text-blue-700 transition-colors"
+                onClick={confirmLogout}
+                className="lg:hidden p-1.5 rounded-lg hover:bg-red-50 text-red-600 hover:text-red-700 transition-colors"
               >
-                <MessageCircle className="h-4 w-4" />
-                <span className="sr-only">Feedback</span>
+                <LogOut className="h-4 w-4" />
+                <span className="sr-only">Logout</span>
               </Button>
-            </FeedbackComponent>
 
-            {/* Mobile Logout Button */}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={confirmLogout} // Changed from handleLogout to confirmLogout
-              className="lg:hidden p-1.5 rounded-lg hover:bg-red-50 text-red-600 hover:text-red-700 transition-colors"
-            >
-              <LogOut className="h-4 w-4" />
-              <span className="sr-only">Logout</span>
-            </Button>
-
-            {/* Desktop User Menu */}
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="hidden lg:flex items-center gap-1 hover:bg-emerald-50 rounded-lg px-2 py-1.5 transition-colors"
-                >
-                  <span className="text-sm text-emerald-700 font-medium">
-                    {user?.full_name || user?.username || "User"}
-                  </span>
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent
-                className="w-48 border border-emerald-200 bg-white shadow-md"
-                align="end"
-              >
-                {/* Role information in desktop menu */}
-                {isMultiRole && (
-                  <div className="px-3 py-2 border-b border-gray-100">
-                    <RoleSwitcherMinimal className="w-full" />
-                  </div>
-                )}
-                <div className="space-y-1">
-                  {/* Desktop Feedback Button */}
-                  <FeedbackComponent>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="w-full justify-start gap-2 text-blue-600 hover:bg-blue-100 hover:text-blue-700 transition-colors"
-                    >
-                      <MessageCircle className="h-4 w-4" />
-                      Feedback
-                    </Button>
-                  </FeedbackComponent>
-
-                  {/* Logout Button */}
+              {/* Desktop User Menu */}
+              <Popover>
+                <PopoverTrigger asChild>
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={confirmLogout} // Changed from handleLogout to confirmLogout
-                    className="w-full justify-start gap-2 text-red-600 hover:bg-red-100 hover:text-red-700 transition-colors"
+                    className="hidden lg:flex items-center gap-1 hover:bg-emerald-50 rounded-lg px-2 py-1.5 transition-colors"
                   >
-                    <LogOut className="h-4 w-4" />
-                    Logout
+                    <span className="text-sm text-emerald-700 font-medium">
+                      {user?.full_name || user?.username || "User"}
+                    </span>
                   </Button>
-                </div>
-              </PopoverContent>
-            </Popover>
+                </PopoverTrigger>
+                <PopoverContent
+                  className="w-48 border border-emerald-200 bg-white shadow-md"
+                  align="end"
+                >
+                  {/* Role information in desktop menu */}
+                  {isMultiRole && (
+                    <div className="px-3 py-2 border-b border-gray-100">
+                      <RoleSwitcherMinimal className="w-full" />
+                    </div>
+                  )}
+                  <div className="space-y-1">
+                    {/* Desktop Feedback Button */}
+                    <FeedbackComponent>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="w-full justify-start gap-2 text-blue-600 hover:bg-blue-100 hover:text-blue-700 transition-colors"
+                      >
+                        <MessageCircle className="h-4 w-4" />
+                        Feedback
+                      </Button>
+                    </FeedbackComponent>
+
+                    {/* Logout Button */}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={confirmLogout}
+                      className="w-full justify-start gap-2 text-red-600 hover:bg-red-100 hover:text-red-700 transition-colors"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      Logout
+                    </Button>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
           </div>
         </div>
       </nav>
@@ -422,9 +417,9 @@ export default function SalesDashboard() {
       <AlertDialog open={showLogoutConfirm} onOpenChange={setShowLogoutConfirm}>
         <AlertDialogContent className="bg-white">
           <AlertDialogHeader className="justify-center items-center">
-           <AlertTitle>
-            <AlertCircle className="h-10 w-10 text-red-600" />
-            </AlertTitle>
+            <AlertDialogTitle>
+              <AlertCircle className="h-10 w-10 text-red-600" />
+            </AlertDialogTitle>
             <AlertDialogDescription>
               Are you sure you want to exit the app?
             </AlertDialogDescription>

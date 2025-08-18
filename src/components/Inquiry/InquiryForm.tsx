@@ -1269,85 +1269,93 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                             {showCustomerDropdown && (
                               <div className="absolute z-10 mt-1 w-full bg-white shadow-lg rounded-md border border-gray-200 max-h-60 overflow-y-auto">
                                 {customerSearchResults.length > 0 ? (
-                                  customerSearchResults.map((result, index) => (
-                                    <div
-                                      key={`customer-result-${index}`}
-                                      className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                                      onClick={() =>
-                                        handleCustomerSelect(result)
-                                      }
-                                    >
-                                      <p className="font-medium truncate">
-                                        {result.customer_name}
-                                      </p>
-                                      {(result.mobile_no ||
-                                        result.email_id) && (
-                                        <div className="text-xs text-gray-500 space-x-2">
-                                          {result.mobile_no && (
-                                            <span className="inline-flex items-center">
-                                              <Phone className="h-3 w-3 mr-1" />
-                                              {result.mobile_no}
-                                            </span>
-                                          )}
-                                          {result.email_id && (
-                                            <span className="inline-flex items-center">
-                                              <Mail className="h-3 w-3 mr-1" />
-                                              {result.email_id}
-                                            </span>
-                                          )}
-                                        </div>
-                                      )}
-                                      {result.site_name && (
-                                        <div className="mt-2 text-xs text-gray-500 flex items-start gap-1">
-                                          <Home className="h-3 w-3 flex-shrink-0 mt-0.5" />
-                                          <div className="flex-1 min-w-0">
-                                            <p className="break-words text-xs leading-tight">
-                                              {extractAddressFromSite(
-                                                result.site_name
-                                              )}
-                                            </p>
-                                          </div>
-                                        </div>
-                                      )}
-                                      <div
-                                        className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center justify-between"
-                                        onClick={() => {
-                                          // Pre-fill the form with searched data
-                                          const extractedName =
-                                            extractNameFromQuery(
-                                              customerSearchQuery
-                                            );
-                                          const extractedPhone =
-                                            extractPhoneFromQuery(
-                                              customerSearchQuery
-                                            );
-
-                                          setNewCustomerForm({
-                                            name: extractedName,
-                                            email: "",
-                                            phone: extractedPhone,
-                                            jobType:
-                                              jobTypes.length > 0
-                                                ? [jobTypes[0].name]
-                                                : [],
-                                          });
-
-                                          setShowNewCustomerModal(true);
-                                          setShowCustomerDropdown(false);
-                                        }}
-                                      >
-                                        <div>
-                                          <p className="text-xs pl-0 text-gray-500">
-                                            Click to add a new customer
+                                  <>
+                                    {/* Existing customers */}
+                                    {customerSearchResults.map(
+                                      (result, index) => (
+                                        <div
+                                          key={`customer-result-${index}`}
+                                          className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                                          onClick={() =>
+                                            handleCustomerSelect(result)
+                                          }
+                                        >
+                                          <p className="font-medium truncate">
+                                            {result.customer_name}
                                           </p>
+                                          {(result.mobile_no ||
+                                            result.email_id) && (
+                                            <div className="text-xs text-gray-500 space-x-2">
+                                              {result.mobile_no && (
+                                                <span className="inline-flex items-center">
+                                                  <Phone className="h-3 w-3 mr-1" />
+                                                  {result.mobile_no}
+                                                </span>
+                                              )}
+                                              {result.email_id && (
+                                                <span className="inline-flex items-center">
+                                                  <Mail className="h-3 w-3 mr-1" />
+                                                  {result.email_id}
+                                                </span>
+                                              )}
+                                            </div>
+                                          )}
+                                          {result.site_name && (
+                                            <div className="mt-2 text-xs text-gray-500 flex items-start gap-1">
+                                              <Home className="h-3 w-3 flex-shrink-0 mt-0.5" />
+                                              <div className="flex-1 min-w-0">
+                                                <p className="break-words text-xs leading-tight">
+                                                  {extractAddressFromSite(
+                                                    result.site_name
+                                                  )}
+                                                </p>
+                                              </div>
+                                            </div>
+                                          )}
                                         </div>
-                                        <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded flex-shrink-0">
-                                          Add New
-                                        </span>
+                                      )
+                                    )}
+
+                                    {/* Add New Customer option - separate from existing customers */}
+                                    <div
+                                      className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center justify-between border-t border-gray-100"
+                                      onClick={() => {
+                                        // Pre-fill the form with searched data
+                                        const extractedName =
+                                          extractNameFromQuery(
+                                            customerSearchQuery
+                                          );
+                                        const extractedPhone =
+                                          extractPhoneFromQuery(
+                                            customerSearchQuery
+                                          );
+
+                                        setNewCustomerForm({
+                                          name: extractedName,
+                                          email: "",
+                                          phone: extractedPhone,
+                                          jobType:
+                                            jobTypes.length > 0
+                                              ? [jobTypes[0].name]
+                                              : [],
+                                        });
+
+                                        setShowNewCustomerModal(true);
+                                        setShowCustomerDropdown(false);
+                                      }}
+                                    >
+                                      <div>
+                                        <p className="text-xs text-gray-500">
+                                          Click to add a new customer
+                                        </p>
                                       </div>
+                                      <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded flex-shrink-0">
+                                        Add New
+                                      </span>
                                     </div>
-                                  ))
+                                  </>
                                 ) : (
+                                  /* No customers found - show add new option */
                                   <div
                                     className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center justify-between"
                                     onClick={() => {
@@ -1793,30 +1801,36 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                                     className="text-sm h-8"
                                   />
                                 </div>
-                                <div className="space-y-1">
+                                <div className="space-y-1 w-full">
                                   <Label className="text-xs text-gray-600">
-                                    Duration (hrs) *
+                                    Duration *
                                   </Label>
-                                  <Input
-                                    type="number"
-                                    step="0.5"
-                                    min="0.5"
-                                    value={duration}
-                                    onChange={(e) => {
-                                      const newDuration = e.target.value;
-                                      setDuration(newDuration);
-                                      setFormData((prev) => ({
-                                        ...prev,
-                                        custom_duration: newDuration,
-                                      }));
-                                      if (selectedSlot && requestedTime) {
-                                        validateTimeDuration(newDuration);
-                                      }
-                                    }}
-                                    placeholder="1.5"
-                                    className="text-sm h-8"
-                                  />
+                                  <div className="flex w-full max-w-xs">
+                                    <Input
+                                      type="number"
+                                      step="0.5"
+                                      min="0.5"
+                                      value={duration}
+                                      onChange={(e) => {
+                                        const newDuration = e.target.value;
+                                        setDuration(newDuration);
+                                        setFormData((prev) => ({
+                                          ...prev,
+                                          custom_duration: newDuration,
+                                        }));
+                                        if (selectedSlot && requestedTime) {
+                                          validateTimeDuration(newDuration);
+                                        }
+                                      }}
+                                      placeholder="1.5"
+                                      className="text-sm h-8 rounded-r-none"
+                                    />
+                                    <span className="flex items-center justify-center px-3 text-xs text-gray-700 border border-l-0 rounded-r-md bg-gray-50">
+                                      Hrs
+                                    </span>
+                                  </div>
                                 </div>
+
                                 <div className="space-y-1">
                                   <Label className="text-xs text-gray-600">
                                     End Time
