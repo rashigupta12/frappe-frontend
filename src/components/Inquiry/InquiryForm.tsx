@@ -1236,19 +1236,21 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                           <div className="space-y-2 col-span-1 md:col-span-3 relative">
                             <Label
                               htmlFor="customer_search"
-                              className="flex items-center space-x-2"
+                              className="text-gray-700"
                             >
-                              <User className="h-4 w-4 text-gray-500" />
-                              <span className="text-md font-medium text-gray-700 ">
-                                Customer{" "}
-                                <span className="text-gray-500">
-                                  (name/email/phone)
+                              <div className="flex items-center gap-2 text-base font-medium">
+                                <User className="h-4 w-4 text-gray-500" />
+                                <span>
+                                  Customer{" "}
+                                  <span className="text-gray-500 font-normal">
+                                    (name/email/phone)
+                                  </span>
+                                  <span className="text-red-500 ml-1">*</span>
                                 </span>
-                                <span className="text-red-500 ml-1">*</span>
-                              </span>
-                              {fetchingCustomerDetails && (
-                                <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
-                              )}
+                                {fetchingCustomerDetails && (
+                                  <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
+                                )}
+                              </div>
                             </Label>
 
                             <div className="relative">
