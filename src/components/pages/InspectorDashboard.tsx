@@ -27,6 +27,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
 } from "../ui/alert-dialog";
+import { AlertTitle } from "../ui/alert";
 
 export default function InspectorDashboard() {
   const navigate = useNavigate();
@@ -328,7 +329,9 @@ export default function InspectorDashboard() {
       <AlertDialog open={showLogoutConfirm} onOpenChange={setShowLogoutConfirm}>
         <AlertDialogContent className="bg-white">
           <AlertDialogHeader className="justify-center items-center">
-            <AlertCircle className="h-10 w-10 text-red-600" />
+            <AlertTitle>
+              <AlertCircle className="h-10 w-10 text-red-600" />
+            </AlertTitle>
             <AlertDialogDescription>
               Are you sure you want to exit the app?
             </AlertDialogDescription>

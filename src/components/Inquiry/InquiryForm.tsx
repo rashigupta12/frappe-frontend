@@ -168,7 +168,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
   } = useLeads();
 
   const {
-    fetchInspectors,
+    // fetchInspectors,
     createTodo,
     createTodoLoading,
     success: assignSuccess,
@@ -265,7 +265,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
         await fetchJobTypes();
         if (fetchProjectUrgency) await fetchProjectUrgency();
         if (fetchUtmSource) await fetchUtmSource();
-        await fetchInspectors();
+        // await fetchInspectors();
         setHasFetchedInitialData(true);
       };
       fetchData();
@@ -276,7 +276,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     fetchJobTypes,
     fetchProjectUrgency,
     fetchUtmSource,
-    fetchInspectors,
+    // fetchInspectors,
   ]);
 
   const getCurrentTime = () => {
@@ -412,7 +412,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
           errorMessage = (error as { error: string }).error;
         }
       }
-      toast.error(errorMessage);
+     console.log(errorMessage);
     } finally {
       setIsCreatingCustomer(false); // End loading
     }
@@ -812,11 +812,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     } catch (error) {
       console.error("Full error in assignment process:", error);
       toast.error(
-        `Failed to complete assignment: ${
-          error && typeof error === "object" && "message" in error
-            ? (error as { message: string }).message
-            : String(error)
-        }`
+        `Failed to complete assignment`
       );
     }
   };
