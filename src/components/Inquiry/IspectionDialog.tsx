@@ -22,6 +22,7 @@ import {
 } from "../ui/select";
 import { Textarea } from "../ui/textarea";
 import UserAvailability from "../ui/UserAvailability";
+import type { Lead } from "../../context/LeadContext";
 
 // Define the AvailabilitySlot type
 type AvailabilitySlot = {
@@ -229,18 +230,19 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
     todoDate: string,
     startTime: string,
     durationHours: number,
-    jobType: string,
+    lead: Lead, // Pass the entire lead object
     propertyArea: string
   ) => {
     try {
       const employeeName = await findEmployeeByEmail(inspectorEmail);
+      const jobTypes = getJobTypes(lead); // Use the helper function
 
       const dwaPayload = {
         employee_name: employeeName,
         date: todoDate,
         custom_work_allocation: [
           {
-            work_title: jobType || "Site Inspection",
+            work_title: jobTypes, // Use the comma-separated job types
             work_description: propertyArea || "Property Inspection",
             expected_start_date: startTime,
             expected_time_in_hours: durationHours,
@@ -249,13 +251,11 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
       };
 
       console.log("Creating new DWA with payload:", dwaPayload);
-
       await frappeAPI.makeAuthenticatedRequest(
         "POST",
         "/api/resource/Daily Work Allocation",
         dwaPayload
       );
-
       console.log("Successfully created new DWA");
     } catch (error) {
       console.error("Error creating new DWA:", error);
@@ -402,21 +402,35 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
   // }, [fetchInspectors]);
 
   const validateRequiredFields = (inquiryData: any) => {
-  const requiredFields = [
-    'custom_property_area', // Property Address
-    'lead_name', // Name
-    'mobile_no', // Phone Number
-    'custom_job_type', // Job Type
-    'custom_project_urgency' // Urgency
-  ];
+    const hasJobType =
+      (inquiryData?.custom_jobtype && inquiryData.custom_jobtype.length > 0) ||
+      inquiryData?.custom_job_type;
 
-  const missingFields = requiredFields.filter(field => !inquiryData?.[field]);
+    const requiredFields = [
+      "custom_property_area", // Property Address
+      "lead_name", // Name
+      "mobile_no", // Phone Number
+      "custom_project_urgency", // Urgency
+    ];
 
-  return {
-    isValid: missingFields.length === 0,
-    missingFields
+    const missingFields = requiredFields.filter(
+      (field) => !inquiryData?.[field]
+    );
+    if (!hasJobType) missingFields.push("Job Type");
+
+    return {
+      isValid: missingFields.length === 0,
+      missingFields,
+    };
   };
-};
+
+  const getJobTypes = (lead: Lead): string => {
+    if (lead.custom_jobtype && lead.custom_jobtype.length > 0) {
+      // Extract job_type from each item and join with commas
+      return lead.custom_jobtype.map((job) => job.job_type).join(", ");
+    }
+    return lead.custom_job_type || "Site Inspection"; // Fallback to custom_job_type or default
+  };
 
   const handleDateSelect = (selectedDate: Date | undefined) => {
     setDate(selectedDate);
@@ -538,34 +552,42 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
     }
   };
 
- const handleAssign = async () => {
-  // First validate required fields in create mode
-  if (mode === "create") {
-    const validation = validateRequiredFields(inquiryData);
-    if (!validation.isValid) {
-      const missingFieldNames = validation.missingFields.map(field => {
-        switch(field) {
-          case 'custom_property_area': return 'Property Address';
-          case 'lead_name': return 'Customer Name';
-          case 'mobile_no': return 'Phone Number';
-          case 'custom_job_type': return 'Job Type';
-          case 'custom_project_urgency': return 'Urgency';
-          default: return field;
-        }
-      }).join(', ');
-      
-      toast.error(`Please complete the information: ${missingFieldNames}`);
-      return;
-    }
-  }
+  const handleAssign = async () => {
+    // First validate required fields in create mode
+    if (mode === "create") {
+      const validation = validateRequiredFields(inquiryData);
+      if (!validation.isValid) {
+        const missingFieldNames = validation.missingFields
+          .map((field) => {
+            switch (field) {
+              case "custom_property_area":
+                return "Property Address";
+              case "lead_name":
+                return "Customer Name";
+              case "mobile_no":
+                return "Phone Number";
+              case "custom_job_type":
+                return "Job Type";
+              case "custom_project_urgency":
+                return "Urgency";
+              default:
+                return field;
+            }
+          })
+          .join(", ");
 
-  // Proceed with existing checks
-  if (mode === "create") {
-    setShowConfirmation(true);
-  } else {
-    await proceedWithAssignment();
-  }
-};
+        toast.error(`Please complete the information: ${missingFieldNames}`);
+        return;
+      }
+    }
+
+    // Proceed with existing checks
+    if (mode === "create") {
+      setShowConfirmation(true);
+    } else {
+      await proceedWithAssignment();
+    }
+  };
 
   const proceedWithAssignment = async () => {
     setShowConfirmation(false);
@@ -614,7 +636,6 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
         originalInspectorEmail &&
         originalInspectorEmail !== currentInspectorEmail;
 
-
       if (mode === "create") {
         await createTodo({
           assigned_by: user?.username || "sales_rep@eits.com",
@@ -627,13 +648,14 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
           custom_end_time: endDateTime,
         });
 
+        // In the handleAssign/proceedWithAssignment function:
         await createNewDWA(
           selectedInspector!.email,
           preferredDate,
           requestedTime,
           parseFloat(duration),
-          data.custom_job_type || "Site Inspection",
-          data.custom_property_area || "Property Inspection"
+          inquiryData, // Pass the entire lead object
+          inquiryData.custom_property_area || "Property Inspection"
         );
 
         toast.success("Inspector assigned successfully!");
@@ -752,11 +774,12 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
             <h3 className="font-medium text-gray-900">Job Details</h3>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-sm">
               <div className="break-words">
-                <span className="font-medium text-gray-600">Job Type:</span>
+                {/* <span className="font-medium text-gray-600">Job Type:</span> */}
                 <span className="ml-2 text-gray-900">
-                  {inquiryData?.custom_job_type || "N/A"}
+                  {getJobTypes(inquiryData)} {/* Use the helper function */}
                 </span>
               </div>
+
               <div className="break-words text-sm">
                 {inquiryData?.custom_project_urgency ||
                 inquiryData?.custom_budget_range ? (
