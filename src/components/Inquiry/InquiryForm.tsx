@@ -60,7 +60,7 @@ interface NewCustomerFormData {
   name: string;
   email: string;
   phone: string;
-  jobType: string;
+  jobType: string[];
 }
 const sections: FormSection[] = [
   {
@@ -211,7 +211,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     name: "",
     email: "",
     phone: "+971 ",
-    jobType: jobTypes.length > 0 ? jobTypes[0].name : "",
+    jobType: jobTypes.length > 0 ? [jobTypes[0].name] : [],
   });
   const [isCreatingCustomer, setIsCreatingCustomer] = useState(false);
 
@@ -343,80 +343,82 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
   };
 
   const saveNewCustomer = async () => {
-    if (!newCustomerForm.name.trim()) {
-      toast.error("Customer name is required");
-      return;
+  if (!newCustomerForm.name.trim()) {
+    toast.error("Customer name is required");
+    return;
+  }
+
+  if (!newCustomerForm.phone || newCustomerForm.phone.length < 5) {
+    toast.error("Valid mobile number is required");
+    return;
+  }
+
+  try {
+    setIsCreatingCustomer(true);
+
+    const newLeadData = formatSubmissionData({
+      lead_name: newCustomerForm.name.trim(),
+      email_id: newCustomerForm.email || "",
+      mobile_no: newCustomerForm.phone,
+      custom_jobtype: newCustomerForm.jobType, // Now using the array
+      custom_budget_range: "",
+      custom_project_urgency: "",
+      source: "",
+      custom_property_name__number: "",
+      custom_emirate: "",
+      custom_area: "",
+      custom_community: "",
+      custom_street_name: "",
+      custom_property_area: "",
+      custom_property_category: "",
+      custom_special_requirements: "",
+    });
+
+    const createdLead = await createLead(newLeadData);
+
+    if (!createdLead) {
+      throw new Error("Failed to create lead");
     }
 
-    if (!newCustomerForm.phone || newCustomerForm.phone.length < 5) {
-      toast.error("Valid mobile number is required");
-      return;
-    }
+    setFormData((prev) => ({
+      ...prev,
+      lead_name: createdLead.lead_name || newCustomerForm.name,
+      email_id: createdLead.email_id || newCustomerForm.email,
+      mobile_no: createdLead.mobile_no || newCustomerForm.phone,
+      custom_jobtype: createdLead.custom_jobtype?.map(
+        (item: any) => item.job_type
+      ) || [],
+      name: createdLead.name,
+    }));
 
-    try {
-      setIsCreatingCustomer(true); // Start loading
+    setCustomerSearchQuery(newCustomerForm.name);
+    setShowNewCustomerFields(true);
+    setShowNewCustomerModal(false);
+    setShowCustomerDropdown(false);
 
-      const newLeadData = formatSubmissionData({
-        lead_name: newCustomerForm.name.trim(),
-        email_id: newCustomerForm.email || "",
-        mobile_no: newCustomerForm.phone,
-        custom_job_type: newCustomerForm.jobType,
-        custom_budget_range: "",
-        custom_project_urgency: "",
-        source: "",
-        custom_property_name__number: "",
-        custom_emirate: "",
-        custom_area: "",
-        custom_community: "",
-        custom_street_name: "",
-        custom_property_area: "",
-        custom_property_category: "",
-        custom_special_requirements: "",
-      });
+    setNewCustomerForm({
+      name: "",
+      email: "",
+      phone: "+971 ",
+      jobType: [],
+    });
 
-      const createdLead = await createLead(newLeadData);
-
-      if (!createdLead) {
-        throw new Error("Failed to create lead");
+    toast.success(`New Lead "${newCustomerForm.name}" created successfully!`);
+  } catch (error) {
+    console.error("Error creating new lead:", error);
+    let errorMessage = "Failed to create lead. Please try again.";
+    if (error && typeof error === "object") {
+      if ("message" in error) {
+        errorMessage = (error as { message: string }).message;
+      } else if ("error" in error) {
+        errorMessage = (error as { error: string }).error;
       }
-
-      setFormData((prev) => ({
-        ...prev,
-        lead_name: createdLead.lead_name || newCustomerForm.name,
-        email_id: createdLead.email_id || newCustomerForm.email,
-        mobile_no: createdLead.mobile_no || newCustomerForm.phone,
-        custom_job_type: createdLead.custom_job_type || newCustomerForm.jobType,
-        name: createdLead.name,
-      }));
-
-      setCustomerSearchQuery(newCustomerForm.name);
-      setShowNewCustomerFields(true);
-      setShowNewCustomerModal(false);
-      setShowCustomerDropdown(false);
-
-      setNewCustomerForm({
-        name: "",
-        email: "",
-        phone: "+971 ",
-        jobType: jobTypes.length > 0 ? jobTypes[0].name : "",
-      });
-
-      toast.success(`New Lead "${newCustomerForm.name}" created successfully!`);
-    } catch (error) {
-      console.error("Error creating new lead:", error);
-      let errorMessage = "Failed to create lead. Please try again.";
-      if (error && typeof error === "object") {
-        if ("message" in error) {
-          errorMessage = (error as { message: string }).message;
-        } else if ("error" in error) {
-          errorMessage = (error as { error: string }).error;
-        }
-      }
-     console.log(errorMessage);
-    } finally {
-      setIsCreatingCustomer(false); // End loading
     }
-  };
+    toast.error(errorMessage);
+  } finally {
+    setIsCreatingCustomer(false);
+  }
+};
   const validateRequestedTime = () => {
     if (!requestedTime || !selectedSlot) return false;
 
@@ -533,7 +535,8 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
       setFormData({
         ...defaultFormData,
         ...inquiry,
-        custom_job_type: inquiry.custom_job_type || "",
+        custom_jobtype:
+          inquiry.custom_jobtype?.map((item: any) => item.job_type) || [],
         custom_project_urgency: inquiry.custom_project_urgency || "",
         source: inquiry.source || "",
         custom_preferred_inspection_date:
@@ -647,12 +650,10 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
       return false;
     }
 
-    // Job Details validation
-    if (!formData.custom_job_type) {
-      toast.error("Job type is required");
-      return false;
-    }
-
+   if (!formData.custom_jobtype || formData.custom_jobtype.length === 0) {
+    toast.error("At least one job type is required");
+    return false;
+  }
     return true;
   };
 
@@ -811,9 +812,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
       onClose();
     } catch (error) {
       console.error("Full error in assignment process:", error);
-      toast.error(
-        `Failed to complete assignment`
-      );
+      toast.error(`Failed to complete assignment`);
     }
   };
 
@@ -1177,6 +1176,23 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                                           </div>
                                         </div>
                                       )}
+                                      <div
+                                    className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center justify-between"
+                                    onClick={() => {
+                                      setShowNewCustomerModal(true);
+                                      setShowCustomerDropdown(false);
+                                    }}
+                                  >
+                                    <div>
+                                     
+                                      <p className="text-xs pl-0 text-gray-500">
+                                        Click to add a new customer
+                                      </p>
+                                    </div>
+                                    <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded flex-shrink-0">
+                                      Add New
+                                    </span>
+                                  </div>
                                     </div>
                                   ))
                                 ) : (
@@ -1196,24 +1212,25 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                                   //   </Button>
                                   // </div>
                                   <div
-          className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center justify-between"
-          onClick={() => {
-                                        setShowNewCustomerModal(true);
-                                        setShowCustomerDropdown(false);
-                                      }}
-        >
-          <div>
-            <p className="font-medium">
-              No customer found found for "{customerSearchQuery}"
-            </p>
-            <p className="text-xs text-gray-500">
-              Click to add a new customer
-            </p>
-          </div>
-          <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded flex-shrink-0">
-            Add New
-          </span>
-        </div>
+                                    className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center justify-between"
+                                    onClick={() => {
+                                      setShowNewCustomerModal(true);
+                                      setShowCustomerDropdown(false);
+                                    }}
+                                  >
+                                    <div>
+                                      <p className="font-medium">
+                                        No customer found found for "
+                                        {customerSearchQuery}"
+                                      </p>
+                                      <p className="text-xs text-gray-500">
+                                        Click to add a new customer
+                                      </p>
+                                    </div>
+                                    <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded flex-shrink-0">
+                                      Add New
+                                    </span>
+                                  </div>
                                 )}
                               </div>
                             )}
@@ -1320,33 +1337,49 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
 
                       {section.id === "job" && (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div>
-                            <Label
-                              htmlFor="custom_job_type"
-                              className="text-md font-medium text-gray-700 mb-1"
-                            >
-                              Job Type <span className="text-red-500">*</span>
+                          <div className="space-y-2">
+                            <Label className="text-md font-medium text-gray-700 mb-1">
+                              Job Types <span className="text-red-500">*</span>
                             </Label>
-                            <Select
-                              value={formData.custom_job_type || ""}
-                              onValueChange={(value) =>
-                                handleSelectChange("custom_job_type", value)
-                              }
-                            >
-                              <SelectTrigger className="w-full">
-                                <SelectValue placeholder="Select job type" />
-                              </SelectTrigger>
-                              <SelectContent className="bg-white">
-                                {jobTypes.map((jobType) => (
-                                  <SelectItem
-                                    key={jobType.name}
-                                    value={jobType.name}
+                            <div className="grid grid-cols-1 gap-2">
+                              {jobTypes.map((jobType) => (
+                                <div
+                                  key={jobType.name}
+                                  className="flex items-center space-x-2"
+                                >
+                                  <input
+                                    type="checkbox"
+                                    id={`job-type-${jobType.name}`}
+                                    checked={
+                                      formData.custom_jobtype?.includes(
+                                        jobType.name
+                                      ) || false
+                                    }
+                                    onChange={(e) => {
+                                      const isChecked = e.target.checked;
+                                      setFormData((prev) => ({
+                                        ...prev,
+                                        custom_jobtype: isChecked
+                                          ? [
+                                              ...(prev.custom_jobtype || []),
+                                              jobType.name,
+                                            ]
+                                          : (prev.custom_jobtype || []).filter(
+                                              (type) => type !== jobType.name
+                                            ),
+                                      }));
+                                    }}
+                                    className="h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                                  />
+                                  <Label
+                                    htmlFor={`job-type-${jobType.name}`}
+                                    className="text-sm"
                                   >
                                     {jobType.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                                  </Label>
+                                </div>
+                              ))}
+                            </div>
                           </div>
 
                           <div>
@@ -1827,40 +1860,35 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                   />
                 </div>
 
-                <div>
-                  <Label className="block text-md font-medium text-gray-700 mb-1">
-                    Job Type
-                  </Label>
-                  {jobTypes.length > 0 ? (
-                    <Select
-                      value={newCustomerForm.jobType}
-                      onValueChange={(value) =>
-                        setNewCustomerForm((prev) => ({
-                          ...prev,
-                          jobType: value,
-                        }))
-                      }
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select job type" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-white z-[100] text-md">
-                        {" "}
-                        {/* Increased z-index */}
-                        {jobTypes.map((jobType) => (
-                          <SelectItem key={jobType.name} value={jobType.name}>
-                            {jobType.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  ) : (
-                    <div className="text-sm text-gray-500 flex items-center gap-2">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Loading job types...
-                    </div>
-                  )}
-                </div>
+               <div className="space-y-2">
+  <Label className="block text-md font-medium text-gray-700 mb-1">
+    Job Types
+  </Label>
+  <div className="grid grid-cols-1 gap-2">
+    {jobTypes.map((jobType) => (
+      <div key={jobType.name} className="flex items-center space-x-2">
+        <input
+          type="checkbox"
+          id={`new-job-type-${jobType.name}`}
+          checked={newCustomerForm.jobType.includes(jobType.name)}
+          onChange={(e) => {
+            const isChecked = e.target.checked;
+            setNewCustomerForm((prev) => ({
+              ...prev,
+              jobType: isChecked
+                ? [...prev.jobType, jobType.name]
+                : prev.jobType.filter((type) => type !== jobType.name),
+            }));
+          }}
+          className="h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+        />
+        <Label htmlFor={`new-job-type-${jobType.name}`} className="text-sm">
+          {jobType.name}
+        </Label>
+      </div>
+    ))}
+  </div>
+</div>
               </div>
 
               <div className="flex justify-end gap-3 mt-6">

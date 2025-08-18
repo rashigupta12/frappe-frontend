@@ -29,6 +29,10 @@ export interface Lead {
   type: string;
   request_type: string;
   custom_job_type: string;
+  custom_jobtype: Array<{
+    job_type: string;
+    // other fields if needed
+  }>;
   // custom_property_type: string;
   // custom_type_of_building: string;
   // custom_building_name: string;
@@ -78,6 +82,7 @@ export interface LeadFormData {
   mobile_no?: string;
   phone?: string;
   custom_job_type?: string;
+  custom_jobtype: string[]; // Array of selected job type names
   // custom_property_type?: string;
   // custom_type_of_building?: string;
   // custom_building_name?: string; // Address Line 1

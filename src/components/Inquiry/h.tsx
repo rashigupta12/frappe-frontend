@@ -50,6 +50,31 @@ const InquiryPage = () => {
   const [selectedInquiry, setSelectedInquiry] = useState<Lead | null>(null);
   const [hasInitialized, setHasInitialized] = useState(false);
 
+  // Helper function to normalize job type to string
+  const normalizeJobType = useCallback((jobType: string | { job_type: string }): string => {
+    if (typeof jobType === "string") {
+      return jobType;
+    }
+    return jobType.job_type;
+  }, []);
+
+  // Helper function to get job types for display
+  const getJobTypesForInquiry = useCallback((inquiry: Lead): string[] => {
+    // Priority: use custom_jobtype array if available, fallback to custom_job_type
+    if (inquiry.custom_jobtype && Array.isArray(inquiry.custom_jobtype) && inquiry.custom_jobtype.length > 0) {
+      return inquiry.custom_jobtype.map(normalizeJobType);
+    } else if (inquiry.custom_job_type) {
+      return [normalizeJobType(inquiry.custom_job_type)];
+    }
+    return [];
+  }, [normalizeJobType]);
+
+  // Helper function to get job types as string for search
+  const getJobTypesAsString = useCallback((inquiry: Lead) => {
+    const jobTypes = getJobTypesForInquiry(inquiry);
+    return jobTypes.join(" ").toLowerCase();
+  }, [getJobTypesForInquiry]);
+
   // Memoized filtered inquiries to prevent unnecessary re-calculations
   const filteredInquiries = useMemo(() => {
     if (!leads || leads.length === 0) return [];
@@ -58,14 +83,16 @@ const InquiryPage = () => {
       .filter((inquiry: Lead) => inquiry.status === "Lead")
       .filter((inquiry: Lead) => {
         const searchLower = searchTerm.toLowerCase();
+        const jobTypesString = getJobTypesAsString(inquiry);
+        
         return (
           (inquiry.lead_name?.toLowerCase() || "").includes(searchLower) ||
           (inquiry.email_id?.toLowerCase() || "").includes(searchLower) ||
           (inquiry.mobile_no?.toLowerCase() || "").includes(searchLower) ||
-          (inquiry.custom_job_type?.toLowerCase() || "").includes(searchLower)
+          jobTypesString.includes(searchLower)
         );
       });
-  }, [leads, searchTerm]);
+  }, [leads, searchTerm, getJobTypesAsString]);
 
   // Optimized data loading with proper dependency management
   const loadData = useCallback(async () => {
@@ -117,7 +144,7 @@ const InquiryPage = () => {
     return () => {
       isMounted = false;
     };
-  }, []); // Empty dependency array - only run once on mount
+  }, [loadData]); // Fixed: include loadData in dependencies
 
   // Dialog handlers
   const handleOpenDialog = useCallback((inquiry: Lead) => {
@@ -161,6 +188,43 @@ const InquiryPage = () => {
   const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
   }, []);
+
+  // Component to render multiple job type badges
+  const JobTypeBadges = useCallback(({ inquiry, maxVisible = 2 }: { inquiry: Lead; maxVisible?: number }) => {
+    const jobTypes = getJobTypesForInquiry(inquiry);
+    
+    if (jobTypes.length === 0) return null;
+
+    const visibleJobTypes = jobTypes.slice(0, maxVisible);
+    const remainingCount = jobTypes.length - maxVisible;
+
+    return (
+      <div className="flex items-center gap-1 flex-wrap">
+        {visibleJobTypes.map((jobType, index) => (
+          <Badge
+            key={index}
+            variant="outline"
+            className="text-xs px-1.5 py-0.5 rounded-full border shadow-none"
+            style={{
+              backgroundColor: getJobTypeColor(jobType).bg + "20",
+              color: getJobTypeColor(jobType).text,
+              borderColor: getJobTypeColor(jobType).border,
+            }}
+          >
+            {jobType}
+          </Badge>
+        ))}
+        {remainingCount > 0 && (
+          <Badge
+            variant="outline"
+            className="text-xs px-1.5 py-0.5 rounded-full border shadow-none bg-gray-100 text-gray-600 border-gray-300"
+          >
+            +{remainingCount}
+          </Badge>
+        )}
+      </div>
+    );
+  }, [getJobTypesForInquiry]);
 
   // Skeleton loader component
   const SkeletonCard = () => (
@@ -224,7 +288,7 @@ const InquiryPage = () => {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
                   type="text"
-                  placeholder="Search by customer name, email, phone, or job type"
+                  placeholder="Search by customer name, email, phone, or job types"
                   className="pl-10 w-full bg-white border border-gray-300"
                   value={searchTerm}
                   onChange={handleSearchChange}
@@ -248,7 +312,7 @@ const InquiryPage = () => {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
                   type="text"
-                  placeholder="Search by name, email, phone, job type"
+                  placeholder="Search by name, email, phone, job types"
                   className="pl-10 w-full bg-white border border-gray-300"
                   value={searchTerm}
                   onChange={handleSearchChange}
@@ -312,24 +376,9 @@ const InquiryPage = () => {
                             inquiry.lead_name.slice(1)}
                         </h4>
 
-                        {inquiry.custom_job_type && (
-                          <Badge
-                            variant="outline"
-                            className="text-xs  px-1.5 py-0.5 rounded-full border shadow-none self-start sm:self-auto"
-                            style={{
-                              backgroundColor:
-                                getJobTypeColor(inquiry.custom_job_type).bg +
-                                "20",
-                              color: getJobTypeColor(inquiry.custom_job_type)
-                                .text,
-                              borderColor: getJobTypeColor(
-                                inquiry.custom_job_type
-                              ).border,
-                            }}
-                          >
-                            {inquiry.custom_job_type}
-                          </Badge>
-                        )}
+                        <div className="self-start sm:self-auto">
+                          <JobTypeBadges inquiry={inquiry} maxVisible={2} />
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -533,14 +582,35 @@ const InquiryPage = () => {
                   <Home className="h-5 w-5 text-emerald-600" />
                   Job Details
                 </h3>
-                <div className="text-sm">
-                  {viewInquiry.custom_job_type ||
-                  viewInquiry.custom_budget_range ||
-                  viewInquiry.custom_project_urgency ? (
+                <div className="text-sm space-y-2">
+                  {/* Job Types */}
+                  {getJobTypesForInquiry(viewInquiry).length > 0 && (
+                    <div>
+                      <span className="text-gray-700 font-medium">Job Types: </span>
+                      <div className="mt-1 flex flex-wrap gap-1">
+                        {getJobTypesForInquiry(viewInquiry).map((jobType, index) => (
+                          <Badge
+                            key={index}
+                            variant="outline"
+                            className="text-xs px-2 py-0.5 rounded-full border shadow-none"
+                            style={{
+                              backgroundColor: getJobTypeColor(jobType).bg + "20",
+                              color: getJobTypeColor(jobType).text,
+                              borderColor: getJobTypeColor(jobType).border,
+                            }}
+                          >
+                            {jobType}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Other job details */}
+                  {(viewInquiry.custom_budget_range || viewInquiry.custom_project_urgency) && (
                     <div className="break-words">
                       <span className="text-gray-900">
                         {[
-                          viewInquiry.custom_job_type,
                           viewInquiry.custom_budget_range,
                           viewInquiry.custom_project_urgency,
                         ]
@@ -548,7 +618,9 @@ const InquiryPage = () => {
                           .join(" | ")}
                       </span>
                     </div>
-                  ) : (
+                  )}
+                  
+                  {!getJobTypesForInquiry(viewInquiry).length && !viewInquiry.custom_budget_range && !viewInquiry.custom_project_urgency && (
                     <span className="text-gray-500">N/A</span>
                   )}
                 </div>

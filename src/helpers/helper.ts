@@ -215,6 +215,18 @@ export const  budgetRanges = [
 export const formatSubmissionData = (formData: any) => {
   const submissionData = { ...formData };
 
+  // Format job types for backend
+  if (formData.custom_jobtype && Array.isArray(formData.custom_jobtype)) {
+    submissionData.custom_jobtype = formData.custom_jobtype.map((jobType: string) => ({
+      doctype: "EITS JobType", // Add this if required by your backend
+      job_type: jobType
+    }));
+  } else {
+    submissionData.custom_jobtype = [];
+  }
+
+  
+
   const getDateString = (date: string | Date | null | undefined): string => {
     if (!date) return "";
     if (typeof date === "string") {
@@ -238,6 +250,7 @@ export const formatSubmissionData = (formData: any) => {
     if (!date) return "";
     return getDateString(date);
   };
+  
 
   if (formData.custom_preferred_inspection_time && formData.custom_preferred_inspection_date) {
     const dateStr = getDateString(formData.custom_preferred_inspection_date);
@@ -265,6 +278,7 @@ export const formatSubmissionData = (formData: any) => {
   submissionData.custom_alternative_inspection_date = formatDate(
     formData.custom_alternative_inspection_date
   );
+  
 
   return submissionData;
 };
@@ -337,9 +351,10 @@ export const defaultFormData: LeadFormData = {
   email_id: "",
   mobile_no: "",
   custom_job_type: "",
-  // custom_property_type: "Residential",
-  // custom_type_of_building: "Villa",
-  // custom_building_name: "",
+  custom_jobtype: [],
+  custom_property_type: "Residential",
+  custom_type_of_building: "Villa",
+  custom_building_name: "",
   custom_budget_range: "",
   custom_project_urgency: "",
   custom_preferred_inspection_date: null,
