@@ -79,44 +79,47 @@ const PaymentForm = () => {
     }
   }, [paid_to, searchQuery]);
 
-  // Convert custom_attachments to images format - but only if not manually updated
-  useEffect(() => {
-    // Only update images from store if they weren't manually set
-    if (!isManualImageUpdate.current) {
-      const convertedImages: ImageItem[] = custom_attachments.map(
-        (attachment, index) => {
-          let url = attachment.image;
-          if (!url.startsWith("http") && !url.startsWith("/")) {
-            url = `/${url}`;
-          }
-          
-          // Determine file type from URL
-          let type: 'image' | 'pdf' | 'doc' = 'image';
-          if (url.toLowerCase().endsWith('.pdf')) {
-            type = 'pdf';
-          } else if (url.toLowerCase().endsWith('.doc') || url.toLowerCase().endsWith('.docx')) {
-            type = 'doc';
-          }
-          
-          return {
-            id: `store-${index}-${Date.now()}-${url}`,
-            url: url,
-            remarks: attachment.remarks || `Attachment ${index + 1}`,
-            type: type
-          };
+// In PaymentForm.tsx, modify the useEffect that syncs custom_attachments with images
+useEffect(() => {
+  // Only update images from store if they weren't manually set
+  if (!isManualImageUpdate.current && custom_attachments) {
+    const convertedImages: ImageItem[] = custom_attachments.map(
+      (attachment, index) => {
+        let url = attachment.image;
+        if (!url) return null;
+        
+        if (!url.startsWith("http") && !url.startsWith("/") && !url.startsWith("blob:")) {
+          url = `/${url}`;
         }
-      );
-      setImages(convertedImages);
-    }
+        
+        // Determine file type from URL
+        let type: 'image' | 'pdf' | 'doc' = 'image';
+        if (url.toLowerCase().endsWith('.pdf')) {
+          type = 'pdf';
+        } else if (url.toLowerCase().endsWith('.doc') || url.toLowerCase().endsWith('.docx')) {
+          type = 'doc';
+        }
+        
+        return {
+          id: `store-${index}-${Date.now()}-${url}`,
+          url: url,
+          remarks: attachment.remarks || `Attachment ${index + 1}`,
+          type: type
+        };
+      }
+    ).filter(Boolean) as ImageItem[]; // Filter out any null entries
     
-    // Reset the manual update flag after a short delay
-    if (isManualImageUpdate.current) {
-      const timer = setTimeout(() => {
-        isManualImageUpdate.current = false;
-      }, 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [custom_attachments]);
+    setImages(convertedImages);
+  }
+  
+  // Reset the manual update flag after a short delay
+  if (isManualImageUpdate.current) {
+    const timer = setTimeout(() => {
+      isManualImageUpdate.current = false;
+    }, 1000);
+    return () => clearTimeout(timer);
+  }
+}, [custom_attachments]);
 
   const handleSupplierSearch = useCallback(async (query: string) => {
   if (!query.trim()) {
@@ -336,27 +339,28 @@ const handleImageUpload = async (file: File): Promise<string> => {
     // First upload the file
     await uploadAndAddAttachment(file);
     
-    // Wait for the store to update
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    
-    // Get the latest attachment safely
-    if (!custom_attachments || custom_attachments.length === 0) {
-      throw new Error("No attachments found after upload");
+    // Wait for the store to update with a more reliable approach
+    let retries = 3;
+    while (retries > 0) {
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      
+      // Get the latest attachment safely
+      if (custom_attachments && custom_attachments.length > 0) {
+        const latestAttachment = custom_attachments[custom_attachments.length - 1];
+        
+        // Ensure the URL is properly formatted
+        if (latestAttachment.image) {
+          let imageUrl = latestAttachment.image;
+          if (!imageUrl.startsWith("http") && !imageUrl.startsWith("/")) {
+            imageUrl = `/${imageUrl}`;
+          }
+          return imageUrl;
+        }
+      }
+      retries--;
     }
     
-    const latestAttachment = custom_attachments[custom_attachments.length - 1];
-    
-    // Ensure the URL is properly formatted
-    let imageUrl = latestAttachment.image;
-    if (!imageUrl) {
-      throw new Error("Attachment URL is missing");
-    }
-    
-    if (!imageUrl.startsWith("http") && !imageUrl.startsWith("/")) {
-      imageUrl = `/${imageUrl}`;
-    }
-    
-    return imageUrl;
+    throw new Error("No attachments found after upload");
   } catch (error) {
     console.error("Upload error:", error);
     throw error;

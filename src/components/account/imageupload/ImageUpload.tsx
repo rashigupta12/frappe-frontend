@@ -399,19 +399,22 @@ const PaymentImageUpload: React.FC<PaymentImageUploadProps> = ({
     return `${prefix}-${timestamp}-${counter}-${random}-${fileHash}`;
   };
 
-  // Fixed getImageUrl function to handle URLs consistently
   const getImageUrl = (image: ImageItem) => {
-    // If it's already a complete URL (http/https) or blob URL, return as is
-    if (image.url.startsWith("http") || image.url.startsWith("blob:")) {
-      return image.url;
+  // If it's already a complete URL (http/https) or blob URL, return as is
+  if (image.url.startsWith("http") || image.url.startsWith("blob:")) {
+    // Add timestamp to blob URLs to prevent caching
+    if (image.url.startsWith("blob:")) {
+      return `${image.url}?t=${Date.now()}`;
     }
-    // If it starts with /, prepend base URL
-    if (image.url.startsWith("/")) {
-      return `${imageurl}${image.url}`;
-    }
-    // Otherwise, assume it's a relative path and add both base URL and /
-    return `${imageurl}/${image.url}`;
-  };
+    return image.url;
+  }
+  // If it starts with /, prepend base URL
+  if (image.url.startsWith("/")) {
+    return `${imageurl}${image.url}`;
+  }
+  // Otherwise, assume it's a relative path and add both base URL and /
+  return `${imageurl}/${image.url}`;
+};
 
   const handleFileUpload = async (
     event: React.ChangeEvent<HTMLInputElement>
@@ -606,28 +609,28 @@ const PaymentImageUpload: React.FC<PaymentImageUploadProps> = ({
               className="relative h-14 w-14 cursor-pointer"
               onClick={() => handleImageClick(0)}
             >
-              {images.slice(0, 3).map((image, index) => (
-                <div
-                  key={image.id}
-                  className={`absolute w-12 h-12 rounded-lg overflow-hidden border-2 border-white shadow-md transition-transform hover:scale-105 ${
-                    image.type !== "image"
-                      ? "bg-gray-100 flex items-center justify-center"
-                      : ""
-                  }`}
-                  style={{
-                    right: `${index * 6}px`,
-                    top: `${index * 2}px`,
-                    zIndex: 3 - index,
-                  }}
-                >
-                  {image.type === "image" ? (
-                    <img
-                      src={getImageUrl(image)}
-                      alt=""
-                      className="w-full h-full object-cover"
-                      key={`img-${image.id}`} // Force re-render with unique key
-                    />
-                  ) : (
+             {images.slice(0, 3).map((image, index) => (
+  <div
+    key={`${image.id}-${index}`} // Add index to ensure uniqueness
+    className={`absolute w-12 h-12 rounded-lg overflow-hidden border-2 border-white shadow-md transition-transform hover:scale-105 ${
+      image.type !== "image"
+        ? "bg-gray-100 flex items-center justify-center"
+        : ""
+    }`}
+    style={{
+      right: `${index * 6}px`,
+      top: `${index * 2}px`,
+      zIndex: 3 - index,
+    }}
+  >
+    {image.type === "image" ? (
+      <img
+        src={getImageUrl(image)}
+        alt=""
+        className="w-full h-full object-cover"
+        key={`img-${image.id}-${Date.now()}`} // Force re-render with unique key
+      />
+    ) : (
                     <div className="text-center p-1">
                       {getFileIcon(image.type)}
                       <span className="text-xs truncate block">
