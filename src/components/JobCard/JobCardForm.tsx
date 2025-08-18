@@ -1474,9 +1474,10 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                                       className="h-9 text-sm w-[70%] rounded-r-none"
                                       
                                     />
-                                     <span className="flex items-center rounded-r-md justify-center w-[30%] bg-gray-50 text-gray-800 text-sm border border-l-0">
-                                      mm
-                                    </span>
+                                     <span className="flex items-center justify-center w-[30%] h-9 text-xs text-gray-800 border border-l-0 rounded-r-md bg-white">
+  mm
+</span>
+
                                    
                                   </div>
                                 </div>
