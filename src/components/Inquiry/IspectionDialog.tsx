@@ -554,7 +554,7 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
         }
       }).join(', ');
       
-      toast.error(`Please complete the following information: ${missingFieldNames}`);
+      toast.error(`Please complete the information: ${missingFieldNames}`);
       return;
     }
   }
@@ -606,14 +606,14 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
       const startDateTime = `${preferredDate} ${requestedTime}:00`;
       const endDateTime = `${preferredDate} ${endTime}:00`;
 
-      console.log("Original Inspector:", originalInspectorEmail);
+      // console.log("Original Inspector:", originalInspectorEmail);
       const currentInspectorEmail =
         selectedInspector?.email || data.allocated_to;
-      console.log("Current Inspector:", currentInspectorEmail);
+      // console.log("Current Inspector:", currentInspectorEmail);
       const inspectorChanged =
         originalInspectorEmail &&
         originalInspectorEmail !== currentInspectorEmail;
-      console.log("Inspector Changed:", inspectorChanged);
+
 
       if (mode === "create") {
         await createTodo({
@@ -640,9 +640,9 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
         onClose();
         navigate("/sales?tab=assign");
       } else {
-        console.log("Updating todo with ID:", data.name);
-        console.log("Original Start Time:", originalStartTime);
-        console.log("New Start Time:", requestedTime);
+        // console.log("Updating todo with ID:", data.name);
+        // console.log("Original Start Time:", originalStartTime);
+        // console.log("New Start Time:", requestedTime);
 
         // For the original inspector (when changed)
         if (inspectorChanged) {
@@ -689,6 +689,7 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
             inquiryData?.custom_property_area || "Property Inspection"
           );
         }
+        toast.success("Inspection updated successfully!");
 
         onClose();
       }
