@@ -342,6 +342,28 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     setNewCustomerForm((prev) => ({ ...prev, phone: formattedNumber }));
   };
 
+  const extractPhoneFromQuery = (query: string): string => {
+  // Look for phone number patterns in the search query
+  const phoneRegex = /(\+971\s?\d{1,2}\s?\d{3}\s?\d{4}|\d{9,10})/;
+  const match = query.match(phoneRegex);
+  
+  if (match) {
+    let phone = match[0];
+    // If it doesn't start with +971, add it
+    if (!phone.startsWith('+971')) {
+      phone = '+971 ' + phone.replace(/\D/g, '');
+    }
+    return phone;
+  }
+  return '+971 ';
+};
+
+const extractNameFromQuery = (query: string): string => {
+  // Remove phone numbers from the query to get just the name
+  const phoneRegex = /(\+971\s?\d{1,2}\s?\d{3}\s?\d{4}|\d{9,10})/g;
+  return query.replace(phoneRegex, '').trim();
+};
+
   const saveNewCustomer = async () => {
   if (!newCustomerForm.name.trim()) {
     toast.error("Customer name is required");
@@ -1179,6 +1201,17 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                                       <div
                                     className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center justify-between"
                                     onClick={() => {
+                                      // Pre-fill the form with searched data
+                                      const extractedName = extractNameFromQuery(customerSearchQuery);
+                                      const extractedPhone = extractPhoneFromQuery(customerSearchQuery);
+                                      
+                                      setNewCustomerForm({
+                                        name: extractedName,
+                                        email: "",
+                                        phone: extractedPhone,
+                                        jobType: jobTypes.length > 0 ? [jobTypes[0].name] : [],
+                                      });
+                                      
                                       setShowNewCustomerModal(true);
                                       setShowCustomerDropdown(false);
                                     }}
@@ -1196,32 +1229,28 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                                     </div>
                                   ))
                                 ) : (
-                                  // <div className="px-4 py-2">
-                                  //   <Button
-                                  //     type="button"
-                                  //     variant="outline"
-                                  //     size="sm"
-                                  //     className="w-full flex items-center gap-2"
-                                  //     onClick={() => {
-                                  //       setShowNewCustomerModal(true);
-                                  //       setShowCustomerDropdown(false);
-                                  //     }}
-                                  //   >
-                                  //     <Plus className="h-4 w-4" />
-                                  //     Add New Customer
-                                  //   </Button>
-                                  // </div>
+                                 
                                   <div
                                     className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center justify-between"
                                     onClick={() => {
+                                      // Pre-fill the form with searched data
+                                      const extractedName = extractNameFromQuery(customerSearchQuery);
+                                      const extractedPhone = extractPhoneFromQuery(customerSearchQuery);
+                                      
+                                      setNewCustomerForm({
+                                        name: extractedName,
+                                        email: "",
+                                        phone: extractedPhone,
+                                        jobType: jobTypes.length > 0 ? [jobTypes[0].name] : [],
+                                      });
+                                      
                                       setShowNewCustomerModal(true);
                                       setShowCustomerDropdown(false);
                                     }}
                                   >
                                     <div>
                                       <p className="font-medium">
-                                        No customer found found for "
-                                        {customerSearchQuery}"
+                                        No customer found for "{customerSearchQuery}"
                                       </p>
                                       <p className="text-xs text-gray-500">
                                         Click to add a new customer
