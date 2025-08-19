@@ -761,7 +761,7 @@ const handleSaveAddress = () => {
 
       {/* Address Dialog */}
       <Dialog open={showAddressDialog} onOpenChange={setShowAddressDialog}>
-        <DialogContent className="sm:max-w-[600px] bg-gray-50">
+        <DialogContent className="sm:max-w-[600px] bg-[#F9FAFB]">
           <DialogHeader>
             <DialogTitle>
               {addressSearchQuery ? "Add New Address" : "Edit Address"}
@@ -934,7 +934,7 @@ const handleSaveAddress = () => {
                   }));
                 }}
               >
-                <SelectTrigger className="w-full">
+                <SelectTrigger className="w-full ">
                   <SelectValue placeholder="Select emirate" />
                 </SelectTrigger>
                 <SelectContent className="bg-white ">
@@ -970,7 +970,7 @@ const handleSaveAddress = () => {
                       searchAreas(addressForm.custom_emirate, value);
                     }
                   }}
-                  className="w-full"
+                  className="w-full text-sm"
                 />
                 {isAreaSearching && (
                   <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 animate-spin text-gray-400" />
@@ -1001,7 +1001,7 @@ const handleSaveAddress = () => {
             {/* Community */}
             <div className="space-y-2">
               <Label>Community</Label>
-              <div className="relative">
+              <div className="relative text-sm">
                 <Input
                   type="text"
                   placeholder={
@@ -1020,7 +1020,7 @@ const handleSaveAddress = () => {
                       searchCommunities(addressForm.custom_area, value);
                     }
                   }}
-                  className="w-full"
+                  className="w-full text-sm"
                 />
                 {isCommunitySearching && (
                   <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 animate-spin text-gray-400" />
@@ -1060,6 +1060,7 @@ const handleSaveAddress = () => {
                   }))
                 }
                 placeholder="Enter street name"
+                className="text-sm"
               />
             </div>
 
@@ -1076,17 +1077,19 @@ const handleSaveAddress = () => {
                   }))
                 }
                 placeholder="Enter property number"
+                className="text-sm"
               />
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="flex flex-row">
             <Button
               variant="outline"
+              className="w-[50%]"
               onClick={() => setShowAddressDialog(false)}
             >
               Cancel
             </Button>
-            <Button onClick={handleSaveAddress} variant="outline">Save Address</Button>
+            <Button onClick={handleSaveAddress} variant="outline" className="bg-green-700 text-white w-[50%]">Save Address</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
