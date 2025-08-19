@@ -194,6 +194,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     useState<NodeJS.Timeout | null>(null);
   const [fetchingCustomerDetails, setFetchingCustomerDetails] = useState(false);
   const [showNewCustomerFields, setShowNewCustomerFields] = useState(false);
+  const [showEndTimeWarning, setShowEndTimeWarning] = useState(false);
 
   // Inspector assignment states
   const [selectedInspector, setSelectedInspector] =
@@ -296,6 +297,22 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
       }));
     }
   }, []);
+  useEffect(() => {
+  if (requestedTime && duration) {
+    const endTime = calculateEndTime();
+    if (endTime) {
+      const [hours, minutes] = endTime.split(':').map(Number);
+      const totalMinutes = hours * 60 + minutes;
+      
+      // Check if end time is after 18:00 (6:00 PM)
+      if (totalMinutes > (18 * 60)) {
+        setShowEndTimeWarning(true);
+      } else {
+        setShowEndTimeWarning(false);
+      }
+    }
+  }
+}, [requestedTime, duration]);
 
   const handleNewCustomerInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -477,19 +494,23 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
   // };
 
   const calculateEndTime = () => {
-    if (!requestedTime || !duration) return "";
+  if (!requestedTime || !duration) return null;
 
-    const startMinutes = timeToMinutes(requestedTime);
-    const durationMinutes = Math.round(parseFloat(duration) * 60);
-    const endMinutes = startMinutes + durationMinutes;
+  const startMinutes = timeToMinutes(requestedTime);
+  const durationMinutes = Math.round(parseFloat(duration) * 60);
+  const endMinutes = startMinutes + durationMinutes;
 
-    const hours = Math.floor(endMinutes / 60);
-    const mins = endMinutes % 60;
+  // Check if end time is valid
+  if (endMinutes > 24 * 60) return null; // Beyond midnight
 
-    return `${hours.toString().padStart(2, "0")}:${mins
-      .toString()
-      .padStart(2, "0")}`;
-  };
+  const hours = Math.floor(endMinutes / 60);
+  const mins = endMinutes % 60;
+
+  return `${hours.toString().padStart(2, "0")}:${mins
+    .toString()
+    .padStart(2, "0")}`;
+};
+
 
   // const validateTimeDuration = (durationValue: string) => {
   //   if (!selectedSlot || !requestedTime) return;
@@ -1792,7 +1813,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                                   </Label>
                                   <Input
                                     type="text"
-                                    value={calculateEndTime()}
+                                    value={calculateEndTime() ?? ""}
                                     className="text-sm h-8 bg-gray-100"
                                     disabled
                                     readOnly
@@ -1916,6 +1937,36 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
           </div>
         </div>
       </div>
+      {showEndTimeWarning && (
+  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-6">
+    <div className="bg-white rounded-lg p-4 max-w-md w-full">
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-lg font-semibold">End Time Warning</h3>
+        <button
+          onClick={() => setShowEndTimeWarning(false)}
+          className="text-gray-500 hover:text-gray-700"
+        >
+          <X className="h-5 w-5" />
+        </button>
+      </div>
+      <p className="mb-4 text-gray-700">
+        The calculated end time ({calculateEndTime()}) is after 6:00 PM.
+        Inspections typically shouldn't extend beyond this time.
+      </p>
+      <p className="mb-6 text-sm text-gray-600">
+        Please adjust the start time or duration to end before 6:00 PM.
+      </p>
+      <div className="flex justify-end">
+        <Button
+          onClick={() => setShowEndTimeWarning(false)}
+          className="bg-emerald-700 hover:bg-emerald-800 text-white"
+        >
+          OK, I Understand
+        </Button>
+      </div>
+    </div>
+  </div>
+)}
 
       {showNewCustomerModal && (
         <>
