@@ -761,7 +761,7 @@ const handleSaveAddress = () => {
 
       {/* Address Dialog */}
       <Dialog open={showAddressDialog} onOpenChange={setShowAddressDialog}>
-        <DialogContent className="sm:max-w-[600px] bg-[#F9FAFB]">
+        <DialogContent className="sm:max-w-[600px] bg-[#eef0f2]">
           <DialogHeader>
             <DialogTitle>
               {addressSearchQuery ? "Add New Address" : "Edit Address"}
