@@ -29,6 +29,7 @@ import {
 } from "../../context/LeadContext";
 import {
   budgetRanges,
+  capitalizeFirstLetter,
   defaultFormData,
   formatSubmissionData,
   type FormSection,
@@ -48,6 +49,8 @@ import {
 import { Textarea } from "../ui/textarea";
 import UserAvailability from "../ui/UserAvailability";
 import PropertyAddressSection from "./PropertyAddress";
+import { MultiSelectJobTypes } from "./MultiselectJobtypes";
+import { RestrictedTimeClock } from "./ResticritedtimeSlot";
 
 type PriorityLevel = "Low" | "Medium" | "High";
 
@@ -171,7 +174,6 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     // fetchInspectors,
     createTodo,
     createTodoLoading,
-    success: assignSuccess,
   } = useAssignStore();
 
   const [activeSection, setActiveSection] = useState<string>("contact");
@@ -299,7 +301,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
-    setNewCustomerForm((prev) => ({ ...prev, [name]: value }));
+    setNewCustomerForm((prev) => ({ ...prev, [name]: capitalizeFirstLetter(value) }));
   };
 
   const handleNewCustomerPhoneChange = (
@@ -448,6 +450,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     const slotEndMinutes = timeToMinutes(selectedSlot.end);
     const durationMinutes = Math.round(parseFloat(duration) * 60);
 
+    // Check if requested time is within slot
     if (
       requestedMinutes < slotStartMinutes ||
       requestedMinutes >= slotEndMinutes
@@ -455,12 +458,23 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
       return false;
     }
 
+    // Check if duration fits within the remaining slot time
     if (requestedMinutes + durationMinutes > slotEndMinutes) {
       return false;
     }
 
     return true;
   };
+  // const getMaxDuration = (): number => {
+  //   if (!selectedSlot || !requestedTime) return 8; // Default max 8 hours
+
+  //   const requestedMinutes = timeToMinutes(requestedTime);
+  //   const slotEndMinutes = timeToMinutes(selectedSlot.end);
+  //   const remainingMinutes = slotEndMinutes - requestedMinutes;
+  //   const maxHours = remainingMinutes / 60;
+
+  //   return Math.max(0.5, Math.floor(maxHours * 2) / 2); // Round to nearest 0.5
+  // };
 
   const calculateEndTime = () => {
     if (!requestedTime || !duration) return "";
@@ -477,24 +491,24 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
       .padStart(2, "0")}`;
   };
 
-  const validateTimeDuration = (durationValue: string) => {
-    if (!selectedSlot || !requestedTime) return;
+  // const validateTimeDuration = (durationValue: string) => {
+  //   if (!selectedSlot || !requestedTime) return;
 
-    const durationHours = parseFloat(durationValue);
-    const durationMinutes = Math.round(durationHours * 60);
-    const startMinutes = timeToMinutes(requestedTime);
-    const slotEndMinutes = timeToMinutes(selectedSlot.end);
+  //   const durationHours = parseFloat(durationValue);
+  //   const durationMinutes = Math.round(durationHours * 60);
+  //   const startMinutes = timeToMinutes(requestedTime);
+  //   const slotEndMinutes = timeToMinutes(selectedSlot.end);
 
-    if (startMinutes + durationMinutes > slotEndMinutes) {
-      const availableHours = (slotEndMinutes - startMinutes) / 60;
-      toast.error(
-        `Duration exceeds available time. Max ${availableHours.toFixed(
-          1
-        )} hours available in this slot.`,
-        { duration: 2000 }
-      );
-    }
-  };
+  //   if (startMinutes + durationMinutes > slotEndMinutes) {
+  //     const availableHours = (slotEndMinutes - startMinutes) / 60;
+  //     toast.error(
+  //       `Duration exceeds available time. Max ${availableHours.toFixed(
+  //         1
+  //       )} hours available in this slot.`,
+  //       { duration: 2000 }
+  //     );
+  //   }
+  // };
 
   const handleInspectorSelect = (
     email: string,
@@ -605,7 +619,8 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+
+    setFormData((prev) => ({ ...prev, [name]: capitalizeFirstLetter(value) }));
   };
 
   const handleSelectChange = (name: string, value: string) => {
@@ -1079,7 +1094,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
     const query = e.target.value;
-    setCustomerSearchQuery(query);
+    setCustomerSearchQuery(capitalizeFirstLetter(query));
 
     if (!query.trim()) {
       setCustomerSearchResults([]);
@@ -1113,38 +1128,22 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
       e.preventDefault();
     }
   };
+  // const generateTimeSlots = (startTime: string, endTime: string): string[] => {
+  //   const slots: string[] = [];
+  //   const start = timeToMinutes(startTime);
+  //   const end = timeToMinutes(endTime);
 
-  // const validateFormSilent = (): boolean => {
-  //   // Customer Details validation
-  //   if (!formData.lead_name) return false;
-  //   if (!formData.mobile_no || formData.mobile_no.length < 5) return false;
+  //   // Generate slots in 15-minute intervals
+  //   for (let minutes = start; minutes < end; minutes += 15) {
+  //     const hours = Math.floor(minutes / 60);
+  //     const mins = minutes % 60;
+  //     const timeStr = `${hours.toString().padStart(2, "0")}:${mins
+  //       .toString()
+  //       .padStart(2, "0")}`;
+  //     slots.push(timeStr);
+  //   }
 
-  //   // Job Details validation
-  //   if (!formData.custom_job_type) return false;
-  //   if (!formData.custom_budget_range) return false;
-  //   if (!formData.custom_project_urgency) return false;
-  //   if (!formData.source) return false;
-  //   if (
-  //     (formData.source === "Reference" ||
-  //       formData.source === "Supplier Reference") &&
-  //     !formData.custom_reference_name
-  //   )
-  //     return false;
-
-  //   return true;
-  // };
-
-  // // Update the isAssignmentReady function to use the silent validation
-  // const isAssignmentReady = () => {
-  //   return (
-  //     validateFormSilent() && // Use silent validation instead
-  //     selectedInspector &&
-  //     date &&
-  //     requestedTime &&
-  //     // validateRequestedTime() &&
-  //     !createTodoLoading &&
-  //     !loading
-  //   );
+  //   return slots;
   // };
 
   const extractAddressFromSite = (siteName: string) => {
@@ -1160,6 +1159,14 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     }
     // Fallback: return original if pattern doesn't match
     return siteName;
+  };
+  const handleEmailInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setNewCustomerForm((prev) => ({ ...prev, [name]: value }));
+  };
+  const handleNewCustomerEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setNewCustomerForm((prev) => ({ ...prev, [name]: value }));
   };
 
   if (!isOpen) return null;
@@ -1441,7 +1448,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                                   id="email_id"
                                   name="email_id"
                                   value={formData.email_id || ""}
-                                  onChange={handleInputChange}
+                                  onChange={handleEmailInputChange}
                                   placeholder="Enter email"
                                 />
                               </div>
@@ -1508,45 +1515,17 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                             <Label className="text-md font-medium text-gray-700 mb-1">
                               Job Types <span className="text-red-500">*</span>
                             </Label>
-                            <div className="grid grid-cols-1 gap-2">
-                              {jobTypes.map((jobType) => (
-                                <div
-                                  key={jobType.name}
-                                  className="flex items-center space-x-2"
-                                >
-                                  <input
-                                    type="checkbox"
-                                    id={`job-type-${jobType.name}`}
-                                    checked={
-                                      formData.custom_jobtype?.includes(
-                                        jobType.name
-                                      ) || false
-                                    }
-                                    onChange={(e) => {
-                                      const isChecked = e.target.checked;
-                                      setFormData((prev) => ({
-                                        ...prev,
-                                        custom_jobtype: isChecked
-                                          ? [
-                                              ...(prev.custom_jobtype || []),
-                                              jobType.name,
-                                            ]
-                                          : (prev.custom_jobtype || []).filter(
-                                              (type) => type !== jobType.name
-                                            ),
-                                      }));
-                                    }}
-                                    className="h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
-                                  />
-                                  <Label
-                                    htmlFor={`job-type-${jobType.name}`}
-                                    className="text-sm"
-                                  >
-                                    {jobType.name}
-                                  </Label>
-                                </div>
-                              ))}
-                            </div>
+                            <MultiSelectJobTypes
+                              jobTypes={jobTypes}
+                              selectedJobTypes={formData.custom_jobtype || []}
+                              onSelectionChange={(selected) => {
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  custom_jobtype: selected,
+                                }));
+                              }}
+                              placeholder="Select job types"
+                            />
                           </div>
 
                           <div>
@@ -1646,21 +1625,6 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
 
                       {section.id === "inspector" && (
                         <div className="space-y-4">
-                          {/* {assignError && (
-                            <div className="bg-red-50 border border-red-200 rounded-md p-2">
-                              <div className="text-red-700 text-sm">
-                                {assignError}
-                              </div>
-                            </div>
-                          )} */}
-                          {assignSuccess && (
-                            <div className="bg-emerald-50 border border-emerald-200 rounded-md p-2">
-                              <div className="text-emerald-700 text-sm">
-                                Inspector assigned successfully!
-                              </div>
-                            </div>
-                          )}
-
                           <div className="space-y-2">
                             <Label className="text-gray-700 text-md font-medium mb-1">
                               Select Inspection Date{" "}
@@ -1682,7 +1646,6 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                               <CalendarIcon className="absolute right-3 top-2.5 h-4 w-4 text-gray-400 pointer-events-none" />
                             </div>
                           </div>
-
                           {date && (
                             <div className="space-y-2">
                               <Label className="text-gray-700 text-md font-medium mb-1">
@@ -1716,7 +1679,6 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                               </div>
                             </div>
                           )}
-
                           {selectedInspector &&
                             selectedInspector.availability.free_slots.length >
                               0 && (
@@ -1756,53 +1718,31 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                                 </div>
                               </div>
                             )}
-
                           {selectedSlot && (
-                            <div className="space-y-3 p-3 border rounded-lg">
+                            <div className="space-y-3 p-3 ">
                               <Label className="text-gray-700 text-md font-medium mb-1">
                                 Finalize Time & Duration
                               </Label>
                               <div className="grid grid-cols-3 gap-3">
-                                <div className="space-y-1">
+                                <div className="space-y-1 time-picker-container">
                                   <Label className="text-xs text-gray-600">
                                     Start Time *
                                   </Label>
-                                  <Input
-                                    type="time"
+                                  <RestrictedTimeClock
                                     value={requestedTime}
-                                    onChange={(e) => {
-                                      const newTime = e.target.value;
-                                      if (!selectedSlot) return;
-
-                                      const newMinutes = timeToMinutes(newTime);
-                                      const slotStart = timeToMinutes(
-                                        selectedSlot.start
-                                      );
-                                      const slotEnd = timeToMinutes(
-                                        selectedSlot.end
-                                      );
-
-                                      if (
-                                        newMinutes >= slotStart &&
-                                        newMinutes <= slotEnd
-                                      ) {
-                                        setRequestedTime(newTime);
-                                        setFormData((prev) => ({
-                                          ...prev,
-                                          custom_preferred_inspection_time:
-                                            newTime,
-                                        }));
-                                      } else {
-                                        toast.error(
-                                          `Time must be between ${selectedSlot.start} and ${selectedSlot.end}`
-                                        );
-                                      }
+                                    onChange={(time) => {
+                                      setRequestedTime(time);
+                                      setFormData((prev) => ({
+                                        ...prev,
+                                        custom_preferred_inspection_time: time,
+                                      }));
                                     }}
-                                    min={selectedSlot?.start || ""}
-                                    max={selectedSlot?.end || ""}
+                                    minTime={selectedSlot.start}
+                                    maxTime={selectedSlot.end}
                                     className="text-sm h-8"
                                   />
                                 </div>
+
                                 <div className="space-y-1 w-full">
                                   <Label className="text-xs text-gray-600">
                                     Duration *
@@ -1812,6 +1752,22 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                                       type="number"
                                       step="0.5"
                                       min="0.5"
+                                      max={(() => {
+                                        if (!selectedSlot || !requestedTime)
+                                          return 8;
+                                        const requestedMinutes =
+                                          timeToMinutes(requestedTime);
+                                        const slotEndMinutes = timeToMinutes(
+                                          selectedSlot.end
+                                        );
+                                        const remainingMinutes =
+                                          slotEndMinutes - requestedMinutes;
+                                        const maxHours = remainingMinutes / 60;
+                                        return Math.max(
+                                          0.5,
+                                          Math.floor(maxHours * 2) / 2
+                                        );
+                                      })()}
                                       value={duration}
                                       onChange={(e) => {
                                         const newDuration = e.target.value;
@@ -1820,9 +1776,6 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                                           ...prev,
                                           custom_duration: newDuration,
                                         }));
-                                        if (selectedSlot && requestedTime) {
-                                          validateTimeDuration(newDuration);
-                                        }
                                       }}
                                       placeholder="1.5"
                                       className="text-sm h-8 rounded-r-none"
@@ -1848,7 +1801,6 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                               </div>
                             </div>
                           )}
-
                           <div className="space-y-2">
                             <Label className="text-gray-700 text-md font-medium mb-1">
                               Priority
@@ -1884,7 +1836,6 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                               </SelectContent>
                             </Select>
                           </div>
-
                           <div className="flex justify-end">
                             <Button
                               type="button"
@@ -1903,7 +1854,6 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                               )}
                             </Button>
                           </div>
-
                           {showAvailabilityModal && (
                             <UserAvailability
                               date={date || new Date()}
@@ -2027,7 +1977,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                     type="email"
                     name="email"
                     value={newCustomerForm.email}
-                    onChange={handleNewCustomerInputChange}
+                    onChange={handleNewCustomerEmailChange}
                     placeholder="Enter email"
                   />
                 </div>
@@ -2036,40 +1986,17 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                   <Label className="block text-md font-medium text-gray-700 mb-1">
                     Job Types
                   </Label>
-                  <div className="grid grid-cols-1 gap-2">
-                    {jobTypes.map((jobType) => (
-                      <div
-                        key={jobType.name}
-                        className="flex items-center space-x-2"
-                      >
-                        <input
-                          type="checkbox"
-                          id={`new-job-type-${jobType.name}`}
-                          checked={newCustomerForm.jobType.includes(
-                            jobType.name
-                          )}
-                          onChange={(e) => {
-                            const isChecked = e.target.checked;
-                            setNewCustomerForm((prev) => ({
-                              ...prev,
-                              jobType: isChecked
-                                ? [...prev.jobType, jobType.name]
-                                : prev.jobType.filter(
-                                    (type) => type !== jobType.name
-                                  ),
-                            }));
-                          }}
-                          className="h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
-                        />
-                        <Label
-                          htmlFor={`new-job-type-${jobType.name}`}
-                          className="text-sm"
-                        >
-                          {jobType.name}
-                        </Label>
-                      </div>
-                    ))}
-                  </div>
+                  <MultiSelectJobTypes
+                    jobTypes={jobTypes}
+                    selectedJobTypes={newCustomerForm.jobType}
+                    onSelectionChange={(selected) => {
+                      setNewCustomerForm((prev) => ({
+                        ...prev,
+                        jobType: selected,
+                      }));
+                    }}
+                    placeholder="Select job types"
+                  />
                 </div>
               </div>
 

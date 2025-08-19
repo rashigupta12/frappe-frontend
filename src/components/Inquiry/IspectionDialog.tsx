@@ -23,6 +23,7 @@ import {
 import { Textarea } from "../ui/textarea";
 import UserAvailability from "../ui/UserAvailability";
 import type { Lead } from "../../context/LeadContext";
+import { RestrictedTimeClock } from "./ResticritedtimeSlot";
 
 // Define the AvailabilitySlot type
 type AvailabilitySlot = {
@@ -70,8 +71,6 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
   const {
     createTodo,
     updateTodo,
-    // fetchInspectors,
-    // inspectors,
     error: assignError,
     success: assignSuccess,
   } = useAssignStore();
@@ -92,14 +91,68 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
   const [showAvailabilityModal, setShowAvailabilityModal] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [originalInspectorEmail, setOriginalInspectorEmail] = useState("");
-  const [originalStartTime, setOriginalStartTime] = useState(""); // Add this state
+  const [originalStartTime, setOriginalStartTime] = useState("");
   const [calendarOpen, setCalendarOpen] = useState(false);
-  // const [inspectorAvailabilityData, setInspectorAvailabilityData] = useState<InspectorAvailability[]>([]);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [currentInspectorDetails, setCurrentInspectorDetails] =
     useState<InspectorDetails | null>(null);
   const [isLoadingInspectorDetails, setIsLoadingInspectorDetails] =
     useState(false);
+
+  // Helper function to check if selected date is today
+  const isSelectedDateToday = () => {
+    if (!date) return false;
+    const today = new Date();
+    return (
+      date.getDate() === today.getDate() &&
+      date.getMonth() === today.getMonth() &&
+      date.getFullYear() === today.getFullYear()
+    );
+  };
+
+  // Helper function to get current time
+  const getCurrentTime = () => {
+    const now = new Date();
+    const hours = now.getHours().toString().padStart(2, "0");
+    const minutes = now.getMinutes().toString().padStart(2, "0");
+    return `${hours}:${minutes}`;
+  };
+
+  // Helper function to filter future slots based on current time
+  const filterFutureSlots = (slots: AvailabilitySlot[]): AvailabilitySlot[] => {
+    // If it's not today, return all slots
+    if (!isSelectedDateToday()) {
+      return slots;
+    }
+
+    const currentTime = getCurrentTime();
+    const currentMinutes = timeToMinutes(currentTime);
+
+    return slots.reduce<AvailabilitySlot[]>((filteredSlots, slot) => {
+      const slotStart = timeToMinutes(slot.start);
+      const slotEnd = timeToMinutes(slot.end);
+
+      if (slotEnd <= currentMinutes) {
+        // Slot has already ended - exclude it
+        return filteredSlots;
+      }
+
+      if (slotStart > currentMinutes) {
+        // Slot is in the future - include as-is
+        filteredSlots.push(slot);
+      } else {
+        // Current time is within this slot - create a modified slot from current time to end time
+        const minutesToEnd = slotEnd - currentMinutes;
+        filteredSlots.push({
+          start: currentTime,
+          end: slot.end,
+          duration_hours: minutesToEnd / 60,
+        });
+      }
+
+      return filteredSlots;
+    }, []);
+  };
 
   const getInquiryData = () => {
     if (mode === "edit" && data?.inquiry_data) {
@@ -123,14 +176,25 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
 
       if (response.message && response.message.status === "success") {
         const availabilityData = response.message.data;
-        // setInspectorAvailabilityData(availabilityData);
 
         // Find the specific inspector's availability
         const inspectorData = availabilityData.find(
           (insp: InspectorAvailability) => insp.email === inspectorEmail
         );
         if (inspectorData) {
-          setSelectedInspector(inspectorData);
+          // Apply time filtering to the inspector's slots
+          const filteredSlots = filterFutureSlots(inspectorData.availability.free_slots);
+          
+          // Create modified inspector data with filtered slots
+          const modifiedInspector = {
+            ...inspectorData,
+            availability: {
+              ...inspectorData.availability,
+              free_slots: filteredSlots,
+            },
+          };
+          
+          setSelectedInspector(modifiedInspector);
         }
       }
     } catch (error) {
@@ -321,11 +385,10 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
       setShowAvailabilityModal(false);
       setIsProcessing(false);
       setOriginalInspectorEmail("");
-      setOriginalStartTime(""); // Reset original start time
+      setOriginalStartTime("");
       setCalendarOpen(false);
       setCurrentInspectorDetails(null);
       setIsLoadingInspectorDetails(false);
-      // setInspectorAvailabilityData([]);
     }
   }, [open]);
 
@@ -362,7 +425,7 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
         if (data?.custom_start_time) {
           const startTime = data.custom_start_time.split(" ")[1].slice(0, 5);
           setRequestedTime(startTime);
-          setOriginalStartTime(startTime); // Store the original start time
+          setOriginalStartTime(startTime);
         }
         if (data?.priority) {
           setPriority(data.priority);
@@ -396,10 +459,6 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
       }
     }
   }, [data, mode]);
-
-  // useEffect(() => {
-  //   fetchInspectors();
-  // }, [fetchInspectors]);
 
   const validateRequiredFields = (inquiryData: any) => {
     const hasJobType =
@@ -552,6 +611,65 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
     }
   };
 
+  // Get time constraints for RestrictedTimeClock
+  const getTimeConstraints = () => {
+    if (mode === "create" && selectedSlot) {
+      return {
+        minTime: selectedSlot.start,
+        maxTime: selectedSlot.end,
+      };
+    } else if (mode === "edit") {
+      if (isSelectedDateToday()) {
+        return {
+          minTime: getCurrentTime(),
+          maxTime: "18:00", // 6 PM
+        };
+      } else {
+        return {
+          minTime: "09:00", // 9 AM
+          maxTime: "18:00", // 6 PM
+        };
+      }
+    }
+    return {
+      minTime: "09:00",
+      maxTime: "18:00",
+    };
+  };
+
+  const handleTimeChange = (newTime: string) => {
+    if (mode === "create") {
+      if (!selectedSlot) return;
+
+      const newMinutes = timeToMinutes(newTime);
+      const slotStart = timeToMinutes(selectedSlot.start);
+      const slotEnd = timeToMinutes(selectedSlot.end);
+
+      if (newMinutes >= slotStart && newMinutes <= slotEnd) {
+        setRequestedTime(newTime);
+      } else {
+        toast.error(
+          `Time must be between ${selectedSlot.start} and ${selectedSlot.end}`
+        );
+      }
+    } else {
+      // In edit mode, validate against current time if it's today
+      if (isSelectedDateToday()) {
+        const currentTime = getCurrentTime();
+        const currentMinutes = timeToMinutes(currentTime);
+        const newMinutes = timeToMinutes(newTime);
+        
+        if (newMinutes < currentMinutes) {
+          toast.error(
+            `Time cannot be in the past. Current time is ${currentTime}`
+          );
+          return;
+        }
+      }
+      setRequestedTime(newTime);
+    }
+  };
+
   const handleAssign = async () => {
     // First validate required fields in create mode
     if (mode === "create") {
@@ -628,10 +746,8 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
       const startDateTime = `${preferredDate} ${requestedTime}:00`;
       const endDateTime = `${preferredDate} ${endTime}:00`;
 
-      // console.log("Original Inspector:", originalInspectorEmail);
       const currentInspectorEmail =
         selectedInspector?.email || data.allocated_to;
-      // console.log("Current Inspector:", currentInspectorEmail);
       const inspectorChanged =
         originalInspectorEmail &&
         originalInspectorEmail !== currentInspectorEmail;
@@ -648,13 +764,12 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
           custom_end_time: endDateTime,
         });
 
-        // In the handleAssign/proceedWithAssignment function:
         await createNewDWA(
           selectedInspector!.email,
           preferredDate,
           requestedTime,
           parseFloat(duration),
-          inquiryData, // Pass the entire lead object
+          inquiryData,
           inquiryData.custom_property_area || "Property Inspection"
         );
 
@@ -662,10 +777,6 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
         onClose();
         navigate("/sales?tab=assign");
       } else {
-        // console.log("Updating todo with ID:", data.name);
-        // console.log("Original Start Time:", originalStartTime);
-        // console.log("New Start Time:", requestedTime);
-
         // For the original inspector (when changed)
         if (inspectorChanged) {
           console.log(
@@ -674,7 +785,7 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
           await deleteExistingDWA(
             originalInspectorEmail,
             preferredDate,
-            originalStartTime // Use original start time, not new one
+            originalStartTime
           );
         }
 
@@ -686,7 +797,7 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
           await deleteExistingDWA(
             currentInspectorEmail,
             preferredDate,
-            originalStartTime // Use original start time, not new one
+            originalStartTime
           );
         }
 
@@ -705,7 +816,7 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
           await createNewDWA(
             currentInspectorEmail,
             preferredDate,
-            requestedTime, // Use new start time for creating new DWA
+            requestedTime,
             parseFloat(duration),
             inquiryData?.custom_job_type || "Site Inspection",
             inquiryData?.custom_property_area || "Property Inspection"
@@ -774,9 +885,8 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
             <h3 className="font-medium text-gray-900">Job Details</h3>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-sm">
               <div className="break-words">
-                {/* <span className="font-medium text-gray-600">Job Type:</span> */}
                 <span className="ml-2 text-gray-900">
-                  {getJobTypes(inquiryData)} {/* Use the helper function */}
+                  {getJobTypes(inquiryData)}
                 </span>
               </div>
 
@@ -918,10 +1028,6 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
                 ) : mode === "edit" && data?.allocated_to ? (
                   <div className="flex items-center gap-2">
                     <div>
-                      {/* <div className="font-medium text-sm">
-                        {inspectors.find((i) => i.email === data.allocated_to)
-                          ?.full_name || data.allocated_to}
-                      </div> */}
                       <div className="text-xs text-gray-500">
                         {data.allocated_to}
                       </div>
@@ -948,20 +1054,26 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
             </div>
           )}
 
-          {/* Show current allocated slot in edit mode */}
-
-          {/* Show available slots */}
-          {selectedInspector &&
-            selectedInspector.availability.free_slots.length > 0 && (
-              <div className="space-y-2 px-5 py-2 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <Label className="text-gray-700 text-sm font-medium">
-                  {mode === "edit"
-                    ? "Available Time Slots (for rescheduling)"
-                    : "Available Time Slots"}
-                </Label>
-                <div className="grid grid-cols-2 gap-2">
-                  {selectedInspector.availability.free_slots.map(
-                    (slot, index) => (
+          {/* Show available slots with time filtering */}
+          {selectedInspector && (
+            (() => {
+              // Apply time filtering to free slots
+              const filteredSlots = filterFutureSlots(selectedInspector.availability.free_slots);
+              
+              return filteredSlots.length > 0 ? (
+                <div className="space-y-2 px-5 py-2 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <Label className="text-gray-700 text-sm font-medium">
+                    {mode === "edit"
+                      ? "Available Time Slots"
+                      : "Available Time Slots"}
+                    {/* {isSelectedDateToday() && (
+                      <span className="text-xs text-gray-600 font-normal ml-1">
+                        (from {getCurrentTime()} onwards)
+                      </span>
+                    )} */}
+                  </Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {filteredSlots.map((slot, index) => (
                       <Button
                         key={index}
                         variant={
@@ -983,11 +1095,24 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
                           </span>
                         )}
                       </Button>
-                    )
-                  )}
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
+              ) : (
+                <div className="space-y-2 px-5 py-2 bg-gray-50 border border-gray-200 rounded-lg">
+                  <Label className="text-gray-700 text-sm font-medium">
+                    Available Time Slots
+                  </Label>
+                  <p className="text-xs text-gray-500">
+                    {isSelectedDateToday() 
+                      ? "No available slots remaining for today"
+                      : "No available slots for this date"
+                    }
+                  </p>
+                </div>
+              );
+            })()
+          )}
 
           {/* Time and Duration Settings */}
           {(mode === "create" ? selectedSlot : true) && (
@@ -1000,47 +1125,24 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
               <div className="grid grid-cols-3 gap-3">
                 <div className="space-y-1">
                   <Label className="text-xs text-gray-600">Start Time *</Label>
-                  <div className="relative">
-                    <Input
-                      type="time"
-                      value={requestedTime}
-                      onChange={(e) => {
-                        const newTime = e.target.value;
-                        if (mode === "create" && !selectedSlot) return;
-
-                        if (mode === "create") {
-                          const newMinutes = timeToMinutes(newTime);
-                          const slotStart = timeToMinutes(selectedSlot!.start);
-                          const slotEnd = timeToMinutes(selectedSlot!.end);
-
-                          if (
-                            newMinutes >= slotStart &&
-                            newMinutes <= slotEnd
-                          ) {
-                            setRequestedTime(newTime);
-                          } else {
-                            toast.error(
-                              `Time must be between ${
-                                selectedSlot!.start
-                              } and ${selectedSlot!.end}`
-                            );
-                          }
-                        } else {
-                          setRequestedTime(newTime);
-                        }
-                      }}
-                      min={mode === "create" ? selectedSlot?.start || "" : ""}
-                      max={mode === "create" ? selectedSlot?.end || "" : ""}
-                      className="text-sm h-8"
-                      disabled={isProcessing}
-                    />
-                  </div>
-                  {mode === "create" && selectedSlot && (
+                  <RestrictedTimeClock
+                    value={requestedTime}
+                    onChange={handleTimeChange}
+                    minTime={getTimeConstraints().minTime}
+                    maxTime={getTimeConstraints().maxTime}
+                    className="w-full"
+                  />
+                  {/* {mode === "create" && selectedSlot && (
                     <div className="text-xs text-gray-500">
                       Between {selectedSlot.start || "--:--"} -{" "}
                       {selectedSlot.end || "--:--"}
                     </div>
                   )}
+                  {mode === "edit" && isSelectedDateToday() && (
+                    <div className="text-xs text-gray-500">
+                      Current time: {getCurrentTime()}
+                    </div>
+                  )} */}
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs text-gray-600">Duration *</Label>
@@ -1053,15 +1155,11 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
                       onChange={(e) => {
                         const newDuration = e.target.value;
                         setDuration(newDuration);
-                        
-                          validateTimeDuration(newDuration);
-                        
+                        validateTimeDuration(newDuration);
                       }}
-                      // placeholder="1.5"  // This placeholder won't show because value is always set
                       className="text-sm h-8 rounded-r-none"
                       disabled={isProcessing}
                     />
-
                     <span className="flex items-center justify-center px-1 text-xs text-gray-800 border rounded-r-md bg-white">
                       Hrs
                     </span>

@@ -28,7 +28,6 @@ interface AuthContextType {
   loading: boolean;
   error: string | null;
   isAuthenticated: boolean;
-  needsPasswordReset: boolean; // NEW: Explicit property for password reset status
   role: string | null;
   hasRole: (roleToCheck: string) => boolean;
   hasAnyRole: (rolesToCheck: string[]) => boolean;
@@ -50,7 +49,6 @@ const AuthContext = createContext<AuthContextType>({
   loading: false,
   error: null,
   isAuthenticated: false,
-  needsPasswordReset: false,
   role: null,
   hasRole: () => false,
   hasAnyRole: () => false,
@@ -160,207 +158,208 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [currentRole, user?.username]);
 
   const checkAuthStatus = async () => {
-    try {
-      setLoading(true);
-      setError(null);
+  try {
+    setLoading(true);
+    setError(null);
+    
+    const sessionCheck = await frappeAPI.checkSession();
+    console.log('Session check result:', sessionCheck);
+    
+    if (sessionCheck.authenticated) {
+      const username = sessionCheck.user?.username || sessionCheck.user || '';
+      const fullName = sessionCheck.user?.full_name || username.split('@')[0] || 'User';
+      const email = sessionCheck.user?.email || username;
       
-      const sessionCheck = await frappeAPI.checkSession();
-      console.log('Session check result:', sessionCheck);
+      // Get roles from details instead of user object
+      const frappeRoles = sessionCheck.details?.roles || sessionCheck.user?.roles || [];
+      console.log('Frappe roles from session:', frappeRoles);
       
-      if (sessionCheck.authenticated) {
-        const username = sessionCheck.user?.username || sessionCheck.user || '';
-        const fullName = sessionCheck.user?.full_name || username.split('@')[0] || 'User';
-        const email = sessionCheck.user?.email || username;
+      const requiresPasswordReset = sessionCheck.user?.requiresPasswordReset || false;
+      
+      // CRITICAL FIX: Handle password reset BEFORE any other logic
+      if (requiresPasswordReset) {
+        console.log('User requires password reset, clearing user state');
+        // Clear all user-related state
+        setUser(null);
+        setCurrentRole(null);
+        setAvailableRoles([]);
+        // Clear localStorage
+        localStorage.removeItem(`currentRole_${username}`);
         
-        // Get roles from details instead of user object
-        const frappeRoles = sessionCheck.details?.roles || sessionCheck.user?.roles || [];
-        console.log('Frappe roles from session:', frappeRoles);
-        
-        const requiresPasswordReset = sessionCheck.user?.requiresPasswordReset || false;
-        
-        // CRITICAL FIX: Handle password reset BEFORE any other logic
-        if (requiresPasswordReset) {
-          console.log('User requires password reset, setting password reset user');
-          
-          // Set a special user object that indicates password reset is required
-          const passwordResetUser: AuthUser = {
-            username: username,
-            full_name: fullName,
-            email: email,
-            role: '', // Empty role during password reset
-            roles: [],
-            requiresPasswordReset: true
-          };
-          
-          setUser(passwordResetUser);
-          setCurrentRole(null); // No role during password reset
-          setAvailableRoles([]); // No roles during password reset
-          
-          // Clear localStorage during password reset
-          localStorage.removeItem(`currentRole_${username}`);
-          
-          return {
-            authenticated: false, // Not fully authenticated until password is reset
-            requiresPasswordReset: true,
-            user: passwordResetUser
-          };
-        }
-        
-        // Get only allowed roles for this user
-        const allowedRoles = getAllowedRoles(frappeRoles);
-        
-        // If no valid roles, logout the user
-        if (allowedRoles.length === 0) {
-          console.log('No valid roles found, logging out user');
-          await logout();
-          setError('Access denied: No valid roles assigned to your account.');
-          return { 
-            authenticated: false, 
-            error: 'No valid roles assigned',
-            noValidRoles: true 
-          };
-        }
-        
-        setAvailableRoles(allowedRoles);
-        
-        // Set current role (check localStorage first for persistence)
-        const savedRole = localStorage.getItem(`currentRole_${username}`);
-        const initialRole = (savedRole && allowedRoles.includes(savedRole as AllowedRole)) 
-          ? savedRole as AllowedRole
-          : allowedRoles[0]; // Default to first available role
-        
-        setCurrentRole(initialRole);
-        
-        const userData: AuthUser = {
+        // Set a special user object that indicates password reset is required
+        const passwordResetUser: AuthUser = {
           username: username,
           full_name: fullName,
           email: email,
-          role: initialRole,
-          roles: frappeRoles.map((r: any) => typeof r === 'string' ? r : (r.role || r.name || '')),
-          requiresPasswordReset: false // Explicitly set to false for normal users
+          role: '', // Empty role
+          roles: [],
+          requiresPasswordReset: true
         };
         
-        console.log('Setting user data:', userData);
-        setUser(userData);
-        return { authenticated: true, user: userData };
+        setUser(passwordResetUser);
+        
+        return {
+          authenticated: false,
+          requiresPasswordReset: true,
+          user: passwordResetUser
+        };
       }
       
-      // Not authenticated - clear all state
-      setUser(null);
-      setCurrentRole(null);
-      setAvailableRoles([]);
-      return { authenticated: false };
-    } catch (error) {
-      console.error('Auth check failed:', error);
-      // Clear state on error
-      setUser(null);
-      setCurrentRole(null);
-      setAvailableRoles([]);
-      return { authenticated: false, error: 'Authentication check failed' };
-    } finally {
-      setLoading(false);
+      // Get only allowed roles for this user
+      const allowedRoles = getAllowedRoles(frappeRoles);
+      
+      // If no valid roles, logout the user
+      if (allowedRoles.length === 0) {
+        console.log('No valid roles found, logging out user');
+        await logout();
+        setError('Access denied: No valid roles assigned to your account.');
+        return { 
+          authenticated: false, 
+          error: 'No valid roles assigned',
+          noValidRoles: true 
+        };
+      }
+      
+      setAvailableRoles(allowedRoles);
+      
+      // Set current role (check localStorage first for persistence)
+      const savedRole = localStorage.getItem(`currentRole_${username}`);
+      const initialRole = (savedRole && allowedRoles.includes(savedRole as AllowedRole)) 
+        ? savedRole as AllowedRole
+        : allowedRoles[0]; // Default to first available role
+      
+      setCurrentRole(initialRole);
+      
+      const userData: AuthUser = {
+        username: username,
+        full_name: fullName,
+        email: email,
+        role: initialRole,
+        roles: frappeRoles.map((r: any) => typeof r === 'string' ? r : (r.role || r.name || '')),
+        requiresPasswordReset: false // Explicitly set to false for normal users
+      };
+      
+      console.log('Setting user data:', userData);
+      setUser(userData);
+      return { authenticated: true, user: userData };
     }
-  };
+    
+    // Not authenticated - clear all state
+    setUser(null);
+    setCurrentRole(null);
+    setAvailableRoles([]);
+    return { authenticated: false };
+  } catch (error) {
+    console.error('Auth check failed:', error);
+    // Clear state on error
+    setUser(null);
+    setCurrentRole(null);
+    setAvailableRoles([]);
+    return { authenticated: false, error: 'Authentication check failed' };
+  } finally {
+    setLoading(false);
+  }
+};
 
-  // Updated login function for consistency
-  const login = async (username: string, password: string) => {
-    try {
-      setLoading(true);
-      setError(null);
+// Also update the login function for consistency
+const login = async (username: string, password: string) => {
+  try {
+    setLoading(true);
+    setError(null);
+    
+    const response = await frappeAPI.login(username, password);
+    console.log('Login response:', response);
+    
+    if (response.success && response.user) {
+      const firstLoginCheck = await frappeAPI.checkFirstLogin(username);
       
-      const response = await frappeAPI.login(username, password);
-      console.log('Login response:', response);
-      
-      if (response.success && response.user) {
-        const firstLoginCheck = await frappeAPI.checkFirstLogin(username);
+      // CRITICAL FIX: Check password reset requirement FIRST
+      if (firstLoginCheck.requiresPasswordReset) {
+        console.log('User requires password reset after login');
         
-        // CRITICAL FIX: Check password reset requirement FIRST
-        if (firstLoginCheck.requiresPasswordReset) {
-          console.log('User requires password reset after login');
-          
-          const passwordResetUser: AuthUser = {
-            username: username,
-            full_name: response.user.full_name || username.split('@')[0] || 'User',
-            email: response.user.email || username,
-            role: '', // Empty role during password reset
-            roles: [],
-            requiresPasswordReset: true
-          };
-          
-          setUser(passwordResetUser);
-          setCurrentRole(null); // No role during password reset
-          setAvailableRoles([]); // No roles during password reset
-          
-          return { 
-            success: true, 
-            user: passwordResetUser,
-            requiresPasswordReset: true
-          };
-        }
-        
-        // Use details.roles instead of user.roles - this is key!
-        const rawRoles = response.details?.roles || response.user.roles || [];
-        console.log('Raw roles from login:', rawRoles);
-        
-        // Get only allowed roles
-        const allowedRoles = getAllowedRoles(rawRoles);
-        
-        // If no valid roles found, logout and return error
-        if (allowedRoles.length === 0) {
-          console.log('No valid roles found during login, logging out');
-          await frappeAPI.logout(); // Logout from Frappe
-          
-          // Clear any stored data
-          localStorage.removeItem(`currentRole_${username}`);
-          setUser(null);
-          setCurrentRole(null);
-          setAvailableRoles([]);
-          
-          return { 
-            success: false, 
-            error: 'Access denied: No valid roles assigned to your account.',
-            noValidRoles: true
-          };
-        }
-        
-        setAvailableRoles(allowedRoles);
-        
-        const initialRole = allowedRoles[0]; // Default to first role
-        setCurrentRole(initialRole);
-        
-        const userData: AuthUser = {
+        const passwordResetUser: AuthUser = {
           username: username,
           full_name: response.user.full_name || username.split('@')[0] || 'User',
           email: response.user.email || username,
-          role: initialRole,
-          roles: rawRoles.map((r: any) => typeof r === 'string' ? r : (r.role || r.name || '')),
-          requiresPasswordReset: false // Explicitly set to false for normal users
+          role: '', // Empty role
+          roles: [],
+          requiresPasswordReset: true
         };
-
-        setUser(userData);
-        console.log('User logged in:', userData);
+        
+        setUser(passwordResetUser);
+        setCurrentRole(null);
+        setAvailableRoles([]);
         
         return { 
           success: true, 
-          user: userData,
-          requiresPasswordReset: false
+          user: passwordResetUser,
+          requiresPasswordReset: true
         };
       }
       
-      return { 
-        success: false, 
-        error: response.error || 'Login failed' 
-      };
-    } catch (error) {
-      console.error('Login error:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Login failed';
+      // Use details.roles instead of user.roles - this is key!
+      const rawRoles = response.details?.roles || response.user.roles || [];
+      console.log('Raw roles from login:', rawRoles);
       
-      setError(errorMessage);
-      return { success: false, error: errorMessage };
-    } finally {
-      setLoading(false);
+      // Get only allowed roles
+      const allowedRoles = getAllowedRoles(rawRoles);
+      
+      // If no valid roles found, logout and return error
+      if (allowedRoles.length === 0) {
+        console.log('No valid roles found during login, logging out');
+        await frappeAPI.logout(); // Logout from Frappe
+        
+        // Clear any stored data
+        localStorage.removeItem(`currentRole_${username}`);
+        setUser(null);
+        setCurrentRole(null);
+        setAvailableRoles([]);
+        
+        return { 
+          success: false, 
+          error: 'Access denied: No valid roles assigned to your account.',
+          noValidRoles: true
+        };
+      }
+      
+      setAvailableRoles(allowedRoles);
+      
+      const initialRole = allowedRoles[0]; // Default to first role
+      setCurrentRole(initialRole);
+      
+      const userData: AuthUser = {
+        username: username,
+        full_name: response.user.full_name || username.split('@')[0] || 'User',
+        email: response.user.email || username,
+        role: initialRole,
+        roles: rawRoles.map((r: any) => typeof r === 'string' ? r : (r.role || r.name || '')),
+        requiresPasswordReset: false // Explicitly set to false for normal users
+      };
+
+      setUser(userData);
+      console.log('User logged in:', userData);
+      
+      return { 
+        success: true, 
+        user: userData,
+        requiresPasswordReset: false
+      };
     }
-  };
+    
+    return { 
+      success: false, 
+      error: response.error || 'Login failed' 
+    };
+  } catch (error) {
+    console.error('Login error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Login failed';
+    
+    setError(errorMessage);
+    return { success: false, error: errorMessage };
+  } finally {
+    setLoading(false);
+  }
+};
 
   // Improved switchRole function with better state management
   const switchRole = async (role: string): Promise<boolean> => {
@@ -386,58 +385,133 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const resetPassword = async (username: string, newPassword: string) => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const result = await frappeAPI.resetFirstTimePassword(username, newPassword);
+  // const login = async (username: string, password: string) => {
+  //   try {
+  //     setLoading(true);
+  //     setError(null);
       
-      if (result.success) {
-        const userDetails = await frappeAPI.getUserDetails(username);
+  //     const response = await frappeAPI.login(username, password);
+  //     console.log('Login response:', response);
+      
+  //     if (response.success && response.user) {
+  //       const firstLoginCheck = await frappeAPI.checkFirstLogin(username);
         
-        const allowedRoles = getAllowedRoles(userDetails.data?.roles || []);
+  //       // Use details.roles instead of user.roles - this is key!
+  //       const rawRoles = response.details?.roles || response.user.roles || [];
+  //       console.log('Raw roles from login:', rawRoles);
         
-        // If no valid roles after password reset, logout
-        if (allowedRoles.length === 0) {
-          await frappeAPI.logout();
-          setError('Access denied: No valid roles assigned to your account.');
-          return { 
-            success: false, 
-            error: 'No valid roles assigned',
-            noValidRoles: true 
-          };
-        }
+  //       // Get only allowed roles
+  //       const allowedRoles = getAllowedRoles(rawRoles);
         
-        setAvailableRoles(allowedRoles);
+  //       // If no valid roles found, logout and return error
+  //       if (allowedRoles.length === 0) {
+  //         console.log('No valid roles found during login, logging out');
+  //         await frappeAPI.logout(); // Logout from Frappe
+          
+  //         // Clear any stored data
+  //         localStorage.removeItem(`currentRole_${username}`);
+  //         setUser(null);
+  //         setCurrentRole(null);
+  //         setAvailableRoles([]);
+          
+  //         return { 
+  //           success: false, 
+  //           error: 'Access denied: No valid roles assigned to your account.',
+  //           noValidRoles: true
+  //         };
+  //       }
         
-        const initialRole = allowedRoles[0];
-        setCurrentRole(initialRole);
+  //       setAvailableRoles(allowedRoles);
         
-        const userData: AuthUser = {
-          username: username,
-          full_name: userDetails.data?.full_name || username.split('@')[0] || 'User',
-          email: userDetails.data?.email || username,
-          role: initialRole,
-          roles: userDetails.data?.roles?.map((r: any) => r.role || r) || [],
-          requiresPasswordReset: false // FIXED: Set to false after successful reset
-        };
+  //       const initialRole = allowedRoles[0]; // Default to first role
+  //       setCurrentRole(initialRole);
+        
+  //       const userData: AuthUser = {
+  //         username: username,
+  //         full_name: response.user.full_name || username.split('@')[0] || 'User',
+  //         email: response.user.email || username,
+  //         role: initialRole,
+  //         roles: rawRoles.map((r: any) => typeof r === 'string' ? r : (r.role || r.name || '')),
+  //         requiresPasswordReset: firstLoginCheck.requiresPasswordReset || false
+  //       };
 
-        setUser(userData);
-        return { success: true };
-      } else {
-        setError(result.error || 'Password reset failed');
-        return { success: false, error: result.error || 'Password reset failed' };
+  //       setUser(userData);
+  //       console.log('User logged in:', userData);
+        
+  //       return { 
+  //         success: true, 
+  //         user: userData,
+  //         requiresPasswordReset: firstLoginCheck.requiresPasswordReset
+  //       };
+  //     }
+      
+  //     return { 
+  //       success: false, 
+  //       error: response.error || 'Login failed' 
+  //     };
+  //   } catch (error) {
+  //     console.error('Login error:', error);
+  //     const errorMessage = error instanceof Error ? error.message : 'Login failed';
+      
+  //     setError(errorMessage);
+  //     return { success: false, error: errorMessage };
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+  const resetPassword = async (username: string, newPassword: string) => {
+  try {
+    setLoading(true);
+    setError(null);
+
+    const result = await frappeAPI.resetFirstTimePassword(username, newPassword);
+    
+    if (result.success) {
+      const userDetails = await frappeAPI.getUserDetails(username);
+      
+      const allowedRoles = getAllowedRoles(userDetails.data?.roles || []);
+      
+      // If no valid roles after password reset, logout
+      if (allowedRoles.length === 0) {
+        await frappeAPI.logout();
+        setError('Access denied: No valid roles assigned to your account.');
+        return { 
+          success: false, 
+          error: 'No valid roles assigned',
+          noValidRoles: true 
+        };
       }
-    } catch (error) {
-      console.error('Password reset error:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Password reset failed';
-      setError(errorMessage);
-      return { success: false, error: errorMessage };
-    } finally {
-      setLoading(false);
+      
+      setAvailableRoles(allowedRoles);
+      
+      const initialRole = allowedRoles[0];
+      setCurrentRole(initialRole);
+      
+      const userData: AuthUser = {
+        username: username,
+        full_name: userDetails.data?.full_name || username.split('@')[0] || 'User',
+        email: userDetails.data?.email || username,
+        role: initialRole,
+        roles: userDetails.data?.roles?.map((r: any) => r.role || r) || [],
+        requiresPasswordReset: false // FIXED: Set to false after successful reset
+      };
+
+      setUser(userData);
+      return { success: true };
+    } else {
+      setError(result.error || 'Password reset failed');
+      return { success: false, error: result.error || 'Password reset failed' };
     }
-  };
+  } catch (error) {
+    console.error('Password reset error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Password reset failed';
+    setError(errorMessage);
+    return { success: false, error: errorMessage };
+  } finally {
+    setLoading(false);
+  }
+};
 
   const logout = async () => {
     try {
@@ -493,35 +567,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return roleDisplayMap[role] || role.replace(/_/g, ' ');
   };
 
-  const value = {
-    user,
-    login,
-    logout,
-    refreshAuth,
-    clearError,
-    resetPassword,
-    loading,
-    error,
-    // CRITICAL FIX: Only authenticated if user exists AND doesn't need password reset AND has valid roles
-    isAuthenticated: !!user && !user?.requiresPasswordReset && !!currentRole,
-    needsPasswordReset: !!user?.requiresPasswordReset, // Explicit property to check password reset status
-    role: currentRole,
-    canAccess,
-    currentRole,
-    availableRoles,
-    switchRole,
-    getDisplayRoleName,
-    isMultiRole: availableRoles.length > 1,
-    isSwitchingRole,
-    hasRole: (roleToCheck: string): boolean => {
-      return currentRole === roleToCheck;
-    },
-    hasAnyRole: (rolesToCheck: string[]): boolean => {
-      if (!currentRole || !rolesToCheck.length) return false;
-      return rolesToCheck.includes(currentRole);
-    },
-  };
-
+ const value = {
+  user,
+  login,
+  logout,
+  refreshAuth,
+  clearError,
+  resetPassword,
+  loading,
+  error,
+  // CRITICAL FIX: Only authenticated if user exists AND doesn't need password reset AND has valid roles
+  isAuthenticated: !!user && !user?.requiresPasswordReset && !!currentRole,
+  needsPasswordReset: !!user?.requiresPasswordReset, // New property to check password reset status
+  role: currentRole,
+  canAccess,
+  currentRole,
+  availableRoles,
+  switchRole,
+  getDisplayRoleName,
+  isMultiRole: availableRoles.length > 1,
+  isSwitchingRole,
+  hasRole: (roleToCheck: string): boolean => {
+    return currentRole === roleToCheck;
+  },
+  hasAnyRole: (rolesToCheck: string[]): boolean => {
+    if (!currentRole || !rolesToCheck.length) return false;
+    return rolesToCheck.includes(currentRole);
+  },
+};
   return (
     <AuthContext.Provider value={value}>
       {children}
