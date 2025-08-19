@@ -1541,7 +1541,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                                 handleSelectChange("custom_budget_range", value)
                               }
                             >
-                              <SelectTrigger className="w-full">
+                              <SelectTrigger className="w-full text-md">
                                 <SelectValue placeholder="Select budget range" />
                               </SelectTrigger>
                               <SelectContent className="bg-white">
@@ -1567,7 +1567,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                                 )
                               }
                             >
-                              <SelectTrigger className="w-full">
+                              <SelectTrigger className="w-full text-md ">
                                 <SelectValue placeholder="Select urgency" />
                               </SelectTrigger>
                               <SelectContent className="bg-white">
