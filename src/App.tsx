@@ -27,12 +27,33 @@ interface ProtectedRouteProps {
   requireExactRole?: boolean;
 }
 
+const PublicRoute = ({ children }: { children: ReactNode }) => {
+  const { isAuthenticated, user } = useAuth();
+  
+  if (isAuthenticated && user?.requiresPasswordReset) {
+    return <Navigate to="/first-time-password-reset" replace />;
+  }
+  
+  if (isAuthenticated) {
+    return <Navigate to="/dashboard" replace />;
+  }
+  
+  return <>{children}</>;
+};
+
 const ProtectedRoute = ({
   children,
   allowedRoles = [],
   requireExactRole = false,
 }: ProtectedRouteProps) => {
-  const { isAuthenticated, currentRole, availableRoles, loading, isSwitchingRole } = useAuth();
+  const { 
+    isAuthenticated, 
+    currentRole, 
+    availableRoles, 
+    loading, 
+    isSwitchingRole,
+    user
+  } = useAuth();
   const location = useLocation();
 
   // Extended delay during role switching to prevent unauthorized flicker
@@ -59,8 +80,13 @@ const ProtectedRoute = ({
     return <PasswordResetLoader />;
   }
 
+  // Check for password reset requirement first
+  if (user?.requiresPasswordReset) {
+    return <Navigate to="/first-time-password-reset" replace />;
+  }
+
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
   if (allowedRoles.length > 0) {
@@ -69,7 +95,7 @@ const ProtectedRoute = ({
     if (requireExactRole) {
       hasAccess = currentRole ? allowedRoles.includes(currentRole) : false;
     } else {
-      hasAccess = currentRole ? allowedRoles.includes(currentRole) : false;
+      hasAccess = currentRole ? allowedRoles.some(role => currentRole.includes(role)) : false;
     }
 
     if (!hasAccess) {
@@ -96,17 +122,28 @@ const ProtectedRoute = ({
   return <>{children}</>;
 };
 
-const PublicRoute = ({ children }: { children: ReactNode }) => {
-  const { isAuthenticated, loading, currentRole, availableRoles } = useAuth();
+const PasswordResetRoute = ({ children }: { children: ReactNode }) => {
+  const { isAuthenticated, loading, currentRole, availableRoles, user } = useAuth();
 
   if (loading) {
     return <PasswordResetLoader />;
   }
 
-  if (
-    isAuthenticated &&
-    !window.location.pathname.includes("first-time-password-reset")
-  ) {
+  // Allow access to first-time-password-reset if user exists and needs reset
+  if (window.location.pathname.includes("first-time-password-reset")) {
+    if (user?.requiresPasswordReset) {
+      return <>{children}</>;
+    }
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  // If user requires password reset, redirect to password reset page
+  if (user?.requiresPasswordReset) {
+    return <Navigate to="/first-time-password-reset" replace />;
+  }
+
+  // Only redirect to dashboard if user is fully authenticated (no password reset needed)
+  if (isAuthenticated) {
     const activeRole = currentRole || availableRoles[0] || "accountUser";
     const roleRoutes: Record<string, string> = {
       EITS_Sale_Representative: "/sales",
@@ -125,12 +162,17 @@ const PublicRoute = ({ children }: { children: ReactNode }) => {
 };
 
 const DashboardRouter = () => {
-  const { currentRole, availableRoles, logout } = useAuth();
+  const { currentRole, availableRoles, logout, user } = useAuth();
+
+  // Check for password reset requirement
+  if (user?.requiresPasswordReset) {
+    return <Navigate to="/first-time-password-reset" replace />;
+  }
 
   if (availableRoles.length === 0) {
     // No valid roles - force logout or show error
     logout();
-    return <Navigate to="/unauthorized" replace />;
+    return <Navigate to="/login" replace />;
   }
 
   const activeRole = currentRole || availableRoles[0];
@@ -194,9 +236,9 @@ function AppRoutes() {
         <Route
           path="/first-time-password-reset"
           element={
-            <PublicRoute>
+            <PasswordResetRoute>
               <FirstTimePasswordReset />
-            </PublicRoute>
+            </PasswordResetRoute>
           }
         />
 
