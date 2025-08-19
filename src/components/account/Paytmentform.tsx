@@ -7,6 +7,7 @@ import { frappeAPI } from "../../api/frappeClient";
 import { usePaymentStore } from "../../store/payment";
 import PaymentImageUpload from "./imageupload/ImageUpload";
 import { useNavigate } from "react-router-dom";
+import { capitalizeFirstLetter } from "../../helpers/helper";
 
 interface ImageItem {
   id: string;
@@ -34,7 +35,6 @@ const PaymentForm = () => {
     custom_account_holder_name,
     isLoading,
     isUploading,
-    error,
     setField,
     uploadAndAddAttachment,
     submitPayment,
@@ -194,7 +194,6 @@ useEffect(() => {
     console.error("Search error:", error);
     setSearchResults([]);
     setShowDropdown(true);
-    toast.error("Failed to search suppliers. Please try again.");
   } finally {
     setIsSearching(false);
   }
@@ -317,9 +316,19 @@ useEffect(() => {
     | "custom_ifscibanswift_code"
     | "custom_account_holder_name";
 
-  const handleInputChange = (field: PaymentField, value: string) => {
-    setField(field, value);
-  };
+const handleInputChange = (field: PaymentField, value: string) => {
+  // Only capitalize if it's a text field (not numbers, emails, etc.)
+  const shouldCapitalize = [
+    "paid_to",
+    "custom_name_of_bank",
+    "custom_account_holder_name",
+    "custom_purpose_of_payment",
+     "custom_ifscibanswift_code",
+  ].includes(field);
+  
+  const processedValue = shouldCapitalize ? capitalizeFirstLetter(value) : value;
+  setField(field, processedValue);
+};
 
 const handleImagesChange = (newImages: ImageItem[]) => {
   // Set flag to indicate manual image update
@@ -440,7 +449,7 @@ const handleImageUpload = async (file: File): Promise<string> => {
       setSearchQuery("");
       isManualImageUpdate.current = false; // Reset flag
     } else {
-      toast.error(`Error: ${result.error}`);
+      console.error("Payment submission failed:", result.error);
     }
     navigate("/accountUser?tab=payment-summary");
 
@@ -491,13 +500,6 @@ const handleImageUpload = async (file: File): Promise<string> => {
           Enter payment details
         </p>
       </div>
-
-      {/* Error Message */}
-      {error && (
-        <div className="mx-6 mt-4 p-3 bg-red-100 border border-red-300 text-red-700 rounded-md text-sm">
-          {error}
-        </div>
-      )}
 
       {/* Form Content */}
       <form onSubmit={handleSubmit} className="p-4 md:p-6" noValidate>

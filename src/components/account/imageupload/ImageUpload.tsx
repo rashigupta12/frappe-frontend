@@ -519,7 +519,7 @@ const handleFileUpload = async (
         newImages.push(newImage);
       } catch (error) {
         console.error(`Error uploading ${file.name}:`, error);
-        toast.error(`Failed to upload ${file.name}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        toast.error(`Failed to upload ${file.name}. Please try again.`);
       }
     }
 

@@ -1,14 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import {
-  Building,
-  CreditCard,
-
-  FileText,
-  X
-} from "lucide-react";
+import { Building, CreditCard, FileText, X, Eye } from "lucide-react";
 import React, { useState } from "react";
 import { Button } from "../ui/button";
-import { DialogContent, DialogFooter } from "../ui/dialog";
+import { DialogContent, DialogFooter, DialogTitle } from "../ui/dialog";
 
 export interface Receipt {
   name: string;
@@ -212,8 +206,8 @@ const ReceiptDetails: React.FC<Props> = ({ receipt, onClose }) => {
   const getPaymentModeIcon = (mode: string) => {
     if (!mode) return <FileText className="h-5 w-5 text-gray-500" />;
     const lowerMode = mode.toLowerCase();
-    if (lowerMode.includes("cash")) return ;
-    if (lowerMode.includes("card")) return ;
+    if (lowerMode.includes("cash")) return <span className="h-5 w-5 text-green-600" />;
+    if (lowerMode.includes("card")) return <span className="h-5 w-5 text-blue-600" />;
     return <Building className="h-5 w-5 text-purple-600" />; // bank
   };
 
@@ -237,6 +231,19 @@ const ReceiptDetails: React.FC<Props> = ({ receipt, onClose }) => {
       return `${imageurl}${url}`;
     }
     return `${imageurl}/${url}`;
+  };
+
+  const getFileNameFromUrl = (url: string): string => {
+    if (!url) return "";
+
+    // Remove query parameters if they exist
+    const withoutQuery = url.split("?")[0];
+
+    // Get the part after the last slash
+    const filename = withoutQuery.split("/").pop() || "";
+
+    // Decode URI components (handles %20 for spaces, etc.)
+    return decodeURIComponent(filename);
   };
 
   const handleAttachmentView = (attachment: any) => {
@@ -300,9 +307,9 @@ const ReceiptDetails: React.FC<Props> = ({ receipt, onClose }) => {
       <div className="sticky top-0 bg-white border-b p-6 pb-2">
         <div className="flex justify-between items-start">
           <div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-1">
+            <DialogTitle className="text-lg font-semibold text-gray-900">
               Receipt Details
-            </h2>
+            </DialogTitle>
             <p className="text-sm text-gray-500">{receipt.name}</p>
           </div>
           <div className="text-right">
@@ -320,7 +327,7 @@ const ReceiptDetails: React.FC<Props> = ({ receipt, onClose }) => {
       </div>
 
       {/* Content */}
-      <div className="px-6  ">
+      <div className="px-6">
         {/* Primary Information */}
         <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-2">
           <SimpleField
@@ -347,9 +354,9 @@ const ReceiptDetails: React.FC<Props> = ({ receipt, onClose }) => {
 
         {/* Purpose */}
         {receipt.custom_purpose_of_payment && (
-          <div className="bg-gray-50 rounded-lg p-3 mb-2">
+          <div className="bg-gray-100 rounded-lg p-3 mb-2">
             <div className="flex items-start gap-3">
-              <FileText className="h-5 w-5 text-gray-600 mt-0.5" />
+              <FileText className="h-5 w-5 text-yellow-600 mt-0.5" />
               <div>
                 <h4 className="text-sm font-semibold text-gray-900 mb-1">Purpose of Payment</h4>
                 <p className="text-sm text-gray-700">{receipt.custom_purpose_of_payment}</p>
@@ -369,49 +376,53 @@ const ReceiptDetails: React.FC<Props> = ({ receipt, onClose }) => {
               <FileText className="h-5 w-5" />
               Attachments ({receipt.custom_attachments.length})
             </h3>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-              {receipt.custom_attachments.map((attachment, index) => (
-                <div
-                  key={index}
-                  className="relative aspect-square border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-all duration-200 cursor-pointer group"
-                  onClick={() => handleAttachmentView(attachment)}
-                >
-                  {isImageFile(attachment) ? (
-                    <>
-                      <img
-                        src={getImageUrl(attachment)}
-                        alt={
-                          attachment?.image ||
-                          attachment?.file_name ||
-                          `Attachment ${index + 1}`
-                        }
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-                        onError={(e) => {
-                          e.currentTarget.style.display = "none";
-                          if (e.currentTarget.parentElement) {
-                            e.currentTarget.parentElement.classList.add(
-                              "bg-gray-100",
-                              "flex",
-                              "items-center",
-                              "justify-center"
-                            );
-                          }
-                        }}
-                      />
-                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-200" />
-                    </>
-                  ) : (
-                    <div className="w-full h-full bg-gray-50 flex flex-col items-center justify-center p-3 group-hover:bg-gray-100 transition-colors duration-200">
-                      <FileText className="h-8 w-8 text-gray-400 mb-2" />
-                      <span className="text-xs text-gray-600 text-center truncate w-full">
-                        {attachment?.file_name ||
-                          attachment?.image ||
-                          `File ${index + 1}`}
-                      </span>
+
+            <div className="space-y-2">
+              {receipt.custom_attachments.map((attachment, index) => {
+                const fileUrl = getImageUrl(attachment);
+                const fileName = getFileNameFromUrl(
+                  attachment?.file_name ||
+                    attachment?.image ||
+                    attachment?.url ||
+                    fileUrl ||
+                    `Attachment ${index + 1}`
+                );
+                const isImage = isImageFile(attachment);
+
+                return (
+                  <div
+                    key={index}
+                    className="flex items-center justify-between border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      {isImage ? (
+                        <div className="w-10 h-10 rounded bg-blue-50 flex items-center justify-center">
+                          <Eye className="h-5 w-5 text-blue-500" />
+                        </div>
+                      ) : (
+                        <div className="w-10 h-10 rounded bg-gray-100 flex items-center justify-center">
+                          <FileText className="h-5 w-5 text-gray-500" />
+                        </div>
+                      )}
+                      <div>
+                        <p className="text-sm font-medium text-gray-900 truncate max-w-[200px]">
+                          {fileName}
+                        </p>
+                      </div>
                     </div>
-                  )}
-                </div>
-              ))}
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleAttachmentView(attachment)}
+                        className="h-8"
+                      >
+                        <Eye className="h-4 w-4 mr-1" />
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
@@ -439,6 +450,10 @@ const ReceiptDetails: React.FC<Props> = ({ receipt, onClose }) => {
 
 export default ReceiptDetails;
 
+/* --------------------------------------------------------------------------
+   Helper Components
+-------------------------------------------------------------------------- */
+
 interface DetailFieldProps {
   label: string;
   value?: string;
@@ -447,7 +462,9 @@ interface DetailFieldProps {
 const DetailField: React.FC<DetailFieldProps> = ({ label, value }) => {
   return (
     <div>
-      <span className="text-xs font-medium text-gray-600 block mb-1">{label}</span>
+      <span className="text-xs font-medium text-gray-600 block mb-1">
+        {label}
+      </span>
       <p className="text-sm font-semibold text-gray-900">{value || "N/A"}</p>
     </div>
   );

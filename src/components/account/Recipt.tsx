@@ -9,6 +9,7 @@ import PaymentImageUpload from "./imageupload/ImageUpload";
 
 import { useNavigate } from "react-router-dom";
 import { useReceiptStore } from "../../store/recipt";
+import { capitalizeFirstLetter } from "../../helpers/helper";
 
 interface ImageItem {
   id: string;
@@ -36,7 +37,6 @@ const ReceiptForm = () => {
     custom_account_holder_name,
     isLoading,
     isUploading,
-    error,
     setField,
     uploadAndAddAttachment,
     submitPayment,
@@ -74,11 +74,12 @@ const ReceiptForm = () => {
   }, [custom_mode_of_payment, setField, user.user?.username, paid_by]);
 
   // Sync searchQuery with paid_from from store
-  useEffect(() => {
-    if (paid_from && paid_from !== searchQuery) {
-      setSearchQuery(paid_from);
-    }
-  }, [paid_from, searchQuery]);
+useEffect(() => {
+  // Only sync if paid_from was set programmatically (not from user typing)
+  if (paid_from && paid_from !== searchQuery && !showDropdown) {
+    setSearchQuery(paid_from);
+  }
+}, [paid_from, searchQuery, showDropdown]);
 
   // Convert custom_attachments to images format
   useEffect(() => {
@@ -199,36 +200,40 @@ const ReceiptForm = () => {
        console.error("Search error:", error);
        setSearchResults([]);
        setShowDropdown(true);
-       toast.error("Failed to search customers. Please try again.");
+      
      } finally {
        setIsSearching(false);
      }
    }, []);
 
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const query = e.target.value;
-    setSearchQuery(query);
+ const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const query = e.target.value;
+  setSearchQuery(query);
 
-    // Clear paid_from when search query is empty
-    if (!query.trim()) {
-      setField("paid_from", "");
-    }
+  // Clear paid_from when search query is empty
+  if (!query.trim()) {
+    setField("paid_from", "");
+  } else {
+    // Update paid_from to match current search query while typing
+    setField("paid_from", query);
+  }
 
-    if (searchTimeout) {
-      clearTimeout(searchTimeout);
-    }
+  if (searchTimeout) {
+    clearTimeout(searchTimeout);
+  }
 
-    if (query.length > 0) {
-      setSearchTimeout(
-        setTimeout(() => {
-          handleCustomerSearch(query);
-        }, 300)
-      );
-    } else {
-      setSearchResults([]);
-      setShowDropdown(false);
-    }
-  };
+  if (query.length > 0) {
+    setSearchTimeout(
+      setTimeout(() => {
+        handleCustomerSearch(query);
+      }, 300)
+    );
+  } else {
+    setSearchResults([]);
+    setShowDropdown(false);
+  }
+};
+
 
   const handleCloseCustomerDialog = () => {
     setShowAddCustomerDialog(false);
@@ -248,25 +253,30 @@ const ReceiptForm = () => {
     toast.success("Customer selected");
   };
 
-  const handleNewCustomerInputChange = (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const { name, value } = e.target;
-    setNewCustomerData((prev) => ({ ...prev, [name]: value }));
-  };
+ const handleNewCustomerInputChange = (
+  e: React.ChangeEvent<HTMLInputElement>
+) => {
+  const { name, value } = e.target;
+  
+  // Capitalize first letter for customer_name field
+  const processedValue = name === 'customer_name' ? capitalizeFirstLetter(value) : value;
+  
+  setNewCustomerData((prev) => ({ ...prev, [name]: processedValue }));
+};
 
   const handleAddNewCustomer = () => {
-    setNewCustomerData({
-      customer_name:
-        /^\d+$/.test(searchQuery) || searchQuery.includes("@")
-          ? ""
-          : searchQuery,
-      mobile_no: /^\d+$/.test(searchQuery) ? searchQuery : "",
-      email_id: searchQuery.includes("@") ? searchQuery : "",
-    });
-    setShowAddCustomerDialog(true);
-    setShowDropdown(false);
-  };
+  setNewCustomerData({
+    customer_name: capitalizeFirstLetter(
+      /^\d+$/.test(searchQuery) || searchQuery.includes("@")
+        ? ""
+        : searchQuery
+    ),
+    mobile_no: /^\d+$/.test(searchQuery) ? searchQuery : "",
+    email_id: searchQuery.includes("@") ? searchQuery : "",
+  });
+  setShowAddCustomerDialog(true);
+  setShowDropdown(false);
+};
 
   const handleCreateCustomer = async () => {
     if (!newCustomerData.customer_name) {
@@ -291,11 +301,7 @@ const ReceiptForm = () => {
       }
     } catch (error) {
       console.error("Error creating customer:", error);
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "Failed to create customer. Please try again."
-      );
+      
     } finally {
       setCreatingCustomer(false);
     }
@@ -322,9 +328,19 @@ const ReceiptForm = () => {
     | "custom_ifscibanswift_code"
     | "custom_account_holder_name";
 
-  const handleInputChange = (field: ReceiptField, value: string) => {
-    setField(field, value);
-  };
+ const handleInputChange = (field: ReceiptField, value: string) => {
+   // Only capitalize if it's a text field (not numbers, emails, etc.)
+   const shouldCapitalize = [
+     "paid_by",
+     "custom_name_of_bank",
+     "custom_account_holder_name",
+     "custom_purpose_of_payment",
+     "custom_ifscibanswift_code",
+   ].includes(field);
+   
+   const processedValue = shouldCapitalize ? capitalizeFirstLetter(value) : value;
+   setField(field, processedValue);
+ };
 
   const handleImagesChange = (newImages: ImageItem[]) => {
     // Set flag to indicate manual image update
@@ -438,7 +454,7 @@ const ReceiptForm = () => {
       setSearchQuery("");
       navigate("/accountUser?tab=receipt-summary");
     } else {
-      toast.error(`Error: ${result.error}`);
+      console.error("Receipt submission failed:", result.error);
     }
   };
 
@@ -487,12 +503,6 @@ const ReceiptForm = () => {
         </p>
       </div>
 
-      {/* Error Message */}
-      {error && (
-        <div className="mx-6 mt-4 p-3 bg-red-100 border border-red-300 text-red-700 rounded-md text-sm">
-          {error}
-        </div>
-      )}
 
       {/* Form Content */}
       <form onSubmit={handleSubmit} className="p-4 md:p-6">

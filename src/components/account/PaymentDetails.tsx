@@ -1,13 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import {
-  Building,
-  CreditCard,
-  FileText,
-  X
-} from "lucide-react";
+import { Building, CreditCard, FileText, X, Eye } from "lucide-react";
 import React, { useState } from "react";
 import { Button } from "../ui/button";
-import { DialogContent, DialogFooter } from "../ui/dialog";
+import { DialogContent, DialogFooter, DialogTitle } from "../ui/dialog";
 import type { Payment } from "./PaymentSummary";
 
 interface Props {
@@ -60,9 +55,6 @@ const AttachmentPreviewModal: React.FC<{
 
     if (!url) return "";
 
-    if (url.startsWith("http") || url.startsWith("blob:")) {
-      return url;
-    }
     if (url.startsWith("/")) {
       return `${imageurl}${url}`;
     }
@@ -177,6 +169,7 @@ const AttachmentPreviewModal: React.FC<{
 const PaymentDetails: React.FC<Props> = ({ payment, onClose }) => {
   const [showAttachmentPreview, setShowAttachmentPreview] = useState(false);
   const [currentAttachmentIndex, setCurrentAttachmentIndex] = useState(0);
+  console.log("payment" , payment)
 
   const fmt = (d?: string) => {
     if (!d) return "N/A";
@@ -191,23 +184,13 @@ const PaymentDetails: React.FC<Props> = ({ payment, onClose }) => {
     }
   };
 
-  // const formatTime = (d?: string) => {
-  //   if (!d) return "N/A";
-  //   try {
-  //     return new Date(d).toLocaleTimeString("en-GB", {
-  //       hour: "2-digit",
-  //       minute: "2-digit",
-  //     });
-  //   } catch {
-  //     return "Invalid Time";
-  //   }
-  // };
-
   const getPaymentModeIcon = (mode: string) => {
     if (!mode) return <FileText className="h-5 w-5 text-gray-500" />;
     const lowerMode = mode.toLowerCase();
-    if (lowerMode.includes("cash")) return <span className="h-5 w-5 text-green-600" />;
-    if (lowerMode.includes("card")) return <span className="h-5 w-5 text-blue-600" />;
+    if (lowerMode.includes("cash"))
+      return <span className="h-5 w-5 text-green-600" />;
+    if (lowerMode.includes("card"))
+      return <span className="h-5 w-5 text-blue-600" />;
     return <Building className="h-5 w-5 text-purple-600" />; // bank
   };
 
@@ -215,23 +198,42 @@ const PaymentDetails: React.FC<Props> = ({ payment, onClose }) => {
     const imageurl = "https://eits.thebigocommunity.org";
 
     const url =
+      attachment.image ||
       attachment.file_url ||
       attachment.url ||
-      attachment.image ||
       attachment.file_path ||
       attachment.attachment_url ||
       attachment.path;
 
     if (!url) return "";
 
-    if (url.startsWith("http") || url.startsWith("blob:")) {
+    if (url.startsWith("http://") || url.startsWith("https://")) {
       return url;
     }
+
+    if (url.startsWith("blob:")) {
+      return url;
+    }
+
     if (url.startsWith("/")) {
       return `${imageurl}${url}`;
     }
+
     return `${imageurl}/${url}`;
   };
+
+  // const handleDownload = (attachment: any) => {
+  //   const url = getImageUrl(attachment);
+  //   if (url) {
+  //     const link = document.createElement("a");
+  //     link.href = url;
+  //     link.download = attachment?.file_name || "download";
+  //     link.target = "_blank";
+  //     document.body.appendChild(link);
+  //     link.click();
+  //     document.body.removeChild(link);
+  //   }
+  // };
 
   const handleAttachmentView = (attachment: any) => {
     if (isImageFile(attachment)) {
@@ -251,7 +253,7 @@ const PaymentDetails: React.FC<Props> = ({ payment, onClose }) => {
   };
 
   const renderBankDetails = () => {
-    if (payment.custom_mode_of_payment?.toLowerCase() === 'bank') {
+    if (payment.custom_mode_of_payment?.toLowerCase() === "bank") {
       return (
         <div className="bg-blue-50 rounded-lg p-3 mb-1 ">
           <h4 className="text-sm font-md text-blue-900 flex items-center gap-2">
@@ -259,10 +261,22 @@ const PaymentDetails: React.FC<Props> = ({ payment, onClose }) => {
             Bank Details
           </h4>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <DetailField label="Bank Name" value={payment.custom_name_of_bank} />
-            <DetailField label="Account Number" value={payment.custom_account_number} />
-            <DetailField label="Account Holder" value={payment.custom_account_holder_name} />
-            <DetailField label="IFSC/SWIFT Code" value={payment.custom_ifscibanswift_code} />
+            <DetailField
+              label="Bank Name"
+              value={payment.custom_name_of_bank}
+            />
+            <DetailField
+              label="Account Number"
+              value={payment.custom_account_number}
+            />
+            <DetailField
+              label="Account Holder"
+              value={payment.custom_account_holder_name}
+            />
+            <DetailField
+              label="IFSC/SWIFT Code"
+              value={payment.custom_ifscibanswift_code}
+            />
           </div>
         </div>
       );
@@ -271,7 +285,7 @@ const PaymentDetails: React.FC<Props> = ({ payment, onClose }) => {
   };
 
   const renderCreditCardDetails = () => {
-    if (payment.custom_mode_of_payment?.toLowerCase() === 'credit card') {
+    if (payment.custom_mode_of_payment === "Credit Card") {
       return (
         <div className="bg-purple-50 rounded-lg p-2">
           <h4 className="text-sm font-semibold text-purple-900  flex items-center gap-2">
@@ -279,13 +293,32 @@ const PaymentDetails: React.FC<Props> = ({ payment, onClose }) => {
             Credit Card Details
           </h4>
           <div className="grid grid-cols-2 sm:grid-cols-2 gap-3">
-            <DetailField label="Bank Name" value={payment.custom_name_of_bank} />
-            <DetailField label="Card Number" value={payment.custom_card_number} />
+            <DetailField
+              label="Bank Name"
+              value={payment.custom_name_of_bank}
+            />
+            <DetailField
+              label="Card Number"
+              value={payment.custom_card_number}
+            />
           </div>
         </div>
       );
     }
     return null;
+  };
+
+  const getFileNameFromUrl = (url: string): string => {
+    if (!url) return "";
+
+    // Remove query parameters if they exist
+    const withoutQuery = url.split("?")[0];
+
+    // Get the part after the last slash
+    const filename = withoutQuery.split("/").pop() || "";
+
+    // Decode URI components (handles %20 for spaces, etc.)
+    return decodeURIComponent(filename);
   };
 
   return (
@@ -294,9 +327,9 @@ const PaymentDetails: React.FC<Props> = ({ payment, onClose }) => {
       <div className="sticky top-0 bg-white border-b p-6 pb-2">
         <div className="flex justify-between items-start">
           <div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-1">
+            <DialogTitle className="text-lg font-semibold text-gray-900">
               Payment Details
-            </h2>
+            </DialogTitle>
             <p className="text-sm text-gray-500">{payment.name}</p>
           </div>
           <div className="text-right">
@@ -307,108 +340,113 @@ const PaymentDetails: React.FC<Props> = ({ payment, onClose }) => {
               </span>
             </div>
             <div className="text-2xl font-bold text-gray-900">
-              {payment.amountaed || 0} <span className="text-lg text-gray-600">AED</span>
+              {payment.amountaed || 0}{" "}
+              <span className="text-lg text-gray-600">AED</span>
             </div>
           </div>
         </div>
       </div>
 
       {/* Content */}
-      <div className="px-6  ">
+      <div className="px-6">
         {/* Primary Information */}
         <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-2">
-          <SimpleField
-            label="Payment Date"
-            value={fmt(payment.date)}
-          />
-          <SimpleField
-            label="Bill Number"
-            value={payment.bill_number}
-          />
-          <SimpleField
-            label="Paid To"
-            value={payment.paid_to}
-          />
-          <SimpleField
-            label="Paid By"
-            value={payment.paid_by}
-          />
-          <SimpleField
-            label="Modified By"
-            value={payment.modified_by}
-          />
+          <SimpleField label="Payment Date" value={fmt(payment.date)} />
+          <SimpleField label="Bill Number" value={payment.bill_number} />
+          <SimpleField label="Paid To" value={payment.paid_to} />
+          <SimpleField label="Paid By" value={payment.paid_by} />
+          {/* <SimpleField label="Modified By" value={payment.modified_by} /> */}
         </div>
-
         {/* Purpose */}
         {payment.custom_purpose_of_payment && (
-          <div className="bg-gray-50 rounded-lg p-3 mb-2">
+          <div className="bg-gray-100 rounded-lg p-3 mb-2">
             <div className="flex items-start gap-3">
-              <FileText className="h-5 w-5 text-gray-600 mt-0.5" />
+              <FileText className="h-5 w-5 text-yellow-600 mt-0.5" />
               <div>
-                <h4 className="text-sm font-semibold text-gray-900 mb-1">Purpose of Payment</h4>
-                <p className="text-sm text-gray-700">{payment.custom_purpose_of_payment}</p>
+                <h4 className="text-sm font-semibold text-gray-900 mb-1">
+                  Purpose of Payment
+                </h4>
+                <p className="text-sm text-gray-700">
+                  {payment.custom_purpose_of_payment}
+                </p>
               </div>
             </div>
           </div>
         )}
-
         {/* Payment Method Specific Details */}
         {renderBankDetails()}
         {renderCreditCardDetails()}
-
         {/* Attachments */}
-        {payment.custom_attachments && payment.custom_attachments.length > 0 && (
-          <div className="mt-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <FileText className="h-5 w-5" />
-              Attachments ({payment.custom_attachments.length})
-            </h3>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-              {payment.custom_attachments.map((attachment, index) => (
-                <div
-                  key={index}
-                  className="relative aspect-square border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-all duration-200 cursor-pointer group"
-                  onClick={() => handleAttachmentView(attachment)}
-                >
-                  {isImageFile(attachment) ? (
-                    <>
-                      <img
-                        src={getImageUrl(attachment)}
-                        alt={
-                          attachment?.image ||
-                          attachment?.file_name ||
-                          `Attachment ${index + 1}`
-                        }
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-                        onError={(e) => {
-                          e.currentTarget.style.display = "none";
-                          if (e.currentTarget.parentElement) {
-                            e.currentTarget.parentElement.classList.add(
-                              "bg-gray-100",
-                              "flex",
-                              "items-center",
-                              "justify-center"
-                            );
-                          }
-                        }}
-                      />
-                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-200" />
-                    </>
-                  ) : (
-                    <div className="w-full h-full bg-gray-50 flex flex-col items-center justify-center p-3 group-hover:bg-gray-100 transition-colors duration-200">
-                      <FileText className="h-8 w-8 text-gray-400 mb-2" />
-                      <span className="text-xs text-gray-600 text-center truncate w-full">
-                        {attachment?.file_name ||
-                          attachment?.image ||
-                          `File ${index + 1}`}
-                      </span>
+
+        {payment.custom_attachments &&
+          payment.custom_attachments.length > 0 && (
+            <div className="mt-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                Attachments ({payment.custom_attachments.length})
+              </h3>
+
+              <div className="space-y-2">
+                {payment.custom_attachments.map((attachment, index) => {
+                  const fileUrl = getImageUrl(attachment);
+                  const fileName = getFileNameFromUrl(
+                    attachment?.file_name ||
+                      attachment?.image ||
+                      attachment?.url ||
+                      fileUrl ||
+                      `Attachment ${index + 1}`
+                  );
+                  const isImage = isImageFile(attachment);
+                  // const fileUrl = getImageUrl(attachment);
+
+                  return (
+                    <div
+                      key={index}
+                      className="flex items-center justify-between  border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        {isImage ? (
+                          <div className="w-10 h-10 rounded bg-blue-50 flex items-center justify-center">
+                            <Eye className="h-5 w-5 text-blue-500" />
+                          </div>
+                        ) : (
+                          <div className="w-10 h-10 rounded bg-gray-100 flex items-center justify-center">
+                            <FileText className="h-5 w-5 text-gray-500" />
+                          </div>
+                        )}
+                        <div>
+                          <p className="text-sm font-medium text-gray-900 truncate max-w-[200px]">
+                            {fileName}
+                          </p>
+                          {/* <p className="text-xs text-gray-500">
+                            {isImage ? "Image" : "File"}
+                          </p> */}
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleAttachmentView(attachment)}
+                          className="h-8"
+                        >
+                          <Eye className="h-4 w-4 mr-1" />
+                        </Button>
+                        {/* <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDownload(attachment)}
+                          className="h-8"
+                        >
+                          <Download className="h-4 w-4 mr-1" />
+                        </Button> */}
+                      </div>
                     </div>
-                  )}
-                </div>
-              ))}
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        )}
+          )}
       </div>
 
       {/* Footer */}
@@ -437,26 +475,6 @@ export default PaymentDetails;
    Helper Components
 -------------------------------------------------------------------------- */
 
-// interface InfoCardProps {
-//   icon: React.ReactNode;
-//   label: string;
-//   value?: string;
-// }
-
-// const InfoCard: React.FC<InfoCardProps> = ({ icon, label, value }) => {
-//   return (
-//     <div className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-sm transition-shadow duration-200">
-//       <div className="flex items-center gap-3 mb-2">
-//         {icon}
-//         <span className="text-sm font-medium text-gray-600">{label}</span>
-//       </div>
-//       <p className="text-sm font-semibold text-gray-900 truncate" title={value || "N/A"}>
-//         {value || "N/A"}
-//       </p>
-//     </div>
-//   );
-// };
-
 interface DetailFieldProps {
   label: string;
   value?: string;
@@ -465,11 +483,14 @@ interface DetailFieldProps {
 const DetailField: React.FC<DetailFieldProps> = ({ label, value }) => {
   return (
     <div>
-      <span className="text-xs font-medium text-gray-600 block mb-1">{label}</span>
+      <span className="text-xs font-medium text-gray-600 block mb-1">
+        {label}
+      </span>
       <p className="text-sm font-semibold text-gray-900">{value || "N/A"}</p>
     </div>
   );
 };
+
 interface SimpleFieldProps {
   label: string;
   value?: string;
