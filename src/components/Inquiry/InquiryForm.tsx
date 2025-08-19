@@ -1461,7 +1461,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                                 handleSelectChange("source", value);
                               }}
                             >
-                              <SelectTrigger className="w-full">
+                              <SelectTrigger className="w-full text-md">
                                 <SelectValue placeholder="Select source" />
                               </SelectTrigger>
                               <SelectContent className="bg-white">
