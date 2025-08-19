@@ -71,8 +71,8 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
   const {
     createTodo,
     updateTodo,
-    error: assignError,
-    success: assignSuccess,
+    // error: assignError,
+    // success: assignSuccess,
   } = useAssignStore();
   const navigate = useNavigate();
 
@@ -98,8 +98,7 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
     useState<InspectorDetails | null>(null);
   const [isLoadingInspectorDetails, setIsLoadingInspectorDetails] =
     useState(false);
-    const [showEndTimeWarning, setShowEndTimeWarning] = useState(false);
-
+  const [showEndTimeWarning, setShowEndTimeWarning] = useState(false);
 
   // Helper function to check if selected date is today
   const isSelectedDateToday = () => {
@@ -166,6 +165,7 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
   const inquiryData = getInquiryData();
 
   // Fetch inspector availability for edit mode
+  // Update the fetchInspectorAvailability function
   const fetchInspectorAvailability = async (
     inspectorEmail: string,
     dateStr: string
@@ -184,18 +184,27 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
           (insp: InspectorAvailability) => insp.email === inspectorEmail
         );
         if (inspectorData) {
-          // Apply time filtering to the inspector's slots
-          const filteredSlots = filterFutureSlots(inspectorData.availability.free_slots);
-          
-          // Create modified inspector data with filtered slots
+          // Only apply time filtering if the selected date is today
+          const selectedDate = new Date(dateStr);
+          const today = new Date();
+          const isToday =
+            selectedDate.getDate() === today.getDate() &&
+            selectedDate.getMonth() === today.getMonth() &&
+            selectedDate.getFullYear() === today.getFullYear();
+
+          const slotsToUse = isToday
+            ? filterFutureSlots(inspectorData.availability.free_slots)
+            : inspectorData.availability.free_slots;
+
+          // Create modified inspector data with appropriate slots
           const modifiedInspector = {
             ...inspectorData,
             availability: {
               ...inspectorData.availability,
-              free_slots: filteredSlots,
+              free_slots: slotsToUse,
             },
           };
-          
+
           setSelectedInspector(modifiedInspector);
         }
       }
@@ -222,22 +231,22 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
     }
   };
   // Add this useEffect to check end time whenever requestedTime or duration changes
-useEffect(() => {
-  if (requestedTime && duration) {
-    const endTime = calculateEndTime();
-    if (endTime) {
-      const [hours, minutes] = endTime.split(':').map(Number);
-      const totalMinutes = hours * 60 + minutes;
-      
-      // Check if end time is after 18:00 (6:00 PM)
-      if (totalMinutes > (18 * 60)) {
-        setShowEndTimeWarning(true);
-      } else {
-        setShowEndTimeWarning(false);
+  useEffect(() => {
+    if (requestedTime && duration) {
+      const endTime = calculateEndTime();
+      if (endTime) {
+        const [hours, minutes] = endTime.split(":").map(Number);
+        const totalMinutes = hours * 60 + minutes;
+
+        // Check if end time is after 18:00 (6:00 PM)
+        if (totalMinutes > 18 * 60) {
+          setShowEndTimeWarning(true);
+        } else {
+          setShowEndTimeWarning(false);
+        }
       }
     }
-  }
-}, [requestedTime, duration]);
+  }, [requestedTime, duration]);
 
   const deleteExistingDWA = async (
     inspectorEmail: string,
@@ -541,18 +550,24 @@ useEffect(() => {
       (inspector) => inspector.email === email
     );
     if (inspector) {
-      // Create a new inspector object with the modified slots
+      // Only apply time filtering if the selected date is today
+      const isToday = isSelectedDateToday();
+      const slotsToUse = isToday
+        ? filterFutureSlots(modifiedSlots)
+        : modifiedSlots;
+
+      // Create a new inspector object with the appropriate slots
       const modifiedInspector = {
         ...inspector,
         availability: {
           ...inspector.availability,
-          free_slots: modifiedSlots,
+          free_slots: slotsToUse,
         },
       };
       setSelectedInspector(modifiedInspector);
 
-      if (modifiedSlots.length > 0) {
-        const firstSlot = modifiedSlots[0];
+      if (slotsToUse.length > 0) {
+        const firstSlot = slotsToUse[0];
         setSelectedSlot({
           start: firstSlot.start,
           end: firstSlot.end,
@@ -570,7 +585,7 @@ useEffect(() => {
     setRequestedTime(slot.start);
     toast.success(`Selected time slot: ${slot.start} - ${slot.end}`);
   };
-
+  // Update the validateRequestedTime function
   const validateRequestedTime = () => {
     if (!requestedTime) return false;
 
@@ -582,6 +597,7 @@ useEffect(() => {
       const slotEndMinutes = timeToMinutes(selectedSlot!.end);
       const durationMinutes = Math.round(parseFloat(duration) * 60);
 
+      // Check if requested time is within the selected slot
       if (
         requestedMinutes < slotStartMinutes ||
         requestedMinutes >= slotEndMinutes
@@ -589,6 +605,7 @@ useEffect(() => {
         return false;
       }
 
+      // Check if end time exceeds the selected slot's end time
       if (requestedMinutes + durationMinutes > slotEndMinutes) {
         return false;
       }
@@ -596,24 +613,90 @@ useEffect(() => {
 
     return true;
   };
+  const validateTimeAgainstSlot = (
+    time: string,
+    durationValue: string
+  ): boolean => {
+    // For create mode, check against selected slot
+    if (mode === "create" && !selectedSlot) return true;
 
- const calculateEndTime = () => {
-  if (!requestedTime || !duration) return null;
+    // For edit mode, check against inspector's available slots
+    if (mode === "edit" && selectedInspector) {
+      const timeMinutes = timeToMinutes(time);
+      const durationMinutes = Math.round(parseFloat(durationValue) * 60);
+      const endTimeMinutes = timeMinutes + durationMinutes;
 
-  const startMinutes = timeToMinutes(requestedTime);
-  const durationMinutes = Math.round(parseFloat(duration) * 60);
-  const endMinutes = startMinutes + durationMinutes;
+      // Check if the time falls within any available slot
+      const isWithinAvailableSlot =
+        selectedInspector.availability.free_slots.some((slot) => {
+          const slotStart = timeToMinutes(slot.start);
+          const slotEnd = timeToMinutes(slot.end);
 
-  // Check if end time is valid
-  if (endMinutes > 24 * 60) return null; // Beyond midnight
+          return timeMinutes >= slotStart && endTimeMinutes <= slotEnd;
+        });
 
-  const hours = Math.floor(endMinutes / 60);
-  const mins = endMinutes % 60;
+      if (!isWithinAvailableSlot) {
+        toast.error("Selected time must be within inspector's available slots");
+        return false;
+      }
 
-  return `${hours.toString().padStart(2, "0")}:${mins
-    .toString()
-    .padStart(2, "0")}`;
-};
+      return true;
+    }
+
+    // Original validation for create mode
+    if (mode === "create" && selectedSlot) {
+      const timeMinutes = timeToMinutes(time);
+      const slotStart = timeToMinutes(selectedSlot.start);
+      const slotEnd = timeToMinutes(selectedSlot.end);
+      const durationMinutes = Math.round(parseFloat(durationValue) * 60);
+      const endTimeMinutes = timeMinutes + durationMinutes;
+
+      // Check if time is within slot boundaries
+      if (timeMinutes < slotStart || timeMinutes >= slotEnd) {
+        toast.error(
+          `Time must be between ${selectedSlot.start} and ${selectedSlot.end}`
+        );
+        return false;
+      }
+
+      // Check if end time exceeds slot end time
+      if (endTimeMinutes > slotEnd) {
+        toast.error(
+          `End time (${Math.floor(endTimeMinutes / 60)
+            .toString()
+            .padStart(2, "0")}:${(endTimeMinutes % 60)
+            .toString()
+            .padStart(2, "0")}) exceeds the selected slot's end time (${
+            selectedSlot.end
+          })`
+        );
+        return false;
+      }
+
+      return true;
+    }
+
+    // Default return value if none of the above conditions are met
+    return false;
+  };
+
+  const calculateEndTime = () => {
+    if (!requestedTime || !duration) return null;
+
+    const startMinutes = timeToMinutes(requestedTime);
+    const durationMinutes = Math.round(parseFloat(duration) * 60);
+    const endMinutes = startMinutes + durationMinutes;
+
+    // Check if end time is valid
+    if (endMinutes > 24 * 60) return null; // Beyond midnight
+
+    const hours = Math.floor(endMinutes / 60);
+    const mins = endMinutes % 60;
+
+    return `${hours.toString().padStart(2, "0")}:${mins
+      .toString()
+      .padStart(2, "0")}`;
+  };
 
   const validateTimeDuration = (durationValue: string) => {
     if (mode === "edit" || !selectedSlot || !requestedTime) return;
@@ -663,24 +746,19 @@ useEffect(() => {
     if (mode === "create") {
       if (!selectedSlot) return;
 
-      const newMinutes = timeToMinutes(newTime);
-      const slotStart = timeToMinutes(selectedSlot.start);
-      const slotEnd = timeToMinutes(selectedSlot.end);
-
-      if (newMinutes >= slotStart && newMinutes <= slotEnd) {
-        setRequestedTime(newTime);
-      } else {
-        toast.error(
-          `Time must be between ${selectedSlot.start} and ${selectedSlot.end}`
-        );
+      // Validate the new time against the selected slot
+      if (!validateTimeAgainstSlot(newTime, duration)) {
+        return;
       }
+
+      setRequestedTime(newTime);
     } else {
       // In edit mode, validate against current time if it's today
       if (isSelectedDateToday()) {
         const currentTime = getCurrentTime();
         const currentMinutes = timeToMinutes(currentTime);
         const newMinutes = timeToMinutes(newTime);
-        
+
         if (newMinutes < currentMinutes) {
           toast.error(
             `Time cannot be in the past. Current time is ${currentTime}`
@@ -689,6 +767,66 @@ useEffect(() => {
         }
       }
       setRequestedTime(newTime);
+    }
+  };
+
+  const checkAssignmentConflict = async (
+    inspectorEmail: string,
+    startDateTime: string,
+    endDateTime: string,
+    excludeTodoId?: string
+  ): Promise<boolean> => {
+    try {
+      // Get all todos for the inspector on this date
+      const filters = [
+        ["allocated_to", "=", inspectorEmail],
+        ["date", "=", format(date!, "yyyy-MM-dd")],
+      ];
+
+      // Exclude current todo in edit mode
+      if (excludeTodoId) {
+        filters.push(["name", "!=", excludeTodoId]);
+      }
+
+      const response = await frappeAPI.makeAuthenticatedRequest(
+        "GET",
+        `/api/resource/ToDo?filters=${encodeURIComponent(
+          JSON.stringify(filters)
+        )}`
+      );
+
+      if (response?.data?.length > 0) {
+        const requestedStart = new Date(startDateTime);
+        const requestedEnd = new Date(endDateTime);
+
+        for (const todo of response.data) {
+          if (todo.custom_start_time && todo.custom_end_time) {
+            const existingStart = new Date(todo.custom_start_time);
+            const existingEnd = new Date(todo.custom_end_time);
+
+            // Check for time overlap
+            if (
+              (requestedStart >= existingStart &&
+                requestedStart < existingEnd) ||
+              (requestedEnd > existingStart && requestedEnd <= existingEnd) ||
+              (requestedStart <= existingStart && requestedEnd >= existingEnd)
+            ) {
+              const startTime = existingStart.toTimeString().slice(0, 5);
+              const endTime = existingEnd.toTimeString().slice(0, 5);
+              toast.error(
+                `Time slot ${startTime} - ${endTime} is already assigned to this inspector`
+              );
+              return true; // Conflict found
+            }
+          }
+        }
+      }
+
+      return false; // No conflict
+    } catch (error) {
+      console.error("Error checking assignment conflict:", error);
+      toast.error("Failed to check existing assignments");
+      return true; // Assume conflict to be safe
     }
   };
 
@@ -718,6 +856,72 @@ useEffect(() => {
 
         toast.error(`Please complete the information: ${missingFieldNames}`);
         return;
+      }
+    }
+
+    if (mode === "create") {
+      if (!selectedInspector) {
+        toast.error("Please select an inspector");
+        return;
+      }
+
+      if (!validateRequestedTime()) {
+        // Show specific error message based on the issue
+        const requestedMinutes = timeToMinutes(requestedTime);
+        const slotStart = timeToMinutes(selectedSlot!.start);
+        const slotEnd = timeToMinutes(selectedSlot!.end);
+        const durationMinutes = Math.round(parseFloat(duration) * 60);
+
+        if (requestedMinutes < slotStart || requestedMinutes >= slotEnd) {
+          toast.error(
+            `Requested time must be within the selected slot (${
+              selectedSlot!.start
+            } - ${selectedSlot!.end})`
+          );
+        } else if (requestedMinutes + durationMinutes > slotEnd) {
+          toast.error(
+            `End time exceeds the selected slot's end time (${
+              selectedSlot!.end
+            }). Reduce duration or choose a different time.`
+          );
+        }
+        return;
+      }
+
+      // Additional validation for time and duration
+      if (!validateTimeAgainstSlot(requestedTime, duration)) {
+        return;
+      }
+
+      if (!data?.name) {
+        toast.error("Invalid inquiry data");
+        return;
+      }
+    }
+
+    // Check for assignment conflicts before proceeding
+    if (!date || !requestedTime) {
+      toast.error("Please select date and time");
+      return;
+    }
+
+    const preferredDate = format(date, "yyyy-MM-dd");
+    const endTime = calculateEndTime();
+    const startDateTime = `${preferredDate} ${requestedTime}:00`;
+    const endDateTime = `${preferredDate} ${endTime}:00`;
+
+    const currentInspectorEmail = selectedInspector?.email || data.allocated_to;
+
+    if (currentInspectorEmail) {
+      const hasConflict = await checkAssignmentConflict(
+        currentInspectorEmail,
+        startDateTime,
+        endDateTime,
+        mode === "edit" ? data.name : undefined
+      );
+
+      if (hasConflict) {
+        return; // Stop execution if conflict is found
       }
     }
 
@@ -973,20 +1177,6 @@ useEffect(() => {
                 </div>
               </div>
             )}
-          {assignError && (
-            <div className="bg-red-50 border border-red-200 rounded-md p-2">
-              <div className="text-red-700 text-sm">{assignError}</div>
-            </div>
-          )}
-          {assignSuccess && (
-            <div className="bg-emerald-50 border border-emerald-200 rounded-md p-2">
-              <div className="text-emerald-700 text-sm">
-                {mode === "create"
-                  ? "Inspector assigned successfully!"
-                  : "Inspection updated successfully!"}
-              </div>
-            </div>
-          )}
 
           <div className="space-y-2 px-4 rounded-lg">
             <Label className="text-gray-700 text-sm font-medium">
@@ -1077,22 +1267,25 @@ useEffect(() => {
           )}
 
           {/* Show available slots with time filtering */}
-          {selectedInspector && (
+          {selectedInspector &&
             (() => {
-              // Apply time filtering to free slots
-              const filteredSlots = filterFutureSlots(selectedInspector.availability.free_slots);
-              
+              // Only apply time filtering if the selected date is today
+              const isToday = isSelectedDateToday();
+              const filteredSlots = isToday
+                ? filterFutureSlots(selectedInspector.availability.free_slots)
+                : selectedInspector.availability.free_slots;
+
               return filteredSlots.length > 0 ? (
                 <div className="space-y-2 px-5 py-2 bg-yellow-50 border border-yellow-200 rounded-lg">
                   <Label className="text-gray-700 text-sm font-medium">
                     {mode === "edit"
                       ? "Available Time Slots"
                       : "Available Time Slots"}
-                    {/* {isSelectedDateToday() && (
+                    {isToday && (
                       <span className="text-xs text-gray-600 font-normal ml-1">
                         (from {getCurrentTime()} onwards)
                       </span>
-                    )} */}
+                    )}
                   </Label>
                   <div className="grid grid-cols-2 gap-2">
                     {filteredSlots.map((slot, index) => (
@@ -1126,15 +1319,13 @@ useEffect(() => {
                     Available Time Slots
                   </Label>
                   <p className="text-xs text-gray-500">
-                    {isSelectedDateToday() 
+                    {isToday
                       ? "No available slots remaining for today"
-                      : "No available slots for this date"
-                    }
+                      : "No available slots for this date"}
                   </p>
                 </div>
               );
-            })()
-          )}
+            })()}
 
           {/* Time and Duration Settings */}
           {(mode === "create" ? selectedSlot : true) && (
@@ -1176,6 +1367,15 @@ useEffect(() => {
                       value={duration}
                       onChange={(e) => {
                         const newDuration = e.target.value;
+
+                        // Validate against selected slot in both modes
+                        if (
+                          requestedTime &&
+                          !validateTimeAgainstSlot(requestedTime, newDuration)
+                        ) {
+                          return;
+                        }
+
                         setDuration(newDuration);
                         validateTimeDuration(newDuration);
                       }}
@@ -1337,35 +1537,33 @@ useEffect(() => {
       )}
 
       {showEndTimeWarning && (
-  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-6">
-    <div className="bg-white rounded-lg p-4 max-w-md w-full">
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="text-lg font-semibold">End Time Warning</h3>
-        <button
-          onClick={() => setShowEndTimeWarning(false)}
-          className="text-gray-500 hover:text-gray-700"
-        >
-          <X className="h-5 w-5" />
-        </button>
-      </div>
-      <p className="mb-4 text-gray-700">
-        The calculated end time ({calculateEndTime()}) is after 6:00 PM.
-        Inspections typically shouldn't extend beyond this time.
-      </p>
-      <p className="mb-6 text-sm text-gray-600">
-        Please adjust the start time or duration to end before 6:00 PM.
-      </p>
-      <div className="flex justify-end">
-        <Button
-          onClick={() => setShowEndTimeWarning(false)}
-          className="bg-emerald-700 hover:bg-emerald-800 text-white"
-        >
-          OK, I Understand
-        </Button>
-      </div>
-    </div>
-  </div>
-)}
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-6">
+          <div className="bg-white rounded-lg p-4 max-w-md w-full">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">End Time Warning</h3>
+              <button
+                onClick={() => setShowEndTimeWarning(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <p className="mb-4 text-gray-700">
+              The calculated end time ({calculateEndTime()}) is after 6:00 PM.
+              Time shouldn't extend beyond 6:00 PM.
+            </p>
+
+            <div className="flex justify-end">
+              <Button
+                onClick={() => setShowEndTimeWarning(false)}
+                className="bg-emerald-700 hover:bg-emerald-800 text-white"
+              >
+                OK, I Understand
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
