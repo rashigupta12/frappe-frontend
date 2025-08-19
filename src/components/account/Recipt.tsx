@@ -1,20 +1,21 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Loader2, Mail, Phone, User, X } from "lucide-react";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "react-hot-toast";
 import { useAuth } from "../../context/AuthContext";
 import { frappeAPI } from "../../api/frappeClient";
 
 import PaymentImageUpload from "./imageupload/ImageUpload";
-import { useReciptStore } from "../../store/recipt";
+
 import { useNavigate } from "react-router-dom";
+import { useReceiptStore } from "../../store/recipt";
 
 interface ImageItem {
   id: string;
   url: string;
   file?: File;
   remarks?: string;
-  type: 'image' | 'pdf' | 'doc'; // Changed from optional to required
+  type: 'image' | 'pdf' | 'doc';
 }
 
 const ReceiptForm = () => {
@@ -39,7 +40,7 @@ const ReceiptForm = () => {
     setField,
     uploadAndAddAttachment,
     submitPayment,
-  } = useReciptStore();
+  } = useReceiptStore(); // Fixed store name
 
   const [images, setImages] = useState<ImageItem[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -57,6 +58,8 @@ const ReceiptForm = () => {
     email_id: "",
   });
   const navigate = useNavigate();
+  // Add a ref to track if images were manually set to prevent overriding
+  const isManualImageUpdate = useRef(false);
 
   useEffect(() => {
     // Set default payment mode to Cash if not already set
@@ -78,32 +81,46 @@ const ReceiptForm = () => {
   }, [paid_from, searchQuery]);
 
   // Convert custom_attachments to images format
-useEffect(() => {
-  const convertedImages: ImageItem[] = custom_attachments.map(
-    (attachment, index) => {
-      let url = attachment.image;
-      if (!url.startsWith("http") && !url.startsWith("/")) {
-        url = `/${url}`;
-      }
+  useEffect(() => {
+    // Only update images from store if they weren't manually set
+    if (!isManualImageUpdate.current && custom_attachments) {
+      const convertedImages: ImageItem[] = custom_attachments.map(
+        (attachment, index) => {
+          if (!attachment.image) return null;
+          
+          let url = attachment.image;
+          if (!url.startsWith("http") && !url.startsWith("/") && !url.startsWith("blob:")) {
+            url = `/${url}`;
+          }
+          
+          // Determine file type from URL
+          let type: 'image' | 'pdf' | 'doc' = 'image';
+          if (url.toLowerCase().endsWith('.pdf')) {
+            type = 'pdf';
+          } else if (url.toLowerCase().endsWith('.doc') || url.toLowerCase().endsWith('.docx')) {
+            type = 'doc';
+          }
+          
+          return {
+            id: `store-${index}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            url: url,
+            remarks: attachment.remarks || `Attachment ${index + 1}`,
+            type: type
+          };
+        }
+      ).filter(Boolean) as ImageItem[];
       
-      // Determine file type from URL
-      let type: 'image' | 'pdf' | 'doc' = 'image';
-      if (url.toLowerCase().endsWith('.pdf')) {
-        type = 'pdf';
-      } else if (url.toLowerCase().endsWith('.doc') || url.toLowerCase().endsWith('.docx')) {
-        type = 'doc';
-      }
-      
-      return {
-        id: `existing-${index}-${url}`,
-        url: url,
-        remarks: attachment.remarks || `Attachment ${index + 1}`,
-        type: type
-      };
+      setImages(convertedImages);
     }
-  );
-  setImages(convertedImages);
-}, [custom_attachments]);
+    
+    // Reset the manual update flag after processing
+    if (isManualImageUpdate.current) {
+      const timer = setTimeout(() => {
+        isManualImageUpdate.current = false;
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [custom_attachments]);
 
   const handleCustomerSearch = useCallback(async (query: string) => {
      if (!query.trim()) {
@@ -310,30 +327,78 @@ useEffect(() => {
   };
 
   const handleImagesChange = (newImages: ImageItem[]) => {
+    // Set flag to indicate manual image update
+    isManualImageUpdate.current = true;
+    
     setImages(newImages);
-    const convertedAttachments = newImages.map((image) => ({
-      image: image.url,
-      remarks: image.remarks || "",
-    }));
+    
+    // Convert images to attachments format with proper error handling
+    const convertedAttachments = newImages.map((image, index) => {
+      try {
+        return {
+          image: image.url,
+          remarks: image.remarks || `Attachment ${index + 1}`,
+        };
+      } catch (error) {
+        console.error(`Error converting image ${index}:`, error);
+        return {
+          image: image.url,
+          remarks: `Attachment ${index + 1}`,
+        };
+      }
+    }).filter(Boolean); // Remove any null/undefined entries
+    
     setField("custom_attachments", convertedAttachments);
   };
 
+  // Fixed handleImageUpload function
   const handleImageUpload = async (file: File): Promise<string> => {
-    try {
-      await uploadAndAddAttachment(file);
-      await new Promise((resolve) => setTimeout(resolve, 200));
-      const latestAttachment =
-        custom_attachments[custom_attachments.length - 1];
-      let imageUrl = latestAttachment.image;
+  try {
+    console.log('Starting upload for file:', file.name, 'Type:', file.type, 'Size:', file.size);
+    
+    // Validate file type before upload
+    const validImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    const validDocTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+    
+    if (!validImageTypes.includes(file.type) && !validDocTypes.includes(file.type)) {
+      throw new Error(`Unsupported file type: ${file.type}`);
+    }
+    
+    // Upload the file and get the response
+    const uploadResponse = await uploadAndAddAttachment(file);
+    
+    console.log('Upload response received:', uploadResponse);
+    
+    // Check if upload was successful
+    if (!uploadResponse.success) {
+      throw new Error(uploadResponse.error || 'Upload failed');
+    }
+    
+    // The uploadResponse should contain file_url directly
+    if (uploadResponse && uploadResponse.file_url) {
+      let imageUrl = uploadResponse.file_url;
+      
+      // Ensure proper URL formatting
       if (!imageUrl.startsWith("http") && !imageUrl.startsWith("/")) {
         imageUrl = `/${imageUrl}`;
       }
-      return imageUrl;
-    } catch (error) {
-      console.error("Upload error:", error);
-      throw error;
+      
+      // Add cache busting parameter with current timestamp and random component
+      const cacheBuster = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      const separator = imageUrl.includes('?') ? '&' : '?';
+      const finalUrl = `${imageUrl}${separator}t=${cacheBuster}`;
+      
+      console.log('Final image URL:', finalUrl);
+      return finalUrl;
     }
-  };
+    
+    throw new Error("Upload response missing file_url");
+  } catch (error) {
+    console.error("Upload error:", error);
+    throw error;
+  }
+};
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -371,11 +436,10 @@ useEffect(() => {
       setField("custom_attachments", []);
       setImages([]);
       setSearchQuery("");
+      navigate("/accountUser?tab=receipt-summary");
     } else {
       toast.error(`Error: ${result.error}`);
     }
-    navigate("/accountUser?tab=receipt-summary");
-
   };
 
   const getModeOfPaymentValue = () => {
@@ -494,8 +558,6 @@ useEffect(() => {
                 <option value="credit">Credit</option>
               </select>
             </div>
-
-            {/* Date */}
 
             {/* Conditional Fields Based on Payment Mode */}
             {custom_mode_of_payment === "Bank" && (
@@ -618,21 +680,6 @@ useEffect(() => {
                 required
               />
             </div>
-
-            {/* Received By (paid_by) */}
-            {/* <div>
-              <label className="block text-sm md:text-base font-medium text-gray-700 mb-2">
-                Received By <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                value={paid_by}
-                onChange={(e) => handleInputChange("paid_by", e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                placeholder="Received by"
-                required
-              />
-            </div> */}
 
             {/* Customer Search (paid_from) */}
             <div className="relative col-span-1 md:col-span-2">

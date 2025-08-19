@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { create } from 'zustand';
 import { frappeAPI } from '../api/frappeClient';
@@ -18,7 +19,7 @@ interface ImageAttachment {
   docstatus?: number;
 }
 
-interface ReciptFormData {
+interface ReceiptFormData {
   date: string;
   bill_number: string;
   amountaed: string;
@@ -38,15 +39,22 @@ interface ReciptFormData {
   custom_account_holder_name: string; // Added field for account holder name
 }
 
-interface ReciptStoreActions {
-  setField: <K extends keyof ReciptFormData>(field: K, value: ReciptFormData[K]) => void;
-  uploadAndAddAttachment: (file: File) => Promise<void>;
+interface ReceiptStoreActions {
+  setField: <K extends keyof ReceiptFormData>(field: K, value: ReceiptFormData[K]) => void;
+  uploadAndAddAttachment: (file: File) => Promise<{
+    success: boolean;
+    file_url?: any;
+    file_name?: any;
+    data?: any;
+    error?: string;
+  }>;
   removeAttachment: (index: number) => void;
+  fetchSuppliers: () => Promise<void>;
   submitPayment: () => Promise<{ success: boolean; error?: string; data?: any }>;
   resetForm: () => void;
 }
 
-const initialState: ReciptFormData = {
+const initialState: ReceiptFormData = {
   date: new Date().toISOString().split('T')[0],
   bill_number: '',
   amountaed: '',
@@ -66,7 +74,7 @@ const initialState: ReciptFormData = {
   custom_account_holder_name: '', // Initialize account holder name field
 };
 
-export const useReciptStore = create<ReciptFormData & ReciptStoreActions>((set, get) => ({
+export const useReceiptStore = create<ReceiptFormData & ReceiptStoreActions>((set, get) => ({
   ...initialState,
 
   setField: (field, value) => set({ [field]: value }),
@@ -75,15 +83,18 @@ export const useReciptStore = create<ReciptFormData & ReciptStoreActions>((set, 
     set({ isUploading: true, error: null });
     try {
       // Upload the file first to get the URL
-      const uploadResponse = await frappeAPI.upload(file, {
-       
-      });
+      const uploadResponse = await frappeAPI.upload(file, {});
 
       console.log('Upload response:', uploadResponse); // Debug log
 
       // Create the attachment object in the format expected by the backend
       // Handle both possible response structures
       const fileData = uploadResponse.data.message || uploadResponse.data;
+      
+      if (!fileData.file_url) {
+        throw new Error('File URL not found in upload response');
+      }
+
       const attachment: ImageAttachment = {
         image: fileData.file_url, // Use the correct path from upload response
         doctype: "Image Attachments",
@@ -94,7 +105,7 @@ export const useReciptStore = create<ReciptFormData & ReciptStoreActions>((set, 
         modified: fileData.modified,
         modified_by: fileData.modified_by,
         docstatus: fileData.docstatus,
-        remarks: ''
+        remarks: file.name || '' // Use the original file name as remarks
       };
 
       // Add to the attachments array
@@ -102,19 +113,45 @@ export const useReciptStore = create<ReciptFormData & ReciptStoreActions>((set, 
         custom_attachments: [...state.custom_attachments, attachment],
         isUploading: false 
       }));
+
+      // IMPORTANT: Return the upload response so handleImageUpload can use it
+      return {
+        success: true,
+        file_url: fileData.file_url,
+        file_name: fileData.name || file.name,
+        data: fileData
+      };
     } catch (error) {
       console.error('File upload failed:', error);
       const errorMessage = error instanceof Error ? error.message : 'File upload failed';
       set({ error: errorMessage, isUploading: false });
+      
+      // Return error response
+      return {
+        success: false,
+        error: errorMessage
+      };
     }
   },
-  
 
   removeAttachment: (index) =>
     set((state) => ({
       custom_attachments: state.custom_attachments.filter((_, i) => i !== index),
     })),
 
+  fetchSuppliers: async () => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await frappeAPI.getSupplier();
+      const suppliers = response.data.map((supplier: any) => ({
+        label: supplier.name,
+        value: supplier.name,
+      }));
+      set({ suppliers, isLoading: false });
+    } catch (error) {
+      set({ error: 'Failed to fetch suppliers', isLoading: false });
+    }
+  },
 
   submitPayment: async () => {
     const {
@@ -144,8 +181,8 @@ export const useReciptStore = create<ReciptFormData & ReciptStoreActions>((set, 
         // Don't include parent fields here as they will be set by the backend
       }));
 
-      // Prepare base Recipt data
-      const ReciptData: Record<string, any> = {
+      // Prepare base receipt data
+      const receiptData: Record<string, any> = {
         date,
         bill_number,
         amountaed: parseFloat(amountaed),
@@ -159,26 +196,26 @@ export const useReciptStore = create<ReciptFormData & ReciptStoreActions>((set, 
 
       // Add conditional fields based on payment mode
       if (custom_mode_of_payment === 'Bank') {
-        ReciptData.custom_name_of_bank = custom_name_of_bank;
-        ReciptData.custom_account_number = custom_account_number;
-        ReciptData.custom_ifscibanswift_code = custom_ifscibanswift_code; // Add IFSC/IBAN/SWIFT code
-        ReciptData.custom_account_holder_name = custom_account_holder_name; // Add account holder name
+        receiptData.custom_name_of_bank = custom_name_of_bank;
+        receiptData.custom_account_number = custom_account_number;
+        receiptData.custom_ifscibanswift_code = custom_ifscibanswift_code; // Add IFSC/IBAN/SWIFT code
+        receiptData.custom_account_holder_name = custom_account_holder_name; // Add account holder name
       } else if (custom_mode_of_payment === 'Credit Card') {
-        ReciptData.custom_name_of_bank = custom_name_of_bank;
-        ReciptData.custom_card_number = custom_card_number;
+        receiptData.custom_name_of_bank = custom_name_of_bank;
+        receiptData.custom_card_number = custom_card_number;
       }
 
-      // Create the Recipt record with attachments
-      const ReciptResponse = await frappeAPI.createReceipt(ReciptData);
+      // Create the receipt record with attachments
+      const receiptResponse = await frappeAPI.createReceipt(receiptData);
 
       // Reset form after successful submission
       set(initialState);
       
       set({ isLoading: false });
-      return { success: true, data: ReciptResponse.data };
+      return { success: true, data: receiptResponse.data };
     } catch (error) {
-      console.error('Recipt submission failed:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Recipt submission failed';
+      console.error('Receipt submission failed:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Receipt submission failed';
       set({ error: errorMessage, isLoading: false });
       return { success: false, error: errorMessage };
     }

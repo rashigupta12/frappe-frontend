@@ -416,3 +416,7 @@ export interface SearchResult {
   custom_street_name?: string;
   custom_property_number?: string;
 }
+
+export const capitalizeFirstLetter = (str: string) => {
+  return str.charAt(0).toUpperCase() + str.slice(1);
+};

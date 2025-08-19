@@ -7,7 +7,7 @@ import {
   Image as ImageIcon,
   Download,
 } from "lucide-react";
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { toast } from "react-hot-toast";
 
 interface ImageItem {
@@ -59,9 +59,14 @@ const ImagePreviewModal: React.FC<{
     }
   };
 
-  const getImageUrl = (image: ImageItem) => {
+const getImageUrl = (image: ImageItem) => {
+  try {
     // If it's already a complete URL (http/https) or blob URL, return as is
     if (image.url.startsWith("http") || image.url.startsWith("blob:")) {
+      // Add timestamp to prevent caching issues for blob URLs
+      if (image.url.startsWith("blob:")) {
+        return `${image.url}`;
+      }
       return image.url;
     }
     // If it starts with /, prepend base URL
@@ -70,7 +75,11 @@ const ImagePreviewModal: React.FC<{
     }
     // Otherwise, assume it's a relative path and add both base URL and /
     return `${imageurl}/${image.url}`;
-  };
+  } catch (error) {
+    console.error("Error processing image URL:", error);
+    return image.url; // Return original URL as fallback
+  }
+};
 
   const getFileIcon = (type: string) => {
     switch (type) {
@@ -109,6 +118,7 @@ const ImagePreviewModal: React.FC<{
             src={getImageUrl(currentImage)}
             alt={currentImage.remarks || "Payment evidence"}
             className="max-w-full max-h-full object-contain rounded-lg"
+            key={`modal-${currentImage.id}`} // Add unique key to force re-render
           />
         ) : (
           <div className="flex flex-col items-center justify-center h-full">
@@ -179,7 +189,7 @@ const ImagePreviewModal: React.FC<{
           <div className="flex gap-2 justify-center overflow-x-auto">
             {images.map((image, index) => (
               <button
-                key={image.id}
+                key={`thumb-${image.id}`} // Add unique key for thumbnails
                 type="button"
                 onClick={() => onIndexChange(index)}
                 className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-colors ${
@@ -197,6 +207,11 @@ const ImagePreviewModal: React.FC<{
                     src={getImageUrl(image)}
                     alt=""
                     className="w-full h-full object-cover"
+                    key={`thumb-img-${image.id}`}
+                    onError={(e) => {
+                      console.error("Image load error:", e);
+                      // You could set a fallback image here if needed
+                    }}
                   />
                 ) : (
                   <FileText className="h-8 w-8 text-white" />
@@ -233,19 +248,7 @@ const CameraModal: React.FC<{
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
-
-  React.useEffect(() => {
-    if (isOpen && !capturedImage) {
-      startCamera();
-    }
-    return () => {
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach((track) => track.stop());
-      }
-    };
-  }, [isOpen]);
-
-  const startCamera = React.useCallback(async () => {
+    const startCamera = React.useCallback(async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
@@ -265,6 +268,19 @@ const CameraModal: React.FC<{
       onClose();
     }
   }, [onClose]);
+
+ useEffect(() => {
+    if (isOpen && !capturedImage) {
+      startCamera();
+    }
+    return () => {
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((track) => track.stop());
+      }
+    };
+  }, [capturedImage, isOpen, startCamera]);
+
+
 
   const captureImage = () => {
     if (!videoRef.current || !canvasRef.current) return;
@@ -383,28 +399,45 @@ const PaymentImageUpload: React.FC<PaymentImageUploadProps> = ({
   const [idCounter, setIdCounter] = useState(0);
 
   const getFileType = (file: File): "image" | "pdf" | "doc" => {
-    if (file.type.includes("pdf")) return "pdf";
-    if (file.type.includes("msword") || file.type.includes("wordprocessingml"))
-      return "doc";
+  console.log(`Determining file type for: ${file.name}, MIME type: ${file.type}`);
+  
+  if (file.type.includes("pdf")) return "pdf";
+  if (file.type.includes("msword") || file.type.includes("wordprocessingml"))
+    return "doc";
+  
+  // More comprehensive image type checking
+  if (file.type.startsWith("image/")) return "image";
+  
+  // Fallback: check file extension
+  const extension = file.name.toLowerCase().split('.').pop();
+  if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'tiff'].includes(extension || '')) {
     return "image";
-  };
+  }
+  
+  return "image"; // Default to image if unsure
+};
 
-  // Improved unique ID generation
+  // Improved unique ID generation with more entropy
   const generateUniqueId = (prefix: string, fileName?: string) => {
     const timestamp = Date.now();
     const random = Math.random().toString(36).substr(2, 9);
     const counter = idCounter;
     setIdCounter((prev) => prev + 1);
-    const fileHash = fileName ? fileName.replace(/[^a-zA-Z0-9]/g, "") : "";
-    return `${prefix}-${timestamp}-${counter}-${random}-${fileHash}`;
+    const fileHash = fileName
+      ? fileName.replace(/[^a-zA-Z0-9]/g, "").substr(0, 8)
+      : "";
+    // Add performance.now() for even more uniqueness
+    const performanceTimestamp = Math.floor(performance.now() * 1000);
+    return `${prefix}-${timestamp}-${performanceTimestamp}-${counter}-${random}-${fileHash}`;
   };
 
+  // Enhanced getImageUrl function with better cache busting
   const getImageUrl = (image: ImageItem) => {
     // If it's already a complete URL (http/https) or blob URL, return as is
     if (image.url.startsWith("http") || image.url.startsWith("blob:")) {
-      // Add timestamp to blob URLs to prevent caching
+      // Add timestamp to prevent caching issues for blob URLs
       if (image.url.startsWith("blob:")) {
-        return `${image.url}?t=${Date.now()}`;
+        return `${image.url}`;
       }
       return image.url;
     }
@@ -416,86 +449,93 @@ const PaymentImageUpload: React.FC<PaymentImageUploadProps> = ({
     return `${imageurl}/${image.url}`;
   };
 
-  const handleFileUpload = async (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const files = event.target.files;
-    if (!files || files.length === 0) return;
+const handleFileUpload = async (
+  event: React.ChangeEvent<HTMLInputElement>
+) => {
+  const files = event.target.files;
+  if (!files || files.length === 0) return;
 
-    const filesToUpload = Array.from(files);
+  const filesToUpload = Array.from(files);
 
-    if (images.length + filesToUpload.length > maxImages) {
-      toast.error(`You can only upload a maximum of ${maxImages} files.`);
-      return;
-    }
+  if (images.length + filesToUpload.length > maxImages) {
+    toast.error(`You can only upload a maximum of ${maxImages} files.`);
+    return;
+  }
 
-    setIsUploading(true);
+  setIsUploading(true);
 
-    try {
-      const newImages: ImageItem[] = [];
+  try {
+    const newImages: ImageItem[] = [];
 
-      for (const file of filesToUpload) {
-        const validTypes = [
-          "image/jpeg",
-          "image/png",
-          "image/gif",
-          "image/webp",
-          "application/pdf",
-          "application/msword",
-          "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        ];
+    for (const file of filesToUpload) {
+      // Updated valid types - ensure PNG is properly included
+      const validTypes = [
+        "image/jpeg",
+        "image/jpg", // Add explicit JPG support
+        "image/png", // Ensure PNG is included
+        "image/gif",
+        "image/webp",
+        "image/bmp", // Add BMP support
+        "image/tiff", // Add TIFF support
+        "application/pdf",
+        "application/msword",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      ];
 
-        if (!validTypes.includes(file.type)) {
-          toast.error(`File type not supported: ${file.name}`);
-          continue;
-        }
+      console.log(`File: ${file.name}, Type: ${file.type}, Size: ${file.size}`);
 
-        if (file.size > maxSizeMB * 1024 * 1024) {
-          toast.error(`File "${file.name}" exceeds ${maxSizeMB}MB limit.`);
-          continue;
-        }
-
-        try {
-          let url: string;
-
-          if (onUpload) {
-            // If onUpload is provided, use it to upload the file
-            url = await onUpload(file);
-          } else {
-            // Otherwise create object URL for preview
-            url = URL.createObjectURL(file);
-          }
-
-          // Generate unique ID with file name for better uniqueness
-          const uniqueId = generateUniqueId("upload", file.name);
-
-          const newImage: ImageItem = {
-            id: uniqueId,
-            url,
-            file: onUpload ? undefined : file,
-            remarks: file.name,
-            type: getFileType(file),
-          };
-
-          newImages.push(newImage);
-        } catch (error) {
-          console.error(`Error uploading ${file.name}:`, error);
-        }
+      if (!validTypes.includes(file.type)) {
+        toast.error(`File type "${file.type}" not supported for file: ${file.name}`);
+        continue;
       }
 
-      if (newImages.length > 0) {
-        // Add new images to existing ones
-        const updatedImages = [...images, ...newImages];
-        onImagesChange(updatedImages);
-        toast.success(`${newImages.length} file(s) uploaded successfully!`);
+      if (file.size > maxSizeMB * 1024 * 1024) {
+        toast.error(`File "${file.name}" exceeds ${maxSizeMB}MB limit.`);
+        continue;
       }
-    } finally {
-      setIsUploading(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
+
+      try {
+        let url: string;
+
+        if (onUpload) {
+          // If onUpload is provided, use it to upload the file
+          url = await onUpload(file);
+        } else {
+          // Otherwise create object URL for preview
+          url = URL.createObjectURL(file);
+        }
+
+        // Generate unique ID with file name and more entropy for better uniqueness
+        const uniqueId = generateUniqueId("upload", file.name);
+
+        const newImage: ImageItem = {
+          id: uniqueId,
+          url,
+          file: onUpload ? undefined : file,
+          remarks: file.name,
+          type: getFileType(file),
+        };
+
+        newImages.push(newImage);
+      } catch (error) {
+        console.error(`Error uploading ${file.name}:`, error);
+        toast.error(`Failed to upload ${file.name}: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
     }
-  };
+
+    if (newImages.length > 0) {
+      // Add new images to existing ones
+      const updatedImages = [...images, ...newImages];
+      onImagesChange(updatedImages);
+      toast.success(`${newImages.length} file(s) uploaded successfully!`);
+    }
+  } finally {
+    setIsUploading(false);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  }
+};
 
   const handleCameraCapture = async (imageData: string) => {
     if (images.length >= maxImages) {
@@ -518,13 +558,13 @@ const PaymentImageUpload: React.FC<PaymentImageUploadProps> = ({
         url = await onUpload(file);
       }
 
-      // Generate unique ID for captured image
-      const uniqueId = generateUniqueId("captured");
+      // Generate unique ID for captured image with more entropy
+      const uniqueId = generateUniqueId("captured", `img-${Date.now()}`);
 
       const newImage: ImageItem = {
         id: uniqueId,
         url,
-        remarks: `Captured Image ${Date.now()}`,
+        remarks: `Captured Image ${new Date().toLocaleTimeString()}`,
         type: "image",
       };
 
@@ -534,12 +574,20 @@ const PaymentImageUpload: React.FC<PaymentImageUploadProps> = ({
       toast.success("Image captured successfully!");
     } catch (error) {
       console.error("Error processing captured image:", error);
+      toast.error("Failed to process captured image");
     } finally {
       setIsUploading(false);
     }
   };
 
   const handleDeleteImage = (indexToDelete: number) => {
+    const imageToDelete = images[indexToDelete];
+
+    // Revoke object URL if it's a blob URL to prevent memory leaks
+    if (imageToDelete.url.startsWith("blob:")) {
+      URL.revokeObjectURL(imageToDelete.url);
+    }
+
     const updatedImages = images.filter((_, index) => index !== indexToDelete);
     onImagesChange(updatedImages);
     toast.success("File deleted successfully!");
@@ -583,22 +631,21 @@ const PaymentImageUpload: React.FC<PaymentImageUploadProps> = ({
         )}
 
         {/* Camera Button - Only shown when no non-image files exist */}
-        {images.length < maxImages &&
-          images.every((img) => img.type === "image") && (
-            <div className="flex flex-col items-center">
-              <button
-                type="button"
-                onClick={() => setShowCamera(true)}
-                disabled={isUploading}
-                className="h-14 w-14 rounded-2xl border-2 border-dashed border-gray-300 hover:border-green-500 hover:bg-green-50 transition-all duration-200 flex items-center justify-center disabled:opacity-50"
-              >
-                <Camera className="h-6 w-6 text-gray-600" />
-              </button>
-              <span className="text-xs text-gray-500 mt-2 text-center">
-                Capture
-              </span>
-            </div>
-          )}
+        {images.length < maxImages && (
+          <div className="flex flex-col items-center">
+            <button
+              type="button"
+              onClick={() => setShowCamera(true)}
+              disabled={isUploading}
+              className="h-14 w-14 rounded-2xl border-2 border-dashed border-gray-300 hover:border-green-500 hover:bg-green-50 transition-all duration-200 flex items-center justify-center disabled:opacity-50"
+            >
+              <Camera className="h-6 w-6 text-gray-600" />
+            </button>
+            <span className="text-xs text-gray-500 mt-2 text-center">
+              Capture
+            </span>
+          </div>
+        )}
 
         {/* Files Preview */}
         {images.length > 0 && (
@@ -609,7 +656,7 @@ const PaymentImageUpload: React.FC<PaymentImageUploadProps> = ({
             >
               {images.slice(0, 3).map((image, index) => (
                 <div
-                  key={`${image.id}-${index}`} // Add index to ensure uniqueness
+                  key={`preview-${image.id}`} // Use unique key based on image ID
                   className={`absolute w-12 h-12 rounded-lg overflow-hidden border-2 border-white shadow-md transition-transform hover:scale-105 ${
                     image.type !== "image"
                       ? "bg-gray-100 flex items-center justify-center"
@@ -622,25 +669,36 @@ const PaymentImageUpload: React.FC<PaymentImageUploadProps> = ({
                   }}
                 >
                   {image.type === "image" ? (
-                    <img
-                      src={getImageUrl(image)}
-                      alt=""
-                      className="w-full h-full object-cover"
-                      key={`img-${image.id}-${Date.now()}`} // Force re-render with unique key
-                    />
-                  ) : (
-                    <div className="text-center p-1">
-                      {getFileIcon(image.type)}
-                      <span className="text-xs truncate block">
-                        {image.url
-                          .split("/")
-                          .pop()
-                          ?.split(".")
-                          .shift()
-                          ?.substring(0, 3)}
-                      </span>
-                    </div>
-                  )}
+  <img
+    src={getImageUrl(image)}
+    alt=""
+    className="w-full h-full object-cover"
+    key={`preview-img-${image.id}`}
+    onError={(e) => {
+      console.error("Image load error for:", image.url, e);
+      const target = e.target as HTMLImageElement;
+      // Try to reload once with cache-busting
+      if (!target.src.includes('?reload=')) {
+        target.src = `${target.src}${target.src.includes('?') ? '&' : '?'}reload=${Date.now()}`;
+      }
+    }}
+    onLoad={() => {
+      console.log("Image loaded successfully:", image.url);
+    }}
+  />
+) : (
+  <div className="text-center p-1">
+    {getFileIcon(image.type)}
+    <span className="text-xs truncate block">
+      {image.url
+        .split("/")
+        .pop()
+        ?.split(".")
+        .shift()
+        ?.substring(0, 3)}
+    </span>
+  </div>
+)}
                 </div>
               ))}
               {images.length > 3 && (
@@ -665,13 +723,13 @@ const PaymentImageUpload: React.FC<PaymentImageUploadProps> = ({
 
       {/* Hidden File Input */}
       <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*,.pdf,.doc,.docx"
-        onChange={handleFileUpload}
-        className="hidden"
-        multiple
-      />
+  ref={fileInputRef}
+  type="file"
+  accept="image/*,.png,.jpg,.jpeg,.gif,.webp,.pdf,.doc,.docx" // More explicit accept
+  onChange={handleFileUpload}
+  className="hidden"
+  multiple
+/>
 
       {/* Upload Status */}
       {isUploading && (

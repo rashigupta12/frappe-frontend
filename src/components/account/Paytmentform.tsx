@@ -79,15 +79,14 @@ const PaymentForm = () => {
     }
   }, [paid_to, searchQuery]);
 
-// In PaymentForm.tsx, modify the useEffect that syncs custom_attachments with images
 useEffect(() => {
   // Only update images from store if they weren't manually set
   if (!isManualImageUpdate.current && custom_attachments) {
     const convertedImages: ImageItem[] = custom_attachments.map(
       (attachment, index) => {
-        let url = attachment.image;
-        if (!url) return null;
+        if (!attachment.image) return null;
         
+        let url = attachment.image;
         if (!url.startsWith("http") && !url.startsWith("/") && !url.startsWith("blob:")) {
           url = `/${url}`;
         }
@@ -101,18 +100,18 @@ useEffect(() => {
         }
         
         return {
-          id: `store-${index}-${Date.now()}-${url}`,
+          id: `store-${index}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
           url: url,
           remarks: attachment.remarks || `Attachment ${index + 1}`,
           type: type
         };
       }
-    ).filter(Boolean) as ImageItem[]; // Filter out any null entries
+    ).filter(Boolean) as ImageItem[];
     
     setImages(convertedImages);
   }
   
-  // Reset the manual update flag after a short delay
+  // Reset the manual update flag after processing
   if (isManualImageUpdate.current) {
     const timer = setTimeout(() => {
       isManualImageUpdate.current = false;
@@ -327,40 +326,72 @@ const handleImagesChange = (newImages: ImageItem[]) => {
   isManualImageUpdate.current = true;
   
   setImages(newImages);
-  const convertedAttachments = newImages.map((image) => ({
-    image: image.url,
-    remarks: image.remarks || "",
-  }));
+  
+  // Convert images to attachments format with proper error handling
+  const convertedAttachments = newImages.map((image, index) => {
+    try {
+      return {
+        image: image.url,
+        remarks: image.remarks || `Attachment ${index + 1}`,
+      };
+    } catch (error) {
+      console.error(`Error converting image ${index}:`, error);
+      return {
+        image: image.url,
+        remarks: `Attachment ${index + 1}`,
+      };
+    }
+  }).filter(Boolean); // Remove any null/undefined entries
+  
   setField("custom_attachments", convertedAttachments);
 };
 
 const handleImageUpload = async (file: File): Promise<string> => {
   try {
-    // First upload the file
-    await uploadAndAddAttachment(file);
+    console.log('Starting upload for file:', file.name, 'Type:', file.type, 'Size:', file.size);
     
-    // Wait for the store to update with a more reliable approach
-    let retries = 3;
-    while (retries > 0) {
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      
-      // Get the latest attachment safely
-      if (custom_attachments && custom_attachments.length > 0) {
-        const latestAttachment = custom_attachments[custom_attachments.length - 1];
-        
-        // Ensure the URL is properly formatted
-        if (latestAttachment.image) {
-          let imageUrl = latestAttachment.image;
-          if (!imageUrl.startsWith("http") && !imageUrl.startsWith("/")) {
-            imageUrl = `/${imageUrl}`;
-          }
-          return imageUrl;
-        }
-      }
-      retries--;
+    // Validate file type before upload
+    const validImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    const validDocTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+    
+    if (!validImageTypes.includes(file.type) && !validDocTypes.includes(file.type)) {
+      throw new Error(`Unsupported file type: ${file.type}`);
     }
     
-    throw new Error("No attachments found after upload");
+    // Upload the file and get the response
+    const response = await uploadAndAddAttachment(file);
+    
+    console.log('Upload response:', response);
+    
+    // Check if response exists and has the expected structure
+    if (!response) {
+      throw new Error('No response received from upload function');
+    }
+
+    // Handle different response structures
+    let fileUrl = '';
+    if (response.file_url) {
+      fileUrl = response.file_url;
+    } else if (response.message?.file_url) {
+      fileUrl = response.message.file_url;
+    } else if (response.data?.file_url) {
+      fileUrl = response.data.file_url;
+    } else {
+      throw new Error('Unable to determine file URL from response');
+    }
+    
+    // Ensure proper URL formatting
+    if (!fileUrl.startsWith("http") && !fileUrl.startsWith("/")) {
+      fileUrl = `/${fileUrl}`;
+    }
+    
+    // Add cache busting parameter
+    const cacheBuster = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const separator = fileUrl.includes('?') ? '&' : '?';
+    const finalUrl = `${fileUrl}${separator}t=${cacheBuster}`;
+    
+    console.log('Final file URL:', finalUrl);
+    return finalUrl;
   } catch (error) {
     console.error("Upload error:", error);
     throw error;

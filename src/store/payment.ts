@@ -41,7 +41,14 @@ interface PaymentFormData {
 
 interface PaymentStoreActions {
   setField: <K extends keyof PaymentFormData>(field: K, value: PaymentFormData[K]) => void;
-  uploadAndAddAttachment: (file: File) => Promise<void>;
+  uploadAndAddAttachment: (file: File) => Promise<{
+    message: any;
+    success: boolean;
+    file_url?: any;
+    file_name?: any;
+    data?: any;
+    error?: string;
+  }>;
   removeAttachment: (index: number) => void;
   fetchSuppliers: () => Promise<void>;
   submitPayment: () => Promise<{ success: boolean; error?: string; data?: any }>;
@@ -73,44 +80,65 @@ export const usePaymentStore = create<PaymentFormData & PaymentStoreActions>((se
 
   setField: (field, value) => set({ [field]: value }),
 
-  uploadAndAddAttachment: async (file: File) => {
-    set({ isUploading: true, error: null });
-    try {
-      // Upload the file first to get the URL
-      const uploadResponse = await frappeAPI.upload(file, {
-       
-      });
+ // Fix the uploadAndAddAttachment function in your payment store:
+uploadAndAddAttachment: async (file: File) => {
+  set({ isUploading: true, error: null });
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    // Upload the file first to get the URL
+    const uploadResponse = await frappeAPI.upload(file);
 
-      console.log('Upload response:', uploadResponse); // Debug log
+    console.log('Upload response:', uploadResponse); // Debug log
 
-      // Create the attachment object in the format expected by the backend
-      // Handle both possible response structures
-      const fileData = uploadResponse.data.message || uploadResponse.data;
-      const attachment: ImageAttachment = {
-        image: fileData.file_url, // Use the correct path from upload response
-        doctype: "Image Attachments",
-        // Store additional metadata that might be useful
-        name: fileData.name,
-        owner: fileData.owner,
-        creation: fileData.creation,
-        modified: fileData.modified,
-        modified_by: fileData.modified_by,
-        docstatus: fileData.docstatus,
-        remarks: ''
-      };
+    // Handle both possible response structures
+    const fileData =  uploadResponse.data?.message || uploadResponse;
+    const fileUrl = fileData.file_url || fileData.message?.file_url || fileData.data?.file_url;
 
-      // Add to the attachments array
-      set((state) => ({ 
-        custom_attachments: [...state.custom_attachments, attachment],
-        isUploading: false 
-      }));
-    } catch (error) {
-      console.error('File upload failed:', error);
-      const errorMessage = error instanceof Error ? error.message : 'File upload failed';
-      set({ error: errorMessage, isUploading: false });
+    if (!fileUrl) {
+      throw new Error('File URL not found in upload response');
     }
-  },
-  
+
+    // Create the attachment object
+    const attachment: ImageAttachment = {
+      image: fileUrl,
+      remarks: file.name || '',
+      doctype: "Image Attachments",
+      name: fileData.name,
+      owner: fileData.owner,
+      creation: fileData.creation,
+      modified: fileData.modified,
+      modified_by: fileData.modified_by,
+      docstatus: fileData.docstatus
+    };
+
+    // Add to the attachments array
+    set((state) => ({ 
+      custom_attachments: [...state.custom_attachments, attachment],
+      isUploading: false 
+    }));
+
+    // Return the expected response format
+    return {
+      message: 'File uploaded successfully',
+      success: true,
+      file_url: fileUrl,
+      file_name: file.name,
+      data: fileData
+    };
+  } catch (error) {
+    console.error('File upload failed:', error);
+    const errorMessage = error instanceof Error ? error.message : 'File upload failed';
+    set({ error: errorMessage, isUploading: false });
+    
+    return {
+      message: errorMessage,
+      success: false,
+      error: errorMessage
+    };
+  }
+},
 
   removeAttachment: (index) =>
     set((state) => ({
