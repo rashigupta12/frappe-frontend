@@ -583,7 +583,6 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
   const handleSlotSelect = (slot: { start: string; end: string }) => {
     setSelectedSlot(slot);
     setRequestedTime(slot.start);
-    toast.success(`Selected time slot: ${slot.start} - ${slot.end}`);
   };
   // Update the validateRequestedTime function
   const validateRequestedTime = () => {
@@ -613,72 +612,67 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
 
     return true;
   };
-  const validateTimeAgainstSlot = (
-    time: string,
-    durationValue: string
-  ): boolean => {
-    // For create mode, check against selected slot
-    if (mode === "create" && !selectedSlot) return true;
+ const validateTimeAgainstSlot = (
+  time: string,
+  durationValue: string
+): boolean => {
+  // For both create and edit modes, if we have selectedInspector, validate against their slots
+  if (selectedInspector) {
+    const timeMinutes = timeToMinutes(time);
+    const durationMinutes = Math.round(parseFloat(durationValue) * 60);
+    const endTimeMinutes = timeMinutes + durationMinutes;
 
-    // For edit mode, check against inspector's available slots
-    if (mode === "edit" && selectedInspector) {
-      const timeMinutes = timeToMinutes(time);
-      const durationMinutes = Math.round(parseFloat(durationValue) * 60);
-      const endTimeMinutes = timeMinutes + durationMinutes;
+    // Check if the time falls within any available slot
+    const isWithinAvailableSlot = selectedInspector.availability.free_slots.some((slot) => {
+      const slotStart = timeToMinutes(slot.start);
+      const slotEnd = timeToMinutes(slot.end);
 
-      // Check if the time falls within any available slot
-      const isWithinAvailableSlot =
-        selectedInspector.availability.free_slots.some((slot) => {
-          const slotStart = timeToMinutes(slot.start);
-          const slotEnd = timeToMinutes(slot.end);
+      return timeMinutes >= slotStart && endTimeMinutes <= slotEnd;
+    });
 
-          return timeMinutes >= slotStart && endTimeMinutes <= slotEnd;
-        });
-
-      if (!isWithinAvailableSlot) {
-        toast.error("Selected time must be within inspector's available slots");
-        return false;
-      }
-
-      return true;
+    if (!isWithinAvailableSlot) {
+      toast.error("Selected time must be within inspector's available slots");
+      return false;
     }
 
-    // Original validation for create mode
-    if (mode === "create" && selectedSlot) {
-      const timeMinutes = timeToMinutes(time);
-      const slotStart = timeToMinutes(selectedSlot.start);
-      const slotEnd = timeToMinutes(selectedSlot.end);
-      const durationMinutes = Math.round(parseFloat(durationValue) * 60);
-      const endTimeMinutes = timeMinutes + durationMinutes;
+    return true;
+  }
 
-      // Check if time is within slot boundaries
-      if (timeMinutes < slotStart || timeMinutes >= slotEnd) {
-        toast.error(
-          `Time must be between ${selectedSlot.start} and ${selectedSlot.end}`
-        );
-        return false;
-      }
+  // For create mode with selectedSlot (fallback)
+  if (mode === "create" && selectedSlot) {
+    const timeMinutes = timeToMinutes(time);
+    const slotStart = timeToMinutes(selectedSlot.start);
+    const slotEnd = timeToMinutes(selectedSlot.end);
+    const durationMinutes = Math.round(parseFloat(durationValue) * 60);
+    const endTimeMinutes = timeMinutes + durationMinutes;
 
-      // Check if end time exceeds slot end time
-      if (endTimeMinutes > slotEnd) {
-        toast.error(
-          `End time (${Math.floor(endTimeMinutes / 60)
-            .toString()
-            .padStart(2, "0")}:${(endTimeMinutes % 60)
-            .toString()
-            .padStart(2, "0")}) exceeds the selected slot's end time (${
-            selectedSlot.end
-          })`
-        );
-        return false;
-      }
-
-      return true;
+    // Check if time is within slot boundaries
+    if (timeMinutes < slotStart || timeMinutes >= slotEnd) {
+      toast.error(
+        `Time must be between ${selectedSlot.start} and ${selectedSlot.end}`
+      );
+      return false;
     }
 
-    // Default return value if none of the above conditions are met
-    return false;
-  };
+    // Check if end time exceeds slot end time
+    if (endTimeMinutes > slotEnd) {
+      toast.error(
+        `End time (${Math.floor(endTimeMinutes / 60)
+          .toString()
+          .padStart(2, "0")}:${(endTimeMinutes % 60)
+          .toString()
+          .padStart(2, "0")}) exceeds the selected slot's end time (${
+          selectedSlot.end
+        })`
+      );
+      return false;
+    }
+
+    return true;
+  }
+
+  return true;
+};
 
   const calculateEndTime = () => {
     if (!requestedTime || !duration) return null;
@@ -696,24 +690,6 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
     return `${hours.toString().padStart(2, "0")}:${mins
       .toString()
       .padStart(2, "0")}`;
-  };
-
-  const validateTimeDuration = (durationValue: string) => {
-    if (mode === "edit" || !selectedSlot || !requestedTime) return;
-
-    const durationHours = parseFloat(durationValue);
-    const durationMinutes = Math.round(durationHours * 60);
-    const startMinutes = timeToMinutes(requestedTime);
-    const slotEndMinutes = timeToMinutes(selectedSlot.end);
-
-    if (startMinutes + durationMinutes > slotEndMinutes) {
-      const availableHours = (slotEndMinutes - startMinutes) / 60;
-      toast.error(
-        `Duration exceeds available time. Max ${availableHours.toFixed(
-          1
-        )} hours available in this slot.`
-      );
-    }
   };
 
   // Get time constraints for RestrictedTimeClock
@@ -766,6 +742,12 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
           return;
         }
       }
+
+      // Add validation for edit mode against available slots
+      if (selectedInspector && !validateTimeAgainstSlot(newTime, duration)) {
+        return;
+      }
+
       setRequestedTime(newTime);
     }
   };
@@ -858,6 +840,12 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
         return;
       }
     }
+
+    if (requestedTime && duration) {
+    if (!validateTimeAgainstSlot(requestedTime, duration)) {
+      return; // Stop if validation fails
+    }
+  }
 
     if (mode === "create") {
       if (!selectedInspector) {
@@ -1367,17 +1355,16 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
                       value={duration}
                       onChange={(e) => {
                         const newDuration = e.target.value;
+                        setDuration(newDuration);
 
-                        // Validate against selected slot in both modes
+                        // Only validate if we have both time and duration values
                         if (
                           requestedTime &&
-                          !validateTimeAgainstSlot(requestedTime, newDuration)
+                          newDuration &&
+                          !isNaN(parseFloat(newDuration))
                         ) {
-                          return;
+                          validateTimeAgainstSlot(requestedTime, newDuration);
                         }
-
-                        setDuration(newDuration);
-                        validateTimeDuration(newDuration);
                       }}
                       className="text-sm h-8 rounded-r-none"
                       disabled={isProcessing}
