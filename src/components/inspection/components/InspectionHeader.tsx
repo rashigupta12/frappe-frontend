@@ -93,8 +93,8 @@ const InspectionHeader = ({
       </CardTitle>
 
       <div className="flex flex-wrap items-center gap-x-4 mt-1 text-sm">
-        <div className="flex items-center gap-1">
-          <User className="h-4 w-4 opacity-80" />
+        <div className="flex items-center gap-1 capitalize">
+          <User className="h-4 w-4 opacity-80 capitalize" />
           <span>
             {displayData.leadDetails?.lead_name || "Unknown Customer"}
           </span>
