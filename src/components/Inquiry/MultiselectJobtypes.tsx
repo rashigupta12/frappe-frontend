@@ -44,7 +44,7 @@ export const MultiSelectJobTypes = ({
         className="flex h-10 w-full items-center justify-between rounded-md border border-gray-300 bg-white px-3 py-1 text-sm cursor-pointer hover:bg-gray-50"
         onClick={() => setIsOpen(!isOpen)}
       >
-        <span className={selectedJobTypes.length === 0 ? "text-black" : "text-black"}>
+        <span className={selectedJobTypes.length === 0 ? "text-black text-md" : "text-black text-md"}>
           {displayText}
         </span>
         <ChevronDown className={`h-4 w-4 text-black transition-transform ${isOpen ? 'rotate-180' : ''}`} />
