@@ -41,13 +41,13 @@ export const MultiSelectJobTypes = ({
   return (
     <div className="relative">
       <div
-        className="flex h-10 w-full items-center justify-between rounded-md border border-gray-300 bg-white px-3 py-1 text-sm cursor-pointer hover:bg-gray-50"
+        className="flex h-10 w-full items-center justify-between rounded-md border border-gray-800 bg-white px-3 py-1 text-md cursor-pointer hover:bg-gray-50"
         onClick={() => setIsOpen(!isOpen)}
       >
         <span className={selectedJobTypes.length === 0 ? "text-black text-md" : "text-black text-md"}>
           {displayText}
         </span>
-        <ChevronDown className={`h-4 w-4 text-black transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown className={`h-4 w-4 text-gray-600 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </div>
       
       {isOpen && (
@@ -58,12 +58,12 @@ export const MultiSelectJobTypes = ({
               className="flex items-center gap-3 px-3 py-2 hover:bg-gray-100 cursor-pointer "
               onClick={() => handleToggle(jobType.name)}
             >
-              <div className="flex items-center justify-center w-4 h-4 border border-gray-300 rounded ">
+              <div className="flex items-center justify-center w-4 h-4 border border-gray-300 rounded text-md ">
                 {selectedJobTypes.includes(jobType.name) && (
                   <Check className="h-3 w-3 text-emerald-600" />
                 )}
               </div>
-              <span className="text-sm">{jobType.name}</span>
+              <span className="text-sm ">{jobType.name}</span>
             </div>
           ))}
         </div>
