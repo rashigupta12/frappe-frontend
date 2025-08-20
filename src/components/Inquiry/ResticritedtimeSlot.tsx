@@ -102,10 +102,18 @@ export const RestrictedTimeClock: React.FC<RestrictedTimeClockProps> = ({
   const handleHourSelect = (hour: number) => {
     setSelectedHour(hour);
     const availableMinutes = getAvailableMinutes(hour);
-    if (availableMinutes.length > 0) {
-      // Don't auto-select first minute, let user choose
-      setSelectedMinute(null);
+    
+    // Automatically select 00 minutes if available, otherwise select the first available minute
+    let initialMinute = 0;
+    if (availableMinutes.includes(0)) {
+      initialMinute = 0;
+    } else if (availableMinutes.length > 0) {
+      initialMinute = availableMinutes[0];
     }
+    
+    setSelectedMinute(initialMinute);
+    const newTime = `${hour.toString().padStart(2, '0')}:${initialMinute.toString().padStart(2, '0')}`;
+    onChange(newTime);
   };
 
   const handleMinuteSelect = (minute: number) => {
@@ -120,10 +128,8 @@ export const RestrictedTimeClock: React.FC<RestrictedTimeClockProps> = ({
 
   const formatDisplayTime = (time: string): string => {
     if (!time) return 'Select time';
-    const [hours, minutes] = time.split(':').map(Number);
-    const period = hours >= 12 ? 'PM' : 'AM';
-    const displayHours = hours % 12 || 12;
-    return `${displayHours}:${minutes.toString().padStart(2, '0')} ${period}`;
+    // Display in 24-hour format
+    return time;
   };
 
   // Handle clicks outside dropdown
