@@ -348,7 +348,7 @@ fetchTodos: async () => {
       priority: todoData.priority || "Medium",
       date: todoData.preferred_date,
       allocated_to: todoData.inspector_email,
-      description: todoData.description ,
+      description: todoData.description || "Inspection Task" ,
       reference_type: "Lead",
       reference_name: todoData.inquiry_id,
       assigned_by: todoData.assigned_by || get().currentUserEmail,
