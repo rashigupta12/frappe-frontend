@@ -352,13 +352,12 @@ export const defaultFormData: LeadFormData = {
   mobile_no: "",
   custom_job_type: "",
   custom_jobtype: [],
-  custom_property_type: "Residential",
+  custom_property_type: "",
   custom_type_of_building: "Villa",
   custom_building_name: "",
   custom_budget_range: "",
   custom_project_urgency: "",
   custom_preferred_inspection_date: null,
-  // custom_alternative_inspection_date: null,
   custom_preferred_inspection_time: "",
   custom_special_requirements: "",
   custom_property_area: "",
@@ -420,3 +419,89 @@ export interface SearchResult {
 export const capitalizeFirstLetter = (str: string) => {
   return str.charAt(0).toUpperCase() + str.slice(1);
 };
+
+ export const getCurrentTime = () => {
+    const now = new Date();
+    const hours = now.getHours().toString().padStart(2, "0");
+    const minutes = now.getMinutes().toString().padStart(2, "0");
+    return `${hours}:${minutes}`;
+  };
+
+  export const extractAddressFromSite = (siteName: string) => {
+    if (!siteName) return "";
+    // Format: "Name-Number,..." - extract everything after the first dash
+    const dashIndex = siteName.indexOf("-");
+    if (dashIndex !== -1) {
+      const afterDash = siteName.substring(dashIndex + 1);
+      // Check if what comes after dash starts with a number (address part)
+      if (/^\d/.test(afterDash)) {
+        return afterDash.trim();
+      }
+    }
+    // Fallback: return original if pattern doesn't match
+    return siteName;
+  };
+
+   export const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (
+        [8, 9, 13, 16, 17, 18, 20, 27, 35, 36, 37, 38, 39, 40, 45, 46].includes(
+          e.keyCode
+        )
+      ) {
+        return;
+      }
+  
+      const input = e.currentTarget;
+      if (input.selectionStart && input.selectionStart < 5) {
+        e.preventDefault();
+      }
+    };
+
+
+    export const extractNameFromQuery = (query: string): string => {
+        // Remove phone numbers from the query to get just the name
+        const phoneRegex = /(\+971\s?\d{1,2}\s?\d{3}\s?\d{4}|\d{9,10})/g;
+        return query.replace(phoneRegex, "").trim();
+      };
+    
+      export const extractPhoneFromQuery = (query: string): string => {
+        // Look for phone number patterns in the search query
+        const phoneRegex = /(\+971\s?\d{1,2}\s?\d{3}\s?\d{4}|\d{9,10})/;
+        const match = query.match(phoneRegex);
+    
+        if (match) {
+          let phone = match[0];
+          // If it doesn't start with +971, add it
+          if (!phone.startsWith("+971")) {
+            phone = "+971 " + phone.replace(/\D/g, "");
+          }
+          return phone;
+        }
+        return "+971 ";
+      };
+
+
+      // Add this helper function at the top of your component or in helpers
+export const convertJobTypesToFormFormat = (jobTypes: any): string[] => {
+  if (!Array.isArray(jobTypes)) {
+    return [];
+  }
+  
+  return jobTypes.map((item: any) => {
+    if (typeof item === 'string') {
+      return item;
+    }
+    if (typeof item === 'object' && item.job_type) {
+      return item.job_type;
+    }
+    return String(item);
+  });
+};
+
+export const convertJobTypesToApiFormat = (jobTypes: string[]): { job_type: string }[] => {
+  return jobTypes.map(jobType => ({ job_type: jobType }));
+};
+
+// Usage examples:
+// For form data: custom_jobtype: convertJobTypesToFormFormat(apiResponse.custom_jobtype)
+// For API calls: custom_jobtype: convertJobTypesToApiFormat(formData.custom_jobtype)

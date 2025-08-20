@@ -1,22 +1,47 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // types/FormData.ts
-export interface FormDataType {
-  id: string;
-  lead_name: string;
-  email_id: string;
-  mobile_no: string;
-  custom_job_type: string;
-  custom_property_type: string;
-  custom_building_type: string;
-  custom_building_name: string;
-  custom_bulding__apartment__villa__office_number: string;
-  custom_budget_range: string;
-  custom_project_urgency: string;
-  custom_preferred_inspection_date: string;
-  custom_alternative_inspection_date: string;
-  custom_preferred_inspection_time: string;
-  custom_alternative_inspection_time: string;
-  custom_special_requirements: string;
-  custom_map_data: string;
+export interface NewCustomerFormData {
+  name: string;
+  email: string;
+  phone: string;
+  jobType: string[];
 }
+
+export interface InspectorAvailability {
+  user_id: string;
+  user_name: string;
+  email: string;
+  date: string;
+  availability: {
+    occupied_slots: Array<{ start: string; end: string }>;
+    free_slots: Array<{ start: string; end: string; duration_hours?: number }>;
+    is_completely_free: boolean;
+    total_occupied_hours: number;
+  };
+}
+
+export interface CustomerSearchResult {
+  customer_name: string;
+  mobile_no: string;
+  email_id: string;
+  name: string;
+  lead_name?: string;
+  area?: string;
+  address_details?: {
+    emirate: string;
+    area: string;
+    community: string;
+    street_name: string;
+    property_number: string;
+    combined_address: string;
+    property_category: string;
+    property_type: string;
+  };
+  site_name?: string;
+  match_info?: any;
+}
+
+
+export type PriorityLevel = "Low" | "Medium" | "High";
 
 

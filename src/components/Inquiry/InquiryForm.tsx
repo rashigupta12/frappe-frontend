@@ -1,4 +1,3 @@
-
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
@@ -14,12 +13,13 @@ import {
   Mail,
   Phone,
   Save,
+  Search,
   User,
   UserPen,
   UserPlus,
-  X
+  X,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import { frappeAPI } from "../../api/frappeClient";
@@ -32,8 +32,14 @@ import {
 import {
   budgetRanges,
   capitalizeFirstLetter,
+  convertJobTypesToFormFormat,
   defaultFormData,
+  extractAddressFromSite,
+  extractNameFromQuery,
+  extractPhoneFromQuery,
   formatSubmissionData,
+  getCurrentTime,
+  handleKeyDown,
   type FormSection,
 } from "../../helpers/helper";
 import { timeToMinutes } from "../../lib/timeUtils";
@@ -54,19 +60,26 @@ import { ConfirmationModal } from "./ConfirmationModal";
 import { MultiSelectJobTypes } from "./MultiselectJobtypes";
 import PropertyAddressSection from "./PropertyAddress";
 import { RestrictedTimeClock } from "./ResticritedtimeSlot";
-
-type PriorityLevel = "Low" | "Medium" | "High";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "../ui/dialog";
+import { createPortal } from "react-dom";
+import type {
+  CustomerSearchResult,
+  InspectorAvailability,
+  NewCustomerFormData,
+  PriorityLevel,
+} from "../../types/inquiryFormdata";
 
 interface InquiryFormProps {
   isOpen: boolean;
   onClose: () => void;
   inquiry?: Lead | null;
-}
-interface NewCustomerFormData {
-  name: string;
-  email: string;
-  phone: string;
-  jobType: string[];
 }
 const sections: FormSection[] = [
   {
@@ -87,7 +100,6 @@ const sections: FormSection[] = [
     icon: <Building className="h-4 w-4" />,
     completed: false,
   },
-
   {
     id: "inspector",
     title: "Assign Inspector",
@@ -95,21 +107,6 @@ const sections: FormSection[] = [
     completed: false,
   },
 ];
-
-interface InspectorAvailability {
-  user_id: string;
-  user_name: string;
-  email: string;
-  date: string;
-  availability: {
-    occupied_slots: Array<{ start: string; end: string }>;
-    free_slots: Array<{ start: string; end: string; duration_hours?: number }>;
-    is_completely_free: boolean;
-    total_occupied_hours: number;
-  };
-}
-
-
 
 const InquiryForm: React.FC<InquiryFormProps> = ({
   isOpen,
@@ -129,11 +126,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     fetchUtmSource,
   } = useLeads();
 
-  const {
-    // fetchInspectors,
-    createTodo,
-    createTodoLoading,
-  } = useAssignStore();
+  const { createTodo, createTodoLoading } = useAssignStore();
 
   const [activeSection, setActiveSection] = useState<string>("contact");
   const [date, setDate] = useState<Date | undefined>(new Date());
@@ -145,15 +138,33 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
   const [showReferenceInput, setShowReferenceInput] = useState(false);
 
   // Customer search states
-  const [customerSearchQuery, setCustomerSearchQuery] = useState("");
-  const [customerSearchResults, setCustomerSearchResults] = useState<any[]>([]);
-  const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
-  const [isCustomerSearching, setIsCustomerSearching] = useState(false);
-  const [customerSearchTimeout, setCustomerSearchTimeout] =
-    useState<NodeJS.Timeout | null>(null);
-  const [fetchingCustomerDetails, setFetchingCustomerDetails] = useState(false);
-  const [showNewCustomerFields, setShowNewCustomerFields] = useState(false);
-  const [showEndTimeWarning, setShowEndTimeWarning] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<CustomerSearchResult[]>(
+    []
+  );
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(
+    null
+  );
+  const [selectedCustomer, setSelectedCustomer] =
+    useState<CustomerSearchResult | null>(null);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [dropdownPosition, setDropdownPosition] = useState({
+    top: 0,
+    left: 0,
+    width: 0,
+  });
+
+  // Customer modal states
+  const [showCustomerModal, setShowCustomerModal] = useState(false);
+  const [modalMode, setModalMode] = useState<"create" | "edit">("create");
+  const [customerForm, setCustomerForm] = useState<NewCustomerFormData>({
+    name: "",
+    email: "",
+    phone: "+971 ",
+    jobType: jobTypes.length > 0 ? [jobTypes[0].name] : [],
+  });
+  const [isCreatingCustomer, setIsCreatingCustomer] = useState(false);
 
   // Inspector assignment states
   const [selectedInspector, setSelectedInspector] =
@@ -168,16 +179,11 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
 
   // Confirmation modal state
   const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [showNewCustomerModal, setShowNewCustomerModal] = useState(false);
-  const [newCustomerForm, setNewCustomerForm] = useState<NewCustomerFormData>({
-    name: "",
-    email: "",
-    phone: "+971 ",
-    jobType: jobTypes.length > 0 ? [jobTypes[0].name] : [],
-  });
-  const [isCreatingCustomer, setIsCreatingCustomer] = useState(false);
+  const [showEndTimeWarning, setShowEndTimeWarning] = useState(false);
 
   const navigate = useNavigate();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const updatedSections = useMemo(() => {
     return sections.map((section) => {
@@ -186,9 +192,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
           return {
             ...section,
             completed:
-              !!formData.lead_name &&
-              !!formData.email_id &&
-              !!formData.mobile_no &&
+              !!selectedCustomer &&
               (!showReferenceInput || !!formData.custom_reference_name),
           };
         case "job":
@@ -205,21 +209,13 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
               !!formData.custom_community &&
               !!formData.custom_area,
           };
-        case "additional":
-          return {
-            ...section,
-            completed:
-              !!formData.custom_special_requirements ||
-              (!!formData.custom_preferred_inspection_date &&
-                !!formData.custom_preferred_inspection_time),
-          };
         case "inspector":
           return { ...section, completed: !!selectedInspector };
         default:
           return section;
       }
     });
-  }, [formData, showReferenceInput, selectedInspector]);
+  }, [formData, showReferenceInput, selectedInspector, selectedCustomer]);
 
   useEffect(() => {
     if (!hasFetchedInitialData && isOpen) {
@@ -227,7 +223,6 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
         await fetchJobTypes();
         if (fetchProjectUrgency) await fetchProjectUrgency();
         if (fetchUtmSource) await fetchUtmSource();
-        // await fetchInspectors();
         setHasFetchedInitialData(true);
       };
       fetchData();
@@ -238,16 +233,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     fetchJobTypes,
     fetchProjectUrgency,
     fetchUtmSource,
-    // fetchInspectors,
   ]);
-
-  const getCurrentTime = () => {
-    const now = new Date();
-    const hours = now.getHours().toString().padStart(2, "0");
-    const minutes = now.getMinutes().toString().padStart(2, "0");
-    return `${hours}:${minutes}`;
-  };
-
   useEffect(() => {
     if (!formData.custom_preferred_inspection_time) {
       setFormData((prev) => ({
@@ -256,6 +242,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
       }));
     }
   }, []);
+
   useEffect(() => {
     if (requestedTime && duration) {
       const endTime = calculateEndTime();
@@ -272,312 +259,48 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
       }
     }
   }, [requestedTime, duration]);
-
-  const handleNewCustomerInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value } = e.target;
-    setNewCustomerForm((prev) => ({
-      ...prev,
-      [name]: capitalizeFirstLetter(value),
-    }));
-  };
-
-  const handleNewCustomerPhoneChange = (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const input = e.target.value;
-
-    if (!input.startsWith("+971 ")) {
-      setNewCustomerForm((prev) => ({ ...prev, phone: "+971 " }));
-      return;
-    }
-
-    const digits = input.replace(/\D/g, "").substring(3);
-    const limitedDigits = digits.substring(0, 9);
-
-    let formattedNumber = "+971 ";
-
-    if (limitedDigits.length > 0) {
-      const isMobile = limitedDigits.startsWith("5");
-
-      if (isMobile) {
-        formattedNumber += limitedDigits.substring(0, 3);
-        if (limitedDigits.length > 3) {
-          formattedNumber += " " + limitedDigits.substring(3, 6);
-          if (limitedDigits.length > 6) {
-            formattedNumber += " " + limitedDigits.substring(6, 9);
-          }
-        }
-      } else {
-        formattedNumber += limitedDigits.substring(0, 2);
-        if (limitedDigits.length > 2) {
-          formattedNumber += " " + limitedDigits.substring(2, 5);
-          if (limitedDigits.length > 5) {
-            formattedNumber += " " + limitedDigits.substring(5, 9);
-          }
-        }
-      }
-    }
-
-    setNewCustomerForm((prev) => ({ ...prev, phone: formattedNumber }));
-  };
-
-  const extractPhoneFromQuery = (query: string): string => {
-    // Look for phone number patterns in the search query
-    const phoneRegex = /(\+971\s?\d{1,2}\s?\d{3}\s?\d{4}|\d{9,10})/;
-    const match = query.match(phoneRegex);
-
-    if (match) {
-      let phone = match[0];
-      // If it doesn't start with +971, add it
-      if (!phone.startsWith("+971")) {
-        phone = "+971 " + phone.replace(/\D/g, "");
-      }
-      return phone;
-    }
-    return "+971 ";
-  };
-
-  const extractNameFromQuery = (query: string): string => {
-    // Remove phone numbers from the query to get just the name
-    const phoneRegex = /(\+971\s?\d{1,2}\s?\d{3}\s?\d{4}|\d{9,10})/g;
-    return query.replace(phoneRegex, "").trim();
-  };
-
-  const saveNewCustomer = async () => {
-    if (!newCustomerForm.name.trim()) {
-      toast.error("Customer name is required");
-      return;
-    }
-
-    if (!newCustomerForm.phone || newCustomerForm.phone.length < 5) {
-      toast.error("Valid mobile number is required");
-      return;
-    }
-
-    try {
-      setIsCreatingCustomer(true);
-
-      const newLeadData = formatSubmissionData({
-        lead_name: newCustomerForm.name.trim(),
-        email_id: newCustomerForm.email || "",
-        mobile_no: newCustomerForm.phone,
-        custom_jobtype: newCustomerForm.jobType, // Now using the array
-        custom_budget_range: "",
-        custom_project_urgency: "",
-        source: "",
-        custom_property_name__number: "",
-        custom_emirate: "",
-        custom_area: "",
-        custom_community: "",
-        custom_street_name: "",
-        custom_property_area: "",
-        custom_property_category: "",
-        custom_special_requirements: "",
-      });
-
-      const createdLead = await createLead(newLeadData);
-
-      if (!createdLead) {
-        throw new Error("Failed to create lead");
-      }
-
-      setFormData((prev) => ({
-        ...prev,
-        lead_name: createdLead.lead_name || newCustomerForm.name,
-        email_id: createdLead.email_id || newCustomerForm.email,
-        mobile_no: createdLead.mobile_no || newCustomerForm.phone,
-        custom_jobtype:
-          createdLead.custom_jobtype?.map((item: any) => item.job_type) || [],
-        name: createdLead.name,
-      }));
-
-      setCustomerSearchQuery(newCustomerForm.name);
-      setShowNewCustomerFields(true);
-      setShowNewCustomerModal(false);
-      setShowCustomerDropdown(false);
-
-      setNewCustomerForm({
-        name: "",
-        email: "",
-        phone: "+971 ",
-        jobType: [],
-      });
-
-      toast.success(`New Lead "${newCustomerForm.name}" created successfully!`);
-    } catch (error) {
-      console.error("Error creating new lead:", error);
-      let errorMessage = "Failed to create lead. Please try again.";
-      if (error && typeof error === "object") {
-        if ("message" in error) {
-          errorMessage = (error as { message: string }).message;
-        } else if ("error" in error) {
-          errorMessage = (error as { error: string }).error;
-        }
-      }
-      toast.error(errorMessage);
-    } finally {
-      setIsCreatingCustomer(false);
-    }
-  };
-  const validateRequestedTime = () => {
-    if (!requestedTime || !selectedSlot) return false;
-
-    const requestedMinutes = timeToMinutes(requestedTime);
-    const slotStartMinutes = timeToMinutes(selectedSlot.start);
-    const slotEndMinutes = timeToMinutes(selectedSlot.end);
-    const durationMinutes = Math.round(parseFloat(duration) * 60);
-
-    // Check if requested time is within slot
-    if (
-      requestedMinutes < slotStartMinutes ||
-      requestedMinutes >= slotEndMinutes
-    ) {
-      return false;
-    }
-
-    // Check if duration fits within the remaining slot time
-    if (requestedMinutes + durationMinutes > slotEndMinutes) {
-      return false;
-    }
-
-    return true;
-  };
-  // const getMaxDuration = (): number => {
-  //   if (!selectedSlot || !requestedTime) return 8; // Default max 8 hours
-
-  //   const requestedMinutes = timeToMinutes(requestedTime);
-  //   const slotEndMinutes = timeToMinutes(selectedSlot.end);
-  //   const remainingMinutes = slotEndMinutes - requestedMinutes;
-  //   const maxHours = remainingMinutes / 60;
-
-  //   return Math.max(0.5, Math.floor(maxHours * 2) / 2); // Round to nearest 0.5
-  // };
-
-  const calculateEndTime = () => {
-    if (!requestedTime || !duration) return null;
-
-    const startMinutes = timeToMinutes(requestedTime);
-    const durationMinutes = Math.round(parseFloat(duration) * 60);
-    const endMinutes = startMinutes + durationMinutes;
-
-    // Check if end time is valid
-    if (endMinutes > 24 * 60) return null; // Beyond midnight
-
-    const hours = Math.floor(endMinutes / 60);
-    const mins = endMinutes % 60;
-
-    return `${hours.toString().padStart(2, "0")}:${mins
-      .toString()
-      .padStart(2, "0")}`;
-  };
-
-  // const validateTimeDuration = (durationValue: string) => {
-  //   if (!selectedSlot || !requestedTime) return;
-
-  //   const durationHours = parseFloat(durationValue);
-  //   const durationMinutes = Math.round(durationHours * 60);
-  //   const startMinutes = timeToMinutes(requestedTime);
-  //   const slotEndMinutes = timeToMinutes(selectedSlot.end);
-
-  //   if (startMinutes + durationMinutes > slotEndMinutes) {
-  //     const availableHours = (slotEndMinutes - startMinutes) / 60;
-  //     toast.error(
-  //       `Duration exceeds available time. Max ${availableHours.toFixed(
-  //         1
-  //       )} hours available in this slot.`,
-  //       { duration: 2000 }
-  //     );
-  //   }
-  // };
-
-  const handleInspectorSelect = (
-    email: string,
-    availabilityData: InspectorAvailability[],
-    modifiedSlots: { start: string; end: string; duration_hours?: number }[]
-  ) => {
-    const inspector = availabilityData.find(
-      (inspector) => inspector.email === email
+// Replace the existing useEffect for inquiry loading
+useEffect(() => {
+  if (inquiry && hasFetchedInitialData) {
+    setFormData({
+      ...defaultFormData,
+      ...inquiry,
+      custom_jobtype: convertJobTypesToFormFormat(inquiry.custom_jobtype), // Use helper
+      custom_project_urgency: inquiry.custom_project_urgency || "",
+      source: inquiry.source || "",
+      custom_preferred_inspection_date: inquiry.custom_preferred_inspection_date
+        ? new Date(inquiry.custom_preferred_inspection_date)
+        : null,
+    });
+    
+    setDate(
+      inquiry.custom_preferred_inspection_date
+        ? new Date(inquiry.custom_preferred_inspection_date)
+        : new Date()
     );
-    if (inspector) {
-      // Create a new inspector object with the modified slots
-      const modifiedInspector = {
-        ...inspector,
-        availability: {
-          ...inspector.availability,
-          free_slots: modifiedSlots,
-        },
-      };
-      setSelectedInspector(modifiedInspector);
+    
+    setShowReferenceInput(
+      inquiry.source === "Reference" ||
+      inquiry.source === "Supplier Reference"
+    );
 
-      if (modifiedSlots.length > 0) {
-        const firstSlot = modifiedSlots[0];
-        setSelectedSlot({
-          start: firstSlot.start,
-          end: firstSlot.end,
-        });
-        setRequestedTime(firstSlot.start);
-      } else {
-        toast.success(`Selected ${inspector.user_name}`);
-      }
-    }
-    setShowAvailabilityModal(false);
-  };
-
-  const handleSlotSelect = (slot: { start: string; end: string }) => {
-    setSelectedSlot(slot);
-    setRequestedTime(slot.start);
-    setFormData((prev) => ({
-      ...prev,
-      custom_preferred_inspection_time: slot.start,
-    }));
-    toast.success(`Selected time slot: ${slot.start} - ${slot.end}`);
-  };
-
-  const handleDateSelect = (selectedDate: Date | undefined) => {
-    setDate(selectedDate);
-    setSelectedInspector(null);
-    setSelectedSlot(null);
-
-    if (selectedDate) {
-      setTimeout(() => {
-        setShowAvailabilityModal(true);
-      }, 300);
-    }
-  };
-
-  useEffect(() => {
-    if (inquiry && hasFetchedInitialData) {
-      setFormData({
-        ...defaultFormData,
-        ...inquiry,
-        custom_jobtype:
-          inquiry.custom_jobtype?.map((item: any) => item.job_type) || [],
-        custom_project_urgency: inquiry.custom_project_urgency || "",
-        source: inquiry.source || "",
-        custom_preferred_inspection_date:
-          inquiry.custom_preferred_inspection_date
-            ? new Date(inquiry.custom_preferred_inspection_date)
-            : null,
+    // Set selected customer from inquiry data
+    if (inquiry.lead_name) {
+      setSelectedCustomer({
+        customer_name: inquiry.lead_name,
+        mobile_no: inquiry.mobile_no || "+971 ",
+        email_id: inquiry.email_id || "",
+        name: inquiry.name || "",
+        lead_name: inquiry.name,
       });
-      setDate(
-        inquiry.custom_preferred_inspection_date
-          ? new Date(inquiry.custom_preferred_inspection_date)
-          : new Date()
-      );
-      setShowReferenceInput(
-        inquiry.source === "Reference" ||
-          inquiry.source === "Supplier Reference"
-      );
-
-      setCustomerSearchQuery(inquiry.lead_name || "");
-      setShowNewCustomerFields(true);
+      setSearchQuery(inquiry.lead_name);
     }
-  }, [inquiry, hasFetchedInitialData]);
+  }
+}, [inquiry, hasFetchedInitialData]);
 
   const resetForm = () => {
     setFormData({ ...defaultFormData });
+    setSelectedCustomer(null);
     setSelectedInspector(null);
     setSelectedSlot(null);
     setRequestedTime("");
@@ -586,10 +309,9 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     setDate(new Date());
     setHasFetchedInitialData(false);
     setShowReferenceInput(false);
-    setCustomerSearchQuery("");
-    setCustomerSearchResults([]);
-    setShowCustomerDropdown(false);
-    setShowNewCustomerFields(false);
+    setSearchQuery("");
+    setSearchResults([]);
+    setShowDropdown(false);
     setShowAvailabilityModal(false);
   };
 
@@ -601,7 +323,6 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
-
     setFormData((prev) => ({ ...prev, [name]: capitalizeFirstLetter(value) }));
   };
 
@@ -622,7 +343,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     const input = e.target.value;
 
     if (!input.startsWith("+971 ")) {
-      setFormData((prev) => ({ ...prev, mobile_no: "+971 " }));
+      setCustomerForm((prev) => ({ ...prev, phone: "+971 " }));
       return;
     }
 
@@ -653,18 +374,13 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
       }
     }
 
-    setFormData((prev) => ({ ...prev, mobile_no: formattedNumber }));
+    setCustomerForm((prev) => ({ ...prev, phone: formattedNumber }));
   };
 
   const validateForm = (): boolean => {
     // Customer Details validation
-    if (!formData.lead_name) {
-      toast.error("Customer name is required");
-      return false;
-    }
-    if (!formData.mobile_no || formData.mobile_no.length < 5) {
-      // "+971 " is 5 chars
-      toast.error("Valid mobile number is required");
+    if (!selectedCustomer) {
+      toast.error("Customer selection is required");
       return false;
     }
 
@@ -675,66 +391,163 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     return true;
   };
 
-  const saveLead = async (): Promise<string | undefined> => {
-    try {
-      const submissionData = formatSubmissionData(formData);
-
-      // Check if we already have a lead ID (either from inquiry prop or from newly created lead)
-      const existingLeadId = inquiry?.name || formData.name;
-
-      if (existingLeadId) {
-        // Update existing lead
-        await updateLead(existingLeadId, submissionData);
-        toast.success("Inquiry updated successfully!");
-        return existingLeadId;
-      } else {
-        // Create new lead only if we don't have an ID
-        const newInquiry = await createLead(submissionData);
-        toast.success("Inquiry created successfully!");
-
-        // Update formData with the new lead ID
-        setFormData((prev) => ({
-          ...prev,
-          name: newInquiry.name,
-        }));
-
-        return newInquiry.name;
-      }
-    } catch (err) {
-      console.error("Error saving lead:", err);
-      toast.error("Failed to save inquiry. Please try again.");
-      return undefined;
+const saveLead = async (): Promise<string | undefined> => {
+  try {
+    let submissionData = formatSubmissionData(formData);
+    
+    // For new inquiries, ensure we use the locally stored customer data
+    if (!inquiry && selectedCustomer) {
+      submissionData = {
+        ...submissionData,
+        lead_name: selectedCustomer.customer_name,
+        email_id: selectedCustomer.email_id || "",
+        mobile_no: selectedCustomer.mobile_no || "+971 ",
+      };
     }
-  };
+
+    // Check if we already have a lead ID (either from inquiry prop or from newly created lead)
+    const existingLeadId = inquiry?.name || formData.name;
+
+    if (existingLeadId) {
+      // For updates, fetch fresh document to avoid TimestampMismatchError
+      try {
+        const freshLead = await frappeAPI.makeAuthenticatedRequest(
+          "GET",
+          `/api/resource/Lead/${existingLeadId}`
+        );
+
+        if (freshLead?.data) {
+          // Merge fresh data with our changes
+          submissionData = {
+            ...freshLead.data, // Start with fresh data including timestamps
+            ...submissionData, // Apply our changes
+          };
+
+          // Remove any undefined fields
+          Object.keys(submissionData).forEach(key => {
+            if (submissionData[key] === undefined) {
+              delete submissionData[key];
+            }
+          });
+        }
+      } catch (fetchError) {
+        console.warn("Could not fetch fresh lead data, proceeding with existing data:", fetchError);
+      }
+
+      // Update existing lead
+      const updatedLead = await updateLead(existingLeadId, submissionData);
+      
+      // Convert API response format back to form format (string[])
+      const convertedJobTypes = Array.isArray(updatedLead.custom_jobtype)
+        ? updatedLead.custom_jobtype.map((item: any) => 
+            typeof item === 'string' ? item : item.job_type
+          )
+        : formData.custom_jobtype || [];
+
+      // Update formData with proper type conversion
+      setFormData((prev) => ({
+        ...prev,
+        ...updatedLead,
+        custom_jobtype: convertedJobTypes, // Ensure this is string[]
+        custom_preferred_inspection_date: updatedLead.custom_preferred_inspection_date
+          ? new Date(updatedLead.custom_preferred_inspection_date)
+          : prev.custom_preferred_inspection_date,
+      }));
+      
+      toast.success("Inquiry updated successfully!");
+      return existingLeadId;
+    } else {
+      // Create new lead only if we don't have an ID
+      const newInquiry = await createLead(submissionData);
+      
+      // Convert API response format back to form format (string[])
+      const convertedJobTypes = Array.isArray(newInquiry.custom_jobtype)
+        ? newInquiry.custom_jobtype.map((item: any) => 
+            typeof item === 'string' ? item : item.job_type
+          )
+        : formData.custom_jobtype || [];
+
+      // Update formData with the new lead ID and fresh data
+      setFormData((prev) => ({
+        ...prev,
+        ...newInquiry,
+        name: newInquiry.name,
+        custom_jobtype: convertedJobTypes, // Ensure this is string[]
+        custom_preferred_inspection_date: newInquiry.custom_preferred_inspection_date
+          ? new Date(newInquiry.custom_preferred_inspection_date)
+          : prev.custom_preferred_inspection_date,
+      }));
+
+      toast.success("Inquiry created successfully!");
+      return newInquiry.name;
+    }
+  } catch (err) {
+    console.error("Error saving lead:", err);
+    
+    // Handle specific timestamp errors
+    let errorMessage = "Failed to save inquiry. Please try again.";
+    if (err && typeof err === "object" && "message" in err) {
+      const errorMsg = (err as { message: string }).message;
+      if (errorMsg.includes("TimestampMismatchError") || errorMsg.includes("Document has been modified")) {
+        errorMessage = "The document has been modified. Please refresh the form and try again.";
+      }
+    }
+    
+    toast.error(errorMessage);
+    return undefined;
+  }
+};
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    // Only validate on submit
-    if (!validateForm()) return;
+  // Only validate on submit
+  if (!validateForm()) return;
 
-    try {
-      await saveLead();
-      onClose();
-    } catch (err) {
-      console.error("Form submission error:", err);
-      toast.error("Failed to create inquiry. Please try again.");
+  try {
+    // For new inquiries, ensure we use the locally stored customer data
+    let submissionData = formatSubmissionData(formData);
+    
+    // If this is a new inquiry and we have selected customer data, use it
+    if (!inquiry && selectedCustomer) {
+      submissionData = {
+        ...submissionData,
+        lead_name: selectedCustomer.customer_name,
+        email_id: selectedCustomer.email_id || "",
+        mobile_no: selectedCustomer.mobile_no || "+971 ",
+      };
     }
-  };
+
+    const existingLeadId = inquiry?.name || formData.name;
+
+    if (existingLeadId) {
+      // Update existing lead
+      await updateLead(existingLeadId, submissionData);
+      toast.success("Inquiry updated successfully!");
+    } else {
+      // Create new lead
+      const newInquiry = await createLead(submissionData);
+      toast.success("Inquiry created successfully!");
+      
+      // Update formData with the new lead ID
+      setFormData((prev) => ({
+        ...prev,
+        name: newInquiry.name,
+      }));
+    }
+    
+    onClose();
+  } catch (err) {
+    console.error("Form submission error:", err);
+    toast.error("Failed to create inquiry. Please try again.");
+  }
+};
 
   const handleAssignAndSave = () => {
     // Validate form fields and show specific error messages
-    if (!formData.lead_name) {
+    if (!selectedCustomer) {
       toast.error(
-        "Please complete customer details: Customer name is required"
-      );
-      setActiveSection("contact");
-      return;
-    }
-
-    if (!formData.mobile_no || formData.mobile_no.length < 5) {
-      toast.error(
-        "Please complete customer details: Valid mobile number is required"
+        "Please complete customer details: Customer selection is required"
       );
       setActiveSection("contact");
       return;
@@ -966,15 +779,14 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     resetForm();
     onClose();
   };
-  const handleCustomerSearch = useCallback(async (query: string) => {
+  const searchCustomers = useCallback(async (query: string) => {
     if (!query.trim()) {
-      setCustomerSearchResults([]);
-      setShowCustomerDropdown(false);
-      setShowNewCustomerFields(false);
+      setSearchResults([]);
+      setShowDropdown(false);
       return;
     }
 
-    setIsCustomerSearching(true);
+    setIsSearching(true);
     try {
       const response = await frappeAPI.makeAuthenticatedRequest(
         "GET",
@@ -1028,146 +840,593 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
         };
       });
 
-      setCustomerSearchResults(transformedResults);
-      setShowCustomerDropdown(true);
-
-      // Show new customer fields if there are no results
-      setShowNewCustomerFields(transformedResults.length === 0);
+      setSearchResults(transformedResults);
+      setShowDropdown(true);
     } catch (error) {
       console.error("Search error:", error);
-      setCustomerSearchResults([]);
-
-      // Hide dropdown on error
-      setShowCustomerDropdown(false);
-
-      // Show new customer fields on error
-      setShowNewCustomerFields(true);
+      setSearchResults([]);
+      setShowDropdown(false);
     } finally {
-      setIsCustomerSearching(false);
+      setIsSearching(false);
     }
   }, []);
 
-  const handleCustomerSelect = async (result: any) => {
-    setFetchingCustomerDetails(true);
-    setShowNewCustomerFields(false);
-
-    try {
-      const customerData = {
-        lead_name: result.customer_name,
-        email_id: result.email_id || "",
-        mobile_no: result.mobile_no || "+971 ",
-        customer_id: result.name || "",
-        lead_id: result.custom_lead_name || "",
-      };
-
-      const addressData = result.address_details
-        ? {
-            custom_property_category:
-              result.address_details.property_category || "",
-            custom_emirate: result.address_details.emirate || "",
-            custom_community: result.address_details.community || "",
-            custom_area: result.address_details.area || "",
-            custom_street_name: result.address_details.street_name || "",
-            custom_property_name__number:
-              result.address_details.property_number || "",
-            custom_property_area: result.address_details.combined_address || "",
-            custom_property_type: result.address_details.property_type || "",
-          }
-        : {};
-
-      setFormData((prev) => ({
-        ...prev,
-        ...customerData,
-        ...addressData,
-      }));
-
-      setCustomerSearchQuery(result.customer_name);
-      setShowCustomerDropdown(false);
-    } finally {
-      setFetchingCustomerDetails(false);
-    }
-  };
-
-  const handleCustomerSearchChange = (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value;
-    setCustomerSearchQuery(capitalizeFirstLetter(query));
+    setSearchQuery(capitalizeFirstLetter(query));
 
     if (!query.trim()) {
-      setCustomerSearchResults([]);
-      setShowCustomerDropdown(false);
-      setShowNewCustomerFields(false);
+      setSearchResults([]);
+      setShowDropdown(false);
       return;
     }
 
-    if (customerSearchTimeout) {
-      clearTimeout(customerSearchTimeout);
+    if (searchTimeout) {
+      clearTimeout(searchTimeout);
     }
 
-    setCustomerSearchTimeout(
+    setSearchTimeout(
       setTimeout(() => {
-        handleCustomerSearch(query);
+        searchCustomers(query);
       }, 300)
     );
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (
-      [8, 9, 13, 16, 17, 18, 20, 27, 35, 36, 37, 38, 39, 40, 45, 46].includes(
-        e.keyCode
-      )
-    ) {
+  const handleCustomerSelect = async (result: CustomerSearchResult) => {
+    setSelectedCustomer(result);
+    setSearchQuery(result.customer_name);
+    setShowDropdown(false);
+
+    // Update form data with customer information
+    setFormData((prev) => ({
+      ...prev,
+      lead_name: result.customer_name,
+      email_id: result.email_id || "",
+      mobile_no: result.mobile_no || "+971 ",
+      customer_id: result.name || "",
+      lead_id: result.lead_name || "",
+    }));
+
+    // If address details are available, populate property fields
+    if (result.address_details) {
+      setFormData((prev) => ({
+        ...prev,
+        custom_property_category:
+          result.address_details?.property_category || "",
+        custom_emirate: result.address_details?.emirate || "",
+        custom_community: result.address_details?.community || "",
+        custom_area: result.address_details?.area || "",
+        custom_street_name: result.address_details?.street_name || "",
+        custom_property_name__number:
+          result.address_details?.property_number || "",
+        custom_property_area: result.address_details?.combined_address || "",
+        custom_property_type: result.address_details?.property_type || "",
+      }));
+    }
+  };
+
+  const handleClearCustomer = () => {
+    setSelectedCustomer(null);
+    setSearchQuery("");
+    setFormData((prev) => ({
+      ...prev,
+      lead_name: "",
+      email_id: "",
+      mobile_no: "+971 ",
+      customer_id: "",
+      lead_id: "",
+    }));
+  };
+
+  const handleOpenCreateModal = () => {
+    setModalMode("create");
+    setCustomerForm({
+      name: extractNameFromQuery(searchQuery),
+      email: "",
+      phone: extractPhoneFromQuery(searchQuery),
+      jobType: jobTypes.length > 0 ? [jobTypes[0].name] : [],
+    });
+    setShowCustomerModal(true);
+    setShowDropdown(false);
+  };
+
+  const handleOpenEditModal = () => {
+    if (!selectedCustomer) return;
+
+    setModalMode("edit");
+    setCustomerForm({
+      name: selectedCustomer.customer_name,
+      email: selectedCustomer.email_id || "",
+      phone: selectedCustomer.mobile_no || "+971 ",
+      jobType:
+        formData.custom_jobtype ||
+        (jobTypes.length > 0 ? [jobTypes[0].name] : []),
+    });
+    setShowCustomerModal(true);
+  };
+
+const handleSaveCustomer = async () => {
+  if (!customerForm.name.trim()) {
+    toast.error("Customer name is required");
+    return;
+  }
+
+  if (!customerForm.phone || customerForm.phone.length < 5) {
+    toast.error("Valid mobile number is required");
+    return;
+  }
+
+  try {
+    setIsCreatingCustomer(true);
+
+    // For new inquiries, just update local state without creating/updating lead
+    if (!inquiry) {
+      const updatedCustomer = {
+        customer_name: customerForm.name.trim(),
+        mobile_no: customerForm.phone,
+        email_id: customerForm.email || "",
+        name: selectedCustomer?.name || "",
+        lead_name: selectedCustomer?.lead_name || "",
+      };
+
+      setSelectedCustomer(updatedCustomer);
+      setSearchQuery(updatedCustomer.customer_name);
+
+      // Update form data locally - ensure custom_jobtype is string[]
+      setFormData((prev) => ({
+        ...prev,
+        lead_name: updatedCustomer.customer_name,
+        email_id: updatedCustomer.email_id,
+        mobile_no: updatedCustomer.mobile_no,
+        custom_jobtype: customerForm.jobType, // This is already string[]
+      }));
+
+      setShowCustomerModal(false);
+      setCustomerForm({
+        name: "",
+        email: "",
+        phone: "+971 ",
+        jobType: [],
+      });
+
+      toast.success(`Customer details updated locally`);
       return;
     }
 
-    const input = e.currentTarget;
-    if (input.selectionStart && input.selectionStart < 5) {
-      e.preventDefault();
+    // For existing inquiries, update the lead
+    const leadId = formData.name || selectedCustomer?.name;
+    if (!leadId) {
+      throw new Error("No lead ID found for update");
     }
+
+    // Fetch fresh document before updating
+    const freshLead = await frappeAPI.makeAuthenticatedRequest(
+      "GET",
+      `/api/resource/Lead/${leadId}`
+    );
+
+    if (!freshLead?.data) {
+      throw new Error("Could not fetch fresh lead data");
+    }
+
+    // Convert jobType array to the format expected by the API
+    const apiJobTypeFormat = customerForm.jobType.map(jobType => ({ job_type: jobType }));
+
+    const newLeadData = {
+      ...freshLead.data,
+      lead_name: customerForm.name.trim(),
+      email_id: customerForm.email || "",
+      mobile_no: customerForm.phone,
+      custom_jobtype: apiJobTypeFormat, // Use API format
+    };
+
+    // Remove undefined fields
+    Object.keys(newLeadData).forEach(key => {
+      if (newLeadData[key] === undefined) {
+        delete newLeadData[key];
+      }
+    });
+
+    let updatedLead;
+    if (modalMode === "create") {
+      const formattedData = formatSubmissionData({
+        lead_name: customerForm.name.trim(),
+        email_id: customerForm.email || "",
+        mobile_no: customerForm.phone,
+        custom_jobtype: customerForm.jobType, // Helper will convert to API format
+        custom_budget_range: "",
+        custom_project_urgency: "",
+        source: "",
+        custom_property_name__number: "",
+        custom_emirate: "",
+        custom_area: "",
+        custom_community: "",
+        custom_street_name: "",
+        custom_property_area: "",
+        custom_property_category: "",
+        custom_special_requirements: "",
+      });
+      updatedLead = await createLead(formattedData);
+    } else {
+      updatedLead = await updateLead(leadId, newLeadData);
+    }
+
+    if (!updatedLead) {
+      throw new Error("Failed to save lead");
+    }
+
+    // Convert API response format back to form format (string[])
+    const convertedJobTypes = Array.isArray(updatedLead.custom_jobtype)
+      ? updatedLead.custom_jobtype.map((item: any) => 
+          typeof item === 'string' ? item : item.job_type
+        )
+      : customerForm.jobType;
+
+    // Update formData with proper type conversion
+    setFormData((prev: LeadFormData) => ({
+      ...prev,
+      ...updatedLead,
+      custom_jobtype: convertedJobTypes, // Ensure this is string[]
+      custom_preferred_inspection_date: updatedLead.custom_preferred_inspection_date
+        ? new Date(updatedLead.custom_preferred_inspection_date)
+        : prev.custom_preferred_inspection_date,
+    }));
+
+    // Update date if it exists
+    if (updatedLead.custom_preferred_inspection_date) {
+      setDate(new Date(updatedLead.custom_preferred_inspection_date));
+    }
+
+    // Update reference input visibility
+    setShowReferenceInput(
+      updatedLead.source === "Reference" ||
+      updatedLead.source === "Supplier Reference"
+    );
+
+    // Update the selected customer with new data
+    const updatedCustomer = {
+      customer_name: updatedLead.lead_name || customerForm.name,
+      mobile_no: updatedLead.mobile_no || customerForm.phone,
+      email_id: updatedLead.email_id || customerForm.email,
+      name: updatedLead.name,
+      lead_name: updatedLead.name,
+    };
+
+    setSelectedCustomer(updatedCustomer);
+    setSearchQuery(updatedCustomer.customer_name);
+
+    setShowCustomerModal(false);
+    setCustomerForm({
+      name: "",
+      email: "",
+      phone: "+971 ",
+      jobType: [],
+    });
+
+    toast.success(`Customer "${updatedCustomer.customer_name}" updated successfully!`);
+    
+  } catch (error) {
+    console.error("Error saving lead:", error);
+    let errorMessage = `Failed to ${
+      modalMode === "create" ? "create" : "update"
+    } lead. Please try again.`;
+    
+    if (error && typeof error === "object" && "message" in error) {
+      const errorMsg = (error as { message: string }).message;
+      if (errorMsg.includes("TimestampMismatchError") || errorMsg.includes("Document has been modified")) {
+        errorMessage = "The document has been modified by another user. Please refresh and try again.";
+      } else {
+        errorMessage = errorMsg;
+      }
+    } else if (error && typeof error === "object" && "error" in error) {
+      errorMessage = (error as { error: string }).error;
+    }
+    
+    toast.error(errorMessage);
+  } finally {
+    setIsCreatingCustomer(false);
+  }
+};
+
+// // Add this function to your InquiryForm component
+// // Add this function to your InquiryForm component
+// const refreshInquiryData = async (leadId: string) => {
+//   try {
+//     const refreshedInquiry = await frappeAPI.makeAuthenticatedRequest(
+//       "GET",
+//       `/api/resource/Lead/${leadId}`
+//     );
+
+//     if (!refreshedInquiry?.data) {
+//       throw new Error("Could not fetch refreshed inquiry data");
+//     }
+
+//     // Convert API response custom_jobtype format to form format
+//     const convertedJobTypes = Array.isArray(refreshedInquiry.data.custom_jobtype)
+//       ? refreshedInquiry.data.custom_jobtype.map((item: any) => 
+//           typeof item === 'string' ? item : item.job_type
+//         )
+//       : [];
+
+//     // Update formData with complete refreshed inquiry data
+//     const refreshedData: LeadFormData = {
+//       ...defaultFormData,
+//       ...refreshedInquiry.data,
+//       custom_jobtype: convertedJobTypes, // Ensure this is string[]
+//       custom_preferred_inspection_date: refreshedInquiry.data.custom_preferred_inspection_date
+//         ? new Date(refreshedInquiry.data.custom_preferred_inspection_date)
+//         : null,
+//     };
+
+//     setFormData(refreshedData);
+
+//     // Update date if it exists
+//     if (refreshedInquiry.data.custom_preferred_inspection_date) {
+//       setDate(new Date(refreshedInquiry.data.custom_preferred_inspection_date));
+//     }
+
+//     // Update reference input visibility
+//     setShowReferenceInput(
+//       refreshedInquiry.data.source === "Reference" ||
+//       refreshedInquiry.data.source === "Supplier Reference"
+//     );
+
+//     // Update selected customer data
+//     if (refreshedInquiry.data.lead_name) {
+//       const updatedCustomer = {
+//         customer_name: refreshedInquiry.data.lead_name,
+//         mobile_no: refreshedInquiry.data.mobile_no || "+971 ",
+//         email_id: refreshedInquiry.data.email_id || "",
+//         name: refreshedInquiry.data.name || "",
+//         lead_name: refreshedInquiry.data.name,
+//       };
+//       setSelectedCustomer(updatedCustomer);
+//       setSearchQuery(refreshedInquiry.data.lead_name);
+//     }
+
+//     console.log("Inquiry form refreshed with latest data");
+//     return refreshedData;
+//   } catch (error) {
+//     console.error("Error refreshing inquiry data:", error);
+//     toast.error("Failed to refresh inquiry data");
+//     throw error;
+//   }
+// };
+
+
+  const validateRequestedTime = () => {
+    if (!requestedTime || !selectedSlot) return false;
+
+    const requestedMinutes = timeToMinutes(requestedTime);
+    const slotStartMinutes = timeToMinutes(selectedSlot.start);
+    const slotEndMinutes = timeToMinutes(selectedSlot.end);
+    const durationMinutes = Math.round(parseFloat(duration) * 60);
+
+    // Check if requested time is within slot
+    if (
+      requestedMinutes < slotStartMinutes ||
+      requestedMinutes >= slotEndMinutes
+    ) {
+      return false;
+    }
+
+    // Check if duration fits within the remaining slot time
+    if (requestedMinutes + durationMinutes > slotEndMinutes) {
+      return false;
+    }
+
+    return true;
   };
-  // const generateTimeSlots = (startTime: string, endTime: string): string[] => {
-  //   const slots: string[] = [];
-  //   const start = timeToMinutes(startTime);
-  //   const end = timeToMinutes(endTime);
 
-  //   // Generate slots in 15-minute intervals
-  //   for (let minutes = start; minutes < end; minutes += 15) {
-  //     const hours = Math.floor(minutes / 60);
-  //     const mins = minutes % 60;
-  //     const timeStr = `${hours.toString().padStart(2, "0")}:${mins
-  //       .toString()
-  //       .padStart(2, "0")}`;
-  //     slots.push(timeStr);
-  //   }
+  const calculateEndTime = () => {
+    if (!requestedTime || !duration) return null;
 
-  //   return slots;
-  // };
+    const startMinutes = timeToMinutes(requestedTime);
+    const durationMinutes = Math.round(parseFloat(duration) * 60);
+    const endMinutes = startMinutes + durationMinutes;
 
-  const extractAddressFromSite = (siteName: string) => {
-    if (!siteName) return "";
-    // Format: "Name-Number,..." - extract everything after the first dash
-    const dashIndex = siteName.indexOf("-");
-    if (dashIndex !== -1) {
-      const afterDash = siteName.substring(dashIndex + 1);
-      // Check if what comes after dash starts with a number (address part)
-      if (/^\d/.test(afterDash)) {
-        return afterDash.trim();
+    // Check if end time is valid
+    if (endMinutes > 24 * 60) return null; // Beyond midnight
+
+    const hours = Math.floor(endMinutes / 60);
+    const mins = endMinutes % 60;
+
+    return `${hours.toString().padStart(2, "0")}:${mins
+      .toString()
+      .padStart(2, "0")}`;
+  };
+
+  const handleInspectorSelect = (
+    email: string,
+    availabilityData: InspectorAvailability[],
+    modifiedSlots: { start: string; end: string; duration_hours?: number }[]
+  ) => {
+    const inspector = availabilityData.find(
+      (inspector) => inspector.email === email
+    );
+    if (inspector) {
+      // Create a new inspector object with the modified slots
+      const modifiedInspector = {
+        ...inspector,
+        availability: {
+          ...inspector.availability,
+          free_slots: modifiedSlots,
+        },
+      };
+      setSelectedInspector(modifiedInspector);
+
+      if (modifiedSlots.length > 0) {
+        const firstSlot = modifiedSlots[0];
+        setSelectedSlot({
+          start: firstSlot.start,
+          end: firstSlot.end,
+        });
+        setRequestedTime(firstSlot.start);
+      } else {
+        toast.success(`Selected ${inspector.user_name}`);
       }
     }
-    // Fallback: return original if pattern doesn't match
-    return siteName;
+    setShowAvailabilityModal(false);
   };
-  const handleEmailInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setNewCustomerForm((prev) => ({ ...prev, [name]: value }));
+
+  const handleSlotSelect = (slot: { start: string; end: string }) => {
+    setSelectedSlot(slot);
+    setRequestedTime(slot.start);
+    setFormData((prev) => ({
+      ...prev,
+      custom_preferred_inspection_time: slot.start,
+    }));
+    toast.success(`Selected time slot: ${slot.start} - ${slot.end}`);
   };
-  const handleNewCustomerEmailChange = (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const { name, value } = e.target;
-    setNewCustomerForm((prev) => ({ ...prev, [name]: value }));
+
+  const handleDateSelect = (selectedDate: Date | undefined) => {
+    setDate(selectedDate);
+    setSelectedInspector(null);
+    setSelectedSlot(null);
+
+    if (selectedDate) {
+      setTimeout(() => {
+        setShowAvailabilityModal(true);
+      }, 300);
+    }
   };
+
+  // Update dropdown position when shown
+  useEffect(() => {
+    if (showDropdown && inputRef.current) {
+      const rect = inputRef.current.getBoundingClientRect();
+      setDropdownPosition({
+        top: rect.bottom + window.scrollY,
+        left: rect.left + window.scrollX,
+        width: rect.width,
+      });
+    }
+  }, [showDropdown]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node) &&
+        inputRef.current &&
+        !inputRef.current.contains(event.target as Node)
+      ) {
+        setShowDropdown(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  const DropdownContent = () => (
+    <div
+      ref={dropdownRef}
+      className="fixed bg-white shadow-lg rounded-md border border-gray-200 max-h-60 overflow-y-auto"
+      style={{
+        top: dropdownPosition.top,
+        left: dropdownPosition.left,
+        width: dropdownPosition.width,
+        zIndex: 9999,
+      }}
+    >
+      {isSearching ? (
+        <div className="px-4 py-2 text-sm text-gray-500 flex items-center">
+          <Loader2 className="h-4 w-4 animate-spin mr-2" />
+          Searching customers...
+        </div>
+      ) : searchResults.length > 0 ? (
+        <div className="overflow-y-auto max-h-[calc(60vh-100px)]">
+          {searchResults.map((result, index) => (
+            <div
+              key={`customer-result-${index}`}
+              className="px-4 py-2 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0"
+              onClick={() => handleCustomerSelect(result)}
+            >
+              <div className="flex justify-between items-start">
+                <div className="flex-1">
+                  <p className="font-medium truncate text-gray-900">
+                    {result.customer_name}
+                  </p>
+                  {(result.mobile_no || result.email_id) && (
+                    <div className="text-xs text-gray-500 space-x-2 mt-1">
+                      {result.mobile_no && (
+                        <span className="inline-flex items-center">
+                          <Phone className="h-3 w-3 mr-1" />
+                          {result.mobile_no}
+                        </span>
+                      )}
+                      {result.email_id && (
+                        <span className="inline-flex items-center">
+                          <Mail className="h-3 w-3 mr-1" />
+                          {result.email_id}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                  {result.site_name && (
+                    <div className="mt-2 text-xs text-gray-500 flex items-start gap-1">
+                      <Home className="h-3 w-3 flex-shrink-0 mt-0.5" />
+                      <div className="flex-1 min-w-0">
+                        <p className="break-words text-xs leading-tight">
+                          {extractAddressFromSite(result.site_name)}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                  {(result.address_details?.property_category ||
+                    result.address_details?.property_type) && (
+                    <div className="mt-2 flex gap-2">
+                      {result.address_details?.property_category && (
+                        <span className="inline-flex items-center px-2 rounded-full text-xs bg-blue-100 text-blue-800">
+                          <Building className="h-3 w-3 mr-1" />
+                          {result.address_details.property_category}
+                        </span>
+                      )}
+                      {result.address_details?.property_type && (
+                        <span className="inline-flex items-center px-2 rounded-full text-xs bg-green-100 text-green-800">
+                          {result.address_details.property_type}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+          <div
+            className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center justify-between border-t border-gray-100"
+            onClick={handleOpenCreateModal}
+          >
+            <div>
+              <p className="text-xs text-gray-500">
+                Click to add a new customer
+              </p>
+            </div>
+            <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded flex-shrink-0">
+              Add New
+            </span>
+          </div>
+        </div>
+      ) : searchQuery ? (
+        <div
+          className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center justify-between"
+          onClick={handleOpenCreateModal}
+        >
+          <div>
+            <p className="font-medium">No customer found for "{searchQuery}"</p>
+            <p className="text-xs text-gray-500">Click to add a new customer</p>
+          </div>
+          <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded flex-shrink-0">
+            Add New
+          </span>
+        </div>
+      ) : null}
+    </div>
+  );
 
   if (!isOpen) return null;
 
@@ -1254,206 +1513,78 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                                   </span>
                                   <span className="text-red-500 ml-1">*</span>
                                 </span>
-                                {fetchingCustomerDetails && (
-                                  <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
-                                )}
                               </div>
                             </Label>
 
                             <div className="relative">
-                              <Input
-                                id="customer_search"
-                                name="customer_search"
-                                value={customerSearchQuery}
-                                onChange={handleCustomerSearchChange}
-                                placeholder="Search by name, phone or email"
-                                required
-                                className="pr-10"
-                              />
-                              {isCustomerSearching && (
-                                <Loader2 className="absolute right-3 top-3 h-4 w-4 animate-spin text-gray-500" />
+                              {selectedCustomer ? (
+                                <div className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 flex items-center justify-between">
+                                  <div className="flex-1 text-sm">
+                                    <span className="font-medium">
+                                      {selectedCustomer.customer_name}
+                                    </span>
+                                    {selectedCustomer.mobile_no && (
+                                      <span className="text-gray-500">
+                                        {" "}
+                                        | {selectedCustomer.mobile_no}
+                                      </span>
+                                    )}
+                                    {selectedCustomer.email_id && (
+                                      <span className="text-gray-500">
+                                        {" "}
+                                        | {selectedCustomer.email_id}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <button
+                                      type="button"
+                                      onClick={handleOpenEditModal}
+                                      className="p-1 hover:bg-gray-200 rounded"
+                                      title="Edit customer"
+                                    >
+                                      <UserPen className="h-4 w-4 text-gray-600" />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={handleClearCustomer}
+                                      className="p-1 hover:bg-gray-200 rounded"
+                                      title="Clear customer"
+                                    >
+                                      <X className="h-4 w-4 text-gray-600" />
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="flex items-center">
+                                  <Search className="absolute left-3 h-4 w-4 text-gray-400 z-10" />
+                                  <Input
+                                    ref={inputRef}
+                                    id="customer_search"
+                                    name="customer_search"
+                                    value={searchQuery}
+                                    onChange={handleSearchChange}
+                                    placeholder="Search by name, phone or email"
+                                    required
+                                    className="pl-9 pr-10"
+                                    onFocus={() => {
+                                      if (searchQuery && !showDropdown) {
+                                        searchCustomers(searchQuery);
+                                      }
+                                    }}
+                                  />
+                                  {isSearching && (
+                                    <Loader2 className="absolute right-3 h-4 w-4 animate-spin text-gray-500" />
+                                  )}
+                                </div>
                               )}
                             </div>
 
-                            {showCustomerDropdown && (
-                              <div className="absolute z-10 mt-1 w-full bg-white shadow-lg rounded-md border border-gray-200 max-h-60 overflow-y-auto">
-                                {customerSearchResults.length > 0 ? (
-                                  <>
-                                    {/* Existing customers */}
-                                    {customerSearchResults.map(
-                                      (result, index) => (
-                                        <div
-                                          key={`customer-result-${index}`}
-                                          className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                                          onClick={() =>
-                                            handleCustomerSelect(result)
-                                          }
-                                        >
-                                          <p className="font-medium truncate">
-                                            {result.customer_name}
-                                          </p>
-                                          {(result.mobile_no ||
-                                            result.email_id) && (
-                                            <div className="text-xs text-gray-500 space-x-2">
-                                              {result.mobile_no && (
-                                                <span className="inline-flex items-center">
-                                                  <Phone className="h-3 w-3 mr-1" />
-                                                  {result.mobile_no}
-                                                </span>
-                                              )}
-                                              {result.email_id && (
-                                                <span className="inline-flex items-center">
-                                                  <Mail className="h-3 w-3 mr-1" />
-                                                  {result.email_id}
-                                                </span>
-                                              )}
-                                            </div>
-                                          )}
-                                          {result.site_name && (
-                                            <div className="mt-2 text-xs text-gray-500 flex items-start gap-1">
-                                              <Home className="h-3 w-3 flex-shrink-0 mt-0.5" />
-                                              <div className="flex-1 min-w-0">
-                                                <p className="break-words text-xs leading-tight">
-                                                  {extractAddressFromSite(
-                                                    result.site_name
-                                                  )}
-                                                </p>
-                                              </div>
-                                            </div>
-                                          )}
-                                        </div>
-                                      )
-                                    )}
-
-                                    {/* Add New Customer option - separate from existing customers */}
-                                    <div
-                                      className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center justify-between border-t border-gray-100"
-                                      onClick={() => {
-                                        // Pre-fill the form with searched data
-                                        const extractedName =
-                                          extractNameFromQuery(
-                                            customerSearchQuery
-                                          );
-                                        const extractedPhone =
-                                          extractPhoneFromQuery(
-                                            customerSearchQuery
-                                          );
-
-                                        setNewCustomerForm({
-                                          name: extractedName,
-                                          email: "",
-                                          phone: extractedPhone,
-                                          jobType:
-                                            jobTypes.length > 0
-                                              ? [jobTypes[0].name]
-                                              : [],
-                                        });
-
-                                        setShowNewCustomerModal(true);
-                                        setShowCustomerDropdown(false);
-                                      }}
-                                    >
-                                      <div>
-                                        <p className="text-xs text-gray-500">
-                                          Click to add a new customer
-                                        </p>
-                                      </div>
-                                      <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded flex-shrink-0">
-                                        Add New
-                                      </span>
-                                    </div>
-                                  </>
-                                ) : (
-                                  /* No customers found - show add new option */
-                                  <div
-                                    className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center justify-between"
-                                    onClick={() => {
-                                      // Pre-fill the form with searched data
-                                      const extractedName =
-                                        extractNameFromQuery(
-                                          customerSearchQuery
-                                        );
-                                      const extractedPhone =
-                                        extractPhoneFromQuery(
-                                          customerSearchQuery
-                                        );
-
-                                      setNewCustomerForm({
-                                        name: extractedName,
-                                        email: "",
-                                        phone: extractedPhone,
-                                        jobType:
-                                          jobTypes.length > 0
-                                            ? [jobTypes[0].name]
-                                            : [],
-                                      });
-
-                                      setShowNewCustomerModal(true);
-                                      setShowCustomerDropdown(false);
-                                    }}
-                                  >
-                                    <div>
-                                      <p className="font-medium">
-                                        No customer found for "
-                                        {customerSearchQuery}"
-                                      </p>
-                                      <p className="text-xs text-gray-500">
-                                        Click to add a new customer
-                                      </p>
-                                    </div>
-                                    <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded flex-shrink-0">
-                                      Add New
-                                    </span>
-                                  </div>
-                                )}
-                              </div>
-                            )}
+                            {/* Render dropdown as portal */}
+                            {showDropdown &&
+                              typeof document !== "undefined" &&
+                              createPortal(<DropdownContent />, document.body)}
                           </div>
-
-                          {(showNewCustomerFields ||
-                            formData.lead_name ||
-                            customerSearchQuery) && (
-                            <>
-                              <div className="col-span-1">
-                                <Label
-                                  htmlFor="phone"
-                                  className="text-md font-medium text-gray-700 mb-1"
-                                >
-                                  Phone Number{" "}
-                                  <span className="text-red-500">*</span>
-                                </Label>
-                                <Input
-                                  type="tel"
-                                  id="phone"
-                                  name="mobile_no"
-                                  value={formData.mobile_no || "+971 "}
-                                  onChange={handlePhoneChange}
-                                  onKeyDown={handleKeyDown}
-                                  placeholder="+971 XX XXX XXXX"
-                                  className="w-full"
-                                  maxLength={17}
-                                  required
-                                />
-                              </div>
-
-                              <div className="col-span-1">
-                                <Label
-                                  htmlFor="email_id"
-                                  className="text-md font-medium text-gray-700 mb-1"
-                                >
-                                  Email
-                                </Label>
-                                <Input
-                                  type="text"
-                                  id="email_id"
-                                  name="email_id"
-                                  value={formData.email_id || ""}
-                                  onChange={handleEmailInputChange}
-                                  placeholder="Enter email"
-                                />
-                              </div>
-                            </>
-                          )}
 
                           <div className="col-span-1 md:col-span-2">
                             <Label
@@ -1601,27 +1732,6 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                           }}
                         />
                       )}
-                      {/* 
-                      {section.id === "additional" && (
-                        <div>
-                          <div>
-                            <Label
-                              htmlFor="custom_special_requirements"
-                              className="text-xs font-medium text-gray-700"
-                            >
-                              Special Requirements
-                            </Label>
-                            <Textarea
-                              id="custom_special_requirements"
-                              name="custom_special_requirements"
-                              value={formData.custom_special_requirements || ""}
-                              onChange={handleInputChange}
-                              placeholder="Enter any special requirements or notes"
-                              rows={3}
-                            />
-                          </div>
-                        </div>
-                      )} */}
 
                       {section.id === "inspector" && (
                         <div className="space-y-4">
@@ -1665,7 +1775,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                                   </div>
                                 ) : (
                                   <div className="text-md font-medium text-black">
-                                   Select inspector
+                                    Select inspector
                                   </div>
                                 )}
                                 <Button
@@ -1674,7 +1784,11 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                                   variant="outline"
                                   onClick={() => setShowAvailabilityModal(true)}
                                 >
-                                  {selectedInspector ? <UserPen className="w-4 h-4 text-black" /> : <UserPlus className="w-3 h-3 text-black" />}
+                                  {selectedInspector ? (
+                                    <UserPen className="w-4 h-4 text-black" />
+                                  ) : (
+                                    <UserPlus className="w-3 h-3 text-black" />
+                                  )}
                                 </Button>
                               </div>
                             </div>
@@ -1707,11 +1821,6 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                                         }
                                       >
                                         {slot.start} - {slot.end}
-                                        {/* {slot.duration_hours && (
-                                          <span className="ml-1 text-xs opacity-70">
-                                            ({slot.duration_hours}h)
-                                          </span>
-                                        )} */}
                                       </Button>
                                     )
                                   )}
@@ -1917,6 +2026,124 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Customer Modal */}
+      <Dialog open={showCustomerModal} onOpenChange={setShowCustomerModal}>
+        <DialogContent className="sm:max-w-[500px] bg-white">
+          <DialogHeader>
+            <DialogTitle>
+              {modalMode === "create" ? "Add New Lead" : "Edit Lead"}
+            </DialogTitle>
+            <DialogDescription>
+              {modalMode === "create"
+                ? "Fill in the details to add a new lead"
+                : "Update the lead details below"}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div>
+              <Label className="block text-md font-medium text-gray-700 mb-1">
+                Full Name <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                type="text"
+                name="name"
+                value={customerForm.name}
+                onChange={(e) =>
+                  setCustomerForm((prev) => ({
+                    ...prev,
+                    name: capitalizeFirstLetter(e.target.value),
+                  }))
+                }
+                placeholder="Enter customer name"
+                required
+                disabled={isCreatingCustomer}
+              />
+            </div>
+
+            <div>
+              <Label className="block text-md font-medium text-gray-700 mb-1">
+                Phone Number <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                type="tel"
+                name="phone"
+                value={customerForm.phone}
+                onChange={handlePhoneChange}
+                onKeyDown={handleKeyDown}
+                placeholder="+971 XX XXX XXXX"
+                maxLength={17}
+                required
+                disabled={isCreatingCustomer}
+              />
+            </div>
+
+            <div>
+              <Label className="block text-md font-medium text-gray-700 mb-1">
+                Email
+              </Label>
+              <Input
+                type="email"
+                name="email"
+                value={customerForm.email}
+                onChange={(e) =>
+                  setCustomerForm((prev) => ({
+                    ...prev,
+                    email: e.target.value,
+                  }))
+                }
+                placeholder="Enter email"
+                disabled={isCreatingCustomer}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="block text-md font-medium text-gray-700 mb-1">
+                Job Types <span className="text-red-500">*</span>
+              </Label>
+              <MultiSelectJobTypes
+                jobTypes={jobTypes}
+                selectedJobTypes={customerForm.jobType}
+                onSelectionChange={(selected: string[]) => {
+                  setCustomerForm((prev) => ({
+                    ...prev,
+                    jobType: selected,
+                  }));
+                }}
+                placeholder="Select job types"
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowCustomerModal(false)}
+              disabled={isCreatingCustomer}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSaveCustomer}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+              disabled={isCreatingCustomer}
+            >
+              {isCreatingCustomer ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {modalMode === "create" ? "Creating..." : "Updating..."}
+                </>
+              ) : modalMode === "create" ? (
+                "Save Lead"
+              ) : (
+                "Update Lead"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {showEndTimeWarning && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-6">
           <div className="bg-white rounded-lg p-4 max-w-md w-full">
@@ -1944,116 +2171,6 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
             </div>
           </div>
         </div>
-      )}
-
-      {showNewCustomerModal && (
-        <>
-          <div
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-60 px-6"
-            onClick={() => setShowNewCustomerModal(false)}
-          />
-          <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg shadow-xl z-80 w-full max-w-md px-4">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">
-                  Add New Lead
-                </h3>
-                <button
-                  onClick={() => setShowNewCustomerModal(false)}
-                  className="text-gray-500 hover:text-gray-700"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <Label className="block text-md font-medium text-gray-700 mb-1">
-                    Full Name <span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    type="text"
-                    name="name"
-                    value={newCustomerForm.name}
-                    onChange={handleNewCustomerInputChange}
-                    placeholder="Enter customer name"
-                    required
-                    disabled={isCreatingCustomer}
-                  />
-                </div>
-
-                <div>
-                  <Label className="block text-md font-medium text-gray-700 mb-1">
-                    Phone Number <span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    type="tel"
-                    name="phone"
-                    value={newCustomerForm.phone}
-                    onChange={handleNewCustomerPhoneChange}
-                    onKeyDown={handleKeyDown}
-                    placeholder="+971 XX XXX XXXX"
-                    maxLength={17}
-                    required
-                  />
-                </div>
-
-                <div>
-                  <Label className="block text-md font-medium text-gray-700 mb-1">
-                    Email
-                  </Label>
-                  <Input
-                    type="email"
-                    name="email"
-                    value={newCustomerForm.email}
-                    onChange={handleNewCustomerEmailChange}
-                    placeholder="Enter email"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="block text-md font-medium text-gray-700 mb-1">
-                    Job Types
-                  </Label>
-                  <MultiSelectJobTypes
-                    jobTypes={jobTypes}
-                    selectedJobTypes={newCustomerForm.jobType}
-                    onSelectionChange={(selected) => {
-                      setNewCustomerForm((prev) => ({
-                        ...prev,
-                        jobType: selected,
-                      }));
-                    }}
-                    placeholder="Select job types"
-                  />
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-3 mt-6">
-                <Button
-                  variant="outline"
-                  onClick={() => setShowNewCustomerModal(false)}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={saveNewCustomer}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
-                  disabled={isCreatingCustomer}
-                >
-                  {isCreatingCustomer ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Creating...
-                    </>
-                  ) : (
-                    "Save Customer"
-                  )}
-                </Button>
-              </div>
-            </div>
-          </div>
-        </>
       )}
 
       <ConfirmationModal
