@@ -446,7 +446,7 @@ const MobileSiteInspectionList = ({ userEmail }: InspectionListProps) => {
             {filteredInspections.map((inspection) => (
               <div
                 key={inspection.name}
-                className="bg-white rounded-lg border border-gray-200 p-3 shadow-sm hover:shadow-md transition-shadow"
+                className="bg-white rounded-lg border border-gray-200 p-3 shadow-sm hover:shadow-md transition-shadow capitalize"
               >
                 {/* Header Row */}
                 <div className="flex items-start justify-between mb-2">
@@ -455,18 +455,15 @@ const MobileSiteInspectionList = ({ userEmail }: InspectionListProps) => {
                       <span className="text-lg lg:text-lg">
                         {getStatusIcon(inspection.inspection_status)}
                       </span>
-                      <h3 className="text-sm lg:text-base font-semibold text-gray-900 truncate">
+                      <h3 className="text-sm  lg:text-base font-semibold text-gray-900 truncate">
                         {inspection.name}
                       </h3>
                     </div>
                     <div className="flex items-center space-x-2 text-xs lg:text-xs text-gray-500">
                       <span>
                         {inspection.inspection_date &&
-                          new Date(inspection.inspection_date).toLocaleDateString("en-US", {
-                            month: "short",
-                            day: "numeric",
-                            year: "numeric",
-                          })}
+                         new Date(inspection.inspection_date).toLocaleDateString("en-GB")}
+                          
                       </span>
                       <span>•</span>
                       <span className="truncate">
@@ -509,7 +506,7 @@ const MobileSiteInspectionList = ({ userEmail }: InspectionListProps) => {
                 <div className="grid grid-cols-2 gap-2 text-xs lg:text-sm">
                   <div className="flex items-center space-x-1">
                     <span className="text-gray-400">👤</span>
-                    <span className="text-gray-600 truncate">
+                    <span className="text-gray-600 font-semibold truncate">
                       {inspection.customer_name || "N/A"}
                     </span>
                   </div>

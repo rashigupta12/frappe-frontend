@@ -239,27 +239,27 @@ const MobileInspectionList = ({ userEmail }: InspectionListProps) => {
                       <span className="text-sm ">
                         {getPriorityIcon(todo.priority || "")}
                       </span>
-                      <span>{todo.date && formatDate(todo.date)}</span>
-                      <span>•</span>
+                      <span className="text-sm">{todo.date && formatDate(todo.date)}</span>
+                      
                       <span className="text-sm">
-                        {todo.custom_start_time &&
+                        ({todo.custom_start_time &&
                           formatTime(todo.custom_start_time)}
                       </span>
                       {todo.custom_end_time && (
                         <>
                           <span>-</span>
                           <span className="text-sm">
-                            {formatTime(todo.custom_end_time)}
+                            {formatTime(todo.custom_end_time)})
                           </span>
                         </>
                       )}
                     </div>
                     <div className="flex items-center space-x-2 text-xs lg:text-sm text-gray-500">
                       
-                      <span className="text-gray-600">
+                      <span className="text-gray-600" style={{ whiteSpace: 'pre-line' }}>
                         {todo.inquiry_data?.custom_jobtype
                           ?.map((j) => j.job_type)
-                          .join(", ") || "N/A"}
+                          .join("\n") || "N/A"}
                       </span>
                     </div>
                   </div>
@@ -279,7 +279,7 @@ const MobileInspectionList = ({ userEmail }: InspectionListProps) => {
                 <div className="grid grid-cols-2 gap-2 text-xs lg:text-xs">
                   <div className="flex items-center space-x-1">
                     <span className="text-gray-400">👤</span>
-                    <span className="text-gray-600 truncate">
+                    <span className="text-gray-600 font-semibold truncate capitalize">
                       {todo.inquiry_data?.lead_name || "N/A"}
                     </span>
                   </div>
@@ -306,10 +306,10 @@ const MobileInspectionList = ({ userEmail }: InspectionListProps) => {
                 </div>
 
                 {todo.inquiry_data?.custom_property_area && (
-                  <div className="pt-1 border-t border-gray-100">
+                  <div className="pt-1 border-t border-gray-100 text-sm">
                     <div className="flex items-center space-x-1">
                       <span className="text-gray-400">📍</span>
-                      <span className="text-gray-600 truncate text-sm lg:text-base">
+                      <span className="text-gray-600 text-xs font-semibold">
                         {todo.inquiry_data.custom_property_area}
                       </span>
                     </div>
