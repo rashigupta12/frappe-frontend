@@ -1271,7 +1271,7 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
                       : "Available Time Slots"}
                     {isToday && (
                       <span className="text-xs text-gray-600 font-normal ml-1">
-                        (from {getCurrentTime()} onwards)
+                        {/* (from {getCurrentTime()} onwards) */}
                       </span>
                     )}
                   </Label>
