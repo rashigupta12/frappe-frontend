@@ -98,7 +98,7 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
     useState<InspectorDetails | null>(null);
   const [isLoadingInspectorDetails, setIsLoadingInspectorDetails] =
     useState(false);
-  const [showEndTimeWarning, setShowEndTimeWarning] = useState(false);
+  // const [showEndTimeWarning, setShowEndTimeWarning] = useState(false);
 
   // Helper function to check if selected date is today
   const isSelectedDateToday = () => {
@@ -230,23 +230,23 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
       throw error;
     }
   };
-  // Add this useEffect to check end time whenever requestedTime or duration changes
-  useEffect(() => {
-    if (requestedTime && duration) {
-      const endTime = calculateEndTime();
-      if (endTime) {
-        const [hours, minutes] = endTime.split(":").map(Number);
-        const totalMinutes = hours * 60 + minutes;
+  // // Add this useEffect to check end time whenever requestedTime or duration changes
+  // useEffect(() => {
+  //   if (requestedTime && duration) {
+  //     const endTime = calculateEndTime();
+  //     if (endTime) {
+  //       const [hours, minutes] = endTime.split(":").map(Number);
+  //       const totalMinutes = hours * 60 + minutes;
 
-        // Check if end time is after 18:00 (6:00 PM)
-        if (totalMinutes > 18 * 60) {
-          setShowEndTimeWarning(true);
-        } else {
-          setShowEndTimeWarning(false);
-        }
-      }
-    }
-  }, [requestedTime, duration]);
+  //       // Check if end time is after 18:00 (6:00 PM)
+  //       if (totalMinutes > 18 * 60) {
+  //         setShowEndTimeWarning(true);
+  //       } else {
+  //         setShowEndTimeWarning(false);
+  //       }
+  //     }
+  //   }
+  // }, [requestedTime, duration]);
 
   const deleteExistingDWA = async (
     inspectorEmail: string,
@@ -1523,7 +1523,7 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
         </div>
       )}
 
-      {showEndTimeWarning && (
+      {/* {showEndTimeWarning && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-6">
           <div className="bg-white rounded-lg p-4 max-w-md w-full">
             <div className="flex justify-between items-center mb-4">
@@ -1550,7 +1550,7 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
             </div>
           </div>
         </div>
-      )}
+      )} */}
     </div>
   );
 };

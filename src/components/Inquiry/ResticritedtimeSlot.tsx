@@ -42,8 +42,18 @@ export const RestrictedTimeClock: React.FC<RestrictedTimeClockProps> = ({
   useEffect(() => {
     if (isOpen && triggerRef.current) {
       const rect = triggerRef.current.getBoundingClientRect();
+      const viewportHeight = window.innerHeight;
+      const dropdownHeight = 200; // Approximate height of dropdown
+      
+      let top = rect.bottom + window.scrollY;
+      
+      // If dropdown would go below viewport, position it above the trigger
+      if (rect.bottom + dropdownHeight > viewportHeight) {
+        top = rect.top + window.scrollY - dropdownHeight;
+      }
+      
       setPosition({
-        top: rect.bottom + window.scrollY,
+        top: Math.max(10, top), // Ensure it's not too close to top edge
         left: rect.left + window.scrollX,
         width: rect.width
       });
@@ -78,10 +88,12 @@ export const RestrictedTimeClock: React.FC<RestrictedTimeClockProps> = ({
     const actualStart = Math.max(minMinutes, hourStart);
     const actualEnd = Math.min(maxMinutes, hourEnd);
     
-    // Generate 15-minute intervals
-    for (let m = actualStart; m < actualEnd; m += 15) {
-      const minute = m % 60;
-      minutes.push(minute);
+    // Generate all minutes (0-59) but only include those within the valid range
+    for (let m = 0; m < 60; m++) {
+      const totalMinutes = hour * 60 + m;
+      if (totalMinutes >= actualStart && totalMinutes < actualEnd) {
+        minutes.push(m);
+      }
     }
     
     return minutes;
@@ -91,9 +103,8 @@ export const RestrictedTimeClock: React.FC<RestrictedTimeClockProps> = ({
     setSelectedHour(hour);
     const availableMinutes = getAvailableMinutes(hour);
     if (availableMinutes.length > 0) {
-      setSelectedMinute(availableMinutes[0]);
-      const newTime = `${hour.toString().padStart(2, '0')}:${availableMinutes[0].toString().padStart(2, '0')}`;
-      onChange(newTime);
+      // Don't auto-select first minute, let user choose
+      setSelectedMinute(null);
     }
   };
 
@@ -115,6 +126,23 @@ export const RestrictedTimeClock: React.FC<RestrictedTimeClockProps> = ({
     return `${displayHours}:${minutes.toString().padStart(2, '0')} ${period}`;
   };
 
+  // Handle clicks outside dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (triggerRef.current && !triggerRef.current.contains(event.target as Node)) {
+        const dropdownElement = document.querySelector('[data-dropdown="time-clock"]');
+        if (dropdownElement && !dropdownElement.contains(event.target as Node)) {
+          setIsOpen(false);
+        }
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [isOpen]);
+
   // Create portal for dropdown to escape container clipping
   const DropdownPortal = () => {
     if (!isOpen) return null;
@@ -123,17 +151,19 @@ export const RestrictedTimeClock: React.FC<RestrictedTimeClockProps> = ({
       <>
         {/* Backdrop */}
         <div 
-          className="fixed inset-0 z-50" 
+          className="fixed inset-0 z-40" 
           onClick={() => setIsOpen(false)}
         />
         
         {/* Clock Interface */}
         <div 
-          className="fixed bg-white border border-gray-200 rounded-lg shadow-lg z-50 p-4 w-40"
+          className="fixed bg-white border border-gray-200 rounded-lg shadow-lg z-50 p-4 w-48"
           style={{
             top: `${position.top}px`,
             left: `${position.left}px`,
           }}
+          onClick={(e) => e.stopPropagation()}
+          data-dropdown="time-clock"
         >
           <div className="grid grid-cols-2 gap-4">
             {/* Hours Column */}
@@ -166,14 +196,14 @@ export const RestrictedTimeClock: React.FC<RestrictedTimeClockProps> = ({
                     <button
                       key={minute}
                       type="button"
-                      className={`w-full px-3 py-2 text-sm hover:bg-gray-100 transition-colors ${
+                      className={`w-full px-2 py-1.5 text-sm hover:bg-gray-100 transition-colors ${
                         selectedMinute === minute 
                           ? 'bg-emerald-100 text-emerald-700 font-medium' 
                           : 'text-gray-700'
                       }`}
                       onClick={() => handleMinuteSelect(minute)}
                     >
-                      :{minute.toString().padStart(2, '0')}
+                      {minute.toString().padStart(2, '0')}
                     </button>
                   ))
                 ) : (
