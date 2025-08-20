@@ -230,24 +230,6 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
       throw error;
     }
   };
-  // // Add this useEffect to check end time whenever requestedTime or duration changes
-  // useEffect(() => {
-  //   if (requestedTime && duration) {
-  //     const endTime = calculateEndTime();
-  //     if (endTime) {
-  //       const [hours, minutes] = endTime.split(":").map(Number);
-  //       const totalMinutes = hours * 60 + minutes;
-
-  //       // Check if end time is after 18:00 (6:00 PM)
-  //       if (totalMinutes > 18 * 60) {
-  //         setShowEndTimeWarning(true);
-  //       } else {
-  //         setShowEndTimeWarning(false);
-  //       }
-  //     }
-  //   }
-  // }, [requestedTime, duration]);
-
   const deleteExistingDWA = async (
     inspectorEmail: string,
     todoDate: string, // Format: "YYYY-MM-DD"

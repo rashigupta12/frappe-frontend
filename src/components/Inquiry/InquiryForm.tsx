@@ -298,27 +298,30 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     }
   }, []);
   useEffect(() => {
-  if (requestedTime && duration) {
-    const endTime = calculateEndTime();
-    if (endTime) {
-      const [hours, minutes] = endTime.split(':').map(Number);
-      const totalMinutes = hours * 60 + minutes;
-      
-      // Check if end time is after 18:00 (6:00 PM)
-      if (totalMinutes > (18 * 60)) {
-        setShowEndTimeWarning(true);
-      } else {
-        setShowEndTimeWarning(false);
+    if (requestedTime && duration) {
+      const endTime = calculateEndTime();
+      if (endTime) {
+        const [hours, minutes] = endTime.split(":").map(Number);
+        const totalMinutes = hours * 60 + minutes;
+
+        // Check if end time is after 18:00 (6:00 PM)
+        if (totalMinutes > 18 * 60) {
+          setShowEndTimeWarning(true);
+        } else {
+          setShowEndTimeWarning(false);
+        }
       }
     }
-  }
-}, [requestedTime, duration]);
+  }, [requestedTime, duration]);
 
   const handleNewCustomerInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
-    setNewCustomerForm((prev) => ({ ...prev, [name]: capitalizeFirstLetter(value) }));
+    setNewCustomerForm((prev) => ({
+      ...prev,
+      [name]: capitalizeFirstLetter(value),
+    }));
   };
 
   const handleNewCustomerPhoneChange = (
@@ -494,23 +497,22 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
   // };
 
   const calculateEndTime = () => {
-  if (!requestedTime || !duration) return null;
+    if (!requestedTime || !duration) return null;
 
-  const startMinutes = timeToMinutes(requestedTime);
-  const durationMinutes = Math.round(parseFloat(duration) * 60);
-  const endMinutes = startMinutes + durationMinutes;
+    const startMinutes = timeToMinutes(requestedTime);
+    const durationMinutes = Math.round(parseFloat(duration) * 60);
+    const endMinutes = startMinutes + durationMinutes;
 
-  // Check if end time is valid
-  if (endMinutes > 24 * 60) return null; // Beyond midnight
+    // Check if end time is valid
+    if (endMinutes > 24 * 60) return null; // Beyond midnight
 
-  const hours = Math.floor(endMinutes / 60);
-  const mins = endMinutes % 60;
+    const hours = Math.floor(endMinutes / 60);
+    const mins = endMinutes % 60;
 
-  return `${hours.toString().padStart(2, "0")}:${mins
-    .toString()
-    .padStart(2, "0")}`;
-};
-
+    return `${hours.toString().padStart(2, "0")}:${mins
+      .toString()
+      .padStart(2, "0")}`;
+  };
 
   // const validateTimeDuration = (durationValue: string) => {
   //   if (!selectedSlot || !requestedTime) return;
@@ -761,157 +763,159 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     }
   };
 
- const handleAssignAndSave = () => {
-  // Validate form fields and show specific error messages
-  if (!formData.lead_name) {
-    toast.error(
-      "Please complete customer details: Customer name is required"
-    );
-    setActiveSection("contact");
-    return;
-  }
+  const handleAssignAndSave = () => {
+    // Validate form fields and show specific error messages
+    if (!formData.lead_name) {
+      toast.error(
+        "Please complete customer details: Customer name is required"
+      );
+      setActiveSection("contact");
+      return;
+    }
 
-  if (!formData.mobile_no || formData.mobile_no.length < 5) {
-    toast.error(
-      "Please complete customer details: Valid mobile number is required"
-    );
-    setActiveSection("contact");
-    return;
-  }
+    if (!formData.mobile_no || formData.mobile_no.length < 5) {
+      toast.error(
+        "Please complete customer details: Valid mobile number is required"
+      );
+      setActiveSection("contact");
+      return;
+    }
 
-  if (!formData.custom_jobtype || formData.custom_jobtype.length === 0) {
-    toast.error(
-      "Please complete job details: At least one job type is required"
-    );
-    setActiveSection("job");
-    return;
-  }
+    if (!formData.custom_jobtype || formData.custom_jobtype.length === 0) {
+      toast.error(
+        "Please complete job details: At least one job type is required"
+      );
+      setActiveSection("job");
+      return;
+    }
 
-  if (!formData.custom_budget_range) {
-    toast.error("Please complete job details: Budget range is required");
-    setActiveSection("job");
-    return;
-  }
+    if (!formData.custom_budget_range) {
+      toast.error("Please complete job details: Budget range is required");
+      setActiveSection("job");
+      return;
+    }
 
-  if (!formData.custom_project_urgency) {
-    toast.error("Please complete job details: Project urgency is required");
-    setActiveSection("job");
-    return;
-  }
+    if (!formData.custom_project_urgency) {
+      toast.error("Please complete job details: Project urgency is required");
+      setActiveSection("job");
+      return;
+    }
 
-  if (!formData.source) {
-    toast.error(
-      "Please complete customer details: Source of inquiry is required"
-    );
-    setActiveSection("contact");
-    return;
-  }
+    if (!formData.source) {
+      toast.error(
+        "Please complete customer details: Source of inquiry is required"
+      );
+      setActiveSection("contact");
+      return;
+    }
 
-  if (
-    (formData.source === "Reference" ||
-      formData.source === "Supplier Reference") &&
-    !formData.custom_reference_name
-  ) {
-    toast.error(
-      "Please complete customer details: Reference name is required"
-    );
-    setActiveSection("contact");
-    return;
-  }
+    if (
+      (formData.source === "Reference" ||
+        formData.source === "Supplier Reference") &&
+      !formData.custom_reference_name
+    ) {
+      toast.error(
+        "Please complete customer details: Reference name is required"
+      );
+      setActiveSection("contact");
+      return;
+    }
 
-  // Property validation
-  if (!formData.custom_property_name__number) {
-    toast.error(
-      "Please complete property details: Property number is required"
-    );
-    setActiveSection("property");
-    return;
-  }
+    // Property validation
+    if (!formData.custom_property_name__number) {
+      toast.error(
+        "Please complete property details: Property number is required"
+      );
+      setActiveSection("property");
+      return;
+    }
 
-  if (!formData.custom_property_category) {
-    toast.error(
-      "Please complete property details: Property category is required"
-    );
-    setActiveSection("property");
-    return;
-  }
+    if (!formData.custom_property_category) {
+      toast.error(
+        "Please complete property details: Property category is required"
+      );
+      setActiveSection("property");
+      return;
+    }
 
-  if (!formData.custom_property_area) {
-    toast.error(
-      "Please complete property details: Property area is required"
-    );
-    setActiveSection("property");
-    return;
-  }
+    if (!formData.custom_property_area) {
+      toast.error(
+        "Please complete property details: Property area is required"
+      );
+      setActiveSection("property");
+      return;
+    }
 
-  if (!formData.custom_street_name) {
-    toast.error("Please complete property details: Street name is required");
-    setActiveSection("property");
-    return;
-  }
+    if (!formData.custom_street_name) {
+      toast.error("Please complete property details: Street name is required");
+      setActiveSection("property");
+      return;
+    }
 
-  if (!formData.custom_emirate) {
-    toast.error("Please complete property details: Emirate is required");
-    setActiveSection("property");
-    return;
-  }
+    if (!formData.custom_emirate) {
+      toast.error("Please complete property details: Emirate is required");
+      setActiveSection("property");
+      return;
+    }
 
-  if (!formData.custom_community) {
-    toast.error("Please complete property details: Community is required");
-    setActiveSection("property");
-    return;
-  }
+    if (!formData.custom_community) {
+      toast.error("Please complete property details: Community is required");
+      setActiveSection("property");
+      return;
+    }
 
-  if (!formData.custom_area) {
-    toast.error("Please complete property details: Area is required");
-    setActiveSection("property");
-    return;
-  }
+    if (!formData.custom_area) {
+      toast.error("Please complete property details: Area is required");
+      setActiveSection("property");
+      return;
+    }
 
-  // Inspector assignment validation
-  if (!selectedInspector) {
-    toast.error("Please select an inspector for assignment");
-    setActiveSection("inspector");
-    return;
-  }
-
-  if (!date) {
-    toast.error("Please select an inspection date");
-    setActiveSection("inspector");
-    return;
-  }
-
-  if (!requestedTime) {
-    toast.error("Please enter the requested inspection time");
-    setActiveSection("inspector");
-    return;
-  }
-
-  if (!validateRequestedTime()) {
-    toast.error(
-      `Requested time must be within the selected slot (${selectedSlot?.start} - ${selectedSlot?.end})`
-    );
-    setActiveSection("inspector");
-    return;
-  }
-
-  // Check if end time is after 18:00 and show warning instead of proceeding
-  const endTime = calculateEndTime();
-  if (endTime) {
-    const [hours, minutes] = endTime.split(':').map(Number);
-    const totalMinutes = hours * 60 + minutes;
-    
-    if (totalMinutes > (18 * 60)) {
-      toast.error("Inspection cannot end after 6:00 PM. Please adjust the start time or duration.");
-      setShowEndTimeWarning(true);
+    // Inspector assignment validation
+    if (!selectedInspector) {
+      toast.error("Please select an inspector for assignment");
       setActiveSection("inspector");
       return;
     }
-  }
 
-  // If all validations pass, show confirmation modal
-  setShowConfirmModal(true);
-};
+    if (!date) {
+      toast.error("Please select an inspection date");
+      setActiveSection("inspector");
+      return;
+    }
+
+    if (!requestedTime) {
+      toast.error("Please enter the requested inspection time");
+      setActiveSection("inspector");
+      return;
+    }
+
+    if (!validateRequestedTime()) {
+      toast.error(
+        `Requested time must be within the selected slot (${selectedSlot?.start} - ${selectedSlot?.end})`
+      );
+      setActiveSection("inspector");
+      return;
+    }
+
+    // Check if end time is after 18:00 and show warning instead of proceeding
+    const endTime = calculateEndTime();
+    if (endTime) {
+      const [hours, minutes] = endTime.split(":").map(Number);
+      const totalMinutes = hours * 60 + minutes;
+
+      if (totalMinutes > 18 * 60) {
+        toast.error(
+          "Inspection cannot end after 6:00 PM. Please adjust the start time or duration."
+        );
+        setShowEndTimeWarning(true);
+        setActiveSection("inspector");
+        return;
+      }
+    }
+
+    // If all validations pass, show confirmation modal
+    setShowConfirmModal(true);
+  };
 
   const confirmAssignment = async () => {
     setShowConfirmModal(false);
@@ -1199,7 +1203,9 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     const { name, value } = e.target;
     setNewCustomerForm((prev) => ({ ...prev, [name]: value }));
   };
-  const handleNewCustomerEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleNewCustomerEmailChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const { name, value } = e.target;
     setNewCustomerForm((prev) => ({ ...prev, [name]: value }));
   };
@@ -1952,33 +1958,33 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
         </div>
       </div>
       {showEndTimeWarning && (
-  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-6">
-    <div className="bg-white rounded-lg p-4 max-w-md w-full">
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="text-lg font-semibold">End Time Warning</h3>
-        <button
-          onClick={() => setShowEndTimeWarning(false)}
-          className="text-gray-500 hover:text-gray-700"
-        >
-          <X className="h-5 w-5" />
-        </button>
-      </div>
-      <p className="mb-4 text-gray-700">
-        The calculated end time ({calculateEndTime()}) is after 6:00 PM.
-        Time shouldn't extend beyond 6:00 PM.
-      </p>
-      
-      <div className="flex justify-end">
-        <Button
-          onClick={() => setShowEndTimeWarning(false)}
-          className="bg-emerald-700 hover:bg-emerald-800 text-white"
-        >
-          OK, I Understand
-        </Button>
-      </div>
-    </div>
-  </div>
-)}
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-6">
+          <div className="bg-white rounded-lg p-4 max-w-md w-full">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">End Time Warning</h3>
+              <button
+                onClick={() => setShowEndTimeWarning(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <p className="mb-4 text-gray-700">
+              The calculated end time ({calculateEndTime()}) is after 6:00 PM.
+              Time shouldn't extend beyond 6:00 PM.
+            </p>
+
+            <div className="flex justify-end">
+              <Button
+                onClick={() => setShowEndTimeWarning(false)}
+                className="bg-emerald-700 hover:bg-emerald-800 text-white"
+              >
+                OK, I Understand
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showNewCustomerModal && (
         <>
