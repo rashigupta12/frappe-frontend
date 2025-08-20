@@ -164,8 +164,39 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
 
   const inquiryData = getInquiryData();
 
-  // Fetch inspector availability for edit mode
-  // Update the fetchInspectorAvailability function
+const getMaxAllowedDuration = (): number => {
+  if (!requestedTime) return 8; // Default max duration
+
+  if (selectedInspector) {
+    const timeMinutes = timeToMinutes(requestedTime);
+    let maxDuration = 8; // Default fallback
+
+    // Find the slot that contains the requested time
+    const containingSlot = selectedInspector.availability.free_slots.find((slot) => {
+      const slotStart = timeToMinutes(slot.start);
+      const slotEnd = timeToMinutes(slot.end);
+      return timeMinutes >= slotStart && timeMinutes < slotEnd;
+    });
+
+    if (containingSlot) {
+      const slotEnd = timeToMinutes(containingSlot.end);
+      const availableMinutes = slotEnd - timeMinutes;
+      maxDuration = availableMinutes / 60;
+    }
+
+    return Math.max(0.5, maxDuration); // Minimum 0.5 hours
+  }
+
+  if (mode === "create" && selectedSlot) {
+    const timeMinutes = timeToMinutes(requestedTime);
+    const slotEnd = timeToMinutes(selectedSlot.end);
+    const availableMinutes = slotEnd - timeMinutes;
+    return Math.max(0.5, availableMinutes / 60);
+  }
+
+  return 8; // Default max duration
+};
+
   const fetchInspectorAvailability = async (
     inspectorEmail: string,
     dateStr: string
@@ -594,9 +625,10 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
 
     return true;
   };
- const validateTimeAgainstSlot = (
+const validateTimeAgainstSlot = (
   time: string,
-  durationValue: string
+  durationValue: string,
+  showToast: boolean = true
 ): boolean => {
   // For both create and edit modes, if we have selectedInspector, validate against their slots
   if (selectedInspector) {
@@ -612,12 +644,11 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
       return timeMinutes >= slotStart && endTimeMinutes <= slotEnd;
     });
 
-    if (!isWithinAvailableSlot) {
-      toast.error("Selected time must be within inspector's available slots");
-      return false;
+    if (!isWithinAvailableSlot && showToast) {
+      toast.error("Selected time must be within inspector's available slots", { duration: 900 });
     }
 
-    return true;
+    return isWithinAvailableSlot;
   }
 
   // For create mode with selectedSlot (fallback)
@@ -630,23 +661,27 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
 
     // Check if time is within slot boundaries
     if (timeMinutes < slotStart || timeMinutes >= slotEnd) {
-      toast.error(
-        `Time must be between ${selectedSlot.start} and ${selectedSlot.end}`
-      );
+      if (showToast) {
+        toast.error(
+          `Time must be between ${selectedSlot.start} and ${selectedSlot.end}`
+        );
+      }
       return false;
     }
 
     // Check if end time exceeds slot end time
     if (endTimeMinutes > slotEnd) {
-      toast.error(
-        `End time (${Math.floor(endTimeMinutes / 60)
-          .toString()
-          .padStart(2, "0")}:${(endTimeMinutes % 60)
-          .toString()
-          .padStart(2, "0")}) exceeds the selected slot's end time (${
-          selectedSlot.end
-        })`
-      );
+      if (showToast) {
+        toast.error(
+          `End time (${Math.floor(endTimeMinutes / 60)
+            .toString()
+            .padStart(2, "0")}:${(endTimeMinutes % 60)
+            .toString()
+            .padStart(2, "0")}) exceeds the selected slot's end time (${
+            selectedSlot.end
+          })`
+        );
+      }
       return false;
     }
 
@@ -700,39 +735,52 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
     };
   };
 
-  const handleTimeChange = (newTime: string) => {
-    if (mode === "create") {
-      if (!selectedSlot) return;
+ const handleTimeChange = (newTime: string) => {
+  if (mode === "create") {
+    if (!selectedSlot) return;
 
-      // Validate the new time against the selected slot
-      if (!validateTimeAgainstSlot(newTime, duration)) {
-        return;
-      }
-
-      setRequestedTime(newTime);
-    } else {
-      // In edit mode, validate against current time if it's today
-      if (isSelectedDateToday()) {
-        const currentTime = getCurrentTime();
-        const currentMinutes = timeToMinutes(currentTime);
-        const newMinutes = timeToMinutes(newTime);
-
-        if (newMinutes < currentMinutes) {
-          toast.error(
-            `Time cannot be in the past. Current time is ${currentTime}`
-          );
-          return;
-        }
-      }
-
-      // Add validation for edit mode against available slots
-      if (selectedInspector && !validateTimeAgainstSlot(newTime, duration)) {
-        return;
-      }
-
-      setRequestedTime(newTime);
+    // Validate the new time against the selected slot (without showing toast)
+    if (!validateTimeAgainstSlot(newTime, duration, false)) {
+      return;
     }
-  };
+
+    setRequestedTime(newTime);
+    
+    // Adjust duration if current duration exceeds the new time limit
+    const maxDuration = getMaxAllowedDuration();
+    if (parseFloat(duration) > maxDuration) {
+      setDuration(maxDuration.toFixed(1));
+    }
+  } else {
+    // In edit mode, validate against current time if it's today
+    if (isSelectedDateToday()) {
+      const currentTime = getCurrentTime();
+      const currentMinutes = timeToMinutes(currentTime);
+      const newMinutes = timeToMinutes(newTime);
+
+      if (newMinutes < currentMinutes) {
+        toast.error(
+          `Time cannot be in the past. Current time is ${currentTime}`
+        );
+        return;
+      }
+    }
+
+    // Add validation for edit mode against available slots (without showing toast initially)
+    if (selectedInspector && !validateTimeAgainstSlot(newTime, duration, false)) {
+      return;
+    }
+
+    setRequestedTime(newTime);
+    
+    // Adjust duration if current duration exceeds the new time limit
+    const maxDuration = getMaxAllowedDuration();
+    if (parseFloat(duration) > maxDuration) {
+      setDuration(maxDuration.toFixed(1));
+    }
+  }
+};
+
 
   const checkAssignmentConflict = async (
     inspectorEmail: string,
@@ -793,115 +841,110 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
       return true; // Assume conflict to be safe
     }
   };
+const handleAssign = async () => {
+  // First validate required fields in create mode
+  if (mode === "create") {
+    const validation = validateRequiredFields(inquiryData);
+    if (!validation.isValid) {
+      const missingFieldNames = validation.missingFields
+        .map((field) => {
+          switch (field) {
+            case "custom_property_area":
+              return "Property Address";
+            case "lead_name":
+              return "Customer Name";
+            case "mobile_no":
+              return "Phone Number";
+            case "custom_job_type":
+              return "Job Type";
+            case "custom_project_urgency":
+              return "Urgency";
+            default:
+              return field;
+          }
+        })
+        .join(", ");
 
-  const handleAssign = async () => {
-    // First validate required fields in create mode
-    if (mode === "create") {
-      const validation = validateRequiredFields(inquiryData);
-      if (!validation.isValid) {
-        const missingFieldNames = validation.missingFields
-          .map((field) => {
-            switch (field) {
-              case "custom_property_area":
-                return "Property Address";
-              case "lead_name":
-                return "Customer Name";
-              case "mobile_no":
-                return "Phone Number";
-              case "custom_job_type":
-                return "Job Type";
-              case "custom_project_urgency":
-                return "Urgency";
-              default:
-                return field;
-            }
-          })
-          .join(", ");
-
-        toast.error(`Please complete the information: ${missingFieldNames}`);
-        return;
-      }
+      toast.error(`Please complete the information: ${missingFieldNames}`);
+      return;
     }
+  }
 
-    if (requestedTime && duration) {
-    if (!validateTimeAgainstSlot(requestedTime, duration)) {
+  // Final validation with toast (only once during submission)
+  if (requestedTime && duration) {
+    if (!validateTimeAgainstSlot(requestedTime, duration, true)) {
       return; // Stop if validation fails
     }
   }
 
-    if (mode === "create") {
-      if (!selectedInspector) {
-        toast.error("Please select an inspector");
-        return;
-      }
-
-      if (!validateRequestedTime()) {
-        // Show specific error message based on the issue
-        const requestedMinutes = timeToMinutes(requestedTime);
-        const slotStart = timeToMinutes(selectedSlot!.start);
-        const slotEnd = timeToMinutes(selectedSlot!.end);
-        const durationMinutes = Math.round(parseFloat(duration) * 60);
-
-        if (requestedMinutes < slotStart || requestedMinutes >= slotEnd) {
-          toast.error(
-            `Requested time must be within the selected slot (${
-              selectedSlot!.start
-            } - ${selectedSlot!.end})`
-          );
-        } else if (requestedMinutes + durationMinutes > slotEnd) {
-          toast.error(
-            `End time exceeds the selected slot's end time (${
-              selectedSlot!.end
-            }). Reduce duration or choose a different time.`
-          );
-        }
-        return;
-      }
-
-      // Additional validation for time and duration
-      if (!validateTimeAgainstSlot(requestedTime, duration)) {
-        return;
-      }
-
-      if (!data?.name) {
-        toast.error("Invalid inquiry data");
-        return;
-      }
-    }
-
-    // Check for assignment conflicts before proceeding
-    if (!date || !requestedTime) {
-      toast.error("Please select date and time");
+  if (mode === "create") {
+    if (!selectedInspector) {
+      toast.error("Please select an inspector");
       return;
     }
 
-    const preferredDate = format(date, "yyyy-MM-dd");
-    const endTime = calculateEndTime();
-    const startDateTime = `${preferredDate} ${requestedTime}:00`;
-    const endDateTime = `${preferredDate} ${endTime}:00`;
+    if (!validateRequestedTime()) {
+      // Show specific error message based on the issue
+      const requestedMinutes = timeToMinutes(requestedTime);
+      const slotStart = timeToMinutes(selectedSlot!.start);
+      const slotEnd = timeToMinutes(selectedSlot!.end);
+      const durationMinutes = Math.round(parseFloat(duration) * 60);
 
-    const currentInspectorEmail = selectedInspector?.email || data.allocated_to;
-
-    if (currentInspectorEmail) {
-      const hasConflict = await checkAssignmentConflict(
-        currentInspectorEmail,
-        startDateTime,
-        endDateTime,
-        mode === "edit" ? data.name : undefined
-      );
-
-      if (hasConflict) {
-        return; // Stop execution if conflict is found
+      if (requestedMinutes < slotStart || requestedMinutes >= slotEnd) {
+        toast.error(
+          `Requested time must be within the selected slot (${
+            selectedSlot!.start
+          } - ${selectedSlot!.end})`
+        );
+      } else if (requestedMinutes + durationMinutes > slotEnd) {
+        toast.error(
+          `End time exceeds the selected slot's end time (${
+            selectedSlot!.end
+          }). Reduce duration or choose a different time.`
+        );
       }
+      return;
     }
 
-    // Proceed with existing checks
-    if (mode === "create") {
-      setShowConfirmation(true);
-    } else {
-      await proceedWithAssignment();
+    if (!data?.name) {
+      toast.error("Invalid inquiry data");
+      return;
     }
-  };
+  }
+
+  // Check for assignment conflicts before proceeding
+  if (!date || !requestedTime) {
+    toast.error("Please select date and time");
+    return;
+  }
+
+  const preferredDate = format(date, "yyyy-MM-dd");
+  const endTime = calculateEndTime();
+  const startDateTime = `${preferredDate} ${requestedTime}:00`;
+  const endDateTime = `${preferredDate} ${endTime}:00`;
+
+  const currentInspectorEmail = selectedInspector?.email || data.allocated_to;
+
+  if (currentInspectorEmail) {
+    const hasConflict = await checkAssignmentConflict(
+      currentInspectorEmail,
+      startDateTime,
+      endDateTime,
+      mode === "edit" ? data.name : undefined
+    );
+
+    if (hasConflict) {
+      return; // Stop execution if conflict is found
+    }
+  }
+
+  // Proceed with existing checks
+  if (mode === "create") {
+    setShowConfirmation(true);
+  } else {
+    await proceedWithAssignment();
+  }
+};
 
   const proceedWithAssignment = async () => {
     setShowConfirmation(false);
