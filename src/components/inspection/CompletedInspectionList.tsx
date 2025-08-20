@@ -506,7 +506,7 @@ const MobileSiteInspectionList = ({ userEmail }: InspectionListProps) => {
                 <div className="grid grid-cols-2 gap-2 text-xs lg:text-sm">
                   <div className="flex items-center space-x-1">
                     <span className="text-gray-400">👤</span>
-                    <span className="text-gray-600 font-semibold truncate">
+                    <span className="text-gray-600 font-semibold capitalize truncate">
                       {inspection.customer_name || "N/A"}
                     </span>
                   </div>
