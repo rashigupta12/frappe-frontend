@@ -140,10 +140,12 @@ const UserAvailability = ({
   };
 
   // Filter inspectors to only show those with available time slots
-  const availableInspectors = availability.filter((inspector) => {
-    const futureFreeSlots = filterFutureSlots(inspector.availability.free_slots);
-    return futureFreeSlots.length > 0;
-  });
+  const availableInspectors = availability
+    .filter((inspector) => {
+      const futureFreeSlots = filterFutureSlots(inspector.availability.free_slots);
+      return futureFreeSlots.length > 0;
+    })
+    .sort((a, b) => a.user_name.localeCompare(b.user_name));
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-2 sm:p-4">
