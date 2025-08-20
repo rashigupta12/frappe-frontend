@@ -1,7 +1,5 @@
 import {
   Camera,
-  Edit3,
-  MessageSquare,
   Mic,
   Trash2,
   Upload,
@@ -11,7 +9,6 @@ import React, { useEffect, useRef, useState } from "react";
 import { toast } from "react-hot-toast";
 import { Button } from "../../../ui/button";
 import { Progress } from "../../../ui/progress";
-import { Textarea } from "../../../ui/textarea";
 import { getMediaType, uploadFile, type MediaItem } from "../utils/fileUpload";
 
 interface MediaUploadProps {
@@ -31,10 +28,9 @@ const MediaPreviewModal: React.FC<{
   onClose: () => void;
   media: MediaItem;
   onRemove: () => void;
-  onEditRemark?: () => void;
   inspectionStatus?: string;
   isReadOnly?: boolean;
-}> = ({ isOpen, onClose, media, onRemove, onEditRemark,  isReadOnly }) => {
+}> = ({ isOpen, onClose, media, onRemove, isReadOnly }) => {
   const imageurl = "https://eits.thebigocommunity.org";
 
   if (!isOpen) return null;
@@ -57,7 +53,7 @@ const MediaPreviewModal: React.FC<{
         {media.type === "image" && (
           <img
             src={`${imageurl}${media.url}`}
-            alt={media.remarks || "Media preview"}
+            alt="Media preview"
             className="max-w-full max-h-full object-contain rounded-lg"
             style={{ touchAction: "manipulation" }}
           />
@@ -75,7 +71,7 @@ const MediaPreviewModal: React.FC<{
               <Mic className="h-12 w-12 text-white" />
             </div>
             <p className="text-white text-xl mb-6 text-center">
-              {media.remarks || "Audio Playback"}
+              Audio Playback
             </p>
             <audio
               src={`${imageurl}${media.url}`}
@@ -87,35 +83,7 @@ const MediaPreviewModal: React.FC<{
       </div>
 
       <div className="bg-gray-900/90 backdrop-blur-sm p-4 sticky bottom-0 z-10">
-        {media.remarks && (
-          <div className="bg-gray-800/50 rounded-lg p-4 mb-4">
-            <div className="flex items-start gap-3">
-              <MessageSquare className="h-5 w-5 text-blue-400 mt-0.5 flex-shrink-0" />
-              <div className="flex-1">
-                <h4 className="text-sm font-medium text-gray-200 mb-2">
-                  Remark
-                </h4>
-                <p className="text-sm text-gray-300 leading-relaxed">
-                  {media.remarks}
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-
         <div className="flex gap-3">
-          {onEditRemark && (
-            <Button
-              type="button"
-              variant="outline"
-              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white border-blue-600"
-              onClick={onEditRemark}
-              disabled={isReadOnly}
-            >
-              <Edit3 className="h-4 w-4 mr-2" />
-              Edit Remark
-            </Button>
-          )}
           <Button
             type="button"
             variant="destructive"
@@ -126,77 +94,6 @@ const MediaPreviewModal: React.FC<{
             <Trash2 className="h-4 w-4 mr-2" />
             Delete
           </Button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const RemarksDialog: React.FC<{
-  isOpen: boolean;
-  onClose: () => void;
-  onSave: (remark: string) => void;
-  initialRemark?: string;
-  mediaType: string;
-}> = ({ isOpen, onClose, onSave, initialRemark = "", mediaType }) => {
-  const [remark, setRemark] = useState(initialRemark);
-
-  useEffect(() => {
-    setRemark(initialRemark);
-  }, [initialRemark]);
-
-  const handleSave = () => {
-    onSave(remark.trim());
-    onClose();
-  };
-
-  const handleSkip = () => {
-    onSave("");
-    onClose();
-  };
-
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[60] p-4">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 animate-in fade-in-0 zoom-in-95">
-        <div className="text-center mb-6">
-          <div className="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
-            <MessageSquare className="w-8 h-8 text-blue-600" />
-          </div>
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">
-            Add Remark
-          </h3>
-          <p className="text-gray-600 text-sm">
-            Add a description or note for your {mediaType}
-          </p>
-        </div>
-
-        <div className="space-y-4">
-          <Textarea
-            value={remark}
-            onChange={(e) => setRemark(e.target.value)}
-            placeholder={`Add a remark for your ${mediaType}...`}
-            className="w-full min-h-20 resize-none"
-            maxLength={200}
-          />
-
-          <div className="text-xs text-gray-500 text-right">
-            {remark.length}/200 characters
-          </div>
-
-          <div className="flex gap-3">
-            <Button onClick={handleSkip} variant="outline" className="flex-1" type="button">
-              Skip
-            </Button>
-            <Button
-              type="button"
-              onClick={handleSave}
-              className="flex-1 bg-blue-600 hover:bg-blue-700"
-            >
-              Save Remark
-            </Button>
-          </div>
         </div>
       </div>
     </div>
@@ -236,7 +133,6 @@ const DeleteConfirmationDialog: React.FC<{
             Cancel
           </Button>
           <Button
-
             onClick={onConfirm}
             variant="destructive"
             className="flex-1 bg-red-600 hover:bg-red-700"
@@ -733,10 +629,7 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
   const [selectedMedia, setSelectedMedia] = useState<MediaItem | null>(null);
   const [showRecordingDialog, setShowRecordingDialog] = useState(false);
   const [showVideoRecordingDialog, setShowVideoRecordingDialog] = useState(false);
-  const [showRemarksDialog, setShowRemarksDialog] = useState(false);
   const [showCameraOptions, setShowCameraOptions] = useState(false);
-  const [pendingMediaItem, setPendingMediaItem] = useState<MediaItem | null>(null);
-  const [editingRemark, setEditingRemark] = useState<string | null>(null);
   const [showCameraPreview, setShowCameraPreview] = useState(false);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -777,7 +670,6 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
       } else {
         onChange(undefined);
       }
-
     }
 
     setShowDeleteConfirm(false);
@@ -876,11 +768,18 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
         id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         url: fileUrl,
         type: "image",
-        remarks: "Captured Image",
       };
 
-      setPendingMediaItem(mediaItem);
-      setShowRemarksDialog(true);
+      const updatedItems = [...currentMediaItems, mediaItem];
+      setCurrentMediaItems(updatedItems);
+
+      if (multiple) {
+        onChange(updatedItems);
+      } else {
+        onChange(mediaItem);
+      }
+
+      toast.success("Image uploaded successfully!");
     } catch (error) {
       console.error("Upload error:", error);
       toast.error("Failed to upload captured image");
@@ -899,42 +798,6 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
     }
     setCapturedImage(null);
     setShowCameraPreview(false);
-  };
-
-  const handleRemarksComplete = (remark: string) => {
-    if (pendingMediaItem) {
-      const updatedMediaItem = {
-        ...pendingMediaItem,
-        remarks: remark || pendingMediaItem.remarks,
-      };
-
-      const updatedItems = [...currentMediaItems, updatedMediaItem];
-      setCurrentMediaItems(updatedItems);
-
-      if (multiple) {
-        onChange(updatedItems);
-      } else {
-        onChange(updatedMediaItem);
-      }
-
-      setPendingMediaItem(null);
-      toast.success("Media uploaded successfully!");
-    } else if (editingRemark) {
-      const updatedItems = currentMediaItems.map((item) =>
-        item.id === editingRemark ? { ...item, remarks: remark } : item
-      );
-
-      setCurrentMediaItems(updatedItems);
-
-      if (multiple) {
-        onChange(updatedItems);
-      } else {
-        onChange(updatedItems[0]);
-      }
-
-      setEditingRemark(null);
-      toast.success("Remark updated successfully!");
-    }
   };
 
   const handleFileChange = async (
@@ -999,7 +862,6 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
             id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
             url: fileUrl,
             type: getMediaType(file) as "image" | "video" | "audio",
-            remarks: file.name,
           };
 
           uploadedItems.push(mediaItem);
@@ -1012,21 +874,16 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
       }
 
       if (uploadedItems.length > 0) {
-        if (uploadedItems.length === 1) {
-          setPendingMediaItem(uploadedItems[0]);
-          setShowRemarksDialog(true);
+        const updatedItems = [...currentMediaItems, ...uploadedItems];
+        setCurrentMediaItems(updatedItems);
+        
+        if (multiple) {
+          onChange(updatedItems);
         } else {
-          const updatedItems = [...currentMediaItems, ...uploadedItems];
-          setCurrentMediaItems(updatedItems);
-          
-          if (multiple) {
-            onChange(updatedItems);
-          } else {
-            onChange(updatedItems[0]);
-          }
-
-          toast.success(`${uploadedItems.length} files uploaded successfully!`);
+          onChange(updatedItems[0]);
         }
+
+        toast.success(`${uploadedItems.length} files uploaded successfully!`);
       }
     } catch (error) {
       console.error("Batch upload error:", error);
@@ -1058,11 +915,18 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
         id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         url: fileUrl,
         type: "audio",
-        remarks: "Recorded Audio",
       };
 
-      setPendingMediaItem(mediaItem);
-      setShowRemarksDialog(true);
+      const updatedItems = [...currentMediaItems, mediaItem];
+      setCurrentMediaItems(updatedItems);
+
+      if (multiple) {
+        onChange(updatedItems);
+      } else {
+        onChange(mediaItem);
+      }
+
+      toast.success("Audio recording uploaded successfully!");
     } catch (error) {
       console.error("Audio upload error:", error);
       const errorMsg = error instanceof Error ? error.message : String(error);
@@ -1091,11 +955,18 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
         id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         url: fileUrl,
         type: "video",
-        remarks: "Recorded Video",
       };
 
-      setPendingMediaItem(mediaItem);
-      setShowRemarksDialog(true);
+      const updatedItems = [...currentMediaItems, mediaItem];
+      setCurrentMediaItems(updatedItems);
+
+      if (multiple) {
+        onChange(updatedItems);
+      } else {
+        onChange(mediaItem);
+      }
+
+      toast.success("Video recording uploaded successfully!");
     } catch (error) {
       console.error("Video upload error:", error);
       const errorMsg = error instanceof Error ? error.message : String(error);
@@ -1104,11 +975,6 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
       setIsUploading(false);
       setUploadProgress(0);
     }
-  };
-
-  const handleEditRemark = (mediaId: string) => {
-    setEditingRemark(mediaId);
-    setShowRemarksDialog(true);
   };
 
   const handleClearAll = () => {
@@ -1140,22 +1006,6 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
   const openMediaModal = (media: MediaItem) => {
     setSelectedMedia(media);
     setModalOpen(true);
-  };
-
-  const getCurrentEditingRemark = () => {
-    if (editingRemark) {
-      const item = currentMediaItems.find((item) => item.id === editingRemark);
-      return item?.remarks || "";
-    }
-    return "";
-  };
-
-  const getCurrentEditingMediaType = () => {
-    if (editingRemark) {
-      const item = currentMediaItems.find((item) => item.id === editingRemark);
-      return item?.type || "media";
-    }
-    return pendingMediaItem?.type || "media";
   };
 
   const getFileAcceptString = () => {
@@ -1266,8 +1116,8 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
         multiple={multiple}
       />
 
-      {/* Media Items Display - Horizontal Scroll for more than 2 items */}
-    {currentMediaItems.length > 0 && (
+      {/* Media Items Display */}
+      {currentMediaItems.length > 0 && (
         <div className="bg-white rounded-2xl p-4 border border-gray-200 shadow-sm">
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
             {currentMediaItems.map((media) => (
@@ -1282,7 +1132,7 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
                   {media.type === "image" && (
                     <img
                       src={`${imageurl}${media.url}`}
-                      alt={media.remarks || "Media"}
+                      alt="Media"
                       className="w-full h-full object-cover"
                     />
                   )}
@@ -1318,14 +1168,6 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
                 >
                   <X className="h-4 w-4" />
                 </button>
-
-                {media.remarks && (
-                  <div className="absolute bottom-2 left-2 right-2">
-                    <div className="bg-black/70 text-white text-xs px-2 py-1 rounded-md backdrop-blur-sm truncate">
-                      {media.remarks}
-                    </div>
-                  </div>
-                )}
               </div>
             ))}
           </div>
@@ -1424,23 +1266,10 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
           }}
           media={selectedMedia}
           onRemove={handleRemoveFromModal}
-          onEditRemark={() => handleEditRemark(selectedMedia.id)}
           isReadOnly={isReadOnly}
           inspectionStatus={inspectionStatus}
         />
       )}
-
-      <RemarksDialog
-        isOpen={showRemarksDialog}
-        onClose={() => {
-          setShowRemarksDialog(false);
-          setPendingMediaItem(null);
-          setEditingRemark(null);
-        }}
-        onSave={handleRemarksComplete}
-        initialRemark={getCurrentEditingRemark()}
-        mediaType={getCurrentEditingMediaType()}
-      />
 
       <AudioRecordingDialog
         isOpen={showRecordingDialog}

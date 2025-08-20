@@ -10,12 +10,12 @@ import {
   ChevronUp,
   Home,
   Loader2,
-  Mail,
   Phone,
   Save,
   User,
+  UserPen,
+  UserPlus,
   X,
-  AlertTriangle,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
@@ -48,9 +48,31 @@ import {
 } from "../ui/select";
 import { Textarea } from "../ui/textarea";
 import UserAvailability from "../ui/UserAvailability";
-import PropertyAddressSection from "./PropertyAddress";
 import { MultiSelectJobTypes } from "./MultiselectJobtypes";
+import PropertyAddressSection from "./PropertyAddress";
 import { RestrictedTimeClock } from "./ResticritedtimeSlot";
+import { ConfirmationModal } from "./ConfirmationModal";
+import CustomerSearch from "./CustomerSearch"; // Import the CustomerSearch component
+
+// Define the CustomerData type if not imported from elsewhere
+type CustomerData = {
+  customer_name: string;
+  email_id: string;
+  mobile_no: string;
+  customer_id: string;
+  lead_id: string;
+  name: string;
+  address_details?: {
+    property_category?: string;
+    emirate?: string;
+    community?: string;
+    area?: string;
+    street_name?: string;
+    property_number?: string;
+    combined_address?: string;
+    property_type?: string;
+  };
+};
 
 type PriorityLevel = "Low" | "Medium" | "High";
 
@@ -59,12 +81,20 @@ interface InquiryFormProps {
   onClose: () => void;
   inquiry?: Lead | null;
 }
-interface NewCustomerFormData {
-  name: string;
+
+interface InspectorAvailability {
+  user_id: string;
+  user_name: string;
   email: string;
-  phone: string;
-  jobType: string[];
+  date: string;
+  availability: {
+    occupied_slots: Array<{ start: string; end: string }>;
+    free_slots: Array<{ start: string; end: string; duration_hours?: number }>;
+    is_completely_free: boolean;
+    total_occupied_hours: number;
+  };
 }
+
 const sections: FormSection[] = [
   {
     id: "contact",
@@ -84,7 +114,6 @@ const sections: FormSection[] = [
     icon: <Building className="h-4 w-4" />,
     completed: false,
   },
-
   {
     id: "inspector",
     title: "Assign Inspector",
@@ -92,65 +121,6 @@ const sections: FormSection[] = [
     completed: false,
   },
 ];
-
-interface InspectorAvailability {
-  user_id: string;
-  user_name: string;
-  email: string;
-  date: string;
-  availability: {
-    occupied_slots: Array<{ start: string; end: string }>;
-    free_slots: Array<{ start: string; end: string; duration_hours?: number }>;
-    is_completely_free: boolean;
-    total_occupied_hours: number;
-  };
-}
-
-// Confirmation Modal Component
-const ConfirmationModal = ({
-  isOpen,
-  onConfirm,
-  onCancel,
-  title,
-  message,
-}: {
-  isOpen: boolean;
-  onConfirm: () => void;
-  onCancel: () => void;
-  title: string;
-  message: string;
-}) => {
-  if (!isOpen) return null;
-
-  return (
-    <>
-      <div
-        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-60 px-6"
-        onClick={onCancel}
-      />
-      <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg shadow-xl z-70 w-full max-w-md px-4">
-        <div className="p-6">
-          <div className="flex items-center gap-3 mb-4">
-            <AlertTriangle className="h-6 w-6 text-amber-500" />
-            <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
-          </div>
-          <p className="text-gray-600 mb-6">{message}</p>
-          <div className="flex justify-end gap-3">
-            <Button variant="outline" onClick={onCancel}>
-              Cancel
-            </Button>
-            <Button
-              onClick={onConfirm}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white"
-            >
-              Confirm Assignment
-            </Button>
-          </div>
-        </div>
-      </div>
-    </>
-  );
-};
 
 const InquiryForm: React.FC<InquiryFormProps> = ({
   isOpen,
@@ -170,11 +140,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     fetchUtmSource,
   } = useLeads();
 
-  const {
-    // fetchInspectors,
-    createTodo,
-    createTodoLoading,
-  } = useAssignStore();
+  const { createTodo, createTodoLoading } = useAssignStore();
 
   const [activeSection, setActiveSection] = useState<string>("contact");
   const [date, setDate] = useState<Date | undefined>(new Date());
@@ -184,17 +150,6 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     ...defaultFormData,
   });
   const [showReferenceInput, setShowReferenceInput] = useState(false);
-
-  // Customer search states
-  const [customerSearchQuery, setCustomerSearchQuery] = useState("");
-  const [customerSearchResults, setCustomerSearchResults] = useState<any[]>([]);
-  const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
-  const [isCustomerSearching, setIsCustomerSearching] = useState(false);
-  const [customerSearchTimeout, setCustomerSearchTimeout] =
-    useState<NodeJS.Timeout | null>(null);
-  const [fetchingCustomerDetails, setFetchingCustomerDetails] = useState(false);
-  const [showNewCustomerFields, setShowNewCustomerFields] = useState(false);
-  const [showEndTimeWarning, setShowEndTimeWarning] = useState(false);
 
   // Inspector assignment states
   const [selectedInspector, setSelectedInspector] =
@@ -209,14 +164,12 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
 
   // Confirmation modal state
   const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [showNewCustomerModal, setShowNewCustomerModal] = useState(false);
-  const [newCustomerForm, setNewCustomerForm] = useState<NewCustomerFormData>({
-    name: "",
-    email: "",
-    phone: "+971 ",
-    jobType: jobTypes.length > 0 ? [jobTypes[0].name] : [],
-  });
-  const [isCreatingCustomer, setIsCreatingCustomer] = useState(false);
+  const [showEndTimeWarning, setShowEndTimeWarning] = useState(false);
+
+  // Customer state
+  const [selectedCustomer, setSelectedCustomer] = useState<CustomerData | null>(
+    null
+  );
 
   const navigate = useNavigate();
 
@@ -246,14 +199,6 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
               !!formData.custom_community &&
               !!formData.custom_area,
           };
-        case "additional":
-          return {
-            ...section,
-            completed:
-              !!formData.custom_special_requirements ||
-              (!!formData.custom_preferred_inspection_date &&
-                !!formData.custom_preferred_inspection_time),
-          };
         case "inspector":
           return { ...section, completed: !!selectedInspector };
         default:
@@ -268,7 +213,6 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
         await fetchJobTypes();
         if (fetchProjectUrgency) await fetchProjectUrgency();
         if (fetchUtmSource) await fetchUtmSource();
-        // await fetchInspectors();
         setHasFetchedInitialData(true);
       };
       fetchData();
@@ -279,7 +223,6 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     fetchJobTypes,
     fetchProjectUrgency,
     fetchUtmSource,
-    // fetchInspectors,
   ]);
 
   const getCurrentTime = () => {
@@ -297,6 +240,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
       }));
     }
   }, []);
+
   useEffect(() => {
     if (requestedTime && duration) {
       const endTime = calculateEndTime();
@@ -314,154 +258,54 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     }
   }, [requestedTime, duration]);
 
-  const handleNewCustomerInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value } = e.target;
-    setNewCustomerForm((prev) => ({
+  const handleCustomerSelect = useCallback((customer: CustomerData) => {
+    setSelectedCustomer(customer);
+
+    // Update form data with customer information
+    setFormData((prev) => ({
       ...prev,
-      [name]: capitalizeFirstLetter(value),
+      lead_name: customer.customer_name,
+      email_id: customer.email_id,
+      mobile_no: customer.mobile_no,
+      name: customer.name,
+      // Add address details if available
+      ...(customer.address_details
+        ? {
+            custom_property_category:
+              customer.address_details.property_category || "",
+            custom_emirate: customer.address_details.emirate || "",
+            custom_community: customer.address_details.community || "",
+            custom_area: customer.address_details.area || "",
+            custom_street_name: customer.address_details.street_name || "",
+            custom_property_name__number:
+              customer.address_details.property_number || "",
+            custom_property_area:
+              customer.address_details.combined_address || "",
+            custom_property_type: customer.address_details.property_type || "",
+          }
+        : {}),
     }));
-  };
+  }, []);
 
-  const handleNewCustomerPhoneChange = (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const input = e.target.value;
+  const handleCustomerClear = useCallback(() => {
+    setSelectedCustomer(null);
+    setFormData((prev) => ({
+      ...prev,
+      lead_name: "",
+      email_id: "",
+      mobile_no: "+971 ",
+      name: "",
+      custom_property_name__number: "",
+      custom_emirate: "",
+      custom_community: "",
+      custom_area: "",
+      custom_street_name: "",
+      custom_property_area: "",
+      custom_property_category: "",
+      custom_property_type: "",
+    }));
+  }, []);
 
-    if (!input.startsWith("+971 ")) {
-      setNewCustomerForm((prev) => ({ ...prev, phone: "+971 " }));
-      return;
-    }
-
-    const digits = input.replace(/\D/g, "").substring(3);
-    const limitedDigits = digits.substring(0, 9);
-
-    let formattedNumber = "+971 ";
-
-    if (limitedDigits.length > 0) {
-      const isMobile = limitedDigits.startsWith("5");
-
-      if (isMobile) {
-        formattedNumber += limitedDigits.substring(0, 3);
-        if (limitedDigits.length > 3) {
-          formattedNumber += " " + limitedDigits.substring(3, 6);
-          if (limitedDigits.length > 6) {
-            formattedNumber += " " + limitedDigits.substring(6, 9);
-          }
-        }
-      } else {
-        formattedNumber += limitedDigits.substring(0, 2);
-        if (limitedDigits.length > 2) {
-          formattedNumber += " " + limitedDigits.substring(2, 5);
-          if (limitedDigits.length > 5) {
-            formattedNumber += " " + limitedDigits.substring(5, 9);
-          }
-        }
-      }
-    }
-
-    setNewCustomerForm((prev) => ({ ...prev, phone: formattedNumber }));
-  };
-
-  const extractPhoneFromQuery = (query: string): string => {
-    // Look for phone number patterns in the search query
-    const phoneRegex = /(\+971\s?\d{1,2}\s?\d{3}\s?\d{4}|\d{9,10})/;
-    const match = query.match(phoneRegex);
-
-    if (match) {
-      let phone = match[0];
-      // If it doesn't start with +971, add it
-      if (!phone.startsWith("+971")) {
-        phone = "+971 " + phone.replace(/\D/g, "");
-      }
-      return phone;
-    }
-    return "+971 ";
-  };
-
-  const extractNameFromQuery = (query: string): string => {
-    // Remove phone numbers from the query to get just the name
-    const phoneRegex = /(\+971\s?\d{1,2}\s?\d{3}\s?\d{4}|\d{9,10})/g;
-    return query.replace(phoneRegex, "").trim();
-  };
-
-  const saveNewCustomer = async () => {
-    if (!newCustomerForm.name.trim()) {
-      toast.error("Customer name is required");
-      return;
-    }
-
-    if (!newCustomerForm.phone || newCustomerForm.phone.length < 5) {
-      toast.error("Valid mobile number is required");
-      return;
-    }
-
-    try {
-      setIsCreatingCustomer(true);
-
-      const newLeadData = formatSubmissionData({
-        lead_name: newCustomerForm.name.trim(),
-        email_id: newCustomerForm.email || "",
-        mobile_no: newCustomerForm.phone,
-        custom_jobtype: newCustomerForm.jobType, // Now using the array
-        custom_budget_range: "",
-        custom_project_urgency: "",
-        source: "",
-        custom_property_name__number: "",
-        custom_emirate: "",
-        custom_area: "",
-        custom_community: "",
-        custom_street_name: "",
-        custom_property_area: "",
-        custom_property_category: "",
-        custom_special_requirements: "",
-      });
-
-      const createdLead = await createLead(newLeadData);
-
-      if (!createdLead) {
-        throw new Error("Failed to create lead");
-      }
-
-      setFormData((prev) => ({
-        ...prev,
-        lead_name: createdLead.lead_name || newCustomerForm.name,
-        email_id: createdLead.email_id || newCustomerForm.email,
-        mobile_no: createdLead.mobile_no || newCustomerForm.phone,
-        custom_jobtype:
-          createdLead.custom_jobtype?.map((item: any) => item.job_type) || [],
-        name: createdLead.name,
-      }));
-
-      setCustomerSearchQuery(newCustomerForm.name);
-      setShowNewCustomerFields(true);
-      setShowNewCustomerModal(false);
-      setShowCustomerDropdown(false);
-
-      setNewCustomerForm({
-        name: "",
-        email: "",
-        phone: "+971 ",
-        jobType: [],
-      });
-
-      toast.success(`New Lead "${newCustomerForm.name}" created successfully!`);
-    } catch (error) {
-      console.error("Error creating new lead:", error);
-      let errorMessage = "Failed to create lead. Please try again.";
-      if (error && typeof error === "object") {
-        if ("message" in error) {
-          errorMessage = (error as { message: string }).message;
-        } else if ("error" in error) {
-          errorMessage = (error as { error: string }).error;
-        }
-      }
-      toast.error(errorMessage);
-    } finally {
-      setIsCreatingCustomer(false);
-    }
-  };
   const validateRequestedTime = () => {
     if (!requestedTime || !selectedSlot) return false;
 
@@ -485,16 +329,6 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
 
     return true;
   };
-  // const getMaxDuration = (): number => {
-  //   if (!selectedSlot || !requestedTime) return 8; // Default max 8 hours
-
-  //   const requestedMinutes = timeToMinutes(requestedTime);
-  //   const slotEndMinutes = timeToMinutes(selectedSlot.end);
-  //   const remainingMinutes = slotEndMinutes - requestedMinutes;
-  //   const maxHours = remainingMinutes / 60;
-
-  //   return Math.max(0.5, Math.floor(maxHours * 2) / 2); // Round to nearest 0.5
-  // };
 
   const calculateEndTime = () => {
     if (!requestedTime || !duration) return null;
@@ -513,25 +347,6 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
       .toString()
       .padStart(2, "0")}`;
   };
-
-  // const validateTimeDuration = (durationValue: string) => {
-  //   if (!selectedSlot || !requestedTime) return;
-
-  //   const durationHours = parseFloat(durationValue);
-  //   const durationMinutes = Math.round(durationHours * 60);
-  //   const startMinutes = timeToMinutes(requestedTime);
-  //   const slotEndMinutes = timeToMinutes(selectedSlot.end);
-
-  //   if (startMinutes + durationMinutes > slotEndMinutes) {
-  //     const availableHours = (slotEndMinutes - startMinutes) / 60;
-  //     toast.error(
-  //       `Duration exceeds available time. Max ${availableHours.toFixed(
-  //         1
-  //       )} hours available in this slot.`,
-  //       { duration: 2000 }
-  //     );
-  //   }
-  // };
 
   const handleInspectorSelect = (
     email: string,
@@ -612,8 +427,17 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
           inquiry.source === "Supplier Reference"
       );
 
-      setCustomerSearchQuery(inquiry.lead_name || "");
-      setShowNewCustomerFields(true);
+      // Set selected customer if inquiry exists
+      if (inquiry.lead_name) {
+        setSelectedCustomer({
+          customer_name: inquiry.lead_name,
+          email_id: inquiry.email_id || "",
+          mobile_no: inquiry.mobile_no || "+971 ",
+          customer_id: inquiry.name ? inquiry.name : "",
+          lead_id: inquiry.name ? inquiry.name : "",
+          name: inquiry.name || "",
+        });
+      }
     }
   }, [inquiry, hasFetchedInitialData]);
 
@@ -627,10 +451,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     setDate(new Date());
     setHasFetchedInitialData(false);
     setShowReferenceInput(false);
-    setCustomerSearchQuery("");
-    setCustomerSearchResults([]);
-    setShowCustomerDropdown(false);
-    setShowNewCustomerFields(false);
+    setSelectedCustomer(null);
     setShowAvailabilityModal(false);
   };
 
@@ -659,43 +480,43 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     }
   };
 
-  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const input = e.target.value;
+  // const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  //   const input = e.target.value;
 
-    if (!input.startsWith("+971 ")) {
-      setFormData((prev) => ({ ...prev, mobile_no: "+971 " }));
-      return;
-    }
+  //   if (!input.startsWith("+971 ")) {
+  //     setFormData((prev) => ({ ...prev, mobile_no: "+971 " }));
+  //     return;
+  //   }
 
-    const digits = input.replace(/\D/g, "").substring(3);
-    const limitedDigits = digits.substring(0, 9);
+  //   const digits = input.replace(/\D/g, "").substring(3);
+  //   const limitedDigits = digits.substring(0, 9);
 
-    let formattedNumber = "+971 ";
+  //   let formattedNumber = "+971 ";
 
-    if (limitedDigits.length > 0) {
-      const isMobile = limitedDigits.startsWith("5");
+  //   if (limitedDigits.length > 0) {
+  //     const isMobile = limitedDigits.startsWith("5");
 
-      if (isMobile) {
-        formattedNumber += limitedDigits.substring(0, 3);
-        if (limitedDigits.length > 3) {
-          formattedNumber += " " + limitedDigits.substring(3, 6);
-          if (limitedDigits.length > 6) {
-            formattedNumber += " " + limitedDigits.substring(6, 9);
-          }
-        }
-      } else {
-        formattedNumber += limitedDigits.substring(0, 2);
-        if (limitedDigits.length > 2) {
-          formattedNumber += " " + limitedDigits.substring(2, 5);
-          if (limitedDigits.length > 5) {
-            formattedNumber += " " + limitedDigits.substring(5, 9);
-          }
-        }
-      }
-    }
+  //     if (isMobile) {
+  //       formattedNumber += limitedDigits.substring(0, 3);
+  //       if (limitedDigits.length > 3) {
+  //         formattedNumber += " " + limitedDigits.substring(3, 6);
+  //         if (limitedDigits.length > 6) {
+  //           formattedNumber += " " + limitedDigits.substring(6, 9);
+  //         }
+  //       }
+  //     } else {
+  //       formattedNumber += limitedDigits.substring(0, 2);
+  //       if (limitedDigits.length > 2) {
+  //         formattedNumber += " " + limitedDigits.substring(2, 5);
+  //         if (limitedDigits.length > 5) {
+  //           formattedNumber += " " + limitedDigits.substring(5, 9);
+  //         }
+  //       }
+  //     }
+  //   }
 
-    setFormData((prev) => ({ ...prev, mobile_no: formattedNumber }));
-  };
+  //   setFormData((prev) => ({ ...prev, mobile_no: formattedNumber }));
+  // };
 
   const validateForm = (): boolean => {
     // Customer Details validation
@@ -1007,208 +828,6 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     resetForm();
     onClose();
   };
-  const handleCustomerSearch = useCallback(async (query: string) => {
-    if (!query.trim()) {
-      setCustomerSearchResults([]);
-      setShowCustomerDropdown(false);
-      setShowNewCustomerFields(false);
-      return;
-    }
-
-    setIsCustomerSearching(true);
-    try {
-      const response = await frappeAPI.makeAuthenticatedRequest(
-        "GET",
-        `/api/method/eits_app.site_address_search.search_site_addresses?search_term=${encodeURIComponent(
-          query
-        )}`
-      );
-
-      if (!response.message?.data) {
-        throw new Error("Invalid response structure");
-      }
-
-      const results = response.message.data;
-
-      const transformedResults = results.map((result: any) => {
-        const nameFromSite =
-          result.site_name?.split("-")[0]?.split(",")[0] || "Unknown";
-        return {
-          ...result,
-          search_type: "address",
-          customer_name:
-            result.lead_details?.lead_name ||
-            result.customer_details?.customer_name ||
-            nameFromSite,
-          mobile_no:
-            result.custom_lead_phone_number ||
-            result.lead_details?.mobile_no ||
-            result.custom_customer_phone_number ||
-            result.customer_details?.mobile_no,
-          email_id:
-            result.custom_lead_email ||
-            result.lead_details?.email_id ||
-            result.custom_customer_email ||
-            result.customer_details?.email_id,
-          name: result.customer_details?.name || result.lead_details?.name,
-          lead_name: result.lead_details?.name,
-          area: result.site_name,
-          address_details: {
-            emirate: result.custom_emirate,
-            area: result.custom_area,
-            community: result.custom_community,
-            street_name: result.custom_street_name,
-            property_number: result.custom_property_number,
-            combined_address:
-              result.custom_combine_address ||
-              extractAddressFromSite(result.site_name),
-            property_category: result.custom_property_category,
-            property_type: result.custom_property_type,
-          },
-          match_info: result.match_info,
-        };
-      });
-
-      setCustomerSearchResults(transformedResults);
-      setShowCustomerDropdown(true);
-
-      // Show new customer fields if there are no results
-      setShowNewCustomerFields(transformedResults.length === 0);
-    } catch (error) {
-      console.error("Search error:", error);
-      setCustomerSearchResults([]);
-
-      // Hide dropdown on error
-      setShowCustomerDropdown(false);
-
-      // Show new customer fields on error
-      setShowNewCustomerFields(true);
-    } finally {
-      setIsCustomerSearching(false);
-    }
-  }, []);
-
-  const handleCustomerSelect = async (result: any) => {
-    setFetchingCustomerDetails(true);
-    setShowNewCustomerFields(false);
-
-    try {
-      const customerData = {
-        lead_name: result.customer_name,
-        email_id: result.email_id || "",
-        mobile_no: result.mobile_no || "+971 ",
-        customer_id: result.name || "",
-        lead_id: result.custom_lead_name || "",
-      };
-
-      const addressData = result.address_details
-        ? {
-            custom_property_category:
-              result.address_details.property_category || "",
-            custom_emirate: result.address_details.emirate || "",
-            custom_community: result.address_details.community || "",
-            custom_area: result.address_details.area || "",
-            custom_street_name: result.address_details.street_name || "",
-            custom_property_name__number:
-              result.address_details.property_number || "",
-            custom_property_area: result.address_details.combined_address || "",
-            custom_property_type: result.address_details.property_type || "",
-          }
-        : {};
-
-      setFormData((prev) => ({
-        ...prev,
-        ...customerData,
-        ...addressData,
-      }));
-
-      setCustomerSearchQuery(result.customer_name);
-      setShowCustomerDropdown(false);
-    } finally {
-      setFetchingCustomerDetails(false);
-    }
-  };
-
-  const handleCustomerSearchChange = (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const query = e.target.value;
-    setCustomerSearchQuery(capitalizeFirstLetter(query));
-
-    if (!query.trim()) {
-      setCustomerSearchResults([]);
-      setShowCustomerDropdown(false);
-      setShowNewCustomerFields(false);
-      return;
-    }
-
-    if (customerSearchTimeout) {
-      clearTimeout(customerSearchTimeout);
-    }
-
-    setCustomerSearchTimeout(
-      setTimeout(() => {
-        handleCustomerSearch(query);
-      }, 300)
-    );
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (
-      [8, 9, 13, 16, 17, 18, 20, 27, 35, 36, 37, 38, 39, 40, 45, 46].includes(
-        e.keyCode
-      )
-    ) {
-      return;
-    }
-
-    const input = e.currentTarget;
-    if (input.selectionStart && input.selectionStart < 5) {
-      e.preventDefault();
-    }
-  };
-  // const generateTimeSlots = (startTime: string, endTime: string): string[] => {
-  //   const slots: string[] = [];
-  //   const start = timeToMinutes(startTime);
-  //   const end = timeToMinutes(endTime);
-
-  //   // Generate slots in 15-minute intervals
-  //   for (let minutes = start; minutes < end; minutes += 15) {
-  //     const hours = Math.floor(minutes / 60);
-  //     const mins = minutes % 60;
-  //     const timeStr = `${hours.toString().padStart(2, "0")}:${mins
-  //       .toString()
-  //       .padStart(2, "0")}`;
-  //     slots.push(timeStr);
-  //   }
-
-  //   return slots;
-  // };
-
-  const extractAddressFromSite = (siteName: string) => {
-    if (!siteName) return "";
-    // Format: "Name-Number,..." - extract everything after the first dash
-    const dashIndex = siteName.indexOf("-");
-    if (dashIndex !== -1) {
-      const afterDash = siteName.substring(dashIndex + 1);
-      // Check if what comes after dash starts with a number (address part)
-      if (/^\d/.test(afterDash)) {
-        return afterDash.trim();
-      }
-    }
-    // Fallback: return original if pattern doesn't match
-    return siteName;
-  };
-  const handleEmailInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setNewCustomerForm((prev) => ({ ...prev, [name]: value }));
-  };
-  const handleNewCustomerEmailChange = (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const { name, value } = e.target;
-    setNewCustomerForm((prev) => ({ ...prev, [name]: value }));
-  };
 
   if (!isOpen) return null;
 
@@ -1281,220 +900,15 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                     <div className="p-4 pt-2 space-y-4">
                       {section.id === "contact" && (
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                          <div className="space-y-2 col-span-1 md:col-span-3 relative">
-                            <Label
-                              htmlFor="customer_search"
-                              className="text-gray-700"
-                            >
-                              <div className="flex items-center gap-2 text-base font-medium">
-                                <User className="h-4 w-4 text-gray-500" />
-                                <span>
-                                  Customer{" "}
-                                  <span className="text-gray-500 font-normal">
-                                    (name/email/phone)
-                                  </span>
-                                  <span className="text-red-500 ml-1">*</span>
-                                </span>
-                                {fetchingCustomerDetails && (
-                                  <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
-                                )}
-                              </div>
-                            </Label>
-
-                            <div className="relative">
-                              <Input
-                                id="customer_search"
-                                name="customer_search"
-                                value={customerSearchQuery}
-                                onChange={handleCustomerSearchChange}
-                                placeholder="Search by name, phone or email"
-                                required
-                                className="pr-10"
-                              />
-                              {isCustomerSearching && (
-                                <Loader2 className="absolute right-3 top-3 h-4 w-4 animate-spin text-gray-500" />
-                              )}
-                            </div>
-
-                            {showCustomerDropdown && (
-                              <div className="absolute z-10 mt-1 w-full bg-white shadow-lg rounded-md border border-gray-200 max-h-60 overflow-y-auto">
-                                {customerSearchResults.length > 0 ? (
-                                  <>
-                                    {/* Existing customers */}
-                                    {customerSearchResults.map(
-                                      (result, index) => (
-                                        <div
-                                          key={`customer-result-${index}`}
-                                          className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                                          onClick={() =>
-                                            handleCustomerSelect(result)
-                                          }
-                                        >
-                                          <p className="font-medium truncate">
-                                            {result.customer_name}
-                                          </p>
-                                          {(result.mobile_no ||
-                                            result.email_id) && (
-                                            <div className="text-xs text-gray-500 space-x-2">
-                                              {result.mobile_no && (
-                                                <span className="inline-flex items-center">
-                                                  <Phone className="h-3 w-3 mr-1" />
-                                                  {result.mobile_no}
-                                                </span>
-                                              )}
-                                              {result.email_id && (
-                                                <span className="inline-flex items-center">
-                                                  <Mail className="h-3 w-3 mr-1" />
-                                                  {result.email_id}
-                                                </span>
-                                              )}
-                                            </div>
-                                          )}
-                                          {result.site_name && (
-                                            <div className="mt-2 text-xs text-gray-500 flex items-start gap-1">
-                                              <Home className="h-3 w-3 flex-shrink-0 mt-0.5" />
-                                              <div className="flex-1 min-w-0">
-                                                <p className="break-words text-xs leading-tight">
-                                                  {extractAddressFromSite(
-                                                    result.site_name
-                                                  )}
-                                                </p>
-                                              </div>
-                                            </div>
-                                          )}
-                                        </div>
-                                      )
-                                    )}
-
-                                    {/* Add New Customer option - separate from existing customers */}
-                                    <div
-                                      className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center justify-between border-t border-gray-100"
-                                      onClick={() => {
-                                        // Pre-fill the form with searched data
-                                        const extractedName =
-                                          extractNameFromQuery(
-                                            customerSearchQuery
-                                          );
-                                        const extractedPhone =
-                                          extractPhoneFromQuery(
-                                            customerSearchQuery
-                                          );
-
-                                        setNewCustomerForm({
-                                          name: extractedName,
-                                          email: "",
-                                          phone: extractedPhone,
-                                          jobType:
-                                            jobTypes.length > 0
-                                              ? [jobTypes[0].name]
-                                              : [],
-                                        });
-
-                                        setShowNewCustomerModal(true);
-                                        setShowCustomerDropdown(false);
-                                      }}
-                                    >
-                                      <div>
-                                        <p className="text-xs text-gray-500">
-                                          Click to add a new customer
-                                        </p>
-                                      </div>
-                                      <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded flex-shrink-0">
-                                        Add New
-                                      </span>
-                                    </div>
-                                  </>
-                                ) : (
-                                  /* No customers found - show add new option */
-                                  <div
-                                    className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center justify-between"
-                                    onClick={() => {
-                                      // Pre-fill the form with searched data
-                                      const extractedName =
-                                        extractNameFromQuery(
-                                          customerSearchQuery
-                                        );
-                                      const extractedPhone =
-                                        extractPhoneFromQuery(
-                                          customerSearchQuery
-                                        );
-
-                                      setNewCustomerForm({
-                                        name: extractedName,
-                                        email: "",
-                                        phone: extractedPhone,
-                                        jobType:
-                                          jobTypes.length > 0
-                                            ? [jobTypes[0].name]
-                                            : [],
-                                      });
-
-                                      setShowNewCustomerModal(true);
-                                      setShowCustomerDropdown(false);
-                                    }}
-                                  >
-                                    <div>
-                                      <p className="font-medium">
-                                        No customer found for "
-                                        {customerSearchQuery}"
-                                      </p>
-                                      <p className="text-xs text-gray-500">
-                                        Click to add a new customer
-                                      </p>
-                                    </div>
-                                    <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded flex-shrink-0">
-                                      Add New
-                                    </span>
-                                  </div>
-                                )}
-                              </div>
-                            )}
+                          <div className="space-y-2 col-span-1 md:col-span-3">
+                            <CustomerSearch
+                              selectedCustomer={selectedCustomer}
+                              onCustomerSelect={handleCustomerSelect}
+                              onCustomerClear={handleCustomerClear}
+                              formData={formData}
+                              className="w-full"
+                            />
                           </div>
-
-                          {(showNewCustomerFields ||
-                            formData.lead_name ||
-                            customerSearchQuery) && (
-                            <>
-                              <div className="col-span-1">
-                                <Label
-                                  htmlFor="phone"
-                                  className="text-md font-medium text-gray-700 mb-1"
-                                >
-                                  Phone Number{" "}
-                                  <span className="text-red-500">*</span>
-                                </Label>
-                                <Input
-                                  type="tel"
-                                  id="phone"
-                                  name="mobile_no"
-                                  value={formData.mobile_no || "+971 "}
-                                  onChange={handlePhoneChange}
-                                  onKeyDown={handleKeyDown}
-                                  placeholder="+971 XX XXX XXXX"
-                                  className="w-full"
-                                  maxLength={17}
-                                  required
-                                />
-                              </div>
-
-                              <div className="col-span-1">
-                                <Label
-                                  htmlFor="email_id"
-                                  className="text-md font-medium text-gray-700 mb-1"
-                                >
-                                  Email
-                                </Label>
-                                <Input
-                                  type="text"
-                                  id="email_id"
-                                  name="email_id"
-                                  value={formData.email_id || ""}
-                                  onChange={handleEmailInputChange}
-                                  placeholder="Enter email"
-                                />
-                              </div>
-                            </>
-                          )}
 
                           <div className="col-span-1 md:col-span-2">
                             <Label
@@ -1558,11 +972,19 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                             </Label>
                             <MultiSelectJobTypes
                               jobTypes={jobTypes}
-                              selectedJobTypes={formData.custom_jobtype || []}
+                              selectedJobTypes={
+                                Array.isArray(formData.custom_jobtype)
+                                  ? formData.custom_jobtype.map((jt: any) =>
+                                      typeof jt === "string" ? jt : jt.job_type
+                                    )
+                                  : []
+                              }
                               onSelectionChange={(selected) => {
                                 setFormData((prev) => ({
                                   ...prev,
-                                  custom_jobtype: selected,
+                                  custom_jobtype: selected.map((jobType) => ({
+                                    job_type: jobType,
+                                  })),
                                 }));
                               }}
                               placeholder="Select job types"
@@ -1642,27 +1064,6 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                           }}
                         />
                       )}
-                      {/* 
-                      {section.id === "additional" && (
-                        <div>
-                          <div>
-                            <Label
-                              htmlFor="custom_special_requirements"
-                              className="text-xs font-medium text-gray-700"
-                            >
-                              Special Requirements
-                            </Label>
-                            <Textarea
-                              id="custom_special_requirements"
-                              name="custom_special_requirements"
-                              value={formData.custom_special_requirements || ""}
-                              onChange={handleInputChange}
-                              placeholder="Enter any special requirements or notes"
-                              rows={3}
-                            />
-                          </div>
-                        </div>
-                      )} */}
 
                       {section.id === "inspector" && (
                         <div className="space-y-4">
@@ -1689,9 +1090,6 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                           </div>
                           {date && (
                             <div className="space-y-2">
-                              <Label className="text-gray-700 text-md font-medium mb-1">
-                                Inspector Selected
-                              </Label>
                               <div className="flex items-center justify-between">
                                 {selectedInspector ? (
                                   <div className="flex items-center gap-2">
@@ -1705,8 +1103,8 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                                     </div>
                                   </div>
                                 ) : (
-                                  <div className="text-sm text-gray-600">
-                                    Waiting for inspector selection...
+                                  <div className="text-md font-medium text-black">
+                                    Select Inspector
                                   </div>
                                 )}
                                 <Button
@@ -1715,7 +1113,11 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                                   variant="outline"
                                   onClick={() => setShowAvailabilityModal(true)}
                                 >
-                                  {selectedInspector ? "Change" : "Select"}
+                                  {selectedInspector ? (
+                                    <UserPen className="w-4 h-4 text-black" />
+                                  ) : (
+                                    <UserPlus className="w-4 h-4 text-black" />
+                                  )}
                                 </Button>
                               </div>
                             </div>
@@ -1748,11 +1150,6 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                                         }
                                       >
                                         {slot.start} - {slot.end}
-                                        {/* {slot.duration_hours && (
-                                          <span className="ml-1 text-xs opacity-70">
-                                            ({slot.duration_hours}h)
-                                          </span>
-                                        )} */}
                                       </Button>
                                     )
                                   )}
@@ -1781,6 +1178,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                                     minTime={selectedSlot.start}
                                     maxTime={selectedSlot.end}
                                     className="text-sm h-8"
+                                    selectedDate={date} // Pass the selected date here
                                   />
                                 </div>
 
@@ -1803,25 +1201,19 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                                         );
                                         const remainingMinutes =
                                           slotEndMinutes - requestedMinutes;
-                                        const maxHours = remainingMinutes / 60;
-                                        return Math.max(
-                                          0.5,
-                                          Math.floor(maxHours * 2) / 2
-                                        );
+                                        const maxHours =
+                                          Math.floor(remainingMinutes / 60) +
+                                          (remainingMinutes % 60) / 60;
+                                        return Math.min(maxHours, 8);
                                       })()}
                                       value={duration}
-                                      onChange={(e) => {
-                                        const newDuration = e.target.value;
-                                        setDuration(newDuration);
-                                        setFormData((prev) => ({
-                                          ...prev,
-                                          custom_duration: newDuration,
-                                        }));
-                                      }}
-                                      placeholder="1.5"
-                                      className="text-sm h-8 rounded-r-none"
+                                      onChange={(e) =>
+                                        setDuration(e.target.value)
+                                      }
+                                      className=" text-sm h-8 rounded-r-none"
+                                      placeholder="Hours"
                                     />
-                                    <span className="flex items-center justify-center px-3 text-xs text-gray-700 border border-l-0 rounded-r-md bg-gray-50">
+                                    <span className="flex items-center justify-center px-1 text-xs text-gray-800 border rounded-r-md bg-white">
                                       Hrs
                                     </span>
                                   </div>
@@ -1833,280 +1225,149 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                                   </Label>
                                   <Input
                                     type="text"
-                                    value={calculateEndTime() ?? ""}
-                                    className="text-sm h-8 bg-gray-100"
-                                    disabled
+                                    value={calculateEndTime() || ""}
                                     readOnly
+                                    className={`text-sm h-8 ${
+                                      showEndTimeWarning
+                                        ? "border-red-500 bg-red-50"
+                                        : ""
+                                    }`}
+                                    placeholder="Auto-calculated"
                                   />
                                 </div>
                               </div>
+
+                              {showEndTimeWarning && (
+                                <div className="text-xs text-red-600 bg-red-50 p-2 rounded">
+                                  ⚠️ Warning: Inspection ends after 6:00 PM.
+                                  Please adjust start time or duration.
+                                </div>
+                              )}
+
+                              {!validateRequestedTime() && requestedTime && (
+                                <div className="text-xs text-red-600 bg-red-50 p-2 rounded">
+                                  ⚠️ Requested time must be within the selected
+                                  slot ({selectedSlot.start} -{" "}
+                                  {selectedSlot.end})
+                                </div>
+                              )}
                             </div>
                           )}
+
                           <div className="space-y-2">
-                            <Label className="text-gray-700 text-md font-medium mb-1">
-                              Priority
+                            <Label className="text-gray-700 text-md font-medium">
+                              Priority Level
                             </Label>
                             <Select
                               value={priority}
-                              onValueChange={(value) =>
-                                setPriority(value as PriorityLevel)
+                              onValueChange={(value: PriorityLevel) =>
+                                setPriority(value)
                               }
                             >
-                              <SelectTrigger className="w-full bg-white border border-gray-300">
-                                <SelectValue placeholder="Priority" />
+                              <SelectTrigger className="w-full">
+                                <SelectValue />
                               </SelectTrigger>
-                              <SelectContent className="bg-white border border-gray-300">
-                                <SelectItem value="Low">
-                                  <span className="flex items-center gap-2">
-                                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                                    Low
-                                  </span>
-                                </SelectItem>
-                                <SelectItem value="Medium">
-                                  <span className="flex items-center gap-2">
-                                    <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-                                    Medium
-                                  </span>
-                                </SelectItem>
-                                <SelectItem value="High">
-                                  <span className="flex items-center gap-2">
-                                    <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                                    High
-                                  </span>
-                                </SelectItem>
+                              <SelectContent className="bg-white">
+                                <SelectItem value="Low">Low</SelectItem>
+                                <SelectItem value="Medium">Medium</SelectItem>
+                                <SelectItem value="High">High</SelectItem>
                               </SelectContent>
                             </Select>
                           </div>
-                          <div className="flex justify-end">
-                            <Button
-                              type="button"
-                              onClick={handleAssignAndSave}
-                              className="bg-gradient-to-r from-emerald-400 to-teal-500 hover:from-emerald-700 hover:to-teal-600 text-white"
+
+                          <div className="space-y-2">
+                            <Label
+                              htmlFor="custom_special_requirements"
+                              className="text-gray-700 text-md font-medium"
                             >
-                              {createTodoLoading || loading ? (
-                                <>
-                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                  {loading
-                                    ? "Saving & Assigning..."
-                                    : "Assigning..."}
-                                </>
-                              ) : (
-                                "Save & Assign Inspector"
-                              )}
-                            </Button>
-                          </div>
-                          {showAvailabilityModal && (
-                            <UserAvailability
-                              date={date || new Date()}
-                              onClose={() => setShowAvailabilityModal(false)}
-                              onSelectInspector={handleInspectorSelect}
+                              Special Requirements
+                            </Label>
+                            <Textarea
+                              id="custom_special_requirements"
+                              name="custom_special_requirements"
+                              value={formData.custom_special_requirements || ""}
+                              onChange={handleInputChange}
+                              placeholder="Any special requirements or notes..."
+                              rows={3}
+                              className="resize-none"
                             />
-                          )}
+                          </div>
                         </div>
                       )}
                     </div>
                   </div>
                 </div>
               ))}
-              <div>
-                <div className="px-2">
-                  <Label
-                    htmlFor="custom_special_requirements"
-                    className="text-md mb-1 font-medium text-gray-700"
-                  >
-                    Special Requirements
-                  </Label>
-                  <Textarea
-                    id="custom_special_requirements"
-                    name="custom_special_requirements"
-                    value={formData.custom_special_requirements || ""}
-                    onChange={handleInputChange}
-                    placeholder="Enter any special requirements or notes"
-                    rows={3}
-                  />
-                </div>
-              </div>
-              <div className="flex justify-end gap-3 pt-6">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleClose}
-                  className="px-6"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={loading}
-                  className="px-6 bg-emerald-600 hover:bg-emerald-700"
-                >
-                  {loading ? (
-                    <div className="flex items-center gap-2">
-                      <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white"></div>
-                      Saving...
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2 text-white">
-                      <Save className="h-4 w-4" />
-                      {inquiry ? "Update" : "Create"} Inquiry
-                    </div>
-                  )}
-                </Button>
-              </div>
             </form>
           </div>
-        </div>
-      </div>
-      {showEndTimeWarning && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-6">
-          <div className="bg-white rounded-lg p-4 max-w-md w-full">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold">End Time Warning</h3>
-              <button
-                onClick={() => setShowEndTimeWarning(false)}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            <p className="mb-4 text-gray-700">
-              The calculated end time ({calculateEndTime()}) is after 6:00 PM.
-              Time shouldn't extend beyond 6:00 PM.
-            </p>
 
-            <div className="flex justify-end">
+          <div className="border-t bg-gray-50 px-4 py-3">
+            <div className="flex justify-between gap-3">
               <Button
-                onClick={() => setShowEndTimeWarning(false)}
-                className="bg-emerald-700 hover:bg-emerald-800 text-white"
+                type="button"
+                variant="outline"
+                onClick={handleClose}
+                className="flex-1"
               >
-                OK, I Understand
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                onClick={handleSubmit}
+                disabled={loading}
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    {inquiry ? "Updating..." : "Creating..."}
+                  </>
+                ) : (
+                  <>
+                    <Save className="mr-2 h-4 w-4" />
+                    {inquiry ? "Update" : "Save"}
+                  </>
+                )}
+              </Button>
+              <Button
+                type="button"
+                onClick={handleAssignAndSave}
+                disabled={loading || createTodoLoading}
+                className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
+              >
+                {createTodoLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Assigning...
+                  </>
+                ) : (
+                  "Assign & Save"
+                )}
               </Button>
             </div>
           </div>
         </div>
-      )}
 
-      {showNewCustomerModal && (
-        <>
-          <div
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-60 px-6"
-            onClick={() => setShowNewCustomerModal(false)}
+        {showAvailabilityModal && date && (
+          <UserAvailability
+            date={date || new Date()}
+            onClose={() => setShowAvailabilityModal(false)}
+            onSelectInspector={handleInspectorSelect}
           />
-          <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg shadow-xl z-80 w-full max-w-md px-4">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">
-                  Add New Lead
-                </h3>
-                <button
-                  onClick={() => setShowNewCustomerModal(false)}
-                  className="text-gray-500 hover:text-gray-700"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
+        )}
 
-              <div className="space-y-4">
-                <div>
-                  <Label className="block text-md font-medium text-gray-700 mb-1">
-                    Full Name <span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    type="text"
-                    name="name"
-                    value={newCustomerForm.name}
-                    onChange={handleNewCustomerInputChange}
-                    placeholder="Enter customer name"
-                    required
-                    disabled={isCreatingCustomer}
-                  />
-                </div>
-
-                <div>
-                  <Label className="block text-md font-medium text-gray-700 mb-1">
-                    Phone Number <span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    type="tel"
-                    name="phone"
-                    value={newCustomerForm.phone}
-                    onChange={handleNewCustomerPhoneChange}
-                    onKeyDown={handleKeyDown}
-                    placeholder="+971 XX XXX XXXX"
-                    maxLength={17}
-                    required
-                  />
-                </div>
-
-                <div>
-                  <Label className="block text-md font-medium text-gray-700 mb-1">
-                    Email
-                  </Label>
-                  <Input
-                    type="email"
-                    name="email"
-                    value={newCustomerForm.email}
-                    onChange={handleNewCustomerEmailChange}
-                    placeholder="Enter email"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="block text-md font-medium text-gray-700 mb-1">
-                    Job Types
-                  </Label>
-                  <MultiSelectJobTypes
-                    jobTypes={jobTypes}
-                    selectedJobTypes={newCustomerForm.jobType}
-                    onSelectionChange={(selected) => {
-                      setNewCustomerForm((prev) => ({
-                        ...prev,
-                        jobType: selected,
-                      }));
-                    }}
-                    placeholder="Select job types"
-                  />
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-3 mt-6">
-                <Button
-                  variant="outline"
-                  onClick={() => setShowNewCustomerModal(false)}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={saveNewCustomer}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
-                  disabled={isCreatingCustomer}
-                >
-                  {isCreatingCustomer ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Creating...
-                    </>
-                  ) : (
-                    "Save Customer"
-                  )}
-                </Button>
-              </div>
-            </div>
-          </div>
-        </>
-      )}
-
-      <ConfirmationModal
-        isOpen={showConfirmModal}
-        onConfirm={confirmAssignment}
-        onCancel={() => setShowConfirmModal(false)}
-        title="Confirm Inspector Assignment"
-        message={`Are you sure you want to assign ${
-          selectedInspector?.user_name
-        } for the inspection on ${
-          date ? format(date, "MMM dd, yyyy") : ""
-        } at ${requestedTime}? Once assigned, customer details cannot be modified for this inquiry.`}
-      />
+        <ConfirmationModal
+          isOpen={showConfirmModal}
+          onConfirm={confirmAssignment}
+          onCancel={() => setShowConfirmModal(false)}
+          title="Confirm Inspector Assignment"
+          message={`Are you sure you want to assign ${
+            selectedInspector?.user_name
+          } for the inspection on ${
+            date ? format(date, "MMM dd, yyyy") : ""
+          } at ${requestedTime}? Once assigned, customer details cannot be modified for this inquiry.`}
+        />
+      </div>
     </>
   );
 };

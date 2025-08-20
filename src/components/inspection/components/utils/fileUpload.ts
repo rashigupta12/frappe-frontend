@@ -57,6 +57,8 @@ export const formSchema = z.object({
       })
     )
     .optional(),
+  custom_measurement_notes: z.string().optional(),
+  custom_site_images_notes: z.string().optional(),
 });
 
 // MediaItem type for TypeScriptexport type MediaItem = z.infer<typeof formSchema>["measurement_sketch"];

@@ -15,6 +15,8 @@ interface TodoItem {
   priority?: string;
   status?: string;
   allocated_to?: string;
+  custom_start_time?: string;
+  custom_end_time?: string;
 }
 
 interface SiteInspection {
@@ -40,9 +42,12 @@ interface SiteInspection {
     entity: string;
     area_name: string;
     dimensionsunits: string;
+    images:string;
     media: string;
     media_2: string;
   }>;
+  custom_measurement_notes?: string;
+  custom_site_images_notes?: string;
 
   custom_site_images?: Array<{
     image: string;

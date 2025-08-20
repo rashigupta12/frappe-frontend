@@ -8,8 +8,13 @@ interface InspectionListProps {
   userEmail: string;
 }
 
+interface JobType {
+  job_type: string;
+  // other properties if needed
+}
+
 interface InquiryData {
-  custom_job_type?: string;
+  custom_jobtype?: JobType[];
   custom_project_urgency?: string;
   lead_name?: string;
   custom_type_of_building?: string;
@@ -27,6 +32,8 @@ interface Todo {
   date?: string;
   description?: string;
   assigned_by_full_name?: string;
+  custom_start_time: string;
+  custom_end_time: string;
 }
 
 const priorityFilters = [
@@ -44,6 +51,8 @@ const MobileInspectionList = ({ userEmail }: InspectionListProps) => {
     fetchTodos: (email: string) => void;
   };
 
+  console.log("Todos:", todos);
+
   const navigate = useNavigate();
   const [selectedPriority, setSelectedPriority] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
@@ -53,19 +62,6 @@ const MobileInspectionList = ({ userEmail }: InspectionListProps) => {
       fetchTodos(userEmail);
     }
   }, [userEmail, fetchTodos]);
-
-  // const getPriorityColor = (priority: string) => {
-  //   switch (priority) {
-  //     case "High":
-  //       return "bg-red-500 text-white";
-  //     case "Medium":
-  //       return "bg-yellow-500 text-white";
-  //     case "Low":
-  //       return "bg-green-500 text-white";
-  //     default:
-  //       return "bg-gray-400 text-white";
-  //   }
-  // };
 
   const getPriorityIcon = (priority: string) => {
     switch (priority) {
@@ -85,14 +81,19 @@ const MobileInspectionList = ({ userEmail }: InspectionListProps) => {
     const isOpen = todo.status === "Open";
     const matchesPriority =
       selectedPriority === "all" || todo.priority === selectedPriority;
+
+    // Extract job types from the array for search
+    const jobTypes =
+      todo.inquiry_data?.custom_jobtype
+        ?.map((j) => j.job_type.toLowerCase())
+        .join(" ") || "";
+
     const matchesSearch =
       searchTerm === "" ||
       todo.inquiry_data?.lead_name
         ?.toLowerCase()
         .includes(searchTerm.toLowerCase()) ||
-      todo.inquiry_data?.custom_job_type
-        ?.toLowerCase()
-        .includes(searchTerm.toLowerCase()) ||
+      jobTypes.includes(searchTerm.toLowerCase()) ||
       todo.description?.toLowerCase().includes(searchTerm.toLowerCase());
 
     return isOpen && matchesPriority && matchesSearch;
@@ -115,6 +116,24 @@ const MobileInspectionList = ({ userEmail }: InspectionListProps) => {
       </div>
     );
   }
+
+  const formatDate = (dateString: string) => {
+    if (!dateString) return "N/A";
+
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-GB"); // dd/mm/yyyy format
+  };
+
+  const formatTime = (dateTimeString: string) => {
+    if (!dateTimeString) return "N/A";
+
+    const date = new Date(dateTimeString);
+    return date.toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
+  };
 
   if (error) {
     return (
@@ -141,7 +160,7 @@ const MobileInspectionList = ({ userEmail }: InspectionListProps) => {
             </h1>
             <div className="flex items-center space-x-2 text-xs lg:text-sm">
               <span className="px-2 py-1 bg-orange-100 text-orange-800 rounded-full font-medium">
-                 Open {openTodosCount}
+                Open {openTodosCount}
               </span>
               <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full">
                 Total {todos.length}
@@ -217,24 +236,30 @@ const MobileInspectionList = ({ userEmail }: InspectionListProps) => {
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center space-x-2 mb-1">
-                      <span className="text-lg lg:text-lg">
+                      <span className="text-sm ">
                         {getPriorityIcon(todo.priority || "")}
                       </span>
-                      <h3 className="text-xs lg:text-sm font-semibold text-gray-900 truncate">
-                        {todo.inquiry_data?.custom_job_type || "Inspection"}
-                      </h3>
+                      <span>{todo.date && formatDate(todo.date)}</span>
+                      <span>•</span>
+                      <span className="text-sm">
+                        {todo.custom_start_time &&
+                          formatTime(todo.custom_start_time)}
+                      </span>
+                      {todo.custom_end_time && (
+                        <>
+                          <span>-</span>
+                          <span className="text-sm">
+                            {formatTime(todo.custom_end_time)}
+                          </span>
+                        </>
+                      )}
                     </div>
                     <div className="flex items-center space-x-2 text-xs lg:text-sm text-gray-500">
-                      <span>
-                        {todo.date &&
-                          new Date(todo.date).toLocaleDateString("en-US", {
-                            month: "short",
-                            day: "numeric",
-                          })}
-                      </span>
-                      <span>•</span>
-                      <span className="truncate">
-                        {todo.inquiry_data?.custom_project_urgency || "Normal"}
+                      
+                      <span className="text-gray-600">
+                        {todo.inquiry_data?.custom_jobtype
+                          ?.map((j) => j.job_type)
+                          .join(", ") || "N/A"}
                       </span>
                     </div>
                   </div>

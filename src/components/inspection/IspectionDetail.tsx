@@ -48,6 +48,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { Textarea } from "../ui/textarea";
 import InspectionHeader from "./components/InspectionHeader";
 import MediaUpload from "./components/MediaUpload/MediaUpload";
+import { capitalizeFirstLetter } from "../../helpers/helper";
 
 // Helper function to get current date and time - memoized
 const getCurrentDateTime = () => {
@@ -87,6 +88,7 @@ const CreateInspection = () => {
   );
   const isReadOnly = useMemo(() => isSubmitted, [isSubmitted]);
   console.log("inspection", inspection);
+  console.log("todo", todo);
 
   const {
     createInspection,
@@ -101,6 +103,7 @@ const CreateInspection = () => {
 
   // Get current date and time once and memoize
   const { currentDate, currentTime } = useMemo(() => getCurrentDateTime(), []);
+  console.log(todo)
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -113,6 +116,8 @@ const CreateInspection = () => {
       inspection_notes: "",
       site_dimensions: [],
       custom_site_images: [],
+      custom_measurement_notes: "",
+      custom_site_images_notes: "",
     },
   });
 
@@ -135,82 +140,99 @@ const CreateInspection = () => {
     }
   }, []);
 
-// Memoize formatDimensionsData to prevent recreation
-const formatDimensionsData = useCallback((siteDimensions: any[]) => {
-  return siteDimensions.map((dim: any) => {
-    let images = [];
+  // Memoize formatDimensionsData to prevent recreation
+  const formatDimensionsData = useCallback((siteDimensions: any[]) => {
+    return siteDimensions.map((dim: any) => {
+      let images = [];
 
-    try {
-      // Handle cases where media might be double-encoded JSON string, single JSON string, or already an array
-      if (typeof dim.media === "string") {
-        let mediaString = dim.media;
-        
-        // Handle double-encoded JSON strings like "\"[]\""
-        if (mediaString.startsWith('"') && mediaString.endsWith('"')) {
-          mediaString = JSON.parse(mediaString);
+      try {
+        // Handle cases where media might be double-encoded JSON string, single JSON string, or already an array
+        if (typeof dim.media === "string") {
+          let mediaString = dim.media;
+
+          // Handle double-encoded JSON strings like "\"[]\""
+          if (mediaString.startsWith('"') && mediaString.endsWith('"')) {
+            mediaString = JSON.parse(mediaString);
+          }
+
+          // Now parse the actual JSON
+          images = mediaString ? JSON.parse(mediaString) : [];
+        } else if (Array.isArray(dim.media)) {
+          images = dim.media;
         }
-        
-        // Now parse the actual JSON
-        images = mediaString ? JSON.parse(mediaString) : [];
-      } else if (Array.isArray(dim.media)) {
-        images = dim.media;
+      } catch (error) {
+        console.error(
+          "Error parsing media:",
+          error,
+          "Original media:",
+          dim.media
+        );
+        images = [];
       }
-    } catch (error) {
-      console.error("Error parsing media:", error, "Original media:", dim.media);
-      images = [];
-    }
 
-    // Ensure images is always an array before calling map
-    if (!Array.isArray(images)) {
-      console.warn("Images is not an array after parsing:", images);
-      images = [];
-    }
+      // Ensure images is always an array before calling map
+      if (!Array.isArray(images)) {
+        console.warn("Images is not an array after parsing:", images);
+        images = [];
+      }
 
-    const formattedImages = images
-      .map((img: any) => {
-        // Handle cases where img might be an object with image_url or just a string
-        const imageUrl = typeof img === "string" ? img : img?.image_url;
-        if (!imageUrl) return null;
+      const formattedImages = images
+        .map((img: any) => {
+          // Handle cases where img might be an object with image_url or just a string
+          const imageUrl = typeof img === "string" ? img : img?.image_url;
+          if (!imageUrl) return null;
 
-        const mediaType = getMediaType(imageUrl);
-        // Ensure only image or video types
-        if (mediaType !== "image" && mediaType !== "video") {
-          return null;
-        }
-        return {
-          id: `${imageUrl.split("/").pop()}-${Math.random()
-            .toString(36)
-            .substr(2, 9)}`,
-          url: imageUrl,
-          type: mediaType as "image" | "video", // Explicit type
-          remarks: imageUrl.split("/").pop() || "",
-        };
-      })
-      .filter((img: any): img is { id: string; url: string; type: "image" | "video"; remarks: string } => img !== null);
+          const mediaType = getMediaType(imageUrl);
+          // Ensure only image or video types
+          if (mediaType !== "image" && mediaType !== "video") {
+            return null;
+          }
+          return {
+            id: `${imageUrl.split("/").pop()}-${Math.random()
+              .toString(36)
+              .substr(2, 9)}`,
+            url: imageUrl,
+            type: mediaType as "image" | "video", // Explicit type
+            remarks: imageUrl.split("/").pop() || "",
+          };
+        })
+        .filter(
+          (
+            img: any
+          ): img is {
+            id: string;
+            url: string;
+            type: "image" | "video";
+            remarks: string;
+          } => img !== null
+        );
 
-    const media2Type = dim.media_2 ? getMediaType(dim.media_2) : null;
-    return {
-      floor: dim.floor || "",
-      room: dim.room || "",
-      entity: dim.entity || "",
-      area_name: dim.area_name || "",
-      dimensionsunits: dim.dimensionsunits || "",
-      notes: dim.notes || "",
-      images: formattedImages,
-      media_2:
-        dim.media_2 && media2Type === "audio"
-          ? {
-              id: `${dim.media_2.split("/").pop()}-${Math.random()
-                .toString(36)
-                .substr(2, 9)}`,
-              url: typeof dim.media_2 === "string" ? dim.media_2 : "",
-              type: "audio" as const, // Explicit audio type
-              remarks: (typeof dim.media_2 === "string" ? dim.media_2.split("/").pop() : "") || "",
-            }
-          : undefined,
-    };
-  });
-}, []);
+      const media2Type = dim.media_2 ? getMediaType(dim.media_2) : null;
+      return {
+        floor: dim.floor || "",
+        room: dim.room || "",
+        entity: dim.entity || "",
+        area_name: dim.area_name || "",
+        dimensionsunits: dim.dimensionsunits || "",
+        notes: dim.notes || "",
+        images: formattedImages,
+        media_2:
+          dim.media_2 && media2Type === "audio"
+            ? {
+                id: `${dim.media_2.split("/").pop()}-${Math.random()
+                  .toString(36)
+                  .substr(2, 9)}`,
+                url: typeof dim.media_2 === "string" ? dim.media_2 : "",
+                type: "audio" as const, // Explicit audio type
+                remarks:
+                  (typeof dim.media_2 === "string"
+                    ? dim.media_2.split("/").pop()
+                    : "") || "",
+              }
+            : undefined,
+      };
+    });
+  }, []);
 
   // Memoize formatCustomImages to prevent recreation
   const formatCustomImages = useCallback((customSiteImages: any[]) => {
@@ -366,6 +388,12 @@ const formatDimensionsData = useCallback((siteDimensions: any[]) => {
         } else {
           form.setValue("custom_site_images", []);
         }
+        if (dataToPopulate.custom_measurement_notes) {
+          form.setValue("custom_measurement_notes", dataToPopulate.custom_measurement_notes);
+        }
+        if (dataToPopulate.custom_site_images_notes) {
+          form.setValue("custom_site_images_notes", dataToPopulate.custom_site_images_notes);
+        }
       }
 
       setDataLoaded(true);
@@ -408,9 +436,12 @@ const formatDimensionsData = useCallback((siteDimensions: any[]) => {
           area_name: dim.area_name,
           dimensionsunits: dim.dimensionsunits,
           notes: dim.notes || "",
+          images: JSON.stringify(
+            dim.images?.map((img) => ({ image_url: img.url })) || "[]"
+          ),
           media: JSON.stringify(
             dim.images?.map((img) => ({ image_url: img.url })) || "[]"
-          ), // Convert to JSON string
+          ), // <-- Add this line to satisfy the required 'media' property
           media_2: dim.media_2?.url || "",
         }));
 
@@ -433,6 +464,8 @@ const formatDimensionsData = useCallback((siteDimensions: any[]) => {
           measurement_sketch: measurementSketchUrl,
           site_dimensions: siteDimensionsWithUrls,
           custom_site_images: customSiteImagesWithUrls,
+          custom_measurement_notes: values.custom_measurement_notes,
+          custom_site_images_notes: values.custom_site_images_notes,
         };
 
         if (isUpdateMode && inspection?.name) {
@@ -764,6 +797,13 @@ const formatDimensionsData = useCallback((siteDimensions: any[]) => {
                                               disabled={isReadOnly}
                                               className="bg-white border-gray-300 h-8 text-sm"
                                               {...floorField}
+                                              onChange={(e) => {
+                                                floorField.onChange(
+                                                  capitalizeFirstLetter(
+                                                    e.target.value
+                                                  )
+                                                );
+                                              }}
                                             />
                                           </FormControl>
                                           <FormMessage className="text-xs" />
@@ -784,6 +824,13 @@ const formatDimensionsData = useCallback((siteDimensions: any[]) => {
                                               disabled={isReadOnly}
                                               className="bg-white border-gray-300 h-8 text-sm"
                                               {...roomField}
+                                              onChange={(e) => {
+                                                roomField.onChange(
+                                                  capitalizeFirstLetter(
+                                                    e.target.value
+                                                  )
+                                                );
+                                              }}
                                             />
                                           </FormControl>
                                           <FormMessage className="text-xs" />
@@ -811,6 +858,13 @@ const formatDimensionsData = useCallback((siteDimensions: any[]) => {
                                               disabled={isReadOnly}
                                               className="bg-white border-gray-300 h-8 text-sm"
                                               {...areaNameField}
+                                              onChange={(e) => {
+                                                areaNameField.onChange(
+                                                  capitalizeFirstLetter(
+                                                    e.target.value
+                                                  )
+                                                );
+                                              }}
                                             />
                                           </FormControl>
                                           <FormMessage className="text-xs" />
@@ -835,6 +889,13 @@ const formatDimensionsData = useCallback((siteDimensions: any[]) => {
                                               className="w-full bg-white border border-gray-300 rounded-md p-2 text-sm min-h-[80px] focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                                               rows={3}
                                               {...dimensionsField}
+                                              onChange={(e) => {
+                                                dimensionsField.onChange(
+                                                  capitalizeFirstLetter(
+                                                    e.target.value
+                                                  )
+                                                );
+                                              }}
                                             />
                                           </FormControl>
                                           <FormMessage className="text-xs" />
@@ -919,6 +980,13 @@ const formatDimensionsData = useCallback((siteDimensions: any[]) => {
                                             placeholder="Enter any notes"
                                             {...field}
                                             disabled={isReadOnly}
+                                            onChange={(e) => {
+                                              field.onChange(
+                                                capitalizeFirstLetter(
+                                                  e.target.value
+                                                )
+                                              );
+                                            }}
                                           />
                                           <FormMessage className="text-xs" />
                                         </FormItem>
@@ -979,6 +1047,30 @@ const formatDimensionsData = useCallback((siteDimensions: any[]) => {
                               </FormItem>
                             )}
                           />
+
+                          <FormField
+                            control={form.control}
+                            name="custom_site_images_notes"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-gray-700 text-xs font-medium">
+                                  📝 Notes
+                                </FormLabel>
+                                <textarea
+                                  className="flex h-20 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                  placeholder="Enter any notes"
+                                  {...field}
+                                  disabled={isReadOnly}
+                                  onChange={(e) => {
+                                    field.onChange(
+                                      capitalizeFirstLetter(e.target.value)
+                                    );
+                                  }}
+                                />
+                                <FormMessage className="text-xs" />
+                              </FormItem>
+                            )}
+                          />
                         </AccordionContent>
                       </AccordionItem>
 
@@ -1018,6 +1110,29 @@ const formatDimensionsData = useCallback((siteDimensions: any[]) => {
                               </FormItem>
                             )}
                           />
+                          <FormField
+                            control={form.control}
+                            name="custom_measurement_notes"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-gray-700 text-xs font-medium">
+                                  📝 Notes
+                                </FormLabel>
+                                <textarea
+                                  className="flex h-20 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                  placeholder="Enter any notes"
+                                  {...field}
+                                  disabled={isReadOnly}
+                                  onChange={(e) => {
+                                    field.onChange(
+                                      capitalizeFirstLetter(e.target.value)
+                                    );
+                                  }}
+                                />
+                                <FormMessage className="text-xs" />
+                              </FormItem>
+                            )}
+                          />
                         </AccordionContent>
                       </AccordionItem>
 
@@ -1046,6 +1161,11 @@ const formatDimensionsData = useCallback((siteDimensions: any[]) => {
                                     disabled={isReadOnly}
                                     className="min-h-[100px] bg-white border-gray-300 resize-none"
                                     {...field}
+                                    onChange={(e) => {
+                                      field.onChange(
+                                        capitalizeFirstLetter(e.target.value)
+                                      );
+                                    }}
                                   />
                                 </FormControl>
                                 <FormMessage />

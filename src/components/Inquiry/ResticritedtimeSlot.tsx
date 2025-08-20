@@ -8,6 +8,7 @@ interface RestrictedTimeClockProps {
   minTime: string;
   maxTime: string;
   className?: string;
+  selectedDate?: Date; // Add this new prop
 }
 
 export const RestrictedTimeClock: React.FC<RestrictedTimeClockProps> = ({
@@ -15,7 +16,8 @@ export const RestrictedTimeClock: React.FC<RestrictedTimeClockProps> = ({
   onChange,
   minTime,
   maxTime,
-  className = ""
+  className = "",
+  selectedDate // Add this prop
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedHour, setSelectedHour] = useState<number | null>(null);
@@ -27,6 +29,34 @@ export const RestrictedTimeClock: React.FC<RestrictedTimeClockProps> = ({
   const timeToMinutes = (timeStr: string): number => {
     const [hours, minutes] = timeStr.split(':').map(Number);
     return hours * 60 + minutes;
+  };
+
+  // Helper function to check if selected date is today
+  const isSelectedDateToday = (): boolean => {
+    if (!selectedDate) return true; // Default to today if no date provided
+    const today = new Date();
+    return (
+      selectedDate.getDate() === today.getDate() &&
+      selectedDate.getMonth() === today.getMonth() &&
+      selectedDate.getFullYear() === today.getFullYear()
+    );
+  };
+
+  // Get the next available 15-minute slot from current time
+  const getNextAvailable15MinSlot = (): number => {
+    const now = new Date();
+    const currentMinutes = now.getMinutes();
+    
+    // Find the next 15-minute interval
+    const intervals = [0, 15, 30, 45];
+    let nextInterval = intervals.find(interval => interval > currentMinutes);
+    
+    if (nextInterval === undefined) {
+      // If current time is after 45 minutes, go to next hour at 00
+      nextInterval = 0;
+    }
+    
+    return nextInterval;
   };
 
   // Parse current value
@@ -60,7 +90,7 @@ export const RestrictedTimeClock: React.FC<RestrictedTimeClockProps> = ({
     }
   }, [isOpen]);
 
-  // Generate available hours
+  // Generate available hours - UPDATED LOGIC
   const getAvailableHours = (): number[] => {
     const hours: number[] = [];
     const minMinutes = timeToMinutes(minTime);
@@ -68,46 +98,91 @@ export const RestrictedTimeClock: React.FC<RestrictedTimeClockProps> = ({
     const minHour = Math.floor(minMinutes / 60);
     const maxHour = Math.floor(maxMinutes / 60);
     
+    const now = new Date();
+    const currentHour = now.getHours();
+    const currentMinutes = now.getMinutes();
+    const isToday = isSelectedDateToday();
+    
     for (let h = minHour; h <= maxHour; h++) {
       // Skip 18:00 (6 PM)
       if (h === 18) continue;
-      hours.push(h);
+      
+      // Check if this hour has any valid 15-minute slots (excluding exact maxTime)
+      const intervals = [0, 15, 30, 45];
+      let hasValidSlots = false;
+      
+      for (const minute of intervals) {
+        const totalMinutes = h * 60 + minute;
+        if (totalMinutes >= minMinutes && totalMinutes < maxMinutes) {
+          // Only apply current time restrictions if it's today
+          if (isToday && h === currentHour) {
+            const nextSlot = getNextAvailable15MinSlot();
+            if (currentMinutes > 45) {
+              break; // No future slots in current hour
+            } else if (minute >= nextSlot) {
+              hasValidSlots = true;
+              break;
+            }
+          } else if (!isToday || h > currentHour) {
+            // For future dates or future hours, all slots are available
+            hasValidSlots = true;
+            break;
+          }
+          // Skip past hours entirely when it's today
+        }
+      }
+      
+      if (hasValidSlots) {
+        hours.push(h);
+      }
     }
     return hours;
   };
 
-  // Generate available minutes for selected hour
+  // Generate available minutes for selected hour (15-minute intervals) - UPDATED LOGIC
   const getAvailableMinutes = (hour: number): number[] => {
     const minMinutes = timeToMinutes(minTime);
     const maxMinutes = timeToMinutes(maxTime);
-    const minutes: number[] = [];
-    const hourStart = hour * 60;
-    const hourEnd = (hour + 1) * 60;
+    const intervals = [0, 15, 30, 45];
+    const availableMinutes: number[] = [];
     
-    // Determine the actual start and end minutes for this hour
-    const actualStart = Math.max(minMinutes, hourStart);
-    const actualEnd = Math.min(maxMinutes, hourEnd);
+    const now = new Date();
+    const currentHour = now.getHours();
+    const currentMinutes = now.getMinutes();
+    const isToday = isSelectedDateToday();
     
-    // Generate all minutes (0-59) but only include those within the valid range
-    for (let m = 0; m < 60; m++) {
-      const totalMinutes = hour * 60 + m;
-      if (totalMinutes >= actualStart && totalMinutes < actualEnd) {
-        minutes.push(m);
+    for (const minute of intervals) {
+      const totalMinutes = hour * 60 + minute;
+      
+      // Check if within the allowed time range (exclude exact maxTime)
+      if (totalMinutes >= minMinutes && totalMinutes < maxMinutes) {
+        // Only apply current time restrictions if it's today
+        if (isToday && hour === currentHour) {
+          const nextSlot = getNextAvailable15MinSlot();
+          if (currentMinutes > 45) {
+            // If current time is past 45 minutes, no slots available in current hour
+            continue;
+          } else if (minute >= nextSlot) {
+            availableMinutes.push(minute);
+          }
+        } else if (!isToday || hour > currentHour) {
+          // For future dates or future hours, all intervals are available
+          availableMinutes.push(minute);
+        }
+        // Skip past hours entirely when it's today
       }
     }
     
-    return minutes;
+    return availableMinutes;
   };
 
   const handleHourSelect = (hour: number) => {
     setSelectedHour(hour);
     const availableMinutes = getAvailableMinutes(hour);
     
-    // Automatically select 00 minutes if available, otherwise select the first available minute
+    // Automatically select the first available minute
     let initialMinute = 0;
-    if (availableMinutes.includes(0)) {
-      initialMinute = 0;
-    } else if (availableMinutes.length > 0) {
+    if (availableMinutes.length > 0) {
       initialMinute = availableMinutes[0];
     }
     
