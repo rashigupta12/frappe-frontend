@@ -14,6 +14,8 @@ interface JobType {
 }
 
 interface InquiryData {
+  custom_property_type: string;
+  custom_property_category: string;
   custom_jobtype?: JobType[];
   custom_project_urgency?: string;
   lead_name?: string;
@@ -239,10 +241,13 @@ const MobileInspectionList = ({ userEmail }: InspectionListProps) => {
                       <span className="text-sm ">
                         {getPriorityIcon(todo.priority || "")}
                       </span>
-                      <span className="text-sm">{todo.date && formatDate(todo.date)}</span>
-                      
                       <span className="text-sm">
-                        ({todo.custom_start_time &&
+                        {todo.date && formatDate(todo.date)}
+                      </span>
+
+                      <span className="text-sm">
+                        (
+                        {todo.custom_start_time &&
                           formatTime(todo.custom_start_time)}
                       </span>
                       {todo.custom_end_time && (
@@ -255,8 +260,10 @@ const MobileInspectionList = ({ userEmail }: InspectionListProps) => {
                       )}
                     </div>
                     <div className="flex items-center space-x-2 text-xs lg:text-sm text-gray-500">
-                      
-                      <span className="text-gray-600" style={{ whiteSpace: 'pre-line' }}>
+                      <span
+                        className="text-gray-600"
+                        style={{ whiteSpace: "pre-line" }}
+                      >
                         {todo.inquiry_data?.custom_jobtype
                           ?.map((j) => j.job_type)
                           .join("\n") || "N/A"}
@@ -309,8 +316,17 @@ const MobileInspectionList = ({ userEmail }: InspectionListProps) => {
                   <div className="pt-1 border-t border-gray-100 text-sm">
                     <div className="flex items-center space-x-1">
                       <span className="text-gray-400">📍</span>
-                      <span className="text-gray-600 text-xs font-semibold">
+                      {/* <span className="text-gray-600 text-xs font-semibold">
                         {todo.inquiry_data.custom_property_area}
+                      </span> */}
+                      <span className="text-gray-600 text-xs font-semibold">
+                        {[
+                          todo.inquiry_data?.custom_property_area,
+                          todo.inquiry_data?.custom_property_category,
+                          todo.inquiry_data?.custom_property_type,
+                        ]
+                          .filter(Boolean)
+                          .join(", ") || "N/A"}
                       </span>
                     </div>
                   </div>
