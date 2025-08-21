@@ -366,18 +366,30 @@ const InquiryPage = () => {
               >
                 <div className="flex justify-between items-start gap-2">
                   <div className="flex items-start gap-2 min-w-0 flex-1">
-                    <div className="bg-emerald-100/50 text-emerald-800 rounded-md p-1.5 mt-0.5 flex-shrink-0 ">
+                    <div className="bg-emerald-100/50 text-emerald-800 rounded-md p-1.5 mt-0.5 flex-shrink-0">
                       <User className="h-4 w-4 lg:h-4 lg:w-4" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
-                        <h4 className="font-semibold text-sm text-gray-800 truncate group-hover:text-emerald-700 transition-colors">
+                      {/* Mobile: Stack vertically, Desktop: Better layout */}
+                      <div className="sm:hidden">
+                        {/* Mobile Layout - Stack vertically */}
+                        <h4 className="font-semibold text-sm text-gray-800 truncate group-hover:text-emerald-700 transition-colors mb-1">
                           {inquiry.lead_name.charAt(0).toUpperCase() +
                             inquiry.lead_name.slice(1)}
                         </h4>
-
-                        <div className="self-start sm:self-auto">
-                          <JobTypeBadges inquiry={inquiry} maxVisible={2} />
+                        <JobTypeBadges inquiry={inquiry} maxVisible={2} />
+                      </div>
+                      
+                      <div className="hidden sm:block">
+                        {/* Desktop Layout - Name always visible, job types below */}
+                        <div className="mb-2">
+                          <h4 className="font-semibold text-sm lg:text-base text-gray-800 truncate group-hover:text-emerald-700 transition-colors">
+                            {inquiry.lead_name.charAt(0).toUpperCase() +
+                              inquiry.lead_name.slice(1)}
+                          </h4>
+                        </div>
+                        <div className="flex flex-wrap gap-1">
+                          <JobTypeBadges inquiry={inquiry} maxVisible={3} />
                         </div>
                       </div>
                     </div>

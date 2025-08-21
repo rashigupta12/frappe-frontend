@@ -484,16 +484,16 @@ const saveLead = async (): Promise<string | undefined> => {
   } catch (err) {
     console.error("Error saving lead:", err);
     
-    // Handle specific timestamp errors
-    let errorMessage = "Failed to save inquiry. Please try again.";
-    if (err && typeof err === "object" && "message" in err) {
-      const errorMsg = (err as { message: string }).message;
-      if (errorMsg.includes("TimestampMismatchError") || errorMsg.includes("Document has been modified")) {
-        errorMessage = "The document has been modified. Please refresh the form and try again.";
-      }
-    }
+    // // Handle specific timestamp errors
+    // let errorMessage = "Failed to save inquiry. Please try again.";
+    // if (err && typeof err === "object" && "message" in err) {
+    //   const errorMsg = (err as { message: string }).message;
+    //   if (errorMsg.includes("TimestampMismatchError") || errorMsg.includes("Document has been modified")) {
+    //     errorMessage = "The document has been modified. Please refresh the form and try again.";
+    //   }
+    // }
     
-    toast.error(errorMessage);
+    toast.error("Failed to save inquiry. Please try again.");
     return undefined;
   }
 };
@@ -1107,22 +1107,9 @@ const handleSaveCustomer = async () => {
     
   } catch (error) {
     console.error("Error saving lead:", error);
-    let errorMessage = `Failed to ${
-      modalMode === "create" ? "create" : "update"
-    } lead. Please try again.`;
+   
     
-    if (error && typeof error === "object" && "message" in error) {
-      const errorMsg = (error as { message: string }).message;
-      if (errorMsg.includes("TimestampMismatchError") || errorMsg.includes("Document has been modified")) {
-        errorMessage = "The document has been modified by another user. Please refresh and try again.";
-      } else {
-        errorMessage = errorMsg;
-      }
-    } else if (error && typeof error === "object" && "error" in error) {
-      errorMessage = (error as { error: string }).error;
-    }
-    
-    toast.error(errorMessage);
+    toast.error("Failed to save customer");
   } finally {
     setIsCreatingCustomer(false);
   }
@@ -1691,9 +1678,9 @@ const handleSaveCustomer = async () => {
                           </div>
                           {date && (
                             <div className="space-y-2">
-                              <Label className="text-gray-700 text-md font-medium mb-1">
+                              {/* <Label className="text-gray-700 text-md font-medium mb-1">
                                 Inspector Selected
-                              </Label>
+                              </Label> */}
                               <div className="flex items-center justify-between">
                                 {selectedInspector ? (
                                   <div className="flex items-center gap-2">

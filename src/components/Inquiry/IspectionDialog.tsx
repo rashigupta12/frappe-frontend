@@ -460,10 +460,10 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
           const selectedDate = new Date(data.date);
           setDate(selectedDate);
 
-          // Fetch availability for edit mode
-          if (data.allocated_to) {
-            fetchInspectorAvailability(data.allocated_to, data.date);
-          }
+          // // Fetch availability for edit mode
+          // if (data.allocated_to) {
+          //   fetchInspectorAvailability(data.allocated_to, data.date);
+          // }
         }
         if (data?.custom_start_time) {
           const startTime = data.custom_start_time.split(" ")[1].slice(0, 5);
@@ -858,78 +858,86 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
       return true; // Assume conflict to be safe
     }
   };
-  const handleAssign = async () => {
-    // First validate required fields in create mode
-    if (mode === "create") {
-      const validation = validateRequiredFields(inquiryData);
-      if (!validation.isValid) {
-        const missingFieldNames = validation.missingFields
-          .map((field) => {
-            switch (field) {
-              case "custom_property_area":
-                return "Property Address";
-              case "lead_name":
-                return "Customer Name";
-              case "mobile_no":
-                return "Phone Number";
-              case "custom_job_type":
-                return "Job Type";
-              case "custom_project_urgency":
-                return "Urgency";
-              default:
-                return field;
-            }
-          })
-          .join(", ");
+const handleAssign = async () => {
+  // First validate required fields in create mode
+  if (mode === "create") {
+    const validation = validateRequiredFields(inquiryData);
+    if (!validation.isValid) {
+      const missingFieldNames = validation.missingFields
+        .map((field) => {
+          switch (field) {
+            case "custom_property_area":
+              return "Property Address";
+            case "lead_name":
+              return "Customer Name";
+            case "mobile_no":
+              return "Phone Number";
+            case "custom_job_type":
+              return "Job Type";
+            case "custom_project_urgency":
+              return "Urgency";
+            default:
+              return field;
+          }
+        })
+        .join(", ");
 
-        toast.error(`Please complete the information: ${missingFieldNames}`);
-        return;
-      }
+      toast.error(`Please complete the information: ${missingFieldNames}`);
+      return;
+    }
+  }
+
+  // Check if time-related fields have been modified in edit mode
+  const timeFieldsModified = mode === "edit" 
+    ? (requestedTime !== originalStartTime || 
+       (date && format(date, "yyyy-MM-dd") !== data.date) ||
+       selectedInspector?.email !== originalInspectorEmail)
+    : true; // Always validate in create mode
+
+  // Only validate time against slot if time fields were actually modified
+  if (timeFieldsModified && requestedTime && duration) {
+    if (!validateTimeAgainstSlot(requestedTime, duration, true)) {
+      return; // Stop if validation fails
+    }
+  }
+
+  if (mode === "create") {
+    if (!selectedInspector) {
+      toast.error("Please select an inspector");
+      return;
     }
 
-    // Final validation with toast (only once during submission)
-    if (requestedTime && duration) {
-      if (!validateTimeAgainstSlot(requestedTime, duration, true)) {
-        return; // Stop if validation fails
+    if (!validateRequestedTime()) {
+      // Show specific error message based on the issue
+      const requestedMinutes = timeToMinutes(requestedTime);
+      const slotStart = timeToMinutes(selectedSlot!.start);
+      const slotEnd = timeToMinutes(selectedSlot!.end);
+      const durationMinutes = Math.round(parseFloat(duration) * 60);
+
+      if (requestedMinutes < slotStart || requestedMinutes >= slotEnd) {
+        toast.error(
+          `Requested time must be within the selected slot (${
+            selectedSlot!.start
+          } - ${selectedSlot!.end})`
+        );
+      } else if (requestedMinutes + durationMinutes > slotEnd) {
+        toast.error(
+          `End time exceeds the selected slot's end time (${
+            selectedSlot!.end
+          }). Reduce duration or choose a different time.`
+        );
       }
+      return;
     }
 
-    if (mode === "create") {
-      if (!selectedInspector) {
-        toast.error("Please select an inspector");
-        return;
-      }
-
-      if (!validateRequestedTime()) {
-        // Show specific error message based on the issue
-        const requestedMinutes = timeToMinutes(requestedTime);
-        const slotStart = timeToMinutes(selectedSlot!.start);
-        const slotEnd = timeToMinutes(selectedSlot!.end);
-        const durationMinutes = Math.round(parseFloat(duration) * 60);
-
-        if (requestedMinutes < slotStart || requestedMinutes >= slotEnd) {
-          toast.error(
-            `Requested time must be within the selected slot (${
-              selectedSlot!.start
-            } - ${selectedSlot!.end})`
-          );
-        } else if (requestedMinutes + durationMinutes > slotEnd) {
-          toast.error(
-            `End time exceeds the selected slot's end time (${
-              selectedSlot!.end
-            }). Reduce duration or choose a different time.`
-          );
-        }
-        return;
-      }
-
-      if (!data?.name) {
-        toast.error("Invalid inquiry data");
-        return;
-      }
+    if (!data?.name) {
+      toast.error("Invalid inquiry data");
+      return;
     }
+  }
 
-    // Check for assignment conflicts before proceeding
+  // Check for assignment conflicts before proceeding - only if time fields were modified
+  if (timeFieldsModified) {
     if (!date || !requestedTime) {
       toast.error("Please select date and time");
       return;
@@ -954,14 +962,15 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
         return; // Stop execution if conflict is found
       }
     }
+  }
 
-    // Proceed with existing checks
-    if (mode === "create") {
-      setShowConfirmation(true);
-    } else {
-      await proceedWithAssignment();
-    }
-  };
+  // Proceed with existing checks
+  if (mode === "create") {
+    setShowConfirmation(true);
+  } else {
+    await proceedWithAssignment();
+  }
+};
 
   const proceedWithAssignment = async () => {
     setShowConfirmation(false);
@@ -1415,7 +1424,7 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
                       className="text-sm h-8 rounded-r-none"
                       disabled={isProcessing}
                     />
-                    <span className="flex items-center justify-center px-3 text-xs text-gray-700 border border-l-0 rounded-r-md bg-gray-50">
+                    <span className="flex items-center justify-center px-1 text-xs text-gray-800 border rounded-r-md bg-white">
                       Hrs
                     </span>
                   </div>

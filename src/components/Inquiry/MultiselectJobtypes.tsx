@@ -197,10 +197,21 @@ export const MultiSelectJobTypes = ({
         />
         
         {/* Dropdown indicator */}
-        <ChevronDown 
-          className={`h-4 w-4 text-gray-600 transition-transform ${isOpen ? 'rotate-180' : ''} cursor-pointer`}
-          onClick={handleChevronClick}
-        />
+       
+
+{/* Dropdown indicator */}
+{isOpen ? (
+  <X 
+    className="h-4 w-4 text-gray-600 cursor-pointer"
+    onClick={handleChevronClick}
+  />
+) : (
+  <ChevronDown 
+    className="h-4 w-4 text-gray-600 cursor-pointer"
+    onClick={handleChevronClick}
+  />
+)}
+
       </div>
       
       {/* Dropdown menu */}

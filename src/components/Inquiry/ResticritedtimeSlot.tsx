@@ -68,71 +68,25 @@ export const RestrictedTimeClock: React.FC<RestrictedTimeClockProps> = ({
     }
   }, [value]);
 
-  // Improved position calculation with better viewport handling
-  const updatePosition = () => {
-    if (!triggerRef.current) return;
-    
-    const rect = triggerRef.current.getBoundingClientRect();
-    const viewportHeight = window.innerHeight;
-    const viewportWidth = window.innerWidth;
-    const dropdownHeight = 220; // Approximate height of dropdown with padding
-    const dropdownWidth = 200; // Width of dropdown
-    const padding = 10; // Minimum distance from viewport edges
-    
-    let top = rect.bottom + window.scrollY + 4; // Small gap below trigger
-    let left = rect.left + window.scrollX;
-    
-    // Check if dropdown would go below visible viewport
-    if (rect.bottom + dropdownHeight > viewportHeight) {
-      // Position above the trigger instead
-      top = rect.top + window.scrollY - dropdownHeight - 4;
-    }
-    
-    // Ensure dropdown doesn't go above the document
-    if (top < window.scrollY + padding) {
-      top = window.scrollY + padding;
-    }
-    
-    // Check horizontal positioning
-    if (left + dropdownWidth > viewportWidth - padding) {
-      left = viewportWidth - dropdownWidth - padding;
-    }
-    if (left < padding) {
-      left = padding;
-    }
-    
-    setPosition({
-      top: Math.max(window.scrollY + padding, top),
-      left: Math.max(padding, left),
-      width: rect.width
-    });
-  };
-
-  // Update position when opening and on scroll/resize
+  // Update position when opening
   useEffect(() => {
-    if (isOpen) {
-      updatePosition();
+    if (isOpen && triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect();
+      const viewportHeight = window.innerHeight;
+      const dropdownHeight = 200; // Approximate height of dropdown
       
-      const handleScroll = () => {
-        if (isOpen) {
-          updatePosition();
-        }
-      };
+      let top = rect.bottom + window.scrollY;
       
-      const handleResize = () => {
-        if (isOpen) {
-          updatePosition();
-        }
-      };
+      // If dropdown would go below viewport, position it above the trigger
+      if (rect.bottom + dropdownHeight > viewportHeight) {
+        top = rect.top + window.scrollY - dropdownHeight;
+      }
       
-      // Listen for scroll events on window and all scrollable parents
-      window.addEventListener('scroll', handleScroll, true);
-      window.addEventListener('resize', handleResize);
-      
-      return () => {
-        window.removeEventListener('scroll', handleScroll, true);
-        window.removeEventListener('resize', handleResize);
-      };
+      setPosition({
+        top: Math.max(10, top), // Ensure it's not too close to top edge
+        left: rect.left + window.scrollX,
+        width: rect.width
+      });
     }
   }, [isOpen]);
 
@@ -284,7 +238,7 @@ export const RestrictedTimeClock: React.FC<RestrictedTimeClockProps> = ({
         
         {/* Clock Interface */}
         <div 
-          className="fixed bg-white border border-gray-200 rounded-lg shadow-xl z-50 p-4 w-48 max-h-80"
+          className="fixed bg-white border border-gray-200 rounded-lg shadow-lg z-50 p-4 w-48"
           style={{
             top: `${position.top}px`,
             left: `${position.left}px`,
@@ -294,17 +248,17 @@ export const RestrictedTimeClock: React.FC<RestrictedTimeClockProps> = ({
         >
           <div className="grid grid-cols-2 gap-4">
             {/* Hours Column */}
-            <div className="flex flex-col">
+            <div>
               <h4 className="text-xs font-medium text-gray-600 mb-2 text-center">Hours</h4>
-              <div className="max-h-36 overflow-y-auto border rounded-md bg-gray-50">
+              <div className="max-h-40 overflow-y-auto border rounded-md">
                 {getAvailableHours().map((hour) => (
                   <button
                     key={hour}
                     type="button"
-                    className={`w-full py-2 text-sm hover:bg-gray-100 transition-colors border-b border-gray-200 last:border-b-0 ${
+                    className={`w-full py-2 text-sm hover:bg-gray-100 transition-colors ${
                       selectedHour === hour 
                         ? 'bg-emerald-100 text-emerald-700 font-medium' 
-                        : 'text-gray-700 bg-white'
+                        : 'text-gray-700'
                     }`}
                     onClick={() => handleHourSelect(hour)}
                   >
@@ -315,18 +269,18 @@ export const RestrictedTimeClock: React.FC<RestrictedTimeClockProps> = ({
             </div>
 
             {/* Minutes Column */}
-            <div className="flex flex-col">
+            <div>
               <h4 className="text-xs font-medium text-gray-600 mb-2 text-center">Minutes</h4>
-              <div className="max-h-36 overflow-y-auto border rounded-md bg-gray-50">
+              <div className="max-h-40 overflow-y-auto border rounded-md">
                 {selectedHour !== null ? (
                   getAvailableMinutes(selectedHour).map((minute) => (
                     <button
                       key={minute}
                       type="button"
-                      className={`w-full px-2 py-2 text-sm hover:bg-gray-100 transition-colors border-b border-gray-200 last:border-b-0 ${
+                      className={`w-full px-2 py-1.5 text-sm hover:bg-gray-100 transition-colors ${
                         selectedMinute === minute 
                           ? 'bg-emerald-100 text-emerald-700 font-medium' 
-                          : 'text-gray-700 bg-white'
+                          : 'text-gray-700'
                       }`}
                       onClick={() => handleMinuteSelect(minute)}
                     >
@@ -334,7 +288,7 @@ export const RestrictedTimeClock: React.FC<RestrictedTimeClockProps> = ({
                     </button>
                   ))
                 ) : (
-                  <div className="px-3 py-8 text-xs text-gray-500 text-center bg-white">
+                  <div className="px-3 py-2 text-xs text-gray-500 text-center">
                     Select hour first
                   </div>
                 )}

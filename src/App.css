@@ -71,3 +71,23 @@ input[type="time"]::-webkit-inner-spin-button {
 .scrollbar-hide {
   scrollbar-width: none; /* Firefox */
 }
+
+/* Ensure toast container is properly positioned */
+.react-hot-toast-container {
+  z-index: 9999 !important;
+  position: fixed !important;
+}
+
+/* Mobile responsiveness */
+@media (max-height: 600px) {
+  .react-hot-toast-container[data-position*="top"] {
+    top: 10px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .react-hot-toast {
+    max-width: calc(100vw - 32px) !important;
+    margin: 0 16px !important;
+  }
+}

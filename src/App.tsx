@@ -325,21 +325,43 @@ function App() {
           <AppRoutes />
           <Toaster
             position="top-right"
+            containerStyle={{
+              top: 20,
+              right: 20,
+              zIndex: 9999, // Ensure it's above other elements
+            }}
             toastOptions={{
               className: "",
               style: {
                 border: "1px solid #713200",
-                padding: "20px",
+                padding: "16px", // Reduced padding for smaller screens
                 color: "#713200",
+                fontSize: "14px", // Ensure readable size
+                maxWidth: "350px", // Prevent overly wide toasts
+                wordBreak: "break-word", // Handle long text
+                zIndex: 9999,
               },
               success: {
                 className:
-                  "border border-green-500 bg-green-100 text-green-700",
+                  "border border-green-500  text-green-700",
+                style: {
+                  border: "1px solid #22c55e",
+                  // backgroundColor: "#dcfce7",
+                  color: "#15803d",
+                },
               },
               error: {
-                className: "border border-red-500 bg-red-100 text-red-700",
+                className: "border border-red-500 text-red-700",
+                style: {
+                  border: "1px solid #ef4444",
+                  // backgroundColor: "#fee2e2",
+                  color: "#dc2626",
+                },
               },
+              duration: 4000, // Auto-dismiss after 4 seconds
             }}
+            // Additional options for better mobile experience
+            gutter={8} // Space between toasts
           />
         </div>
       </LeadsProvider>

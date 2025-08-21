@@ -867,9 +867,9 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
           uploadedItems.push(mediaItem);
         } catch (error) {
           console.error(`Error uploading ${file.name}:`, error);
-          const errorMsg =
-            error instanceof Error ? error.message : "Upload failed";
-          toast.error(`Failed to upload ${file.name}: ${errorMsg}`);
+          // const errorMsg =
+          //   error instanceof Error ? error.message : "Upload failed";
+          toast.error(`Failed to upload ${file.name}`);
         }
       }
 
@@ -929,8 +929,8 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
       toast.success("Audio recording uploaded successfully!");
     } catch (error) {
       console.error("Audio upload error:", error);
-      const errorMsg = error instanceof Error ? error.message : String(error);
-      toast.error(`Failed to upload audio recording: ${errorMsg}`);
+      // const errorMsg = error instanceof Error ? error.message : String(error);
+      toast.error(`Failed to upload audio recording`);
     } finally {
       setIsUploading(false);
       setUploadProgress(0);
@@ -969,8 +969,7 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
       toast.success("Video recording uploaded successfully!");
     } catch (error) {
       console.error("Video upload error:", error);
-      const errorMsg = error instanceof Error ? error.message : String(error);
-      toast.error(`Failed to upload video recording: ${errorMsg}`);
+      toast.error(`Failed to upload video recording`);
     } finally {
       setIsUploading(false);
       setUploadProgress(0);

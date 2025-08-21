@@ -526,9 +526,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
     } catch (error) {
       console.error("Error creating customer:", error);
       toast.error(
-        error instanceof Error
-          ? error.message
-          : "Failed to create customer. Please try again."
+        "Failed to create customer. Please try again."
       );
     } finally {
       setCreatingCustomer(false);
