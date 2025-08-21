@@ -1266,6 +1266,7 @@ const handleAssign = async () => {
               </Label> */}
               <div className="flex items-center justify-between">
                 {selectedInspector ? (
+                  console.log("inspectordetails" , selectedInspector),
                   <div className="flex items-center gap-2">
                     <div>
                       <div className="font-medium text-sm">
@@ -1277,10 +1278,13 @@ const handleAssign = async () => {
                     </div>
                   </div>
                 ) : mode === "edit" && data?.allocated_to ? (
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 bg-gray-50">
                     <div>
-                      <div className="text-xs text-gray-500">
-                        {data.allocated_to}
+                      <div className="text-md text-gray-900 font-medium">
+                        {/* {data.allocated_to} */}
+                        {/* {currentInspectorDetails?.full_name ||
+                          data.allocated_to} */}
+                          Update Inspector
                       </div>
                     </div>
                   </div>
