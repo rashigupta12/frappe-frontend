@@ -394,6 +394,7 @@ const PaymentImageUpload: React.FC<PaymentImageUploadProps> = ({
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showCamera, setShowCamera] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  console.log(images)
 
   // Counter for generating truly unique IDs
   const [idCounter, setIdCounter] = useState(0);

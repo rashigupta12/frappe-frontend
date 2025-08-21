@@ -123,13 +123,14 @@ const FeedbackForm: React.FC<{
       // Convert existing images to ImageItem format
       const convertedImages: ImageItem[] =
         editingFeedback.custom_images?.map((img, index) => {
+          console.log("Image data:", img);
           let url = img.image;
           // Handle different URL formats from API
           if (url.startsWith("//")) {
             url = `https:${url}`;
           } else if (url.startsWith("/") && !url.startsWith("//")) {
             // For relative URLs like "/private/files/..."
-            url = `${window.location.origin}${url}`;
+            url = `${url}`;
           } else if (!url.startsWith("http")) {
             url = `/${url}`;
           }
@@ -512,7 +513,7 @@ const FeedbackList: React.FC<{
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="bg-gradient-to-r from-emerald-500 to-blue-500 text-white p-6">
+        <div className="bg-emerald-500  text-white p-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <MessageCircle className="h-6 w-6" />

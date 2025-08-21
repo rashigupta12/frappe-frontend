@@ -98,6 +98,7 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
     useState<InspectorDetails | null>(null);
   const [isLoadingInspectorDetails, setIsLoadingInspectorDetails] =
     useState(false);
+    console.log("inquiry" , data)
   // const [showEndTimeWarning, setShowEndTimeWarning] = useState(false);
 
   // Helper function to check if selected date is today
@@ -1132,7 +1133,7 @@ const handleAssign = async () => {
                     {[
                       inquiryData.lead_name,
                       inquiryData.mobile_no,
-                      inquiryData.email,
+                      inquiryData.email_id,
                     ]
                       .filter(Boolean)
                       .join(" | ")}
@@ -1182,6 +1183,8 @@ const handleAssign = async () => {
                   {[
                     inquiryData?.custom_building_name,
                     inquiryData?.custom_property_area,
+                    inquiryData?.custom_property_category,
+                    inquiryData?.custom_property_type,
                   ]
                     .filter(Boolean)
                     .join(", ") || "N/A"}
