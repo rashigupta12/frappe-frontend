@@ -543,12 +543,14 @@ const MobileSiteInspectionList = ({ userEmail }: InspectionListProps) => {
                 <div className="pt-2 border-t border-gray-100 flex items-center justify-between">
                   <div className="flex items-center space-x-2">
                     <span className="text-xs lg:text-sm text-gray-500">
-                      Modified:{" "}
-                      {new Date(inspection.modified).toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                      })}
-                    </span>
+  Modified:{" "}
+  {new Date(inspection.modified).toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  })}
+</span>
+
                     {inspection.follow_up_required === 1 && (
                       <span className="px-1.5 py-0.5 bg-yellow-100 text-yellow-800 text-xs lg:text-sm rounded-full">
                         Follow-up
