@@ -80,7 +80,6 @@
 //   );
 // };
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { Check, ChevronDown, X } from "lucide-react";
@@ -137,6 +136,15 @@ export const MultiSelectJobTypes = ({
     }
   };
 
+  const handleChevronClick = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent triggering the input click event
+    setIsOpen(!isOpen);
+    
+    if (!isOpen && inputRef.current) {
+      inputRef.current.focus();
+    }
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInputValue(e.target.value);
   };
@@ -158,12 +166,7 @@ export const MultiSelectJobTypes = ({
     <div className="relative" ref={dropdownRef}>
       <div
         className="flex flex-wrap gap-2 min-h-10 w-full items-center rounded-md border border-gray-800 bg-white px-3 py-2 text-md cursor-text hover:bg-gray-50"
-        onClick={() => {
-          handleInputClick();
-          if (inputRef.current) {
-            inputRef.current.focus();
-          }
-        }}
+        onClick={handleInputClick}
       >
         {/* Selected job types as chips */}
         {selectedJobTypes.map((jobType) => (
@@ -195,7 +198,8 @@ export const MultiSelectJobTypes = ({
         
         {/* Dropdown indicator */}
         <ChevronDown 
-          className={`h-4 w-4 text-gray-600 transition-transform ${isOpen ? 'rotate-180' : ''}`} 
+          className={`h-4 w-4 text-gray-600 transition-transform ${isOpen ? 'rotate-180' : ''} cursor-pointer`}
+          onClick={handleChevronClick}
         />
       </div>
       

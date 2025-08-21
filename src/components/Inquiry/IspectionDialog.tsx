@@ -535,26 +535,36 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
   };
 
   const handleDateSelect = (selectedDate: Date | undefined) => {
-    setDate(selectedDate);
-    setSelectedInspector(null);
-    setSelectedSlot(null);
+  setDate(selectedDate);
+  setSelectedInspector(null);
+  setSelectedSlot(null);
 
-    // Close the calendar popover first
-    setCalendarOpen(false);
+  // Close the calendar popover first
+  setCalendarOpen(false);
 
-    if (selectedDate && mode === "create") {
-      // Use a longer delay to ensure popover is fully closed
+  // Auto-open availability modal for both create and edit modes
+  if (selectedDate) {
+    // For create mode - always open modal
+    if (mode === "create") {
       setTimeout(() => {
         setShowAvailabilityModal(true);
       }, 500);
     }
-
-    // For edit mode, fetch availability when date changes
-    if (selectedDate && mode === "edit" && data?.allocated_to) {
-      const dateStr = format(selectedDate, "yyyy-MM-dd");
-      fetchInspectorAvailability(data.allocated_to, dateStr);
+    
+    // For edit mode - fetch availability and open modal
+    if (mode === "edit") {
+      if (data?.allocated_to) {
+        const dateStr = format(selectedDate, "yyyy-MM-dd");
+        fetchInspectorAvailability(data.allocated_to, dateStr);
+      }
+      
+      // Auto-open modal in edit mode too
+      setTimeout(() => {
+        setShowAvailabilityModal(true);
+      }, 500);
     }
-  };
+  }
+};
 
   const handleInspectorSelect = (
     email: string,
@@ -650,7 +660,6 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
       if (!isWithinAvailableSlot && showToast) {
         toast.error(
           "Selected time must be within inspector's available slots",
-          { duration: 900 }
         );
       }
 
@@ -1083,7 +1092,7 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 py-20">
       <div className="bg-white rounded-lg w-full max-w-2xl shadow-xl relative max-h-[95vh] overflow-y-auto">
         <div className="bg-emerald-600 p-3 text-white rounded-t-lg sticky top-0 z-10">
           <div className="flex justify-between items-center">
@@ -1382,7 +1391,7 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
                     </div>
                   )} */}
                 </div>
-                <div className="space-y-1">
+                <div className="space-y-1 w-full">
                   <Label className="text-xs text-gray-600">Duration *</Label>
                   <div className="flex w-full">
                     <Input
@@ -1406,7 +1415,7 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
                       className="text-sm h-8 rounded-r-none"
                       disabled={isProcessing}
                     />
-                    <span className="flex items-center justify-center px-1 text-xs text-gray-800 border rounded-r-md bg-white">
+                    <span className="flex items-center justify-center px-3 text-xs text-gray-700 border border-l-0 rounded-r-md bg-gray-50">
                       Hrs
                     </span>
                   </div>

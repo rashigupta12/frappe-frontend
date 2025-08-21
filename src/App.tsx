@@ -329,7 +329,7 @@ function App() {
               className: "",
               style: {
                 border: "1px solid #713200",
-                padding: "16px",
+                padding: "20px",
                 color: "#713200",
               },
               success: {

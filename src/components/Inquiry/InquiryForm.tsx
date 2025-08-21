@@ -1127,73 +1127,6 @@ const handleSaveCustomer = async () => {
     setIsCreatingCustomer(false);
   }
 };
-
-// // Add this function to your InquiryForm component
-// // Add this function to your InquiryForm component
-// const refreshInquiryData = async (leadId: string) => {
-//   try {
-//     const refreshedInquiry = await frappeAPI.makeAuthenticatedRequest(
-//       "GET",
-//       `/api/resource/Lead/${leadId}`
-//     );
-
-//     if (!refreshedInquiry?.data) {
-//       throw new Error("Could not fetch refreshed inquiry data");
-//     }
-
-//     // Convert API response custom_jobtype format to form format
-//     const convertedJobTypes = Array.isArray(refreshedInquiry.data.custom_jobtype)
-//       ? refreshedInquiry.data.custom_jobtype.map((item: any) => 
-//           typeof item === 'string' ? item : item.job_type
-//         )
-//       : [];
-
-//     // Update formData with complete refreshed inquiry data
-//     const refreshedData: LeadFormData = {
-//       ...defaultFormData,
-//       ...refreshedInquiry.data,
-//       custom_jobtype: convertedJobTypes, // Ensure this is string[]
-//       custom_preferred_inspection_date: refreshedInquiry.data.custom_preferred_inspection_date
-//         ? new Date(refreshedInquiry.data.custom_preferred_inspection_date)
-//         : null,
-//     };
-
-//     setFormData(refreshedData);
-
-//     // Update date if it exists
-//     if (refreshedInquiry.data.custom_preferred_inspection_date) {
-//       setDate(new Date(refreshedInquiry.data.custom_preferred_inspection_date));
-//     }
-
-//     // Update reference input visibility
-//     setShowReferenceInput(
-//       refreshedInquiry.data.source === "Reference" ||
-//       refreshedInquiry.data.source === "Supplier Reference"
-//     );
-
-//     // Update selected customer data
-//     if (refreshedInquiry.data.lead_name) {
-//       const updatedCustomer = {
-//         customer_name: refreshedInquiry.data.lead_name,
-//         mobile_no: refreshedInquiry.data.mobile_no || "+971 ",
-//         email_id: refreshedInquiry.data.email_id || "",
-//         name: refreshedInquiry.data.name || "",
-//         lead_name: refreshedInquiry.data.name,
-//       };
-//       setSelectedCustomer(updatedCustomer);
-//       setSearchQuery(refreshedInquiry.data.lead_name);
-//     }
-
-//     console.log("Inquiry form refreshed with latest data");
-//     return refreshedData;
-//   } catch (error) {
-//     console.error("Error refreshing inquiry data:", error);
-//     toast.error("Failed to refresh inquiry data");
-//     throw error;
-//   }
-// };
-
-
   const validateRequestedTime = () => {
     if (!requestedTime || !selectedSlot) return false;
 
@@ -1857,7 +1790,7 @@ const handleSaveCustomer = async () => {
                                   <Label className="text-xs text-gray-600">
                                     Duration *
                                   </Label>
-                                  <div className="flex w-full max-w-xs">
+                                  <div className="flex w-full ">
                                     <Input
                                       type="number"
                                       step="0.5"
@@ -1888,7 +1821,7 @@ const handleSaveCustomer = async () => {
                                         }));
                                       }}
                                       placeholder="1.5"
-                                      className="text-sm h-8 rounded-r-none"
+                                      className="text-sm h-8 rounded-r-none "
                                     />
                                     <span className="flex items-center justify-center px-3 text-xs text-gray-700 border border-l-0 rounded-r-md bg-gray-50">
                                       Hrs
