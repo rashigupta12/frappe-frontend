@@ -1518,7 +1518,7 @@ const handleSaveCustomer = async () => {
 
                             <div className="relative">
                               {selectedCustomer ? (
-                                <div className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 flex items-center justify-between">
+                                <div className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 flex items-center justify-between capitalize">
                                   <div className="flex-1 text-sm">
                                     <span className="font-medium">
                                       {selectedCustomer.customer_name}
