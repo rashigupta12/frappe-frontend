@@ -661,14 +661,43 @@ const handleSaveAddress = () => {
                      address.custom_combined_address ||
                       generateCombinedAddress(address)}
                   </p>
-                  <div className="text-xs text-gray-500 mt-1 flex items-start">
-                    <Home className="h-3 w-3 mr-1 flex-shrink-0 mt-0.5" />
-                    <span className="break-all">
-                      {address.custom_combined_address ||
-                        generateCombinedAddress(address)}
-                    </span>
-                  </div>
+                  <div className="text-xs text-gray-500 mt-1">
+  <div className="flex items-start">
+    <Home className="h-3 w-3 mr-1 flex-shrink-0 mt-0.5" />
+    <span className="break-all">
+      {address.custom_combined_address ||
+        generateCombinedAddress(address)}
+    </span>
+  </div>
+
+  {/* Property info below address */}
+  <div className="mt-1 flex flex-wrap gap-1">
+    {address.custom_property_category && (
+      <span className="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded">
+        {address.custom_property_category}
+      </span>
+    )}
+    {address.custom_property_type && (
+      <span className="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded">
+        {address.custom_property_type}
+      </span>
+    )}
+  </div>
+</div>
+
                 </div>
+                {/* <div className="flex items-center sp">
+                  {address.custom_property_category && (
+                    <span className="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded">
+                      {address.custom_property_category}
+                    </span>
+                  )}
+                  {address.custom_property_type && (
+                    <span className="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded">
+                      {address.custom_property_type}
+                    </span>
+                  )}
+                  </div> */}
                 <div className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded ml-2 flex-shrink-0">
                   {address.found_via}
                 </div>
