@@ -165,6 +165,8 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     jobType: jobTypes.length > 0 ? [jobTypes[0].name] : [],
   });
   const [isCreatingCustomer, setIsCreatingCustomer] = useState(false);
+  const customerModalRef = useRef<HTMLDivElement>(null);
+
 
   // Inspector assignment states
   const [selectedInspector, setSelectedInspector] =
@@ -1224,8 +1226,14 @@ const handleSaveCustomer = async () => {
   }, [showDropdown]);
 
   // Close dropdown when clicking outside
-  useEffect(() => {
+ useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
+      // If customer modal is open and click is outside customer modal, don't close
+      if (showCustomerModal && customerModalRef.current && 
+          !customerModalRef.current.contains(event.target as Node)) {
+        return;
+      }
+      
       if (
         dropdownRef.current &&
         !dropdownRef.current.contains(event.target as Node) &&
@@ -1240,7 +1248,8 @@ const handleSaveCustomer = async () => {
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, []);
+  }, [showCustomerModal]); // Add showCustomerModal as dependency
+
 
   const DropdownContent = () => (
     <div
@@ -1361,7 +1370,12 @@ const handleSaveCustomer = async () => {
     <>
       <div
         className="fixed inset-0 bg-black/30 backdrop-blur-sm bg-opacity-50 z-40 transition-opacity duration-300"
-        onClick={handleClose}
+       onClick={() => {
+          // Don't close if customer modal is open
+          if (!showCustomerModal) {
+            handleClose();
+          }
+        }}
       />
 
       <div
@@ -1956,7 +1970,11 @@ const handleSaveCustomer = async () => {
 
       {/* Customer Modal */}
       <Dialog open={showCustomerModal} onOpenChange={setShowCustomerModal}>
-        <DialogContent className="sm:max-w-[500px] bg-white">
+        <DialogContent className="sm:max-w-[500px] bg-white" ref={customerModalRef}
+          onInteractOutside={(e) => {
+            // Prevent closing when clicking outside
+            e.preventDefault();
+          }}>
           <DialogHeader>
             <DialogTitle>
               {modalMode === "create" ? "Add New Lead" : "Edit Lead"}
@@ -2105,7 +2123,7 @@ const handleSaveCustomer = async () => {
         onConfirm={confirmAssignment}
         onCancel={() => setShowConfirmModal(false)}
         title="Confirm Inspector Assignment"
-        message={`Are you sure you want to assign ${
+        message={`Are you sure to assign ${
           selectedInspector?.user_name
         } for the inspection on ${
           date ? format(date, "MMM dd, yyyy") : ""
