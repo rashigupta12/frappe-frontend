@@ -98,7 +98,7 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
     useState<InspectorDetails | null>(null);
   const [isLoadingInspectorDetails, setIsLoadingInspectorDetails] =
     useState(false);
-    console.log("inquiry" , data)
+  console.log("inquiry", data);
   // const [showEndTimeWarning, setShowEndTimeWarning] = useState(false);
 
   // Helper function to check if selected date is today
@@ -536,36 +536,36 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
   };
 
   const handleDateSelect = (selectedDate: Date | undefined) => {
-  setDate(selectedDate);
-  setSelectedInspector(null);
-  setSelectedSlot(null);
+    setDate(selectedDate);
+    setSelectedInspector(null);
+    setSelectedSlot(null);
 
-  // Close the calendar popover first
-  setCalendarOpen(false);
+    // Close the calendar popover first
+    setCalendarOpen(false);
 
-  // Auto-open availability modal for both create and edit modes
-  if (selectedDate) {
-    // For create mode - always open modal
-    if (mode === "create") {
-      setTimeout(() => {
-        setShowAvailabilityModal(true);
-      }, 500);
-    }
-    
-    // For edit mode - fetch availability and open modal
-    if (mode === "edit") {
-      if (data?.allocated_to) {
-        const dateStr = format(selectedDate, "yyyy-MM-dd");
-        fetchInspectorAvailability(data.allocated_to, dateStr);
+    // Auto-open availability modal for both create and edit modes
+    if (selectedDate) {
+      // For create mode - always open modal
+      if (mode === "create") {
+        setTimeout(() => {
+          setShowAvailabilityModal(true);
+        }, 500);
       }
-      
-      // Auto-open modal in edit mode too
-      setTimeout(() => {
-        setShowAvailabilityModal(true);
-      }, 500);
+
+      // For edit mode - fetch availability and open modal
+      if (mode === "edit") {
+        if (data?.allocated_to) {
+          const dateStr = format(selectedDate, "yyyy-MM-dd");
+          fetchInspectorAvailability(data.allocated_to, dateStr);
+        }
+
+        // Auto-open modal in edit mode too
+        setTimeout(() => {
+          setShowAvailabilityModal(true);
+        }, 500);
+      }
     }
-  }
-};
+  };
 
   const handleInspectorSelect = (
     email: string,
@@ -659,9 +659,7 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
         });
 
       if (!isWithinAvailableSlot && showToast) {
-        toast.error(
-          "Selected time must be within inspector's available slots",
-        );
+        toast.error("Selected time must be within inspector's available slots");
       }
 
       return isWithinAvailableSlot;
@@ -859,119 +857,121 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
       return true; // Assume conflict to be safe
     }
   };
-const handleAssign = async () => {
-  // First validate required fields in create mode
-  if (mode === "create") {
-    const validation = validateRequiredFields(inquiryData);
-    if (!validation.isValid) {
-      const missingFieldNames = validation.missingFields
-        .map((field) => {
-          switch (field) {
-            case "custom_property_area":
-              return "Property Address";
-            case "lead_name":
-              return "Customer Name";
-            case "mobile_no":
-              return "Phone Number";
-            case "custom_job_type":
-              return "Job Type";
-            case "custom_project_urgency":
-              return "Urgency";
-            default:
-              return field;
-          }
-        })
-        .join(", ");
+  const handleAssign = async () => {
+    // First validate required fields in create mode
+    if (mode === "create") {
+      const validation = validateRequiredFields(inquiryData);
+      if (!validation.isValid) {
+        const missingFieldNames = validation.missingFields
+          .map((field) => {
+            switch (field) {
+              case "custom_property_area":
+                return "Property Address";
+              case "lead_name":
+                return "Customer Name";
+              case "mobile_no":
+                return "Phone Number";
+              case "custom_job_type":
+                return "Job Type";
+              case "custom_project_urgency":
+                return "Urgency";
+              default:
+                return field;
+            }
+          })
+          .join(", ");
 
-      toast.error(`Please complete the information: ${missingFieldNames}`);
-      return;
-    }
-  }
-
-  // Check if time-related fields have been modified in edit mode
-  const timeFieldsModified = mode === "edit" 
-    ? (requestedTime !== originalStartTime || 
-       (date && format(date, "yyyy-MM-dd") !== data.date) ||
-       selectedInspector?.email !== originalInspectorEmail)
-    : true; // Always validate in create mode
-
-  // Only validate time against slot if time fields were actually modified
-  if (timeFieldsModified && requestedTime && duration) {
-    if (!validateTimeAgainstSlot(requestedTime, duration, true)) {
-      return; // Stop if validation fails
-    }
-  }
-
-  if (mode === "create") {
-    if (!selectedInspector) {
-      toast.error("Please select an inspector");
-      return;
-    }
-
-    if (!validateRequestedTime()) {
-      // Show specific error message based on the issue
-      const requestedMinutes = timeToMinutes(requestedTime);
-      const slotStart = timeToMinutes(selectedSlot!.start);
-      const slotEnd = timeToMinutes(selectedSlot!.end);
-      const durationMinutes = Math.round(parseFloat(duration) * 60);
-
-      if (requestedMinutes < slotStart || requestedMinutes >= slotEnd) {
-        toast.error(
-          `Requested time must be within the selected slot (${
-            selectedSlot!.start
-          } - ${selectedSlot!.end})`
-        );
-      } else if (requestedMinutes + durationMinutes > slotEnd) {
-        toast.error(
-          `End time exceeds the selected slot's end time (${
-            selectedSlot!.end
-          }). Reduce duration or choose a different time.`
-        );
-      }
-      return;
-    }
-
-    if (!data?.name) {
-      toast.error("Invalid inquiry data");
-      return;
-    }
-  }
-
-  // Check for assignment conflicts before proceeding - only if time fields were modified
-  if (timeFieldsModified) {
-    if (!date || !requestedTime) {
-      toast.error("Please select date and time");
-      return;
-    }
-
-    const preferredDate = format(date, "yyyy-MM-dd");
-    const endTime = calculateEndTime();
-    const startDateTime = `${preferredDate} ${requestedTime}:00`;
-    const endDateTime = `${preferredDate} ${endTime}:00`;
-
-    const currentInspectorEmail = selectedInspector?.email || data.allocated_to;
-
-    if (currentInspectorEmail) {
-      const hasConflict = await checkAssignmentConflict(
-        currentInspectorEmail,
-        startDateTime,
-        endDateTime,
-        mode === "edit" ? data.name : undefined
-      );
-
-      if (hasConflict) {
-        return; // Stop execution if conflict is found
+        toast.error(`Please complete the information: ${missingFieldNames}`);
+        return;
       }
     }
-  }
 
-  // Proceed with existing checks
-  if (mode === "create") {
-    setShowConfirmation(true);
-  } else {
-    await proceedWithAssignment();
-  }
-};
+    // Check if time-related fields have been modified in edit mode
+    const timeFieldsModified =
+      mode === "edit"
+        ? requestedTime !== originalStartTime ||
+          (date && format(date, "yyyy-MM-dd") !== data.date) ||
+          selectedInspector?.email !== originalInspectorEmail
+        : true; // Always validate in create mode
+
+    // Only validate time against slot if time fields were actually modified
+    if (timeFieldsModified && requestedTime && duration) {
+      if (!validateTimeAgainstSlot(requestedTime, duration, true)) {
+        return; // Stop if validation fails
+      }
+    }
+
+    if (mode === "create") {
+      if (!selectedInspector) {
+        toast.error("Please select an inspector");
+        return;
+      }
+
+      if (!validateRequestedTime()) {
+        // Show specific error message based on the issue
+        const requestedMinutes = timeToMinutes(requestedTime);
+        const slotStart = timeToMinutes(selectedSlot!.start);
+        const slotEnd = timeToMinutes(selectedSlot!.end);
+        const durationMinutes = Math.round(parseFloat(duration) * 60);
+
+        if (requestedMinutes < slotStart || requestedMinutes >= slotEnd) {
+          toast.error(
+            `Requested time must be within the selected slot (${
+              selectedSlot!.start
+            } - ${selectedSlot!.end})`
+          );
+        } else if (requestedMinutes + durationMinutes > slotEnd) {
+          toast.error(
+            `End time exceeds the selected slot's end time (${
+              selectedSlot!.end
+            }). Reduce duration or choose a different time.`
+          );
+        }
+        return;
+      }
+
+      if (!data?.name) {
+        toast.error("Invalid inquiry data");
+        return;
+      }
+    }
+
+    // Check for assignment conflicts before proceeding - only if time fields were modified
+    if (timeFieldsModified) {
+      if (!date || !requestedTime) {
+        toast.error("Please select date and time");
+        return;
+      }
+
+      const preferredDate = format(date, "yyyy-MM-dd");
+      const endTime = calculateEndTime();
+      const startDateTime = `${preferredDate} ${requestedTime}:00`;
+      const endDateTime = `${preferredDate} ${endTime}:00`;
+
+      const currentInspectorEmail =
+        selectedInspector?.email || data.allocated_to;
+
+      if (currentInspectorEmail) {
+        const hasConflict = await checkAssignmentConflict(
+          currentInspectorEmail,
+          startDateTime,
+          endDateTime,
+          mode === "edit" ? data.name : undefined
+        );
+
+        if (hasConflict) {
+          return; // Stop execution if conflict is found
+        }
+      }
+    }
+
+    // Proceed with existing checks
+    if (mode === "create") {
+      setShowConfirmation(true);
+    } else {
+      await proceedWithAssignment();
+    }
+  };
 
   const proceedWithAssignment = async () => {
     setShowConfirmation(false);
@@ -1269,17 +1269,19 @@ const handleAssign = async () => {
               </Label> */}
               <div className="flex items-center justify-between">
                 {selectedInspector ? (
-                  console.log("inspectordetails" , selectedInspector),
-                  <div className="flex items-center gap-2">
-                    <div>
-                      <div className="font-medium text-sm">
-                        {selectedInspector.user_name }
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        {selectedInspector.email}
+                  (console.log("inspectordetails", selectedInspector),
+                  (
+                    <div className="flex items-center gap-2">
+                      <div>
+                        <div className="font-medium text-sm">
+                          {selectedInspector.user_name}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          {selectedInspector.email}
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  ))
                 ) : mode === "edit" && data?.allocated_to ? (
                   <div className="flex items-center gap-2 bg-gray-50">
                     <div>
@@ -1287,7 +1289,7 @@ const handleAssign = async () => {
                         {/* {data.allocated_to} */}
                         {/* {currentInspectorDetails?.full_name ||
                           data.allocated_to} */}
-                          Update Inspector
+                        Update Inspector
                       </div>
                     </div>
                   </div>
@@ -1486,8 +1488,11 @@ const handleAssign = async () => {
 
             <div className="space-y-2">
               <Label className="text-sm font-medium">Requirements</Label>
+
               <Textarea
-                value={description}
+                value={
+                  description.startsWith("Inspection for") ? "" : description
+                }
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Special requirements..."
                 rows={2}

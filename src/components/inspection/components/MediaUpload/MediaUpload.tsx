@@ -31,7 +31,7 @@ const MediaPreviewModal: React.FC<{
   inspectionStatus?: string;
   isReadOnly?: boolean;
 }> = ({ isOpen, onClose, media, onRemove, isReadOnly }) => {
-  const imageurl = "https://eits.thebigocommunity.org";
+  const imageurl = import.meta.env.VITE_API_BASE_URL ;
 
   if (!isOpen) return null;
 
@@ -622,7 +622,7 @@ const MediaUpload: React.FC<MediaUploadProps> = ({
   inspectionStatus,
   isReadOnly,
 }) => {
-  const imageurl = "https://eits.thebigocommunity.org";
+  const imageurl = import.meta.env.VITE_API_BASE_URL ;
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);

@@ -29,15 +29,15 @@ interface ProtectedRouteProps {
 
 const PublicRoute = ({ children }: { children: ReactNode }) => {
   const { isAuthenticated, user } = useAuth();
-  
+
   if (isAuthenticated && user?.requiresPasswordReset) {
     return <Navigate to="/first-time-password-reset" replace />;
   }
-  
+
   if (isAuthenticated) {
     return <Navigate to="/dashboard" replace />;
   }
-  
+
   return <>{children}</>;
 };
 
@@ -46,33 +46,33 @@ const ProtectedRoute = ({
   allowedRoles = [],
   requireExactRole = false,
 }: ProtectedRouteProps) => {
-  const { 
-    isAuthenticated, 
-    currentRole, 
-    availableRoles, 
-    loading, 
+  const {
+    isAuthenticated,
+    currentRole,
+    availableRoles,
+    loading,
     isSwitchingRole,
-    user
+    user,
   } = useAuth();
   const location = useLocation();
 
   // Extended delay during role switching to prevent unauthorized flicker
   const [isCheckingAccess, setIsCheckingAccess] = useState(true);
-  
+
   useEffect(() => {
     // Check if we're in the middle of a role switch
-    const isRoleSwitching = localStorage.getItem('isRoleSwitching') === 'true';
-    
+    const isRoleSwitching = localStorage.getItem("isRoleSwitching") === "true";
+
     const delay = isRoleSwitching || isSwitchingRole ? 200 : 50; // Longer delay during role switching
-    
+
     const timer = setTimeout(() => {
       setIsCheckingAccess(false);
       // Clear the role switching flag after access check
       if (isRoleSwitching) {
-        localStorage.removeItem('isRoleSwitching');
+        localStorage.removeItem("isRoleSwitching");
       }
     }, delay);
-    
+
     return () => clearTimeout(timer);
   }, [isSwitchingRole, currentRole]);
 
@@ -95,7 +95,9 @@ const ProtectedRoute = ({
     if (requireExactRole) {
       hasAccess = currentRole ? allowedRoles.includes(currentRole) : false;
     } else {
-      hasAccess = currentRole ? allowedRoles.some(role => currentRole.includes(role)) : false;
+      hasAccess = currentRole
+        ? allowedRoles.some((role) => currentRole.includes(role))
+        : false;
     }
 
     if (!hasAccess) {
@@ -103,10 +105,10 @@ const ProtectedRoute = ({
       if (availableRoles.length > 0) {
         const primaryRole = currentRole || availableRoles[0];
         const roleRoutes: Record<string, string> = {
-          'EITS_Sale_Representative': '/sales',
-          'EITS_Site_Inspector': '/inspector',
-          'EITS_Project_Manager': '/project_manager',
-          'accountUser': '/accountUser'
+          EITS_Sale_Representative: "/sales",
+          EITS_Site_Inspector: "/inspector",
+          EITS_Project_Manager: "/project_manager",
+          accountUser: "/accountUser",
         };
 
         const redirectRoute = roleRoutes[primaryRole];
@@ -114,7 +116,7 @@ const ProtectedRoute = ({
           return <Navigate to={redirectRoute} replace />;
         }
       }
-      
+
       return <Navigate to="/unauthorized" replace />;
     }
   }
@@ -123,7 +125,8 @@ const ProtectedRoute = ({
 };
 
 const PasswordResetRoute = ({ children }: { children: ReactNode }) => {
-  const { isAuthenticated, loading, currentRole, availableRoles, user } = useAuth();
+  const { isAuthenticated, loading, currentRole, availableRoles, user } =
+    useAuth();
 
   if (loading) {
     return <PasswordResetLoader />;
@@ -328,25 +331,23 @@ function App() {
             containerStyle={{
               top: 20,
               right: 20,
-              zIndex: 9999, // Ensure it's above other elements
+              zIndex: 9999,
             }}
             toastOptions={{
               className: "",
               style: {
                 border: "1px solid #713200",
-                padding: "16px", // Reduced padding for smaller screens
+                padding: "16px",
                 color: "#713200",
-                fontSize: "14px", // Ensure readable size
-                maxWidth: "350px", // Prevent overly wide toasts
-                wordBreak: "break-word", // Handle long text
+                fontSize: "14px",
+                maxWidth: "350px",
+                wordBreak: "break-word",
                 zIndex: 9999,
               },
               success: {
-                className:
-                  "border border-green-500  text-green-700",
+                className: "border border-green-500 text-green-700",
                 style: {
                   border: "1px solid #22c55e",
-                  // backgroundColor: "#dcfce7",
                   color: "#15803d",
                 },
               },
@@ -354,14 +355,15 @@ function App() {
                 className: "border border-red-500 text-red-700",
                 style: {
                   border: "1px solid #ef4444",
-                  // backgroundColor: "#fee2e2",
                   color: "#dc2626",
                 },
               },
-              duration: 4000, // Auto-dismiss after 4 seconds
+              duration: 4000,
             }}
-            // Additional options for better mobile experience
-            gutter={8} // Space between toasts
+            gutter={8}
+            // Add these two props to allow multiple toasts
+            containerClassName="toast-container"
+            reverseOrder={false}
           />
         </div>
       </LeadsProvider>

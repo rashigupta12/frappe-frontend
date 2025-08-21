@@ -34,7 +34,7 @@ const ImagePreviewModal: React.FC<{
   onDelete: (index: number) => void;
   onIndexChange: (index: number) => void;
 }> = ({ isOpen, onClose, images, currentIndex, onDelete, onIndexChange }) => {
-  const imageurl = "https://eits.thebigocommunity.org";
+  const imageurl = import.meta.env.VITE_API_BASE_URL ;
 
   if (!isOpen || images.length === 0) return null;
 
@@ -388,7 +388,7 @@ const PaymentImageUpload: React.FC<PaymentImageUploadProps> = ({
   maxImages = 5,
   maxSizeMB = 10,
 }) => {
-  const imageurl = "https://eits.thebigocommunity.org";
+  const imageurl = import.meta.env.VITE_API_BASE_URL ;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showPreview, setShowPreview] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);

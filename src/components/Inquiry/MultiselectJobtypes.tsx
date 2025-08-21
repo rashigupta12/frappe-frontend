@@ -7,8 +7,6 @@
 // } from "lucide-react";
 // import { useState } from "react";
 
-
-
 // // Multi-Select Dropdown Component for Job Types
 // export const MultiSelectJobTypes = ({
 //   jobTypes,
@@ -32,8 +30,8 @@
 //     }
 //   };
 
-//   const displayText = selectedJobTypes.length > 0 
-//     ? selectedJobTypes.length === 1 
+//   const displayText = selectedJobTypes.length > 0
+//     ? selectedJobTypes.length === 1
 //       ? selectedJobTypes[0]
 //       : `${selectedJobTypes.length} job types selected`
 //     : placeholder;
@@ -49,7 +47,7 @@
 //         </span>
 //         <ChevronDown className={`h-4 w-4 text-gray-600 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
 //       </div>
-      
+
 //       {isOpen && (
 //         <div className="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto pb-20 ">
 //           {jobTypes.map((jobType) => (
@@ -68,11 +66,11 @@
 //           ))}
 //         </div>
 //       )}
-      
+
 //       {/* Backdrop to close dropdown when clicking outside */}
 //       {isOpen && (
-//         <div 
-//           className="fixed inset-0 z-40" 
+//         <div
+//           className="fixed inset-0 z-40"
 //           onClick={() => setIsOpen(false)}
 //         />
 //       )}
@@ -105,7 +103,10 @@ export const MultiSelectJobTypes = ({
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
         setIsOpen(false);
       }
     };
@@ -119,14 +120,16 @@ export const MultiSelectJobTypes = ({
   const handleToggle = (jobTypeName: string) => {
     const isSelected = selectedJobTypes.includes(jobTypeName);
     if (isSelected) {
-      onSelectionChange(selectedJobTypes.filter(type => type !== jobTypeName));
+      onSelectionChange(
+        selectedJobTypes.filter((type) => type !== jobTypeName)
+      );
     } else {
       onSelectionChange([...selectedJobTypes, jobTypeName]);
     }
   };
 
   const removeJobType = (jobTypeName: string) => {
-    onSelectionChange(selectedJobTypes.filter(type => type !== jobTypeName));
+    onSelectionChange(selectedJobTypes.filter((type) => type !== jobTypeName));
   };
 
   const handleInputClick = () => {
@@ -139,7 +142,7 @@ export const MultiSelectJobTypes = ({
   const handleChevronClick = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent triggering the input click event
     setIsOpen(!isOpen);
-    
+
     if (!isOpen && inputRef.current) {
       inputRef.current.focus();
     }
@@ -150,15 +153,19 @@ export const MultiSelectJobTypes = ({
   };
 
   const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Backspace' && inputValue === '' && selectedJobTypes.length > 0) {
+    if (
+      e.key === "Backspace" &&
+      inputValue === "" &&
+      selectedJobTypes.length > 0
+    ) {
       // Remove the last chip when backspace is pressed on empty input
       removeJobType(selectedJobTypes[selectedJobTypes.length - 1]);
-    } else if (e.key === 'Escape') {
+    } else if (e.key === "Escape") {
       setIsOpen(false);
     }
   };
 
-  const filteredJobTypes = jobTypes.filter(jobType =>
+  const filteredJobTypes = jobTypes.filter((jobType) =>
     jobType.name.toLowerCase().includes(inputValue.toLowerCase())
   );
 
@@ -184,7 +191,7 @@ export const MultiSelectJobTypes = ({
             />
           </div>
         ))}
-        
+
         {/* Input field */}
         <input
           ref={inputRef}
@@ -195,30 +202,30 @@ export const MultiSelectJobTypes = ({
           className="flex-1 min-w-20 outline-none bg-transparent text-sm"
           placeholder={selectedJobTypes.length === 0 ? placeholder : ""}
         />
-        
+
         {/* Dropdown indicator */}
-       
 
-{/* Dropdown indicator */}
-{isOpen ? (
-  <X 
-    className="h-4 w-4 text-gray-600 cursor-pointer"
-    onClick={handleChevronClick}
-  />
-) : (
-  <ChevronDown 
-    className="h-4 w-4 text-gray-600 cursor-pointer"
-    onClick={handleChevronClick}
-  />
-)}
-
+        {/* Dropdown indicator */}
+        {isOpen ? (
+          <X
+            className="h-4 w-4 text-gray-600 cursor-pointer"
+            onClick={handleChevronClick}
+          />
+        ) : (
+          <ChevronDown
+            className="h-4 w-4 text-gray-600 cursor-pointer"
+            onClick={handleChevronClick}
+          />
+        )}
       </div>
-      
+
       {/* Dropdown menu */}
       {isOpen && (
-        <div className="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
+        <div className="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto pb-20">
           {filteredJobTypes.length === 0 ? (
-            <div className="px-3 py-2 text-sm text-gray-500">No options found</div>
+            <div className="px-3 py-2 text-sm text-gray-500">
+              No options found
+            </div>
           ) : (
             filteredJobTypes.map((jobType) => (
               <div

@@ -19,8 +19,8 @@ const MediaPreviewModal: React.FC<MediaPreviewModalProps> = ({
   onRemove,
   onEditRemark,
 }) => {
-  const imageurl = "https://eits.thebigocommunity.org";
-  
+  const imageurl = import.meta.env.VITE_API_BASE_URL ;
+
   if (!isOpen) return null;
 
   return (

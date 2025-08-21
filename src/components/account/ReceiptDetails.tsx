@@ -55,7 +55,7 @@ const AttachmentPreviewModal: React.FC<{
   currentIndex: number;
   onIndexChange: (index: number) => void;
 }> = ({ isOpen, onClose, attachments, currentIndex, onIndexChange }) => {
-  const imageurl = "https://eits.thebigocommunity.org";
+  const imageurl = import.meta.env.VITE_API_BASE_URL 
 
   if (!isOpen || attachments.length === 0) return null;
 
@@ -212,7 +212,7 @@ const ReceiptDetails: React.FC<Props> = ({ receipt, onClose }) => {
   };
 
   const getImageUrl = (attachment: any) => {
-    const imageurl = "https://eits.thebigocommunity.org";
+    const imageurl = import.meta.env.VITE_API_BASE_URL ;
 
     const url =
       attachment.file_url ||
