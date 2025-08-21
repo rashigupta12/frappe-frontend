@@ -1350,6 +1350,13 @@ const handleSaveCustomer = async () => {
 
   if (!isOpen) return null;
 
+  const handleCancelSaveCustomer = () => {
+  if (confirm("Are you sure you want to discard changes?")) {
+    setShowCustomerModal(false);
+  }
+};
+
+
   return (
     <>
       <div
@@ -2039,7 +2046,7 @@ const handleSaveCustomer = async () => {
           <DialogFooter>
             <Button
               variant="outline"
-              onClick={() => setShowCustomerModal(false)}
+              onClick={handleCancelSaveCustomer}
               disabled={isCreatingCustomer}
             >
               Cancel
