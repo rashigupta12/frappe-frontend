@@ -989,7 +989,7 @@ const handleSaveCustomer = async () => {
         jobType: [],
       });
 
-      toast.success(`Customer details updated locally`);
+      toast.success(`Customer details updated`);
       return;
     }
 
