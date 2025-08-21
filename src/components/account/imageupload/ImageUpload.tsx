@@ -35,6 +35,7 @@ const ImagePreviewModal: React.FC<{
   onIndexChange: (index: number) => void;
 }> = ({ isOpen, onClose, images, currentIndex, onDelete, onIndexChange }) => {
   const imageurl = "https://eits.thebigocommunity.org";
+  const iframeRef = useRef<HTMLIFrameElement>(null);
 
   if (!isOpen || images.length === 0) return null;
 
@@ -59,27 +60,27 @@ const ImagePreviewModal: React.FC<{
     }
   };
 
-const getImageUrl = (image: ImageItem) => {
-  try {
-    // If it's already a complete URL (http/https) or blob URL, return as is
-    if (image.url.startsWith("http") || image.url.startsWith("blob:")) {
-      // Add timestamp to prevent caching issues for blob URLs
-      if (image.url.startsWith("blob:")) {
-        return `${image.url}`;
+  const getImageUrl = (image: ImageItem) => {
+    try {
+      // If it's already a complete URL (http/https) or blob URL, return as is
+      if (image.url.startsWith("http") || image.url.startsWith("blob:")) {
+        // Add timestamp to prevent caching issues for blob URLs
+        if (image.url.startsWith("blob:")) {
+          return `${image.url}`;
+        }
+        return image.url;
       }
-      return image.url;
+      // If it starts with /, prepend base URL
+      if (image.url.startsWith("/")) {
+        return `${imageurl}${image.url}`;
+      }
+      // Otherwise, assume it's a relative path and add both base URL and /
+      return `${imageurl}/${image.url}`;
+    } catch (error) {
+      console.error("Error processing image URL:", error);
+      return image.url; // Return original URL as fallback
     }
-    // If it starts with /, prepend base URL
-    if (image.url.startsWith("/")) {
-      return `${imageurl}${image.url}`;
-    }
-    // Otherwise, assume it's a relative path and add both base URL and /
-    return `${imageurl}/${image.url}`;
-  } catch (error) {
-    console.error("Error processing image URL:", error);
-    return image.url; // Return original URL as fallback
-  }
-};
+  };
 
   const getFileIcon = (type: string) => {
     switch (type) {
@@ -92,6 +93,69 @@ const getImageUrl = (image: ImageItem) => {
     }
   };
 
+  const renderFilePreview = () => {
+    const fileUrl = getImageUrl(currentImage);
+    
+    switch (currentImage.type) {
+      case "pdf":
+        return (
+          <div className="w-full h-full flex flex-col">
+            <iframe
+              ref={iframeRef}
+              src={fileUrl}
+              className="flex-1 w-full h-full border-none rounded-lg"
+              title="PDF Preview"
+            />
+            <div className="mt-4 flex justify-center">
+              <a
+                href={fileUrl}
+                download
+                className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center gap-2 transition-colors"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Download className="h-4 w-4" />
+                Download PDF
+              </a>
+            </div>
+          </div>
+        );
+      
+      case "doc":
+        return (
+          <div className="flex flex-col items-center justify-center h-full">
+            {getFileIcon(currentImage.type)}
+            <p className="mt-4 text-white text-lg">
+              {currentImage.remarks || currentImage.url.split("/").pop()}
+            </p>
+            <p className="text-gray-400 text-sm mt-2">
+              DOC files can be downloaded for viewing
+            </p>
+            <a
+              href={fileUrl}
+              download
+              className="mt-6 px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center gap-2 transition-colors"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Download className="h-4 w-4" />
+              Download Document
+            </a>
+          </div>
+        );
+      
+      default:
+        return (
+          <img
+            src={fileUrl}
+            alt={currentImage.remarks || "Payment evidence"}
+            className="max-w-full max-h-full object-contain rounded-lg"
+            key={`modal-${currentImage.id}`}
+          />
+        );
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black/95 flex flex-col z-50">
       {/* Header */}
@@ -100,6 +164,7 @@ const getImageUrl = (image: ImageItem) => {
           <h2 className="text-lg font-semibold">File Preview</h2>
           <p className="text-sm text-gray-300">
             {currentIndex + 1} of {images.length}
+            {currentImage.type !== "image" && ` • ${currentImage.type.toUpperCase()}`}
           </p>
         </div>
         <button
@@ -113,30 +178,7 @@ const getImageUrl = (image: ImageItem) => {
 
       {/* File Content */}
       <div className="flex-1 flex items-center justify-center p-4 relative">
-        {currentImage.type === "image" ? (
-          <img
-            src={getImageUrl(currentImage)}
-            alt={currentImage.remarks || "Payment evidence"}
-            className="max-w-full max-h-full object-contain rounded-lg"
-            key={`modal-${currentImage.id}`} // Add unique key to force re-render
-          />
-        ) : (
-          <div className="flex flex-col items-center justify-center h-full">
-            {getFileIcon(currentImage.type)}
-            <p className="mt-4 text-white text-lg">
-              {currentImage.remarks || currentImage.url.split("/").pop()}
-            </p>
-            <a
-              href={getImageUrl(currentImage)}
-              download
-              className="mt-6 px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center gap-2 transition-colors"
-              target="_blank"
-            >
-              <Download className="h-4 w-4" />
-              Download File
-            </a>
-          </div>
-        )}
+        {renderFilePreview()}
 
         {/* Navigation Arrows */}
         {images.length > 1 && (
@@ -189,7 +231,7 @@ const getImageUrl = (image: ImageItem) => {
           <div className="flex gap-2 justify-center overflow-x-auto">
             {images.map((image, index) => (
               <button
-                key={`thumb-${image.id}`} // Add unique key for thumbnails
+                key={`thumb-${image.id}`}
                 type="button"
                 onClick={() => onIndexChange(index)}
                 className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-colors ${
@@ -210,11 +252,15 @@ const getImageUrl = (image: ImageItem) => {
                     key={`thumb-img-${image.id}`}
                     onError={(e) => {
                       console.error("Image load error:", e);
-                      // You could set a fallback image here if needed
                     }}
                   />
                 ) : (
-                  <FileText className="h-8 w-8 text-white" />
+                  <div className="text-center p-1">
+                    {getFileIcon(image.type)}
+                    <span className="text-xs text-white block mt-1">
+                      {image.type.toUpperCase()}
+                    </span>
+                  </div>
                 )}
               </button>
             ))}
@@ -238,7 +284,6 @@ const getImageUrl = (image: ImageItem) => {
     </div>
   );
 };
-
 const CameraModal: React.FC<{
   isOpen: boolean;
   onClose: () => void;
@@ -248,7 +293,7 @@ const CameraModal: React.FC<{
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
-    const startCamera = React.useCallback(async () => {
+  const startCamera = React.useCallback(async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
@@ -269,7 +314,7 @@ const CameraModal: React.FC<{
     }
   }, [onClose]);
 
- useEffect(() => {
+  useEffect(() => {
     if (isOpen && !capturedImage) {
       startCamera();
     }
@@ -279,8 +324,6 @@ const CameraModal: React.FC<{
       }
     };
   }, [capturedImage, isOpen, startCamera]);
-
-
 
   const captureImage = () => {
     if (!videoRef.current || !canvasRef.current) return;
@@ -394,28 +437,41 @@ const PaymentImageUpload: React.FC<PaymentImageUploadProps> = ({
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showCamera, setShowCamera] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  console.log(images)
+  console.log(images);
 
   // Counter for generating truly unique IDs
   const [idCounter, setIdCounter] = useState(0);
 
-  const getFileType = (file: File): "image" | "pdf" | "doc" => {
+ const getFileType = (file: File): "image" | "pdf" | "doc" => {
+  const fileName = file.name.toLowerCase();
+  const fileType = file.type.toLowerCase();
+  
   console.log(`Determining file type for: ${file.name}, MIME type: ${file.type}`);
   
-  if (file.type.includes("pdf")) return "pdf";
-  if (file.type.includes("msword") || file.type.includes("wordprocessingml"))
+  // First check file extension as it's more reliable
+  const extension = fileName.split('.').pop();
+  
+  // Check for PDF
+  if (fileType.includes("pdf") || extension === "pdf") {
+    return "pdf";
+  }
+  
+  // Check for DOC/DOCX
+  if (fileType.includes("msword") || 
+      fileType.includes("wordprocessingml") || 
+      extension === "doc" || 
+      extension === "docx") {
     return "doc";
+  }
   
-  // More comprehensive image type checking
-  if (file.type.startsWith("image/")) return "image";
-  
-  // Fallback: check file extension
-  const extension = file.name.toLowerCase().split('.').pop();
-  if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'tiff'].includes(extension || '')) {
+  // Check for images - both by MIME type and extension
+  if (fileType.startsWith("image/") || 
+      ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'tiff', 'svg'].includes(extension || '')) {
     return "image";
   }
   
-  return "image"; // Default to image if unsure
+  // Default to image if unsure (for backward compatibility)
+  return "image";
 };
 
   // Improved unique ID generation with more entropy
@@ -450,9 +506,7 @@ const PaymentImageUpload: React.FC<PaymentImageUploadProps> = ({
     return `${imageurl}/${image.url}`;
   };
 
-const handleFileUpload = async (
-  event: React.ChangeEvent<HTMLInputElement>
-) => {
+ const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
   const files = event.target.files;
   if (!files || files.length === 0) return;
 
@@ -469,27 +523,6 @@ const handleFileUpload = async (
     const newImages: ImageItem[] = [];
 
     for (const file of filesToUpload) {
-      // Updated valid types - ensure PNG is properly included
-      const validTypes = [
-        "image/jpeg",
-        "image/jpg", // Add explicit JPG support
-        "image/png", // Ensure PNG is included
-        "image/gif",
-        "image/webp",
-        "image/bmp", // Add BMP support
-        "image/tiff", // Add TIFF support
-        "application/pdf",
-        "application/msword",
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-      ];
-
-      console.log(`File: ${file.name}, Type: ${file.type}, Size: ${file.size}`);
-
-      if (!validTypes.includes(file.type)) {
-        toast.error(`File type "${file.type}" not supported for file: ${file.name}`);
-        continue;
-      }
-
       if (file.size > maxSizeMB * 1024 * 1024) {
         toast.error(`File "${file.name}" exceeds ${maxSizeMB}MB limit.`);
         continue;
@@ -497,6 +530,7 @@ const handleFileUpload = async (
 
       try {
         let url: string;
+        const fileType = getFileType(file);
 
         if (onUpload) {
           // If onUpload is provided, use it to upload the file
@@ -514,7 +548,7 @@ const handleFileUpload = async (
           url,
           file: onUpload ? undefined : file,
           remarks: file.name,
-          type: getFileType(file),
+          type: fileType, // Use the properly detected file type
         };
 
         newImages.push(newImage);
@@ -670,36 +704,38 @@ const handleFileUpload = async (
                   }}
                 >
                   {image.type === "image" ? (
-  <img
-    src={getImageUrl(image)}
-    alt=""
-    className="w-full h-full object-cover"
-    key={`preview-img-${image.id}`}
-    onError={(e) => {
-      console.error("Image load error for:", image.url, e);
-      const target = e.target as HTMLImageElement;
-      // Try to reload once with cache-busting
-      if (!target.src.includes('?reload=')) {
-        target.src = `${target.src}${target.src.includes('?') ? '&' : '?'}reload=${Date.now()}`;
-      }
-    }}
-    onLoad={() => {
-      console.log("Image loaded successfully:", image.url);
-    }}
-  />
-) : (
-  <div className="text-center p-1">
-    {getFileIcon(image.type)}
-    <span className="text-xs truncate block">
-      {image.url
-        .split("/")
-        .pop()
-        ?.split(".")
-        .shift()
-        ?.substring(0, 3)}
-    </span>
-  </div>
-)}
+                    <img
+                      src={getImageUrl(image)}
+                      alt=""
+                      className="w-full h-full object-cover"
+                      key={`preview-img-${image.id}`}
+                      onError={(e) => {
+                        console.error("Image load error for:", image.url, e);
+                        const target = e.target as HTMLImageElement;
+                        // Try to reload once with cache-busting
+                        if (!target.src.includes("?reload=")) {
+                          target.src = `${target.src}${
+                            target.src.includes("?") ? "&" : "?"
+                          }reload=${Date.now()}`;
+                        }
+                      }}
+                      onLoad={() => {
+                        console.log("Image loaded successfully:", image.url);
+                      }}
+                    />
+                  ) : (
+                    <div className="text-center p-1">
+                      {getFileIcon(image.type)}
+                      <span className="text-xs truncate block">
+                        {image.url
+                          .split("/")
+                          .pop()
+                          ?.split(".")
+                          .shift()
+                          ?.substring(0, 3)}
+                      </span>
+                    </div>
+                  )}
                 </div>
               ))}
               {images.length > 3 && (
@@ -724,13 +760,13 @@ const handleFileUpload = async (
 
       {/* Hidden File Input */}
       <input
-  ref={fileInputRef}
-  type="file"
-  accept="image/*,.png,.jpg,.jpeg,.gif,.webp,.pdf,.doc,.docx" // More explicit accept
-  onChange={handleFileUpload}
-  className="hidden"
-  multiple
-/>
+        ref={fileInputRef}
+        type="file"
+        accept="image/*,.png,.jpg,.jpeg,.gif,.webp,.pdf,.doc,.docx" // More explicit accept
+        onChange={handleFileUpload}
+        className="hidden"
+        multiple
+      />
 
       {/* Upload Status */}
       {isUploading && (

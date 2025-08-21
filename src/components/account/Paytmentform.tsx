@@ -6,7 +6,7 @@ import { useAuth } from "../../context/AuthContext";
 import { frappeAPI } from "../../api/frappeClient";
 import { usePaymentStore } from "../../store/payment";
 import PaymentImageUpload from "./imageupload/ImageUpload";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { capitalizeFirstLetter } from "../../helpers/helper";
 
 interface ImageItem {
@@ -19,12 +19,15 @@ interface ImageItem {
 
 const PaymentForm = () => {
   const user = useAuth();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const isEditMode = searchParams.get('edit') === 'true';
 
   const {
     bill_number,
     amountaed,
     paid_by,
-    paid_to, // This is now being used in handleSearchChange and form submission
+    paid_to,
     custom_purpose_of_payment,
     custom_mode_of_payment,
     custom_name_of_bank,
@@ -38,6 +41,7 @@ const PaymentForm = () => {
     setField,
     uploadAndAddAttachment,
     submitPayment,
+    resetForm,
   } = usePaymentStore();
 
   const [images, setImages] = useState<ImageItem[]>([]);
@@ -55,10 +59,57 @@ const PaymentForm = () => {
     mobile_no: "",
     email_id: "",
   });
-  const navigate = useNavigate();
+  
+  // Edit mode state
+  const [editPaymentId, setEditPaymentId] = useState<string | null>(null);
 
   // Add a ref to track if images were manually set to prevent overriding
   const isManualImageUpdate = useRef(false);
+
+  // Load edit data on component mount
+  useEffect(() => {
+    if (isEditMode) {
+      const editData = sessionStorage.getItem('editPaymentData');
+      if (editData) {
+        try {
+          const paymentData = JSON.parse(editData);
+          
+          // Set the payment ID for edit mode
+          setEditPaymentId(paymentData.id);
+          
+          // Populate form fields
+          setField("bill_number", paymentData.bill_number || "");
+          setField("amountaed", paymentData.amountaed || "0.00");
+          setField("paid_to", paymentData.paid_to || "");
+          setField("custom_purpose_of_payment", paymentData.custom_purpose_of_payment || "");
+          setField("custom_mode_of_payment", paymentData.custom_mode_of_payment || "Cash");
+          setField("custom_name_of_bank", paymentData.custom_name_of_bank || "");
+          setField("custom_account_number", paymentData.custom_account_number || "");
+          setField("custom_card_number", paymentData.custom_card_number || "");
+          setField("custom_ifscibanswift_code", paymentData.custom_ifscibanswift_code || "");
+          setField("custom_account_holder_name", paymentData.custom_account_holder_name || "");
+          setField("custom_attachments", paymentData.custom_attachments || []);
+          
+          // Set search query to supplier name
+          setSearchQuery(paymentData.paid_to || "");
+          
+          toast.success("Payment data loaded for editing");
+          
+          // Clear session storage after loading
+          sessionStorage.removeItem('editPaymentData');
+        } catch (error) {
+          console.error("Error loading edit data:", error);
+          toast.error("Error loading payment data for editing");
+        }
+      }
+    } else {
+      // Reset form when not in edit mode
+      if (editPaymentId) {
+        resetForm?.();
+        setEditPaymentId(null);
+      }
+    }
+  }, [isEditMode, setField, resetForm, editPaymentId]);
 
   useEffect(() => {
     // Set default payment mode to Cash if not already set
@@ -130,96 +181,96 @@ const PaymentForm = () => {
   }, [custom_attachments]);
 
   const handleSupplierSearch = useCallback(async (query: string) => {
-  if (!query.trim()) {
-    setSearchResults([]);
-    setShowDropdown(false);
-    return;
-  }
+    if (!query.trim()) {
+      setSearchResults([]);
+      setShowDropdown(false);
+      return;
+    }
 
-  setIsSearching(true);
+    setIsSearching(true);
 
-  try {
-    const endpoint = "/api/method/eits_app.supplier_search.search_suppliers";
-    const params = new URLSearchParams();
+    try {
+      const endpoint = "/api/method/eits_app.supplier_search.search_suppliers";
+      const params = new URLSearchParams();
 
-    if (/^\d+$/.test(query)) {
-      // Search by phone number (only digits)
-      params.append("mobile_no", query);
-    } else if (query.includes("@")) {
-      // Search by email (partial match)
-      params.append("email_id", query);
-      
-      const emailResponse = await frappeAPI.makeAuthenticatedRequest(
+      if (/^\d+$/.test(query)) {
+        // Search by phone number (only digits)
+        params.append("mobile_no", query);
+      } else if (query.includes("@")) {
+        // Search by email (partial match)
+        params.append("email_id", query);
+        
+        const emailResponse = await frappeAPI.makeAuthenticatedRequest(
+          "GET",
+          `${endpoint}?${params.toString()}`
+        );
+
+        // If no email results, try name search
+        if (!emailResponse.message.data?.length) {
+          params.delete("email_id");
+          params.append("supplier_name", query);
+        }
+      } else {
+        // Search by name
+        params.append("supplier_name", query);
+      }
+
+      const response = await frappeAPI.makeAuthenticatedRequest(
         "GET",
         `${endpoint}?${params.toString()}`
       );
 
-      // If no email results, try name search
-      if (!emailResponse.message.data?.length) {
-        params.delete("email_id");
-        params.append("supplier_name", query);
+      if (!response.message || !Array.isArray(response.message.data)) {
+        throw new Error("Invalid response format");
       }
-    } else {
-      // Search by name
-      params.append("supplier_name", query);
-    }
 
-    const response = await frappeAPI.makeAuthenticatedRequest(
-      "GET",
-      `${endpoint}?${params.toString()}`
-    );
+      const suppliers = response.message.data;
+      setShowDropdown(true);
 
-    if (!response.message || !Array.isArray(response.message.data)) {
-      throw new Error("Invalid response format");
-    }
-
-    const suppliers = response.message.data;
-    setShowDropdown(true);
-
-    if (suppliers.length === 0) {
-      setSearchResults([]);
-      return;
-    }
-
-    // Filter results to match the query more precisely
-    const filteredSuppliers = suppliers.filter((supplier: { email_id: string; }) => {
-      // For email searches, check if the email contains the query
-      if (query.includes("@") && supplier.email_id) {
-        return supplier.email_id.toLowerCase().includes(query.toLowerCase());
+      if (suppliers.length === 0) {
+        setSearchResults([]);
+        return;
       }
-      return true;
-    });
 
-    // If we have filtered results, use them instead
-    const suppliersToUse = filteredSuppliers.length > 0 ? filteredSuppliers : suppliers;
-
-    const detailedSuppliers = await Promise.all(
-      suppliersToUse.map(async (supplier: { name: string }) => {
-        try {
-          const supplierDetails = await frappeAPI.getSupplierById(supplier.name);
-          return supplierDetails.data;
-        } catch (error) {
-          console.error(
-            `Failed to fetch details for supplier ${supplier.name}:`,
-            error
-          );
-          return null;
+      // Filter results to match the query more precisely
+      const filteredSuppliers = suppliers.filter((supplier: { email_id: string; }) => {
+        // For email searches, check if the email contains the query
+        if (query.includes("@") && supplier.email_id) {
+          return supplier.email_id.toLowerCase().includes(query.toLowerCase());
         }
-      })
-    );
+        return true;
+      });
 
-    const validSuppliers = detailedSuppliers.filter(
-      (supplier) => supplier !== null
-    );
-    setSearchResults(validSuppliers);
-  } catch (error) {
-    console.error("Search error:", error);
-    setSearchResults([]);
-    setShowDropdown(true);
-  } finally {
-    setIsSearching(false);
-  }
-}, []);
+      // If we have filtered results, use them instead
+      const suppliersToUse = filteredSuppliers.length > 0 ? filteredSuppliers : suppliers;
+
+      const detailedSuppliers = await Promise.all(
+        suppliersToUse.map(async (supplier: { name: string }) => {
+          try {
+            const supplierDetails = await frappeAPI.getSupplierById(supplier.name);
+            return supplierDetails.data;
+          } catch (error) {
+            console.error(
+              `Failed to fetch details for supplier ${supplier.name}:`,
+              error
+            );
+            return null;
+          }
+        })
+      );
+
+      const validSuppliers = detailedSuppliers.filter(
+        (supplier) => supplier !== null
+      );
+      setSearchResults(validSuppliers);
+    } catch (error) {
+      console.error("Search error:", error);
+      setSearchResults([]);
+      setShowDropdown(true);
+    } finally {
+      setIsSearching(false);
+    }
+  }, []);
 
   // Update the handleSearchChange function to reset paid_to when clearing search
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -480,9 +531,13 @@ const PaymentForm = () => {
       return;
     }
 
-    const result = await submitPayment();
+    // For edit mode, we might need to call a different API method
+    const result = isEditMode && editPaymentId 
+      ? await updatePayment(editPaymentId)
+      : await submitPayment();
+      
     if (result.success) {
-      toast.success("Payment submitted successfully!");
+      toast.success(isEditMode ? "Payment updated successfully!" : "Payment submitted successfully!");
       // Reset form fields
       setField("bill_number", "");
       setField("amountaed", "0.00");
@@ -495,11 +550,39 @@ const PaymentForm = () => {
       setField("custom_attachments", []);
       setImages([]);
       setSearchQuery("");
+      setEditPaymentId(null);
       isManualImageUpdate.current = false; // Reset flag
+      
+      navigate("/accountUser?tab=payment-summary");
     } else {
-      console.error("Payment submission failed:", result.error);
+      console.error(`Payment ${isEditMode ? 'update' : 'submission'} failed:`, result.error);
     }
-    navigate("/accountUser?tab=payment-summary");
+  };
+
+  // Add function to update existing payment
+  const updatePayment = async (paymentId: string) => {
+    try {
+      // You'll need to implement this in your payment store
+      // This is a placeholder - adjust based on your API
+      const response = await frappeAPI.updatePayment(paymentId, {
+        bill_number,
+        amountaed: parseFloat(amountaed),
+        paid_to,
+        custom_purpose_of_payment,
+        custom_mode_of_payment,
+        custom_name_of_bank,
+        custom_account_number,
+        custom_card_number,
+        custom_ifscibanswift_code,
+        custom_account_holder_name,
+        custom_attachments,
+      });
+      
+      return { success: true, data: response };
+    } catch (error) {
+      console.error("Error updating payment:", error);
+      return { success: false, error };
+    }
   };
 
   // Then modify your getModeOfPaymentValue function to handle the default case:
@@ -537,6 +620,7 @@ const PaymentForm = () => {
         break;
     }
   };
+  
   // Add this function to handle key events
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Escape") {
@@ -550,10 +634,12 @@ const PaymentForm = () => {
   return (
     <div className="w-full mx-auto bg-white shadow-lg rounded-lg overflow-hidden lg:p-3">
       {/* Header */}
-      <div className="bg-emerald-500  px-6 py-4 text-white">
-        <h1 className="text-xl md:text-2xl font-semibold">Payment Entry</h1>
+      <div className="bg-emerald-500 px-6 py-4 text-white">
+        <h1 className="text-xl md:text-2xl font-semibold">
+          {isEditMode ? "Edit Payment Entry" : "Payment Entry"}
+        </h1>
         <p className="text-blue-100 text-sm md:text-base">
-          Enter payment details
+          {isEditMode ? "Update payment details" : "Enter payment details"}
         </p>
       </div>
 
@@ -740,7 +826,6 @@ const PaymentForm = () => {
             </div>
 
             {/* Supplier Search */}
-            {/* Supplier Search */}
             <div className="relative col-span-1 md:col-span-2">
               <label className="flex items-center space-x-2 text-sm md:text-base font-medium text-gray-700 mb-2">
                 <User className="h-4 w-4 text-gray-500" />
@@ -853,16 +938,16 @@ const PaymentForm = () => {
           </div>
 
           {/* Submit Button */}
-          <div className="pt-2">
+          <div className="pt-2 flex gap-3">
             <button
               type="submit"
               disabled={isLoading || isUploading}
-              className="w-full bg-emerald-500  text-white py-3 px-4 rounded-md font-medium hover:from-blue-600 hover:to-blue-700 transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 outline-none disabled:opacity-50"
+              className="flex-1 bg-emerald-500 text-white py-3 px-4 rounded-md font-medium hover:bg-emerald-600 transition-all duration-200 focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 outline-none disabled:opacity-50"
             >
               {isLoading ? (
                 <span className="flex items-center justify-center">
                   <Loader2 className="h-5 w-5 animate-spin mr-2" />
-                  Submitting...
+                  {isEditMode ? "Updating..." : "Submitting..."}
                 </span>
               ) : isUploading ? (
                 <span className="flex items-center justify-center">
@@ -870,9 +955,21 @@ const PaymentForm = () => {
                   Uploading...
                 </span>
               ) : (
-                "Submit Payment"
+                isEditMode ? "Update Payment" : "Submit Payment"
               )}
             </button>
+            
+            {/* {isEditMode && (
+              <button
+                type="button"
+                onClick={() => {
+                  navigate("/accountUser?tab=payment-summary");
+                }}
+                className="px-6 py-3 border border-gray-300 rounded-md text-gray-700 font-medium hover:bg-gray-50 transition-all duration-200 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 outline-none"
+              >
+                Cancel
+              </button>
+            )} */}
           </div>
         </div>
       </form>

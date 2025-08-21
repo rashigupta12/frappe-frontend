@@ -5,12 +5,13 @@ import {
   Filter,
   Plus,
   Search,
-  Trash2
+  Trash2,
+  Edit3
 } from "lucide-react";
 import React, { useMemo, useState } from "react";
 import DeleteConfirmation from "../../common/DeleteComfirmation";
 
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { PasswordResetLoader } from "../../common/Loader";
 import { Button } from "../ui/button";
 import { Dialog } from "../ui/dialog";
@@ -48,9 +49,11 @@ interface Props {
 const PaymentSummary: React.FC<Props> = ({
   payments,
   loading,
+  // onEdit,
   onDelete,
   onRefresh,
 }) => {
+  const navigate = useNavigate();
   const todayStr = new Date().toISOString().split("T")[0];
 
   const [fromDate, setFromDate] = useState(todayStr);
@@ -159,6 +162,32 @@ const PaymentSummary: React.FC<Props> = ({
   const openPaymentDetails = (payment: Payment) => {
     setSelectedPayment(payment);
     setDetailModalOpen(true);
+  };
+
+  // New edit handler
+  const handleEdit = (payment: Payment) => {
+    // Encode payment data to pass via URL params or localStorage
+    const paymentData = {
+      id: payment.name,
+      bill_number: payment.bill_number || "",
+      amountaed: payment.amountaed?.toString() || "0.00",
+      paid_to: payment.paid_to || "",
+      custom_purpose_of_payment: payment.custom_purpose_of_payment || "",
+      custom_mode_of_payment: payment.custom_mode_of_payment || "Cash",
+      custom_name_of_bank: payment.custom_name_of_bank || "",
+      custom_account_number: payment.custom_account_number || "",
+      custom_card_number: payment.custom_card_number || "",
+      custom_ifscibanswift_code: payment.custom_ifscibanswift_code || "",
+      custom_account_holder_name: payment.custom_account_holder_name || "",
+      custom_attachments: payment.custom_attachments || [],
+      isEdit: true
+    };
+
+    // Store in sessionStorage for the form to pick up
+    sessionStorage.setItem('editPaymentData', JSON.stringify(paymentData));
+    
+    // Navigate to payment form
+    navigate("/accountUser?tab=payment-form&edit=true");
   };
 
   if (loading) {
@@ -350,7 +379,7 @@ const PaymentSummary: React.FC<Props> = ({
                         strokeLinecap="round"
                         strokeLinejoin="round"
                         strokeWidth={2}
-                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2 2v12a2 2 0 002 2z"
                       />
                     </svg>
                   </div>
@@ -450,8 +479,18 @@ const PaymentSummary: React.FC<Props> = ({
                         <Button
                           variant="ghost"
                           size="sm"
+                          className="h-5 w-5 p-0 hover:bg-blue-50"
+                          onClick={() => handleEdit(p)}
+                          title="Edit Payment"
+                        >
+                          <Edit3 className="h-3 w-3 text-blue-500" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
                           className="h-5 w-5 p-0 hover:bg-red-50"
                           onClick={() => askDelete(p.name)}
+                          title="Delete Payment"
                         >
                           <Trash2 className="h-3 w-3 text-red-500" />
                         </Button>
