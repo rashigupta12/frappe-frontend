@@ -14,7 +14,7 @@ interface ImageItem {
   url: string;
   file?: File;
   remarks?: string;
-  type: 'image' | 'pdf' | 'doc'; // Changed from optional to required
+  type: "image" | "pdf" | "doc"; // Changed from optional to required
 }
 
 const PaymentForm = () => {
@@ -79,46 +79,55 @@ const PaymentForm = () => {
     }
   }, [paid_to, searchQuery]);
 
-useEffect(() => {
-  // Only update images from store if they weren't manually set
-  if (!isManualImageUpdate.current && custom_attachments) {
-    const convertedImages: ImageItem[] = custom_attachments.map(
-      (attachment, index) => {
-        if (!attachment.image) return null;
-        
-        let url = attachment.image;
-        if (!url.startsWith("http") && !url.startsWith("/") && !url.startsWith("blob:")) {
-          url = `/${url}`;
-        }
-        
-        // Determine file type from URL
-        let type: 'image' | 'pdf' | 'doc' = 'image';
-        if (url.toLowerCase().endsWith('.pdf')) {
-          type = 'pdf';
-        } else if (url.toLowerCase().endsWith('.doc') || url.toLowerCase().endsWith('.docx')) {
-          type = 'doc';
-        }
-        
-        return {
-          id: `store-${index}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          url: url,
-          remarks: attachment.remarks || `Attachment ${index + 1}`,
-          type: type
-        };
-      }
-    ).filter(Boolean) as ImageItem[];
-    
-    setImages(convertedImages);
-  }
-  
-  // Reset the manual update flag after processing
-  if (isManualImageUpdate.current) {
-    const timer = setTimeout(() => {
-      isManualImageUpdate.current = false;
-    }, 1000);
-    return () => clearTimeout(timer);
-  }
-}, [custom_attachments]);
+  useEffect(() => {
+    // Only update images from store if they weren't manually set
+    if (!isManualImageUpdate.current && custom_attachments) {
+      const convertedImages: ImageItem[] = custom_attachments
+        .map((attachment, index) => {
+          if (!attachment.image) return null;
+
+          let url = attachment.image;
+          if (
+            !url.startsWith("http") &&
+            !url.startsWith("/") &&
+            !url.startsWith("blob:")
+          ) {
+            url = `/${url}`;
+          }
+
+          // Determine file type from URL
+          let type: "image" | "pdf" | "doc" = "image";
+          if (url.toLowerCase().endsWith(".pdf")) {
+            type = "pdf";
+          } else if (
+            url.toLowerCase().endsWith(".doc") ||
+            url.toLowerCase().endsWith(".docx")
+          ) {
+            type = "doc";
+          }
+
+          return {
+            id: `store-${index}-${Date.now()}-${Math.random()
+              .toString(36)
+              .substr(2, 9)}`,
+            url: url,
+            remarks: attachment.remarks || `Attachment ${index + 1}`,
+            type: type,
+          };
+        })
+        .filter(Boolean) as ImageItem[];
+
+      setImages(convertedImages);
+    }
+
+    // Reset the manual update flag after processing
+    if (isManualImageUpdate.current) {
+      const timer = setTimeout(() => {
+        isManualImageUpdate.current = false;
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [custom_attachments]);
 
   const handleSupplierSearch = useCallback(async (query: string) => {
   if (!query.trim()) {
@@ -136,9 +145,10 @@ useEffect(() => {
     if (/^\d+$/.test(query)) {
       // Search by phone number (only digits)
       params.append("mobile_no", query);
-    } else if (/^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(query)) {
-      // Search by email (strict email format)
+    } else if (query.includes("@")) {
+      // Search by email (partial match)
       params.append("email_id", query);
+      
       const emailResponse = await frappeAPI.makeAuthenticatedRequest(
         "GET",
         `${endpoint}?${params.toString()}`
@@ -171,8 +181,20 @@ useEffect(() => {
       return;
     }
 
+    // Filter results to match the query more precisely
+    const filteredSuppliers = suppliers.filter((supplier: { email_id: string; }) => {
+      // For email searches, check if the email contains the query
+      if (query.includes("@") && supplier.email_id) {
+        return supplier.email_id.toLowerCase().includes(query.toLowerCase());
+      }
+      return true;
+    });
+
+    // If we have filtered results, use them instead
+    const suppliersToUse = filteredSuppliers.length > 0 ? filteredSuppliers : suppliers;
+
     const detailedSuppliers = await Promise.all(
-      suppliers.map(async (supplier: { name: string }) => {
+      suppliersToUse.map(async (supplier: { name: string }) => {
         try {
           const supplierDetails = await frappeAPI.getSupplierById(supplier.name);
           return supplierDetails.data;
@@ -204,8 +226,8 @@ useEffect(() => {
     const query = e.target.value;
     setSearchQuery(query);
 
-    // Clear paid_to when search query is empty
-    if (!query.trim()) {
+    // Clear paid_to when search query changes from the selected value
+    if (paid_to && query !== paid_to) {
       setField("paid_to", "");
     }
 
@@ -316,96 +338,122 @@ useEffect(() => {
     | "custom_ifscibanswift_code"
     | "custom_account_holder_name";
 
-const handleInputChange = (field: PaymentField, value: string) => {
-  // Only capitalize if it's a text field (not numbers, emails, etc.)
-  const shouldCapitalize = [
-    "paid_to",
-    "custom_name_of_bank",
-    "custom_account_holder_name",
-    "custom_purpose_of_payment",
-     "custom_ifscibanswift_code",
-  ].includes(field);
-  
-  const processedValue = shouldCapitalize ? capitalizeFirstLetter(value) : value;
-  setField(field, processedValue);
-};
+  const handleInputChange = (field: PaymentField, value: string) => {
+    // Only capitalize if it's a text field (not numbers, emails, etc.)
+    const shouldCapitalize = [
+      "paid_to",
+      "custom_name_of_bank",
+      "custom_account_holder_name",
+      "custom_purpose_of_payment",
+      "custom_ifscibanswift_code",
+    ].includes(field);
 
-const handleImagesChange = (newImages: ImageItem[]) => {
-  // Set flag to indicate manual image update
-  isManualImageUpdate.current = true;
-  
-  setImages(newImages);
-  
-  // Convert images to attachments format with proper error handling
-  const convertedAttachments = newImages.map((image, index) => {
+    const processedValue = shouldCapitalize
+      ? capitalizeFirstLetter(value)
+      : value;
+    setField(field, processedValue);
+  };
+
+  const handleImagesChange = (newImages: ImageItem[]) => {
+    // Set flag to indicate manual image update
+    isManualImageUpdate.current = true;
+
+    setImages(newImages);
+
+    // Convert images to attachments format with proper error handling
+    const convertedAttachments = newImages
+      .map((image, index) => {
+        try {
+          return {
+            image: image.url,
+            remarks: image.remarks || `Attachment ${index + 1}`,
+          };
+        } catch (error) {
+          console.error(`Error converting image ${index}:`, error);
+          return {
+            image: image.url,
+            remarks: `Attachment ${index + 1}`,
+          };
+        }
+      })
+      .filter(Boolean); // Remove any null/undefined entries
+
+    setField("custom_attachments", convertedAttachments);
+  };
+
+  const handleImageUpload = async (file: File): Promise<string> => {
     try {
-      return {
-        image: image.url,
-        remarks: image.remarks || `Attachment ${index + 1}`,
-      };
+      console.log(
+        "Starting upload for file:",
+        file.name,
+        "Type:",
+        file.type,
+        "Size:",
+        file.size
+      );
+
+      // Validate file type before upload
+      const validImageTypes = [
+        "image/jpeg",
+        "image/jpg",
+        "image/png",
+        "image/gif",
+        "image/webp",
+      ];
+      const validDocTypes = [
+        "application/pdf",
+        "application/msword",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      ];
+
+      if (
+        !validImageTypes.includes(file.type) &&
+        !validDocTypes.includes(file.type)
+      ) {
+        throw new Error(`Unsupported file type: ${file.type}`);
+      }
+
+      // Upload the file and get the response
+      const response = await uploadAndAddAttachment(file);
+
+      console.log("Upload response:", response);
+
+      // Check if response exists and has the expected structure
+      if (!response) {
+        throw new Error("No response received from upload function");
+      }
+
+      // Handle different response structures
+      let fileUrl = "";
+      if (response.file_url) {
+        fileUrl = response.file_url;
+      } else if (response.message?.file_url) {
+        fileUrl = response.message.file_url;
+      } else if (response.data?.file_url) {
+        fileUrl = response.data.file_url;
+      } else {
+        throw new Error("Unable to determine file URL from response");
+      }
+
+      // Ensure proper URL formatting
+      if (!fileUrl.startsWith("http") && !fileUrl.startsWith("/")) {
+        fileUrl = `/${fileUrl}`;
+      }
+
+      // Add cache busting parameter
+      const cacheBuster = `${Date.now()}-${Math.random()
+        .toString(36)
+        .substr(2, 9)}`;
+      const separator = fileUrl.includes("?") ? "&" : "?";
+      const finalUrl = `${fileUrl}${separator}t=${cacheBuster}`;
+
+      console.log("Final file URL:", finalUrl);
+      return finalUrl;
     } catch (error) {
-      console.error(`Error converting image ${index}:`, error);
-      return {
-        image: image.url,
-        remarks: `Attachment ${index + 1}`,
-      };
+      console.error("Upload error:", error);
+      throw error;
     }
-  }).filter(Boolean); // Remove any null/undefined entries
-  
-  setField("custom_attachments", convertedAttachments);
-};
-
-const handleImageUpload = async (file: File): Promise<string> => {
-  try {
-    console.log('Starting upload for file:', file.name, 'Type:', file.type, 'Size:', file.size);
-    
-    // Validate file type before upload
-    const validImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
-    const validDocTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
-    
-    if (!validImageTypes.includes(file.type) && !validDocTypes.includes(file.type)) {
-      throw new Error(`Unsupported file type: ${file.type}`);
-    }
-    
-    // Upload the file and get the response
-    const response = await uploadAndAddAttachment(file);
-    
-    console.log('Upload response:', response);
-    
-    // Check if response exists and has the expected structure
-    if (!response) {
-      throw new Error('No response received from upload function');
-    }
-
-    // Handle different response structures
-    let fileUrl = '';
-    if (response.file_url) {
-      fileUrl = response.file_url;
-    } else if (response.message?.file_url) {
-      fileUrl = response.message.file_url;
-    } else if (response.data?.file_url) {
-      fileUrl = response.data.file_url;
-    } else {
-      throw new Error('Unable to determine file URL from response');
-    }
-    
-    // Ensure proper URL formatting
-    if (!fileUrl.startsWith("http") && !fileUrl.startsWith("/")) {
-      fileUrl = `/${fileUrl}`;
-    }
-    
-    // Add cache busting parameter
-    const cacheBuster = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    const separator = fileUrl.includes('?') ? '&' : '?';
-    const finalUrl = `${fileUrl}${separator}t=${cacheBuster}`;
-    
-    console.log('Final file URL:', finalUrl);
-    return finalUrl;
-  } catch (error) {
-    console.error("Upload error:", error);
-    throw error;
-  }
-};
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -421,7 +469,7 @@ const handleImageUpload = async (file: File): Promise<string> => {
       toast.error("Please enter a valid amount");
       return;
     }
-    if (custom_purpose_of_payment === "" ) {
+    if (custom_purpose_of_payment === "") {
       toast.error("Please enter a purpose of payment");
       return;
     }
@@ -452,7 +500,6 @@ const handleImageUpload = async (file: File): Promise<string> => {
       console.error("Payment submission failed:", result.error);
     }
     navigate("/accountUser?tab=payment-summary");
-
   };
 
   // Then modify your getModeOfPaymentValue function to handle the default case:
@@ -488,6 +535,15 @@ const handleImageUpload = async (file: File): Promise<string> => {
       default:
         setField("custom_mode_of_payment", "");
         break;
+    }
+  };
+  // Add this function to handle key events
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Escape") {
+      setShowDropdown(false);
+    } else if (e.key === "Backspace" && paid_to && searchQuery === paid_to) {
+      // If backspace is pressed and the current value matches the selected supplier, clear it
+      setField("paid_to", "");
     }
   };
 
@@ -670,7 +726,7 @@ const handleImageUpload = async (file: File): Promise<string> => {
             {/* Bill No */}
             <div>
               <label className="block text-sm md:text-base font-medium text-gray-700 mb-2">
-                Bill No 
+                Bill No
               </label>
               <input
                 type="text"
@@ -683,6 +739,7 @@ const handleImageUpload = async (file: File): Promise<string> => {
               />
             </div>
 
+            {/* Supplier Search */}
             {/* Supplier Search */}
             <div className="relative col-span-1 md:col-span-2">
               <label className="flex items-center space-x-2 text-sm md:text-base font-medium text-gray-700 mb-2">
@@ -701,13 +758,28 @@ const handleImageUpload = async (file: File): Promise<string> => {
                   type="text"
                   value={searchQuery}
                   onChange={handleSearchChange}
+                  onKeyDown={handleKeyDown}
                   placeholder="Search by name, phone, or email"
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none pr-10"
                 />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSearchQuery("");
+                      setField("paid_to", "");
+                      setShowDropdown(false);
+                    }}
+                    className="absolute right-8 top-2.5 text-gray-400 hover:text-gray-600"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
                 {isSearching && (
-                  <Loader2 className="absolute right-3 top-3 h-4 w-4 animate-spin text-gray-500" />
+                  <Loader2 className="absolute right-3 top-2.5 h-4 w-4 animate-spin text-gray-500" />
                 )}
               </div>
+
               {showDropdown && (
                 <div className="absolute z-10 w-full bg-white shadow-lg rounded-md border border-gray-200 max-h-60 overflow-auto mt-1">
                   {searchResults.length > 0 ? (

@@ -16,7 +16,7 @@ interface ImageItem {
   url: string;
   file?: File;
   remarks?: string;
-  type: 'image' | 'pdf' | 'doc';
+  type: "image" | "pdf" | "doc";
 }
 
 const ReceiptForm = () => {
@@ -74,46 +74,55 @@ const ReceiptForm = () => {
   }, [custom_mode_of_payment, setField, user.user?.username, paid_by]);
 
   // Sync searchQuery with paid_from from store
-useEffect(() => {
-  // Only sync if paid_from was set programmatically (not from user typing)
-  if (paid_from && paid_from !== searchQuery && !showDropdown) {
-    setSearchQuery(paid_from);
-  }
-}, [paid_from, searchQuery, showDropdown]);
+  useEffect(() => {
+    // Only sync if paid_from was set programmatically (not from user typing)
+    if (paid_from && paid_from !== searchQuery && !showDropdown) {
+      setSearchQuery(paid_from);
+    }
+  }, [paid_from, searchQuery, showDropdown]);
 
   // Convert custom_attachments to images format
   useEffect(() => {
     // Only update images from store if they weren't manually set
     if (!isManualImageUpdate.current && custom_attachments) {
-      const convertedImages: ImageItem[] = custom_attachments.map(
-        (attachment, index) => {
+      const convertedImages: ImageItem[] = custom_attachments
+        .map((attachment, index) => {
           if (!attachment.image) return null;
-          
+
           let url = attachment.image;
-          if (!url.startsWith("http") && !url.startsWith("/") && !url.startsWith("blob:")) {
+          if (
+            !url.startsWith("http") &&
+            !url.startsWith("/") &&
+            !url.startsWith("blob:")
+          ) {
             url = `/${url}`;
           }
-          
+
           // Determine file type from URL
-          let type: 'image' | 'pdf' | 'doc' = 'image';
-          if (url.toLowerCase().endsWith('.pdf')) {
-            type = 'pdf';
-          } else if (url.toLowerCase().endsWith('.doc') || url.toLowerCase().endsWith('.docx')) {
-            type = 'doc';
+          let type: "image" | "pdf" | "doc" = "image";
+          if (url.toLowerCase().endsWith(".pdf")) {
+            type = "pdf";
+          } else if (
+            url.toLowerCase().endsWith(".doc") ||
+            url.toLowerCase().endsWith(".docx")
+          ) {
+            type = "doc";
           }
-          
+
           return {
-            id: `store-${index}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            id: `store-${index}-${Date.now()}-${Math.random()
+              .toString(36)
+              .substr(2, 9)}`,
             url: url,
             remarks: attachment.remarks || `Attachment ${index + 1}`,
-            type: type
+            type: type,
           };
-        }
-      ).filter(Boolean) as ImageItem[];
-      
+        })
+        .filter(Boolean) as ImageItem[];
+
       setImages(convertedImages);
     }
-    
+
     // Reset the manual update flag after processing
     if (isManualImageUpdate.current) {
       const timer = setTimeout(() => {
@@ -124,116 +133,125 @@ useEffect(() => {
   }, [custom_attachments]);
 
   const handleCustomerSearch = useCallback(async (query: string) => {
-     if (!query.trim()) {
-       setSearchResults([]);
-       setShowDropdown(false);
-       return;
-     }
- 
-     setIsSearching(true);
-     try {
-       const endpoint = "/api/method/eits_app.customer_search.search_customers";
-       const params = new URLSearchParams();
- 
-       if (/^\d+$/.test(query)) {
-         // Search by phone number (only digits)
-         params.append("mobile_no", query);
-       } else if (/^[a-zA-Z0-9._-]+$/.test(query)) {
-         // Search by email (partial match) OR name
-         // First try email search
-         params.append("email_id", query);
-         const emailResponse = await frappeAPI.makeAuthenticatedRequest(
-           "GET",
-           `${endpoint}?${params.toString()}`
-         );
- 
-         // If no email results, try name search
-         if (!emailResponse.message.data?.length) {
-           params.delete("email_id");
-           params.append("customer_name", query);
-         }
-       } else {
-         // Search by name
-         params.append("customer_name", query);
-       }
- 
-       const response = await frappeAPI.makeAuthenticatedRequest(
-         "GET",
-         `${endpoint}?${params.toString()}`
-       );
-       if (!response.message || !Array.isArray(response.message.data)) {
-         throw new Error("Invalid response format");
-       }
- 
-       const customers = response.message.data;
-       setShowDropdown(true);
- 
-       if (customers.length === 0) {
-         setSearchResults([]);
-         return;
-       }
- 
-       const detailedCustomers = await Promise.all(
-         customers.map(async (customer: { name: any }) => {
-           try {
-             const customerDetails = await frappeAPI.getCustomerById(
-               customer.name
-             );
-             return customerDetails.data;
-           } catch (error) {
-             console.error(
-               `Failed to fetch details for customer ${customer.name}:`,
-               error
-             );
-             return null;
-           }
-         })
-       );
- 
-       const validCustomers = detailedCustomers.filter(
-         (customer) => customer !== null
-       );
- 
-       setSearchResults(validCustomers);
-     } catch (error) {
-       // Error handling...
-       console.error("Search error:", error);
-       setSearchResults([]);
-       setShowDropdown(true);
-      
-     } finally {
-       setIsSearching(false);
-     }
-   }, []);
+    if (!query.trim()) {
+      setSearchResults([]);
+      setShowDropdown(false);
+      return;
+    }
 
- const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-  const query = e.target.value;
-  setSearchQuery(query);
+    setIsSearching(true);
+    try {
+      const endpoint = "/api/method/eits_app.customer_search.search_customers";
+      const params = new URLSearchParams();
 
-  // Clear paid_from when search query is empty
-  if (!query.trim()) {
-    setField("paid_from", "");
-  } else {
-    // Update paid_from to match current search query while typing
-    setField("paid_from", query);
-  }
+      // Search by phone number (only digits)
+      if (/^\d+$/.test(query)) {
+        params.append("mobile_no", query);
+      }
+      // Search by email (contains @ symbol)
+      else if (query.includes("@")) {
+        params.append("email_id", query);
 
-  if (searchTimeout) {
-    clearTimeout(searchTimeout);
-  }
+        const emailResponse = await frappeAPI.makeAuthenticatedRequest(
+          "GET",
+          `${endpoint}?${params.toString()}`
+        );
 
-  if (query.length > 0) {
-    setSearchTimeout(
-      setTimeout(() => {
-        handleCustomerSearch(query);
-      }, 300)
-    );
-  } else {
-    setSearchResults([]);
-    setShowDropdown(false);
-  }
-};
+        // If no email results, try name search
+        if (!emailResponse.message.data?.length) {
+          params.delete("email_id");
+          params.append("customer_name", query);
+        }
+      }
+      // Search by name
+      else {
+        params.append("customer_name", query);
+      }
 
+      const response = await frappeAPI.makeAuthenticatedRequest(
+        "GET",
+        `${endpoint}?${params.toString()}`
+      );
+
+      if (!response.message || !Array.isArray(response.message.data)) {
+        throw new Error("Invalid response format");
+      }
+
+      let customers = response.message.data;
+
+      // Additional client-side filtering for better email matching
+      if (query.includes("@")) {
+        customers = customers.filter(
+          (customer: { email_id: string }) =>
+            customer.email_id &&
+            customer.email_id.toLowerCase().includes(query.toLowerCase())
+        );
+      }
+
+      setShowDropdown(true);
+
+      if (customers.length === 0) {
+        setSearchResults([]);
+        return;
+      }
+
+      const detailedCustomers = await Promise.all(
+        customers.map(async (customer: { name: any }) => {
+          try {
+            const customerDetails = await frappeAPI.getCustomerById(
+              customer.name
+            );
+            return customerDetails.data;
+          } catch (error) {
+            console.error(
+              `Failed to fetch details for customer ${customer.name}:`,
+              error
+            );
+            return null;
+          }
+        })
+      );
+
+      const validCustomers = detailedCustomers.filter(
+        (customer) => customer !== null
+      );
+
+      setSearchResults(validCustomers);
+    } catch (error) {
+      console.error("Search error:", error);
+      setSearchResults([]);
+      setShowDropdown(true);
+    } finally {
+      setIsSearching(false);
+    }
+  }, []);
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const query = e.target.value;
+    setSearchQuery(query);
+
+    // Clear paid_from when search query is empty
+    if (!query.trim()) {
+      setField("paid_from", "");
+    } else {
+      // Update paid_from to match current search query while typing
+      setField("paid_from", query);
+    }
+
+    if (searchTimeout) {
+      clearTimeout(searchTimeout);
+    }
+
+    if (query.length > 0) {
+      setSearchTimeout(
+        setTimeout(() => {
+          handleCustomerSearch(query);
+        }, 300)
+      );
+    } else {
+      setSearchResults([]);
+      setShowDropdown(false);
+    }
+  };
 
   const handleCloseCustomerDialog = () => {
     setShowAddCustomerDialog(false);
@@ -253,30 +271,31 @@ useEffect(() => {
     toast.success("Customer selected");
   };
 
- const handleNewCustomerInputChange = (
-  e: React.ChangeEvent<HTMLInputElement>
-) => {
-  const { name, value } = e.target;
-  
-  // Capitalize first letter for customer_name field
-  const processedValue = name === 'customer_name' ? capitalizeFirstLetter(value) : value;
-  
-  setNewCustomerData((prev) => ({ ...prev, [name]: processedValue }));
-};
+  const handleNewCustomerInputChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const { name, value } = e.target;
+
+    // Capitalize first letter for customer_name field
+    const processedValue =
+      name === "customer_name" ? capitalizeFirstLetter(value) : value;
+
+    setNewCustomerData((prev) => ({ ...prev, [name]: processedValue }));
+  };
 
   const handleAddNewCustomer = () => {
-  setNewCustomerData({
-    customer_name: capitalizeFirstLetter(
-      /^\d+$/.test(searchQuery) || searchQuery.includes("@")
-        ? ""
-        : searchQuery
-    ),
-    mobile_no: /^\d+$/.test(searchQuery) ? searchQuery : "",
-    email_id: searchQuery.includes("@") ? searchQuery : "",
-  });
-  setShowAddCustomerDialog(true);
-  setShowDropdown(false);
-};
+    setNewCustomerData({
+      customer_name: capitalizeFirstLetter(
+        /^\d+$/.test(searchQuery) || searchQuery.includes("@")
+          ? ""
+          : searchQuery
+      ),
+      mobile_no: /^\d+$/.test(searchQuery) ? searchQuery : "",
+      email_id: searchQuery.includes("@") ? searchQuery : "",
+    });
+    setShowAddCustomerDialog(true);
+    setShowDropdown(false);
+  };
 
   const handleCreateCustomer = async () => {
     if (!newCustomerData.customer_name) {
@@ -301,7 +320,6 @@ useEffect(() => {
       }
     } catch (error) {
       console.error("Error creating customer:", error);
-      
     } finally {
       setCreatingCustomer(false);
     }
@@ -328,93 +346,118 @@ useEffect(() => {
     | "custom_ifscibanswift_code"
     | "custom_account_holder_name";
 
- const handleInputChange = (field: ReceiptField, value: string) => {
-   // Only capitalize if it's a text field (not numbers, emails, etc.)
-   const shouldCapitalize = [
-     "paid_by",
-     "custom_name_of_bank",
-     "custom_account_holder_name",
-     "custom_purpose_of_payment",
-     "custom_ifscibanswift_code",
-   ].includes(field);
-   
-   const processedValue = shouldCapitalize ? capitalizeFirstLetter(value) : value;
-   setField(field, processedValue);
- };
+  const handleInputChange = (field: ReceiptField, value: string) => {
+    // Only capitalize if it's a text field (not numbers, emails, etc.)
+    const shouldCapitalize = [
+      "paid_by",
+      "custom_name_of_bank",
+      "custom_account_holder_name",
+      "custom_purpose_of_payment",
+      "custom_ifscibanswift_code",
+    ].includes(field);
+
+    const processedValue = shouldCapitalize
+      ? capitalizeFirstLetter(value)
+      : value;
+    setField(field, processedValue);
+  };
 
   const handleImagesChange = (newImages: ImageItem[]) => {
     // Set flag to indicate manual image update
     isManualImageUpdate.current = true;
-    
+
     setImages(newImages);
-    
+
     // Convert images to attachments format with proper error handling
-    const convertedAttachments = newImages.map((image, index) => {
-      try {
-        return {
-          image: image.url,
-          remarks: image.remarks || `Attachment ${index + 1}`,
-        };
-      } catch (error) {
-        console.error(`Error converting image ${index}:`, error);
-        return {
-          image: image.url,
-          remarks: `Attachment ${index + 1}`,
-        };
-      }
-    }).filter(Boolean); // Remove any null/undefined entries
-    
+    const convertedAttachments = newImages
+      .map((image, index) => {
+        try {
+          return {
+            image: image.url,
+            remarks: image.remarks || `Attachment ${index + 1}`,
+          };
+        } catch (error) {
+          console.error(`Error converting image ${index}:`, error);
+          return {
+            image: image.url,
+            remarks: `Attachment ${index + 1}`,
+          };
+        }
+      })
+      .filter(Boolean); // Remove any null/undefined entries
+
     setField("custom_attachments", convertedAttachments);
   };
 
   // Fixed handleImageUpload function
   const handleImageUpload = async (file: File): Promise<string> => {
-  try {
-    console.log('Starting upload for file:', file.name, 'Type:', file.type, 'Size:', file.size);
-    
-    // Validate file type before upload
-    const validImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
-    const validDocTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
-    
-    if (!validImageTypes.includes(file.type) && !validDocTypes.includes(file.type)) {
-      throw new Error(`Unsupported file type: ${file.type}`);
-    }
-    
-    // Upload the file and get the response
-    const uploadResponse = await uploadAndAddAttachment(file);
-    
-    console.log('Upload response received:', uploadResponse);
-    
-    // Check if upload was successful
-    if (!uploadResponse.success) {
-      throw new Error(uploadResponse.error || 'Upload failed');
-    }
-    
-    // The uploadResponse should contain file_url directly
-    if (uploadResponse && uploadResponse.file_url) {
-      let imageUrl = uploadResponse.file_url;
-      
-      // Ensure proper URL formatting
-      if (!imageUrl.startsWith("http") && !imageUrl.startsWith("/")) {
-        imageUrl = `/${imageUrl}`;
-      }
-      
-      // Add cache busting parameter with current timestamp and random component
-      const cacheBuster = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-      const separator = imageUrl.includes('?') ? '&' : '?';
-      const finalUrl = `${imageUrl}${separator}t=${cacheBuster}`;
-      
-      console.log('Final image URL:', finalUrl);
-      return finalUrl;
-    }
-    
-    throw new Error("Upload response missing file_url");
-  } catch (error) {
-    console.error("Upload error:", error);
-    throw error;
-  }
-};
+    try {
+      console.log(
+        "Starting upload for file:",
+        file.name,
+        "Type:",
+        file.type,
+        "Size:",
+        file.size
+      );
 
+      // Validate file type before upload
+      const validImageTypes = [
+        "image/jpeg",
+        "image/jpg",
+        "image/png",
+        "image/gif",
+        "image/webp",
+      ];
+      const validDocTypes = [
+        "application/pdf",
+        "application/msword",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      ];
+
+      if (
+        !validImageTypes.includes(file.type) &&
+        !validDocTypes.includes(file.type)
+      ) {
+        throw new Error(`Unsupported file type: ${file.type}`);
+      }
+
+      // Upload the file and get the response
+      const uploadResponse = await uploadAndAddAttachment(file);
+
+      console.log("Upload response received:", uploadResponse);
+
+      // Check if upload was successful
+      if (!uploadResponse.success) {
+        throw new Error(uploadResponse.error || "Upload failed");
+      }
+
+      // The uploadResponse should contain file_url directly
+      if (uploadResponse && uploadResponse.file_url) {
+        let imageUrl = uploadResponse.file_url;
+
+        // Ensure proper URL formatting
+        if (!imageUrl.startsWith("http") && !imageUrl.startsWith("/")) {
+          imageUrl = `/${imageUrl}`;
+        }
+
+        // Add cache busting parameter with current timestamp and random component
+        const cacheBuster = `${Date.now()}-${Math.random()
+          .toString(36)
+          .substr(2, 9)}`;
+        const separator = imageUrl.includes("?") ? "&" : "?";
+        const finalUrl = `${imageUrl}${separator}t=${cacheBuster}`;
+
+        console.log("Final image URL:", finalUrl);
+        return finalUrl;
+      }
+
+      throw new Error("Upload response missing file_url");
+    } catch (error) {
+      console.error("Upload error:", error);
+      throw error;
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -502,7 +545,6 @@ useEffect(() => {
           Enter receipt details
         </p>
       </div>
-
 
       {/* Form Content */}
       <form onSubmit={handleSubmit} className="p-4 md:p-6">
@@ -692,6 +734,7 @@ useEffect(() => {
             </div>
 
             {/* Customer Search (paid_from) */}
+            {/* Customer Search (paid_from) */}
             <div className="relative col-span-1 md:col-span-2">
               <label className="flex items-center space-x-2 text-sm md:text-base font-medium text-gray-700 mb-2">
                 <User className="h-4 w-4 text-gray-500" />
@@ -713,8 +756,22 @@ useEffect(() => {
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none pr-10"
                   required
                 />
+                {/* Add clear button */}
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSearchQuery("");
+                      setField("paid_from", "");
+                      setShowDropdown(false);
+                    }}
+                    className="absolute right-8 top-2.5 text-gray-400 hover:text-gray-600"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
                 {isSearching && (
-                  <Loader2 className="absolute right-3 top-3 h-4 w-4 animate-spin text-gray-500" />
+                  <Loader2 className="absolute right-3 top-2.5 h-4 w-4 animate-spin text-gray-500" />
                 )}
               </div>
               {showDropdown && (
