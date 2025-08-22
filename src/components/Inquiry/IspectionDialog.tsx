@@ -98,8 +98,11 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
     useState<InspectorDetails | null>(null);
   const [isLoadingInspectorDetails, setIsLoadingInspectorDetails] =
     useState(false);
+  // New state for available inspectors on date change
+  const [availableInspectors, setAvailableInspectors] = useState<InspectorAvailability[]>([]);
+  const [isLoadingAvailability, setIsLoadingAvailability] = useState(false);
+  
   console.log("inquiry", data);
-  // const [showEndTimeWarning, setShowEndTimeWarning] = useState(false);
 
   // Helper function to check if selected date is today
   const isSelectedDateToday = () => {
@@ -200,10 +203,9 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
     return 8; // Default max duration
   };
 
-  const fetchInspectorAvailability = async (
-    inspectorEmail: string,
-    dateStr: string
-  ) => {
+  // New function to fetch all inspectors' availability for a date
+  const fetchAllInspectorsAvailability = async (dateStr: string) => {
+    setIsLoadingAvailability(true);
     try {
       const response = await frappeAPI.makeAuthenticatedRequest(
         "GET",
@@ -212,40 +214,112 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
 
       if (response.message && response.message.status === "success") {
         const availabilityData = response.message.data;
+        
+        // Filter and process inspectors with available slots
+        const inspectorsWithSlots = availabilityData
+          .filter((inspector: InspectorAvailability) => 
+            inspector.availability.free_slots && inspector.availability.free_slots.length > 0
+          )
+          .map((inspector: InspectorAvailability) => {
+            const isToday = isSelectedDateToday();
+            const slotsToUse = isToday
+              ? filterFutureSlots(inspector.availability.free_slots)
+              : inspector.availability.free_slots;
 
-        // Find the specific inspector's availability
-        const inspectorData = availabilityData.find(
-          (insp: InspectorAvailability) => insp.email === inspectorEmail
-        );
-        if (inspectorData) {
-          // Only apply time filtering if the selected date is today
-          const selectedDate = new Date(dateStr);
-          const today = new Date();
-          const isToday =
-            selectedDate.getDate() === today.getDate() &&
-            selectedDate.getMonth() === today.getMonth() &&
-            selectedDate.getFullYear() === today.getFullYear();
+            return {
+              ...inspector,
+              availability: {
+                ...inspector.availability,
+                free_slots: slotsToUse,
+              },
+            };
+          })
+          .filter((inspector: InspectorAvailability) => 
+            inspector.availability.free_slots.length > 0
+          );
 
-          const slotsToUse = isToday
-            ? filterFutureSlots(inspectorData.availability.free_slots)
-            : inspectorData.availability.free_slots;
+        setAvailableInspectors(inspectorsWithSlots);
 
-          // Create modified inspector data with appropriate slots
-          const modifiedInspector = {
-            ...inspectorData,
-            availability: {
-              ...inspectorData.availability,
-              free_slots: slotsToUse,
-            },
-          };
-
-          setSelectedInspector(modifiedInspector);
+        // Auto-select first inspector with available slots in create mode
+        if (mode === "create" && inspectorsWithSlots.length > 0) {
+          const firstInspector = inspectorsWithSlots[0];
+          setSelectedInspector(firstInspector);
+          
+          // Auto-select first slot and set time
+          if (firstInspector.availability.free_slots.length > 0) {
+            const firstSlot = firstInspector.availability.free_slots[0];
+            setSelectedSlot({
+              start: firstSlot.start,
+              end: firstSlot.end,
+            });
+            setRequestedTime(firstSlot.start);
+          }
         }
       }
     } catch (error) {
-      console.error("Error fetching inspector availability:", error);
+      console.error("Error fetching inspectors availability:", error);
+      setAvailableInspectors([]);
+    } finally {
+      setIsLoadingAvailability(false);
     }
   };
+
+const fetchInspectorAvailability = async (
+  inspectorEmail: string,
+  dateStr: string
+) => {
+  try {
+    const response = await frappeAPI.makeAuthenticatedRequest(
+      "GET",
+      `/api/method/eits_app.inspector_availability.get_employee_availability?date=${dateStr}`
+    );
+
+    if (response.message && response.message.status === "success") {
+      const availabilityData = response.message.data;
+
+      // Find the specific inspector's availability
+      const inspectorData = availabilityData.find(
+        (insp: InspectorAvailability) => insp.email === inspectorEmail
+      );
+      if (inspectorData) {
+        // Only apply time filtering if the selected date is today
+        const selectedDate = new Date(dateStr);
+        const today = new Date();
+        const isToday =
+          selectedDate.getDate() === today.getDate() &&
+          selectedDate.getMonth() === today.getMonth() &&
+          selectedDate.getFullYear() === today.getFullYear();
+
+        const slotsToUse = isToday
+          ? filterFutureSlots(inspectorData.availability.free_slots)
+          : inspectorData.availability.free_slots;
+
+        // Create modified inspector data with appropriate slots
+        const modifiedInspector = {
+          ...inspectorData,
+          availability: {
+            ...inspectorData.availability,
+            free_slots: slotsToUse,
+          },
+        };
+
+        setSelectedInspector(modifiedInspector);
+
+        // Auto-select first slot and set time in edit mode
+        if (mode === "edit" && slotsToUse.length > 0) {
+          const firstSlot = slotsToUse[0];
+          setSelectedSlot({
+            start: firstSlot.start,
+            end: firstSlot.end,
+          });
+          setRequestedTime(firstSlot.start);
+        }
+      }
+    }
+  } catch (error) {
+    console.error("Error fetching inspector availability:", error);
+  }
+};
 
   const findEmployeeByEmail = async (email: string): Promise<string> => {
     try {
@@ -264,6 +338,7 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
       throw error;
     }
   };
+
   const deleteExistingDWA = async (
     inspectorEmail: string,
     todoDate: string, // Format: "YYYY-MM-DD"
@@ -433,6 +508,8 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
       setCalendarOpen(false);
       setCurrentInspectorDetails(null);
       setIsLoadingInspectorDetails(false);
+      setAvailableInspectors([]);
+      setIsLoadingAvailability(false);
     }
   }, [open]);
 
@@ -460,11 +537,6 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
         if (data?.date) {
           const selectedDate = new Date(data.date);
           setDate(selectedDate);
-
-          // // Fetch availability for edit mode
-          // if (data.allocated_to) {
-          //   fetchInspectorAvailability(data.allocated_to, data.date);
-          // }
         }
         if (data?.custom_start_time) {
           const startTime = data.custom_start_time.split(" ")[1].slice(0, 5);
@@ -539,30 +611,21 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
     setDate(selectedDate);
     setSelectedInspector(null);
     setSelectedSlot(null);
+    setRequestedTime("");
+    setAvailableInspectors([]);
 
     // Close the calendar popover first
     setCalendarOpen(false);
 
-    // Auto-open availability modal for both create and edit modes
     if (selectedDate) {
-      // For create mode - always open modal
+      const dateStr = format(selectedDate, "yyyy-MM-dd");
+      
       if (mode === "create") {
-        setTimeout(() => {
-          setShowAvailabilityModal(true);
-        }, 500);
-      }
-
-      // For edit mode - fetch availability and open modal
-      if (mode === "edit") {
-        if (data?.allocated_to) {
-          const dateStr = format(selectedDate, "yyyy-MM-dd");
-          fetchInspectorAvailability(data.allocated_to, dateStr);
-        }
-
-        // Auto-open modal in edit mode too
-        setTimeout(() => {
-          setShowAvailabilityModal(true);
-        }, 500);
+        // Fetch all inspectors' availability for create mode
+        fetchAllInspectorsAvailability(dateStr);
+      } else if (mode === "edit" && data?.allocated_to) {
+        // Fetch specific inspector's availability for edit mode
+        fetchInspectorAvailability(data.allocated_to, dateStr);
       }
     }
   };
@@ -610,6 +673,7 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
     setSelectedSlot(slot);
     setRequestedTime(slot.start);
   };
+
   // Update the validateRequestedTime function
   const validateRequestedTime = () => {
     if (!requestedTime) return false;
@@ -638,6 +702,7 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
 
     return true;
   };
+
   const validateTimeAgainstSlot = (
     time: string,
     durationValue: string,
@@ -857,6 +922,7 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
       return true; // Assume conflict to be safe
     }
   };
+
   const handleAssign = async () => {
     // First validate required fields in create mode
     if (mode === "create") {
@@ -1264,9 +1330,6 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
 
           {date && (
             <div className="space-y-2 px-4 py-2">
-              {/* <Label className="text-gray-700 text-sm font-medium">
-                {mode === "create" ? "Inspector Selected" : "Inspector"}
-              </Label> */}
               <div className="flex items-center justify-between">
                 {selectedInspector ? (
                   (console.log("inspectordetails", selectedInspector),
@@ -1286,9 +1349,6 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
                   <div className="flex items-center gap-2 bg-gray-50">
                     <div>
                       <div className="text-md text-gray-900 font-medium">
-                        {/* {data.allocated_to} */}
-                        {/* {currentInspectorDetails?.full_name ||
-                          data.allocated_to} */}
                         Update Inspector
                       </div>
                     </div>
@@ -1296,7 +1356,11 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
                 ) : (
                   <div className="text-md font-medium text-black">
                     {mode === "create"
-                      ? "Select Inspector"
+                      ? isLoadingAvailability
+                        ? "Loading inspectors..."
+                        : availableInspectors.length > 0
+                        ? "Inspector Auto-Selected"
+                        : "No inspectors available"
                       : "No inspector assigned"}
                   </div>
                 )}
@@ -1304,7 +1368,7 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
                   size="sm"
                   variant="outline"
                   onClick={() => setShowAvailabilityModal(true)}
-                  disabled={isProcessing}
+                  disabled={isProcessing || (mode === "create" && isLoadingAvailability)}
                 >
                   {selectedInspector ||
                   (mode === "edit" && data?.allocated_to) ? (
@@ -1313,6 +1377,18 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
                     <UserPlus className="w-3 h-3 text-black" />
                   )}
                 </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Show loading state for availability */}
+          {date && isLoadingAvailability && mode === "create" && (
+            <div className="space-y-2 px-5 py-2 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="flex items-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+                <Label className="text-blue-700 text-sm font-medium">
+                  Loading available time slots...
+                </Label>
               </div>
             </div>
           )}
@@ -1378,6 +1454,19 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
               );
             })()}
 
+          {/* Show no inspectors available message in create mode */}
+          {mode === "create" && date && !isLoadingAvailability && 
+           !selectedInspector && availableInspectors.length === 0 && (
+            <div className="space-y-2 px-5 py-2 bg-red-50 border border-red-200 rounded-lg">
+              <Label className="text-red-700 text-sm font-medium">
+                No Inspectors Available
+              </Label>
+              <p className="text-xs text-red-600">
+                No inspectors have available time slots for the selected date. Please choose a different date or contact an administrator.
+              </p>
+            </div>
+          )}
+
           {/* Time and Duration Settings */}
           {(mode === "create" ? selectedSlot : true) && (
             <div className="space-y-3 px-4 py-2 ">
@@ -1394,20 +1483,9 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
                     onChange={handleTimeChange}
                     minTime={getTimeConstraints().minTime}
                     maxTime={getTimeConstraints().maxTime}
-                    selectedDate={date} // Pass the selected date here
+                    selectedDate={date}
                     className="w-full"
                   />
-                  {/* {mode === "create" && selectedSlot && (
-                    <div className="text-xs text-gray-500">
-                      Between {selectedSlot.start || "--:--"} -{" "}
-                      {selectedSlot.end || "--:--"}
-                    </div>
-                  )}
-                  {mode === "edit" && isSelectedDateToday() && (
-                    <div className="text-xs text-gray-500">
-                      Current time: {getCurrentTime()}
-                    </div>
-                  )} */}
                 </div>
                 <div className="space-y-1 w-full">
                   <Label className="text-xs text-gray-600">Duration *</Label>
@@ -1589,35 +1667,6 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
           </div>
         </div>
       )}
-
-      {/* {showEndTimeWarning && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-6">
-          <div className="bg-white rounded-lg p-4 max-w-md w-full">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold">End Time Warning</h3>
-              <button
-                onClick={() => setShowEndTimeWarning(false)}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            <p className="mb-4 text-gray-700">
-              The calculated end time ({calculateEndTime()}) is after 6:00 PM.
-              Time shouldn't extend beyond 6:00 PM.
-            </p>
-
-            <div className="flex justify-end">
-              <Button
-                onClick={() => setShowEndTimeWarning(false)}
-                className="bg-emerald-700 hover:bg-emerald-800 text-white"
-              >
-                OK, I Understand
-              </Button>
-            </div>
-          </div>
-        </div>
-      )} */}
     </div>
   );
 };
