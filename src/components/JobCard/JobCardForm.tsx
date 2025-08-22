@@ -368,7 +368,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
     try {
       const response = await frappeAPI.makeAuthenticatedRequest(
         "GET",
-        `/api/method/eits_app.site_address_search.search_site_addresses?search_term=${encodeURIComponent(
+        `/api/method/eits_app.site_address_search.search_site_addresses_customers_only?search_term=${encodeURIComponent(
           query
         )}`
       );

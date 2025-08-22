@@ -251,20 +251,20 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
         setAvailableInspectors(inspectorsWithSlots);
 
         // Auto-select first inspector with available slots in create mode
-        if (mode === "create" && inspectorsWithSlots.length > 0) {
-          const firstInspector = inspectorsWithSlots[0];
-          setSelectedInspector(firstInspector);
+        // if (mode === "create" && inspectorsWithSlots.length > 0) {
+        //   const firstInspector = inspectorsWithSlots[0];
+        //   setSelectedInspector(firstInspector);
 
-          // Auto-select first slot and set time
-          if (firstInspector.availability.free_slots.length > 0) {
-            const firstSlot = firstInspector.availability.free_slots[0];
-            setSelectedSlot({
-              start: firstSlot.start,
-              end: firstSlot.end,
-            });
-            setRequestedTime(firstSlot.start);
-          }
-        }
+        //   // Auto-select first slot and set time
+        //   if (firstInspector.availability.free_slots.length > 0) {
+        //     const firstSlot = firstInspector.availability.free_slots[0];
+        //     setSelectedSlot({
+        //       start: firstSlot.start,
+        //       end: firstSlot.end,
+        //     });
+        //     setRequestedTime(firstSlot.start);
+        //   }
+        // }
       }
     } catch (error) {
       console.error("Error fetching inspectors availability:", error);
@@ -621,29 +621,28 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
     }
     return lead.custom_job_type || "Site Inspection"; // Fallback to custom_job_type or default
   };
+const handleDateSelect = (selectedDate: Date | undefined) => {
+  setDate(selectedDate);
+  setSelectedInspector(null);
+  setSelectedSlot(null);
+  setRequestedTime("");
+  setAvailableInspectors([]);
 
-  const handleDateSelect = (selectedDate: Date | undefined) => {
-    setDate(selectedDate);
-    setSelectedInspector(null);
-    setSelectedSlot(null);
-    setRequestedTime("");
-    setAvailableInspectors([]);
+  // Close the calendar popover first
+  setCalendarOpen(false);
 
-    // Close the calendar popover first
-    setCalendarOpen(false);
+  if (selectedDate) {
+    const dateStr = format(selectedDate, "yyyy-MM-dd");
 
-    if (selectedDate) {
-      const dateStr = format(selectedDate, "yyyy-MM-dd");
-
-      if (mode === "create") {
-        // Fetch all inspectors' availability for create mode
-        fetchAllInspectorsAvailability(dateStr);
-      } else if (mode === "edit" && data?.allocated_to) {
-        // Fetch specific inspector's availability for edit mode
-        fetchInspectorAvailability(data.allocated_to, dateStr);
-      }
+    if (mode === "create") {
+      // Fetch all inspectors' availability for create mode - but don't auto-select
+      fetchAllInspectorsAvailability(dateStr);
+    } else if (mode === "edit" && data?.allocated_to) {
+      // Fetch specific inspector's availability for edit mode - but don't auto-select
+      fetchInspectorAvailability(data.allocated_to, dateStr);
     }
-  };
+  }
+};
 
   const handleInspectorSelect = (
     email: string,
@@ -1395,7 +1394,7 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
                       ? isLoadingAvailability
                         ? "Loading inspectors..."
                         : availableInspectors.length > 0
-                        ? "Inspector Auto-Selected"
+                        ? "Select Inspector"
                         : "Select Inspector"
                       : "No inspector assigned"}
                   </div>

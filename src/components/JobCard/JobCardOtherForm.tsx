@@ -252,35 +252,35 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
   }, []);
 
   // Add this function after the calculateServiceTotal function
-const calculateJobFinishDate = useCallback(() => {
-  if (services.length === 0) return formData.start_date;
-  
-  const serviceDates = services
-    .map(service => service.finish_date)
-    .filter(date => date && date.trim() !== "");
-    
-  if (serviceDates.length === 0) return formData.start_date;
-  
-  // Find the latest finish date
-  const latestDate = serviceDates.reduce((latest, current) => {
-    return new Date(current) > new Date(latest) ? current : latest;
-  });
-  
-  return latestDate;
-}, [services, formData.start_date]);
+  const calculateJobFinishDate = useCallback(() => {
+    if (services.length === 0) return formData.start_date;
+
+    const serviceDates = services
+      .map((service) => service.finish_date)
+      .filter((date) => date && date.trim() !== "");
+
+    if (serviceDates.length === 0) return formData.start_date;
+
+    // Find the latest finish date
+    const latestDate = serviceDates.reduce((latest, current) => {
+      return new Date(current) > new Date(latest) ? current : latest;
+    });
+
+    return latestDate;
+  }, [services, formData.start_date]);
 
   // Replace the existing date validation useEffect with this:
-useEffect(() => {
-  if (services.length > 0) {
-    const calculatedFinishDate = calculateJobFinishDate();
-    if (calculatedFinishDate !== formData.finish_date) {
-      setFormData(prev => ({
-        ...prev,
-        finish_date: calculatedFinishDate
-      }));
+  useEffect(() => {
+    if (services.length > 0) {
+      const calculatedFinishDate = calculateJobFinishDate();
+      if (calculatedFinishDate !== formData.finish_date) {
+        setFormData((prev) => ({
+          ...prev,
+          finish_date: calculatedFinishDate,
+        }));
+      }
     }
-  }
-}, [services, calculateJobFinishDate]);
+  }, [services, calculateJobFinishDate]);
 
   const handleCustomerSearch = useCallback(async (query: string) => {
     if (!query.trim()) {
@@ -293,7 +293,7 @@ useEffect(() => {
     try {
       const response = await frappeAPI.makeAuthenticatedRequest(
         "GET",
-        `/api/method/eits_app.site_address_search.search_site_addresses?search_term=${encodeURIComponent(
+        `/api/method/eits_app.site_address_search.search_site_addresses_customers_only?search_term=${encodeURIComponent(
           query
         )}`
       );
@@ -1073,15 +1073,16 @@ useEffect(() => {
                           </span>
                         </Label>
                         <div className="relative">
-                          
-<Input
-  id="finish_date"
-  name="finish_date"
-  type="date"
-  value={formData.finish_date || formData.start_date || ""}
-  readOnly // Add this to make it read-only
-  className="w-full rounded-md border border-gray-300 px-2 py-2 text-md text-gray-900 shadow-sm bg-gray-50 cursor-not-allowed" // Add bg-gray-50 and cursor-not-allowed
-/>
+                          <Input
+                            id="finish_date"
+                            name="finish_date"
+                            type="date"
+                            value={
+                              formData.finish_date || formData.start_date || ""
+                            }
+                            readOnly // Add this to make it read-only
+                            className="w-full rounded-md border border-gray-300 px-2 py-2 text-md text-gray-900 shadow-sm bg-gray-50 cursor-not-allowed" // Add bg-gray-50 and cursor-not-allowed
+                          />
                           <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
                         </div>
                       </div>
@@ -1186,7 +1187,6 @@ useEffect(() => {
                                     );
                                   }}
                                   min={formData.start_date}
-                                 
                                   className="w-full rounded-md border border-gray-300 px-2 py-2 text-sm text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                 />
                                 <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
@@ -1213,21 +1213,27 @@ useEffect(() => {
                                     ""
                                   }
                                   // In the Service Finish Date input, replace the onChange handler:
-onChange={(e) => {
-  if (
-    service.start_date &&
-    new Date(e.target.value) < new Date(service.start_date)
-  ) {
-    toast.error("Finish date cannot be before start date");
-    return;
-  }
-  updateService(index, "finish_date", e.target.value);
-  // Remove the job card date range validation from here
-}}
+                                  onChange={(e) => {
+                                    if (
+                                      service.start_date &&
+                                      new Date(e.target.value) <
+                                        new Date(service.start_date)
+                                    ) {
+                                      toast.error(
+                                        "Finish date cannot be before start date"
+                                      );
+                                      return;
+                                    }
+                                    updateService(
+                                      index,
+                                      "finish_date",
+                                      e.target.value
+                                    );
+                                    // Remove the job card date range validation from here
+                                  }}
                                   min={
                                     formData.start_date || service.start_date
                                   }
-                                 
                                   className="w-full rounded-md border border-gray-300 px-2 py-2 text-sm text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                 />
                                 <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
