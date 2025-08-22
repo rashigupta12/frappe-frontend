@@ -251,28 +251,36 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
     fetchJobTypes();
   }, []);
 
-  // Validate services when job card dates change
-  useEffect(() => {
-    if (formData.start_date && formData.finish_date) {
-      const invalidServices = services.filter(
-        (service) =>
-          service.start_date &&
-          service.finish_date &&
-          !validateServiceDates(service)
-      );
+  // Add this function after the calculateServiceTotal function
+const calculateJobFinishDate = useCallback(() => {
+  if (services.length === 0) return formData.start_date;
+  
+  const serviceDates = services
+    .map(service => service.finish_date)
+    .filter(date => date && date.trim() !== "");
+    
+  if (serviceDates.length === 0) return formData.start_date;
+  
+  // Find the latest finish date
+  const latestDate = serviceDates.reduce((latest, current) => {
+    return new Date(current) > new Date(latest) ? current : latest;
+  });
+  
+  return latestDate;
+}, [services, formData.start_date]);
 
-      if (invalidServices.length > 0) {
-        toast.warning(
-          "Some service dates are now outside the job card date range"
-        );
-      }
+  // Replace the existing date validation useEffect with this:
+useEffect(() => {
+  if (services.length > 0) {
+    const calculatedFinishDate = calculateJobFinishDate();
+    if (calculatedFinishDate !== formData.finish_date) {
+      setFormData(prev => ({
+        ...prev,
+        finish_date: calculatedFinishDate
+      }));
     }
-  }, [
-    formData.start_date,
-    formData.finish_date,
-    services,
-    validateServiceDates,
-  ]);
+  }
+}, [services, calculateJobFinishDate]);
 
   const handleCustomerSearch = useCallback(async (query: string) => {
     if (!query.trim()) {
@@ -1065,37 +1073,15 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                           </span>
                         </Label>
                         <div className="relative">
-                          <Input
-                            id="finish_date"
-                            name="finish_date"
-                            type="date"
-                            value={
-                              formData.finish_date || formData.start_date || ""
-                            }
-                            onChange={(e) => {
-                              const selectedDate = e.target.value;
-                              if (
-                                formData.start_date &&
-                                new Date(selectedDate) <
-                                  new Date(formData.start_date)
-                              ) {
-                                toast.error(
-                                  "Finish date cannot be before start date"
-                                );
-                                return;
-                              }
-                              setFormData((prev) => ({
-                                ...prev,
-                                finish_date: selectedDate,
-                              }));
-                            }}
-                            min={
-                              formData.start_date ||
-                              new Date().toISOString().split("T")[0]
-                            }
-                            required
-                            className="w-full rounded-md border border-gray-300 px-2 py-2 text-md text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                          />
+                          
+<Input
+  id="finish_date"
+  name="finish_date"
+  type="date"
+  value={formData.finish_date || formData.start_date || ""}
+  readOnly // Add this to make it read-only
+  className="w-full rounded-md border border-gray-300 px-2 py-2 text-md text-gray-900 shadow-sm bg-gray-50 cursor-not-allowed" // Add bg-gray-50 and cursor-not-allowed
+/>
                           <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
                         </div>
                       </div>
@@ -1200,7 +1186,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                                     );
                                   }}
                                   min={formData.start_date}
-                                  max={formData.finish_date}
+                                 
                                   className="w-full rounded-md border border-gray-300 px-2 py-2 text-sm text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                 />
                                 <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
@@ -1226,47 +1212,32 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                                     service.start_date ||
                                     ""
                                   }
-                                  onChange={(e) => {
-                                    if (
-                                      formData.start_date &&
-                                      new Date(e.target.value) <
-                                        new Date(formData.start_date)
-                                    ) {
-                                      toast.error(
-                                        "Service finish date cannot be before job start date"
-                                      );
-                                      return;
-                                    }
-                                    if (
-                                      service.start_date &&
-                                      new Date(e.target.value) <
-                                        new Date(service.start_date)
-                                    ) {
-                                      toast.error(
-                                        "Finish date cannot be before start date"
-                                      );
-                                      return;
-                                    }
-                                    updateService(
-                                      index,
-                                      "finish_date",
-                                      e.target.value
-                                    );
-                                  }}
+                                  // In the Service Finish Date input, replace the onChange handler:
+onChange={(e) => {
+  if (
+    service.start_date &&
+    new Date(e.target.value) < new Date(service.start_date)
+  ) {
+    toast.error("Finish date cannot be before start date");
+    return;
+  }
+  updateService(index, "finish_date", e.target.value);
+  // Remove the job card date range validation from here
+}}
                                   min={
                                     formData.start_date || service.start_date
                                   }
-                                  max={formData.finish_date}
+                                 
                                   className="w-full rounded-md border border-gray-300 px-2 py-2 text-sm text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                 />
                                 <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
                               </div>
-                              {service.finish_date &&
+                              {/* {service.finish_date &&
                                 !isDateInRange(service.finish_date) && (
                                   <p className="text-xs text-red-500">
                                     Date must be within job card range
                                   </p>
-                                )}
+                                )} */}
                             </div>
                           </div>
 
