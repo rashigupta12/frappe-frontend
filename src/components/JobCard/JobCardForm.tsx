@@ -1929,13 +1929,10 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
               Email
             </Label>
             <Input
-              type="email_id"
+              type="email"
               name="email_id"
               value={newCustomerData.email_id || ""}
-              onChange={(e) => {
-                const value = e.target.value;
-                setNewCustomerData((prev: any) => ({ ...prev, email: value }));
-              }}
+              onChange={handleNewCustomerInputChange}
               placeholder="Enter email"
             
               className="w-full"

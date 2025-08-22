@@ -393,7 +393,7 @@ function App() {
                   color: "#dc2626",
                 },
               },
-              duration: 10000,
+              duration: 3000,
             }}
             gutter={8}
           />

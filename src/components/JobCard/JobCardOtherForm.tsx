@@ -1461,13 +1461,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                 type="email_id"
                 name="email_id"
                 value={newCustomerData.email_id}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  setNewCustomerData((prev: any) => ({
-                    ...prev,
-                    email: value,
-                  }));
-                }}
+                onChange={handleNewCustomerInputChange}
                 placeholder="Enter email"
                 className="w-full"
               />
@@ -1489,7 +1483,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
             <Button variant="outline" onClick={handleCloseCustomerDialog}>
               Cancel
             </Button>
-            <Button onClick={handleCreateCustomer} disabled={creatingCustomer}>
+            <Button onClick={handleCreateCustomer} disabled={creatingCustomer} className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50">
               {creatingCustomer ? (
                 <Loader2 className="h-4 w-4 animate-spin mr-2" />
               ) : null}

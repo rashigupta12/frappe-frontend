@@ -9,7 +9,7 @@ import PaymentImageUpload from "./imageupload/ImageUpload";
 
 import { useNavigate } from "react-router-dom";
 import { useReceiptStore } from "../../store/recipt";
-import { capitalizeFirstLetter } from "../../helpers/helper";
+import { capitalizeFirstLetter, handleKeyDown } from "../../helpers/helper";
 
 interface ImageItem {
   id: string;
@@ -536,6 +536,44 @@ const ReceiptForm = () => {
     }
   };
 
+const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const input = e.target.value;
+
+  if (!input.startsWith("+971 ")) {
+    setNewCustomerData((prev) => ({ ...prev, mobile_no: "+971 " }));
+    return;
+  }
+
+  const digits = input.replace(/\D/g, "").substring(3);
+  const limitedDigits = digits.substring(0, 9);
+
+  let formattedNumber = "+971 ";
+
+  if (limitedDigits.length > 0) {
+    const isMobile = limitedDigits.startsWith("5");
+
+    if (isMobile) {
+      formattedNumber += limitedDigits.substring(0, 3);
+      if (limitedDigits.length > 3) {
+        formattedNumber += " " + limitedDigits.substring(3, 6);
+        if (limitedDigits.length > 6) {
+          formattedNumber += " " + limitedDigits.substring(6, 9);
+        }
+      }
+    } else {
+      formattedNumber += limitedDigits.substring(0, 2);
+      if (limitedDigits.length > 2) {
+        formattedNumber += " " + limitedDigits.substring(2, 5);
+        if (limitedDigits.length > 5) {
+          formattedNumber += " " + limitedDigits.substring(5, 9);
+        }
+      }
+    }
+  }
+
+  setNewCustomerData((prev) => ({ ...prev, mobile_no: formattedNumber }));
+};
+
   return (
     <div className="w-full mx-auto bg-white shadow-lg rounded-lg overflow-hidden lg:p-3">
       {/* Header */}
@@ -908,12 +946,16 @@ const ReceiptForm = () => {
                     type="text"
                     name="mobile_no"
                     value={newCustomerData.mobile_no}
-                    onChange={handleNewCustomerInputChange}
+                    onChange={handlePhoneChange}
+                     onKeyDown={handleKeyDown}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                    placeholder="Enter mobile number"
+                   
+                    placeholder="+971 XX XXX XXXX"
+                          maxLength={17}
+                          required
                   />
                 </div>
-                <div>
+                {/* <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Email (Optional)
                   </label>
@@ -925,7 +967,30 @@ const ReceiptForm = () => {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                     placeholder="Enter email address"
                   />
-                </div>
+                </div> */}
+                <div>
+                            <label htmlFor="email_id" className="block text-sm font-medium text-gray-700 mb-1">
+                              Email
+                            </label>
+                            <input
+                              type="email"
+                              name="email_id"
+                              value={newCustomerData.email_id || ""}
+                              onChange={handleNewCustomerInputChange}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                    placeholder="Enter email address"
+                            />
+                            {/* Error message */}
+                            {newCustomerData.email_id && (
+                              <>
+                                {!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newCustomerData.email_id) && (
+                                  <p className="text-sm text-red-500 mt-1">
+                                    Must be a valid email format (example: user@example.com)
+                                  </p>
+                                )}
+                              </>
+                            )}
+                          </div>
               </div>
               <div className="mt-6 flex justify-end space-x-3">
                 <button
