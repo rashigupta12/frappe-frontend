@@ -222,18 +222,6 @@ const PaymentDetails: React.FC<Props> = ({ payment, onClose }) => {
     return `${imageurl}/${url}`;
   };
 
-  // const handleDownload = (attachment: any) => {
-  //   const url = getImageUrl(attachment);
-  //   if (url) {
-  //     const link = document.createElement("a");
-  //     link.href = url;
-  //     link.download = attachment?.file_name || "download";
-  //     link.target = "_blank";
-  //     document.body.appendChild(link);
-  //     link.click();
-  //     document.body.removeChild(link);
-  //   }
-  // };
 
   const handleAttachmentView = (attachment: any) => {
     if (isImageFile(attachment)) {

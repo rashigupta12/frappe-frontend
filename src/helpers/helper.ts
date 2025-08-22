@@ -430,7 +430,7 @@ export const capitalizeFirstLetter = (str: string) => {
   export const extractAddressFromSite = (siteName: string) => {
     if (!siteName) return "";
     // Format: "Name-Number,..." - extract everything after the first dash
-    const dashIndex = siteName.indexOf("-");
+    const dashIndex = siteName.indexOf(":");
     if (dashIndex !== -1) {
       const afterDash = siteName.substring(dashIndex + 1);
       // Check if what comes after dash starts with a number (address part)

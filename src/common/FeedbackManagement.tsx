@@ -4,12 +4,13 @@ import {
   Bug,
   Calendar,
   CheckCircle,
+  Eye,
   MessageCircle,
   Paperclip,
   Plus,
   PlusCircle,
   Send,
-  X
+  X,
 } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
@@ -47,10 +48,7 @@ interface FeedbackItem {
   customer: string;
   status: "Open" | "Replied" | "On Hold" | "Resolved" | "Closed";
   priority: "Low" | "Medium" | "High";
-  issue_type:
-    | "Bug Report"
-    | "Feature Request"
-    | "General Feedback";
+  issue_type: "Bug Report" | "Feature Request" | "General Feedback";
   description: string;
   resolution_details?: string;
   opening_date: string;
@@ -83,13 +81,451 @@ const renderHtmlContent = (htmlContent: string): string => {
   return stripHtml(htmlContent);
 };
 
-// Feedback Form Component
+// Helper function to check if file is an image
+const isImageFile = (attachment: any): boolean => {
+  const filename = attachment?.image;
+
+  if (!filename) return false;
+
+  const imageExtensions = [
+    ".jpg",
+    ".jpeg",
+    ".png",
+    ".gif",
+    ".bmp",
+    ".webp",
+    ".svg",
+  ];
+  const extension = filename.toLowerCase().substring(filename.lastIndexOf("."));
+  return imageExtensions.includes(extension);
+};
+
+// Image Preview Modal Component
+const AttachmentPreviewModal: React.FC<{
+  isOpen: boolean;
+  onClose: () => void;
+  attachments: any[];
+  currentIndex: number;
+  onIndexChange: (index: number) => void;
+}> = ({ isOpen, onClose, attachments, currentIndex, onIndexChange }) => {
+  const imageurl = import.meta.env.VITE_API_BASE_URL;
+
+  if (!isOpen || attachments.length === 0) return null;
+
+  const currentAttachment = attachments[currentIndex];
+
+  const getImageUrl = (attachment: any) => {
+    const url = attachment.image;
+
+    if (!url) return "";
+
+    if (url.startsWith("/")) {
+      return `${imageurl}${url}`;
+    }
+    return `${imageurl}/${url}`;
+  };
+
+  const handlePrevious = () => {
+    onIndexChange(currentIndex > 0 ? currentIndex - 1 : attachments.length - 1);
+  };
+
+  const handleNext = () => {
+    onIndexChange(currentIndex < attachments.length - 1 ? currentIndex + 1 : 0);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/95 flex flex-col z-50">
+      <div className="flex items-center justify-between p-4 bg-black/50 backdrop-blur-sm">
+        <div className="text-white">
+          <h2 className="text-lg font-semibold">Attachment Preview</h2>
+          <p className="text-sm text-gray-300">
+            {currentIndex + 1} of {attachments.length}
+          </p>
+        </div>
+        <button
+          onClick={onClose}
+          className="text-white hover:bg-white/20 rounded-full p-2 transition-colors"
+        >
+          <X className="h-6 w-6" />
+        </button>
+      </div>
+
+      <div className="flex-1 flex items-center justify-center p-4 relative">
+        <img
+          src={getImageUrl(currentAttachment)}
+          alt={currentAttachment?.image || "Attachment"}
+          className="max-w-full max-h-full object-contain rounded-lg"
+        />
+
+        {attachments.length > 1 && (
+          <>
+            <button
+              onClick={handlePrevious}
+              className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-3 transition-colors"
+            >
+              <svg
+                className="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 19l-7-7 7-7"
+                />
+              </svg>
+            </button>
+            <button
+              onClick={handleNext}
+              className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-3 transition-colors"
+            >
+              <svg
+                className="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5l7 7-7 7"
+                />
+              </svg>
+            </button>
+          </>
+        )}
+      </div>
+
+      {attachments.length > 1 && (
+        <div className="bg-black/50 backdrop-blur-sm p-4">
+          <div className="flex gap-2 justify-center overflow-x-auto">
+            {attachments.map((attachment, index) => (
+              <button
+                key={index}
+                onClick={() => onIndexChange(index)}
+                className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-colors ${
+                  index === currentIndex
+                    ? "border-blue-500"
+                    : "border-transparent"
+                }`}
+              >
+                <img
+                  src={getImageUrl(attachment)}
+                  alt=""
+                  className="w-full h-full object-cover"
+                />
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Feedback Details Component
+const FeedbackDetails: React.FC<{
+  feedback: FeedbackItem;
+  onClose: () => void;
+}> = ({ feedback, onClose }) => {
+  const [showAttachmentPreview, setShowAttachmentPreview] = useState(false);
+  const [currentAttachmentIndex, setCurrentAttachmentIndex] = useState(0);
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "Open":
+        return "bg-red-100 text-red-800";
+      case "Replied":
+        return "bg-blue-100 text-blue-800";
+      case "On Hold":
+        return "bg-yellow-100 text-yellow-800";
+      case "Resolved":
+        return "bg-green-100 text-green-800";
+      case "Closed":
+        return "bg-gray-100 text-gray-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case "High":
+        return "bg-orange-500 text-white";
+      case "Medium":
+        return "bg-yellow-500 text-white";
+      case "Low":
+        return "bg-emerald-500 text-white";
+      default:
+        return "bg-gray-500 text-white";
+    }
+  };
+
+  const getIssueTypeIcon = (type: string) => {
+    switch (type) {
+      case "Bug Report":
+        return <Bug className="h-5 w-5" />;
+      case "Feature Request":
+        return <PlusCircle className="h-5 w-5" />;
+      case "General Feedback":
+        return <MessageCircle className="h-5 w-5" />;
+      default:
+        return <MessageCircle className="h-5 w-5" />;
+    }
+  };
+
+  const getImageUrl = (attachment: any) => {
+    const imageurl = import.meta.env.VITE_API_BASE_URL;
+    const url = attachment.image;
+
+    if (!url) return "";
+
+    if (url.startsWith("http://") || url.startsWith("https://")) {
+      return url;
+    }
+
+    if (url.startsWith("blob:")) {
+      return url;
+    }
+
+    if (url.startsWith("/")) {
+      return `${imageurl}${url}`;
+    }
+
+    return `${imageurl}/${url}`;
+  };
+
+  const handleAttachmentView = (attachment: any, index: number) => {
+    if (isImageFile(attachment)) {
+      setCurrentAttachmentIndex(index);
+      setShowAttachmentPreview(true);
+    } else {
+      const url = getImageUrl(attachment);
+      if (url) {
+        window.open(url, "_blank");
+      }
+    }
+  };
+
+  const fmt = (d?: string) => {
+    if (!d) return "N/A";
+    try {
+      return new Date(d).toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      });
+    } catch {
+      return "Invalid Date";
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[10001] flex items-center justify-center p-4">
+      <div
+        className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="bg-emerald-500 text-white p-4 flex-shrink-0">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              {getIssueTypeIcon(feedback.issue_type)}
+              <h2 className="text-xl font-bold">Feedback Details</h2>
+            </div>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto p-6">
+          <div className="space-y-6">
+            {/* Status and Priority */}
+            <div className="flex flex-wrap gap-4">
+              <div className="flex items-center gap-2">
+               
+                <span
+                  className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(
+                    feedback.status
+                  )}`}
+                >
+                  {feedback.status}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                
+                <span
+                  className={`px-3 py-1 rounded-full text-sm font-medium ${getPriorityColor(
+                    feedback.priority
+                  )}`}
+                >
+                  {feedback.priority}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span
+                  className={`px-3 py-1 rounded-full text-sm font-medium bg-gray-300 *:text-gray-800 `}
+                >
+                  {feedback.issue_type}
+                </span>
+              </div>
+            </div>
+
+            {/* Subject */}
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                Subject
+              </h3>
+              <p className="text-gray-700 bg-gray-50 p-2 rounded-lg">
+                {feedback.subject}
+              </p>
+            </div>
+
+            {/* Description */}
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                Description
+              </h3>
+              <div className="bg-gray-50 p-2 rounded-lg">
+                <p className="text-gray-700 whitespace-pre-wrap">
+                  {renderHtmlContent(feedback.description)}
+                </p>
+              </div>
+            </div>
+
+            {/* Resolution Details if available */}
+            {feedback.resolution_details && feedback.status === "Replied" && (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <CheckCircle className="h-5 w-5 text-green-600" />
+                  <h3 className="font-semibold text-green-800 text-lg">
+                    Response from Support Team
+                  </h3>
+                </div>
+                <div className="text-green-700 bg-white p-4 rounded border">
+                  {renderHtmlContent(feedback.resolution_details)}
+                </div>
+              </div>
+            )}
+
+            {/* Dates */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <h4 className="text-sm font-medium text-gray-700 mb-1">
+                  Created
+                </h4>
+                <div className="flex items-center gap-2 text-gray-600">
+                  <Calendar className="h-4 w-4" />
+                  <span>
+                    {fmt(feedback.opening_date)}
+                    {feedback.opening_time && ` at ${feedback.opening_time}`}
+                  </span>
+                </div>
+              </div>
+              {/* <div>
+                <h4 className="text-sm font-medium text-gray-700 mb-2">
+                  Last Updated
+                </h4>
+                <div className="flex items-center gap-2 text-gray-600">
+                  <Calendar className="h-4 w-4" />
+                  <span>{fmt(feedback.modified)}</span>
+                </div>
+              </div> */}
+            </div>
+
+            {/* Attachments */}
+            {feedback.custom_images && feedback.custom_images.length > 0 && (
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                  <Paperclip className="h-5 w-5" />
+                  Attachments ({feedback.custom_images.length})
+                </h3>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {feedback.custom_images.map((attachment, index) => {
+                    const isImage = isImageFile(attachment);
+                    const fileName =
+                      attachment.image?.split("/").pop() ||
+                      `Attachment ${index + 1}`;
+
+                    return (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                      >
+                        <div className="flex items-center gap-3">
+                          {isImage ? (
+                            <div className="w-10 h-10 rounded bg-blue-50 flex items-center justify-center">
+                              <Eye className="h-5 w-5 text-blue-500" />
+                            </div>
+                          ) : (
+                            <div className="w-10 h-10 rounded bg-gray-100 flex items-center justify-center">
+                              <Paperclip className="h-5 w-5 text-gray-500" />
+                            </div>
+                          )}
+                          <div>
+                            <p className="text-sm font-medium text-gray-900 truncate max-w-[150px]">
+                              {fileName}
+                            </p>
+                            {attachment.remarks && (
+                              <p className="text-xs text-gray-500 truncate max-w-[150px]">
+                                {attachment.remarks}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() =>
+                            handleAttachmentView(attachment, index)
+                          }
+                          className="h-8"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="border-t border-gray-200 p-4 bg-white flex-shrink-0">
+          <div className="flex justify-end">
+            <Button onClick={onClose}>Close</Button>
+          </div>
+        </div>
+
+        <AttachmentPreviewModal
+          isOpen={showAttachmentPreview}
+          onClose={() => setShowAttachmentPreview(false)}
+          attachments={feedback.custom_images || []}
+          currentIndex={currentAttachmentIndex}
+          onIndexChange={setCurrentAttachmentIndex}
+        />
+      </div>
+    </div>
+  );
+};
+
+// Feedback Form Component (Simplified for new submissions only)
 const FeedbackForm: React.FC<{
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (feedback: Partial<FeedbackItem>) => Promise<void>;
-  editingFeedback?: FeedbackItem | null;
-}> = ({ isOpen, onClose, onSubmit, editingFeedback }) => {
+}> = ({ isOpen, onClose, onSubmit }) => {
   const { user } = useAuth();
   const [formData, setFormData] = useState({
     subject: "",
@@ -103,50 +539,7 @@ const FeedbackForm: React.FC<{
   const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
-    if (editingFeedback) {
-      setFormData({
-        subject: editingFeedback.subject,
-        description: renderHtmlContent(editingFeedback.description),
-        issue_type: editingFeedback.issue_type,
-        priority: editingFeedback.priority,
-        customer: editingFeedback.customer,
-      });
-
-      // Convert existing images to ImageItem format
-      const convertedImages: ImageItem[] =
-        editingFeedback.custom_images?.map((img, index) => {
-          console.log("Image data:", img);
-          let url = img.image;
-          // Handle different URL formats from API
-          if (url.startsWith("//")) {
-            url = `https:${url}`;
-          } else if (url.startsWith("/") && !url.startsWith("//")) {
-            // For relative URLs like "/private/files/..."
-            url = `${url}`;
-          } else if (!url.startsWith("http")) {
-            url = `/${url}`;
-          }
-
-          // Determine file type from URL
-          let type: "image" | "pdf" | "doc" = "image";
-          if (url.toLowerCase().endsWith(".pdf")) {
-            type = "pdf";
-          } else if (
-            url.toLowerCase().endsWith(".doc") ||
-            url.toLowerCase().endsWith(".docx")
-          ) {
-            type = "doc";
-          }
-
-          return {
-            id: `existing-${index}-${img.name}`,
-            url: url,
-            remarks: img.remarks || "",
-            type: type,
-          };
-        }) || [];
-      setImages(convertedImages);
-    } else {
+    if (isOpen) {
       setFormData({
         subject: "",
         description: "",
@@ -156,7 +549,7 @@ const FeedbackForm: React.FC<{
       });
       setImages([]);
     }
-  }, [editingFeedback, isOpen, user]);
+  }, [isOpen, user]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -179,7 +572,7 @@ const FeedbackForm: React.FC<{
           idx: idx + 1,
           image: img.url,
           remarks: img.remarks || "",
-          parent: editingFeedback?.name || "",
+          parent: "",
           parentfield: "custom_images",
           parenttype: "Feedback",
           doctype: "ImageAttachment",
@@ -187,7 +580,6 @@ const FeedbackForm: React.FC<{
         opening_date: currentDate.toISOString().split("T")[0],
         opening_time: currentDate.toTimeString().split(" ")[0],
         status: "Open" as FeedbackItem["status"],
-        ...(editingFeedback ? { name: editingFeedback.name } : {}),
       };
 
       await onSubmit(feedbackData);
@@ -213,10 +605,7 @@ const FeedbackForm: React.FC<{
   const handleImageUpload = async (file: File): Promise<string> => {
     setIsUploading(true);
     try {
-      // Upload the file first to get the URL
       const uploadResponse = await frappeAPI.upload(file, {});
-
-      // Handle both possible response structures
       const fileData = uploadResponse.data.message || uploadResponse.data;
       const fileUrl = fileData.file_url;
 
@@ -224,7 +613,6 @@ const FeedbackForm: React.FC<{
         throw new Error("No file URL returned from upload");
       }
 
-      // Return the full URL
       return fileUrl.startsWith("http") ? fileUrl : `${fileUrl}`;
     } catch (error) {
       console.error("File upload failed:", error);
@@ -239,18 +627,16 @@ const FeedbackForm: React.FC<{
 
   return createPortal(
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[10000] flex items-center justify-center p-4">
-      <div 
+      <div
         className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="bg-blue-600 text-white p-6 flex-shrink-0">
+        <div className="bg-emerald-500 text-white p-4 flex-shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <MessageCircle className="h-6 w-6" />
-              <h2 className="text-xl font-bold">
-                {editingFeedback ? "View/Edit Feedback" : "Submit New Feedback"}
-              </h2>
+              <h2 className="text-xl font-bold">Submit New Feedback</h2>
             </div>
             <button
               onClick={onClose}
@@ -263,23 +649,7 @@ const FeedbackForm: React.FC<{
         </div>
 
         {/* Content */}
-        <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
-          {/* Show resolution details if feedback has been replied */}
-          {editingFeedback?.resolution_details &&
-            editingFeedback.status === "Replied" && (
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
-                <div className="flex items-center gap-2 mb-2">
-                  <CheckCircle className="h-5 w-5 text-green-600" />
-                  <h3 className="font-semibold text-green-800">
-                    Response from Support Team
-                  </h3>
-                </div>
-                <div className="text-green-700 bg-white p-3 rounded border">
-                  {renderHtmlContent(editingFeedback.resolution_details)}
-                </div>
-              </div>
-            )}
-
+        <div className="p-6 pt-4 overflow-y-auto max-h-[calc(90vh-140px)]">
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Subject */}
             <div>
@@ -295,7 +665,6 @@ const FeedbackForm: React.FC<{
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="Brief subject for your feedback"
                 required
-                disabled={!!editingFeedback && editingFeedback.status !== "Open"}
               />
             </div>
 
@@ -314,9 +683,6 @@ const FeedbackForm: React.FC<{
                     }))
                   }
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  disabled={
-                    !!editingFeedback && editingFeedback.status !== "Open"
-                  }
                 >
                   <option value="General Feedback">General Feedback</option>
                   <option value="Bug Report">Bug Report</option>
@@ -337,9 +703,6 @@ const FeedbackForm: React.FC<{
                     }))
                   }
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  disabled={
-                    !!editingFeedback && editingFeedback.status !== "Open"
-                  }
                 >
                   <option value="Low">Low</option>
                   <option value="Medium">Medium</option>
@@ -365,7 +728,6 @@ const FeedbackForm: React.FC<{
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
                 placeholder="Please provide detailed feedback..."
                 required
-                disabled={!!editingFeedback && editingFeedback.status !== "Open"}
               />
             </div>
 
@@ -394,27 +756,25 @@ const FeedbackForm: React.FC<{
                 onClick={onClose}
                 disabled={isSubmitting || isUploading}
               >
-                {editingFeedback ? "Close" : "Cancel"}
+                Cancel
               </Button>
-              {(!editingFeedback || editingFeedback.status === "Open") && (
-                <Button
-                  type="submit"
-                  disabled={isSubmitting || isUploading}
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
-                >
-                  {isSubmitting || isUploading ? (
-                    <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      {isUploading ? "Uploading..." : "Submitting..."}
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <Send className="h-4 w-4" />
-                      {editingFeedback ? "Update Feedback" : "Submit Feedback"}
-                    </div>
-                  )}
-                </Button>
-              )}
+              <Button
+                type="submit"
+                disabled={isSubmitting || isUploading}
+                className="bg-emerald-500 hover:bg-emerald-600 text-white"
+              >
+                {isSubmitting || isUploading ? (
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    {isUploading ? "Uploading..." : "Submitting..."}
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <Send className="h-4 w-4" />
+                    Submit Feedback
+                  </div>
+                )}
+              </Button>
             </div>
           </form>
         </div>
@@ -430,14 +790,14 @@ const FeedbackList: React.FC<{
   onClose: () => void;
   feedbacks: FeedbackItem[];
   loading: boolean;
-  onEditFeedback: (feedback: FeedbackItem | null) => void;
+  onViewFeedback: (feedback: FeedbackItem) => void;
   onNewFeedback: () => void;
 }> = ({
   isOpen,
   onClose,
   feedbacks,
   loading,
-  onEditFeedback,
+  onViewFeedback,
   onNewFeedback,
 }) => {
   const getStatusColor = (status: string) => {
@@ -487,7 +847,7 @@ const FeedbackList: React.FC<{
 
   return createPortal(
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9000] flex items-center justify-center p-4">
-      <div 
+      <div
         className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
@@ -539,7 +899,8 @@ const FeedbackList: React.FC<{
                 <div
                   key={feedback.name}
                   className="p-4 hover:bg-emerald-50 transition-colors cursor-pointer"
-                  onClick={() => onEditFeedback(feedback)}
+                  onClick={() => onViewFeedback(feedback)}
+                  
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
@@ -577,9 +938,13 @@ const FeedbackList: React.FC<{
                           <Calendar className="h-3 w-3" />
                           <span>
                             {feedback.opening_date
-                              ? format(new Date(feedback.opening_date), "dd/MM/yyyy")
+                              ? format(
+                                  new Date(feedback.opening_date),
+                                  "dd/MM/yyyy"
+                                )
                               : "No date"}
-                            {feedback.opening_time && ` at ${feedback.opening_time}`}
+                            {feedback.opening_time &&
+                              ` at ${feedback.opening_time}`}
                           </span>
                         </div>
 
@@ -637,11 +1002,7 @@ const FeedbackList: React.FC<{
                 <Plus className="h-4 w-4 mr-1" />
                 New
               </Button>
-              <Button
-                onClick={onClose}
-                variant="outline"
-                size="sm"
-              >
+              <Button onClick={onClose} variant="outline" size="sm">
                 Close
               </Button>
             </div>
@@ -661,7 +1022,9 @@ const FeedbackComponent: React.FC<{
   const { user } = useAuth();
   const [showList, setShowList] = useState(false);
   const [showForm, setShowForm] = useState(false);
-  const [editingFeedback, setEditingFeedback] = useState<FeedbackItem | null>(
+  const [showDetails, setShowDetails] = useState(false);
+  console.log(showDetails)
+  const [selectedFeedback, setSelectedFeedback] = useState<FeedbackItem | null>(
     null
   );
   const [feedbacks, setFeedbacks] = useState<FeedbackItem[]>([]);
@@ -673,14 +1036,12 @@ const FeedbackComponent: React.FC<{
 
     setLoading(true);
     try {
-      // First get the list of issue IDs for this user
       const listResponse = await frappeAPI.getFeedbackByUserId(user.email);
 
       if (!listResponse.data) {
         throw new Error("No feedback data received");
       }
 
-      // Then fetch full details for each issue
       const feedbackPromises = listResponse.data.map(
         async (issue: { name: string }) => {
           const detailResponse = await frappeAPI.getFeedbackById(issue.name);
@@ -688,7 +1049,6 @@ const FeedbackComponent: React.FC<{
         }
       );
 
-      // Wait for all details to be fetched
       const feedbacks = await Promise.all(feedbackPromises);
       setFeedbacks(feedbacks);
     } catch (error) {
@@ -707,7 +1067,6 @@ const FeedbackComponent: React.FC<{
 
   const handleSubmitFeedback = async (feedbackData: Partial<FeedbackItem>) => {
     try {
-      // Prepare the data for the API
       const apiData = {
         ...feedbackData,
         customer: user?.email,
@@ -718,88 +1077,78 @@ const FeedbackComponent: React.FC<{
         status: "Open",
       };
 
-      // Remove any undefined fields
       Object.keys(apiData as Record<string, any>).forEach(
         (key) =>
           (apiData as Record<string, any>)[key] === undefined &&
           delete (apiData as Record<string, any>)[key]
       );
 
-      let result;
-      if (editingFeedback && editingFeedback.name) {
-        // Update existing feedback
-        result = await frappeAPI.editFeedback(editingFeedback.name, apiData);
-      } else {
-        // Create new feedback
-        result = await frappeAPI.createFeedback(apiData);
-      }
+      await frappeAPI.createFeedback(apiData);
 
-      console.log("Feedback operation successful:", result);
-
-      toast.success(
-        editingFeedback
-          ? "Feedback updated successfully!"
-          : "Feedback submitted successfully!"
-      );
-      
-      setEditingFeedback(null);
-      setShowForm(false);
-      fetchFeedbacks(); // Refresh the list
+      toast.success("Feedback submitted successfully!");
+      await fetchFeedbacks(); // Refresh the list
     } catch (error) {
-      console.error("Error in feedback operation:", error);
+      console.error("Error submitting feedback:", error);
+      toast.error("Failed to submit feedback. Please try again.");
       throw error;
     }
   };
 
+  // In FeedbackComponent, update the state management
+const handleViewFeedback = (feedback: FeedbackItem) => {
+  setSelectedFeedback(feedback);
+  setShowDetails(true);
+  setShowList(false); // Close the list when viewing details
+};
+
+
+
   const handleNewFeedback = () => {
-    setEditingFeedback(null);
-    setShowList(false); // Close list modal
-    setShowForm(true); // Open form modal
+    setShowForm(true);
+    setShowList(false);
   };
 
-  const handleEditFeedback = (feedback: FeedbackItem | null) => {
-    setEditingFeedback(feedback);
-    setShowList(false); // Close list modal
-    setShowForm(true); // Open form modal
+  const handleCloseDetails = () => {
+    setSelectedFeedback(null);
+    setShowDetails(false);
+    setShowList(true); // Show the list again when closing details
   };
 
   const handleCloseForm = () => {
     setShowForm(false);
-    setEditingFeedback(null);
-    setShowList(true); // Reopen list modal
-  };
-
-  const handleCloseList = () => {
-    setShowList(false);
-    setEditingFeedback(null);
-    setShowForm(false);
+    setShowList(true);
   };
 
   return (
-    <div className={className}>
-      <div className="relative">
-        {/* Trigger Button */}
-        <div onClick={() => setShowList(true)}>{children}</div>
-
-        {/* Feedback List Modal */}
-        <FeedbackList
-          isOpen={showList}
-          onClose={handleCloseList}
-          feedbacks={feedbacks}
-          loading={loading}
-          onEditFeedback={handleEditFeedback}
-          onNewFeedback={handleNewFeedback}
-        />
-
-        {/* Feedback Form Modal */}
-        <FeedbackForm
-          isOpen={showForm}
-          onClose={handleCloseForm}
-          onSubmit={handleSubmitFeedback}
-          editingFeedback={editingFeedback}
-        />
+    <>
+      <div
+        className={className}
+        onClick={() => setShowList(true)}
+        style={{ cursor: "pointer" }}
+      >
+        {children}
       </div>
-    </div>
+      
+      <FeedbackList
+        isOpen={showList}
+        onClose={() => setShowList(false)}
+        feedbacks={feedbacks}
+        loading={loading}
+        onViewFeedback={handleViewFeedback}
+        onNewFeedback={handleNewFeedback}
+      />
+      <FeedbackForm
+        isOpen={showForm}
+        onClose={handleCloseForm}
+        onSubmit={handleSubmitFeedback}
+      />
+      {selectedFeedback && (
+        <FeedbackDetails
+          feedback={selectedFeedback}
+          onClose={handleCloseDetails}
+        />
+      )}
+    </>
   );
 };
 
