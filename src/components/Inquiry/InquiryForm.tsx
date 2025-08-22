@@ -2038,42 +2038,67 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
               />
             </div>
 
+            {/* <div>
+              <Label className="block text-md font-medium text-gray-700 mb-1">
+                Email
+              </Label>
+              <Input
+                type="email"
+                name="email"
+                value={customerForm.email}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setCustomerForm((prev) => ({
+                    ...prev,
+                    email: value,
+                  }));
+                }}
+                placeholder="Enter email"
+                disabled={isCreatingCustomer}
+              />
+
+              {/* Error messages */}
+            {/* {customerForm.email && (
+                <>
+                  {!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerForm.email) && (
+                    <p className="text-sm text-red-500 mt-1">
+                      Must be a valid email format (example: user@example.com)
+                    </p>
+                  )}
+                  
+                </>
+              )}
+            </div> */}
+
             <div>
-  <Label className="block text-md font-medium text-gray-700 mb-1">
-    Email
-  </Label>
-  <Input
-    type="email"
-    name="email"
-    value={customerForm.email}
-    onChange={(e) => {
-      const value = e.target.value;
-      setCustomerForm((prev) => ({
-        ...prev,
-        email: value,
-      }));
-    }}
-    placeholder="Enter email"
-    disabled={isCreatingCustomer}
-  />
-
-  {/* Error messages */}
-  {customerForm.email && (
-    <>
-      {!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerForm.email) && (
-        <p className="text-sm text-red-500 mt-1">
-          Must be a valid email format (example: user@example.com)
-        </p>
-      )}
-      {!/\d/.test(customerForm.email) && (
-        <p className="text-sm text-red-500 mt-1">
-          Must contain at least one number
-        </p>
-      )}
-    </>
-  )}
-</div>
-
+              
+              <Label className="block text-md font-medium text-gray-700 mb-1">
+                
+                Email
+              </Label>
+              <Input
+                type="email"
+                name="email"
+                value={customerForm.email}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setCustomerForm((prev) => ({ ...prev, email: value }));
+                }}
+                placeholder="Enter email"
+                disabled={isCreatingCustomer}
+              />
+              {/* Error message */}
+              {customerForm.email && (
+                <>
+                  {!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerForm.email) && (
+                    <p className="text-sm text-red-500 mt-1">
+                      Must be a valid email format (example: user@example.com)
+                    </p>
+                  )}
+                  
+                </>
+              )}
+            </div>
 
             <div className="space-y-2">
               <Label className="block text-md font-medium text-gray-700 mb-1">
