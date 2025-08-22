@@ -91,7 +91,11 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
   const [isAddressSearching, setIsAddressSearching] = useState(false);
   const [showAddressDropdown, setShowAddressDropdown] = useState(false);
   const [showAddressDialog, setShowAddressDialog] = useState(false);
-  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
+  const [dropdownPosition, setDropdownPosition] = useState({
+    top: 0,
+    left: 0,
+    width: 0,
+  });
 
   // Address form state
   const [addressForm, setAddressForm] = useState<AddressSearchResult>({
@@ -129,7 +133,8 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
 
     const inputRect = inputRef.current.getBoundingClientRect();
     const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-    const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+    const scrollLeft =
+      window.pageXOffset || document.documentElement.scrollLeft;
 
     setDropdownPosition({
       top: inputRect.bottom + scrollTop,
@@ -144,12 +149,12 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
       calculateDropdownPosition();
       // Recalculate on scroll or resize
       const handleResize = () => calculateDropdownPosition();
-      window.addEventListener('resize', handleResize);
-      window.addEventListener('scroll', handleResize);
-      
+      window.addEventListener("resize", handleResize);
+      window.addEventListener("scroll", handleResize);
+
       return () => {
-        window.removeEventListener('resize', handleResize);
-        window.removeEventListener('scroll', handleResize);
+        window.removeEventListener("resize", handleResize);
+        window.removeEventListener("scroll", handleResize);
       };
     }
   }, [showAddressDropdown, calculateDropdownPosition]);
@@ -167,8 +172,9 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
     };
 
     if (showAddressDropdown) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
+      document.addEventListener("mousedown", handleClickOutside);
+      return () =>
+        document.removeEventListener("mousedown", handleClickOutside);
     }
   }, [showAddressDropdown]);
 
@@ -179,23 +185,32 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
   }, [fetchEmirates]);
 
   // Update address form when formData changes
- useEffect(() => {
-  setAddressForm({
-    custom_property_category: formData[propertyCategoryField] || "",
-    custom_property_type: formData[propertyTypeField] || "",
-    custom_emirate: formData[emirateField] || "",
-    custom_area: formData[areaField] || "",
-    custom_community: formData[communityField] || "",
-    custom_street_name: formData[streetNameField] || "",
-    custom_property_number: formData[propertyNumberField] || "",
-  });
-  
-  // Set the search query to the combined address if it exists
-  if (formData[propertyAreaField]) {
-    setAddressSearchQuery(formData[propertyAreaField]);
-  }
-}, [formData, propertyCategoryField, propertyTypeField, emirateField, areaField, 
-    communityField, streetNameField, propertyNumberField, propertyAreaField]);
+  useEffect(() => {
+    setAddressForm({
+      custom_property_category: formData[propertyCategoryField] || "",
+      custom_property_type: formData[propertyTypeField] || "",
+      custom_emirate: formData[emirateField] || "",
+      custom_area: formData[areaField] || "",
+      custom_community: formData[communityField] || "",
+      custom_street_name: formData[streetNameField] || "",
+      custom_property_number: formData[propertyNumberField] || "",
+    });
+
+    // Set the search query to the combined address if it exists
+    if (formData[propertyAreaField]) {
+      setAddressSearchQuery(formData[propertyAreaField]);
+    }
+  }, [
+    formData,
+    propertyCategoryField,
+    propertyTypeField,
+    emirateField,
+    areaField,
+    communityField,
+    streetNameField,
+    propertyNumberField,
+    propertyAreaField,
+  ]);
 
   // Fetch property types when category changes
   useEffect(() => {
@@ -208,20 +223,19 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
 
   // Function to generate combined address from available fields
   const generateCombinedAddress = useCallback(
-  (address: AddressSearchResult) => {
-    const addressParts = [
-      address.custom_emirate,
-      address.custom_area,
-      address.custom_community,
-      address.custom_street_name,
-      address.custom_property_number,
-    ].filter((part) => part && part.trim() !== "");
+    (address: AddressSearchResult) => {
+      const addressParts = [
+        address.custom_emirate,
+        address.custom_area,
+        address.custom_community,
+        address.custom_street_name,
+        address.custom_property_number,
+      ].filter((part) => part && part.trim() !== "");
 
-    return addressParts.join(", ");
-  },
-  []
-);
-
+      return addressParts.join(", ");
+    },
+    []
+  );
 
   // Function to fetch property categories
   const fetchPropertyCategories = async () => {
@@ -399,28 +413,28 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
   };
 
   // Update the handleSaveAddress function to use this:
-const handleSaveAddress = () => {
-  const combinedAddress = generateCombinedAddress(addressForm);
+  const handleSaveAddress = () => {
+    const combinedAddress = generateCombinedAddress(addressForm);
 
-  const updates = {
-    [propertyCategoryField]: addressForm.custom_property_category || "",
-    [propertyTypeField]: addressForm.custom_property_type || "",
-    [emirateField]: addressForm.custom_emirate || "",
-    [areaField]: addressForm.custom_area || "",
-    [communityField]: addressForm.custom_community || "",
-    [streetNameField]: addressForm.custom_street_name || "",
-    [propertyNumberField]: addressForm.custom_property_number || "",
-    [propertyAreaField]: combinedAddress,
+    const updates = {
+      [propertyCategoryField]: addressForm.custom_property_category || "",
+      [propertyTypeField]: addressForm.custom_property_type || "",
+      [emirateField]: addressForm.custom_emirate || "",
+      [areaField]: addressForm.custom_area || "",
+      [communityField]: addressForm.custom_community || "",
+      [streetNameField]: addressForm.custom_street_name || "",
+      [propertyNumberField]: addressForm.custom_property_number || "",
+      [propertyAreaField]: combinedAddress,
+    };
+
+    Object.entries(updates).forEach(([field, value]) => {
+      handleSelectChange(field, value);
+    });
+
+    setAddressSearchQuery(combinedAddress);
+    setShowAddressDialog(false);
+    toast.success("Address updated successfully");
   };
-
-  Object.entries(updates).forEach(([field, value]) => {
-    handleSelectChange(field, value);
-  });
-
-  setAddressSearchQuery(combinedAddress);
-  setShowAddressDialog(false);
-  toast.success("Address updated successfully");
-};
 
   const searchAreas = async (emirate: string, query: string) => {
     if (!emirate || !query.trim()) {
@@ -589,7 +603,7 @@ const handleSaveAddress = () => {
     setAddressSearchQuery("");
     setAddressSearchResults([]);
     setShowAddressDropdown(false);
-    
+
     // Clear all address-related fields
     const clearUpdates = {
       [propertyCategoryField]: "",
@@ -627,7 +641,7 @@ const handleSaveAddress = () => {
   // Check if we have a valid address - improved logic
   const hasValidAddress = Boolean(
     (formData[propertyAreaField] && formData[propertyAreaField].trim()) ||
-    (addressSearchQuery && addressSearchQuery.trim())
+      (addressSearchQuery && addressSearchQuery.trim())
   );
 
   // Dropdown component that will be rendered as portal
@@ -658,34 +672,32 @@ const handleSaveAddress = () => {
               <div className="flex items-start justify-between">
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-gray-900 truncate">
-                    {
-                     address.custom_combined_address ||
+                    {address.custom_combined_address ||
                       generateCombinedAddress(address)}
                   </p>
                   <div className="text-xs text-gray-500 mt-1">
-  <div className="flex items-start">
-    <Home className="h-3 w-3 mr-1 flex-shrink-0 mt-0.5" />
-    <span className="break-all">
-      {address.custom_combined_address ||
-        generateCombinedAddress(address)}
-    </span>
-  </div>
+                    <div className="flex items-start">
+                      <Home className="h-3 w-3 mr-1 flex-shrink-0 mt-0.5" />
+                      <span className="break-all">
+                        {address.custom_combined_address ||
+                          generateCombinedAddress(address)}
+                      </span>
+                    </div>
 
-  {/* Property info below address */}
-  <div className="mt-1 flex flex-wrap gap-1">
-    {address.custom_property_category && (
-      <span className="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded">
-        {address.custom_property_category}
-      </span>
-    )}
-    {address.custom_property_type && (
-      <span className="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded">
-        {address.custom_property_type}
-      </span>
-    )}
-  </div>
-</div>
-
+                    {/* Property info below address */}
+                    <div className="mt-1 flex flex-wrap gap-1">
+                      {address.custom_property_category && (
+                        <span className="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded">
+                          {address.custom_property_category}
+                        </span>
+                      )}
+                      {address.custom_property_type && (
+                        <span className="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded">
+                          {address.custom_property_type}
+                        </span>
+                      )}
+                    </div>
+                  </div>
                 </div>
                 {/* <div className="flex items-center sp">
                   {address.custom_property_category && (
@@ -715,9 +727,7 @@ const handleSaveAddress = () => {
             <p className="font-medium">
               No addresses found for "{addressSearchQuery}"
             </p>
-            <p className="text-xs text-gray-500">
-              Click to add a new address
-            </p>
+            <p className="text-xs text-gray-500">Click to add a new address</p>
           </div>
           <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded flex-shrink-0">
             Add New
@@ -751,42 +761,43 @@ const handleSaveAddress = () => {
                 }
               }}
             />
-            
+
             {/* Action buttons container */}
             <div className="absolute right-3 flex items-center space-x-1 z-10">
               {isAddressSearching && (
                 <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
               )}
-              
+
               {/* Always show buttons when we have any address data or search query */}
-              {!isAddressSearching && (hasValidAddress || addressSearchQuery.trim()) && (
-                <>
-                  <button
-                    type="button"
-                    onClick={handleEditAddress}
-                    className="text-black hover:text-blue-500  p-1 flex-shrink-0"
-                    title="Edit address"
-                  >
-                    <Edit className="h-4 w-4 " />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleClearAddress}
-                    className="text-black hover:text-gray-600 p-1 flex-shrink-0"
-                    title="Clear address"
-                  >
-                    <span className="text-lg leading-none">×</span>
-                  </button>
-                </>
-              )}
+              {!isAddressSearching &&
+                (hasValidAddress || addressSearchQuery.trim()) && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={handleEditAddress}
+                      className="text-black hover:text-blue-500  p-1 flex-shrink-0"
+                      title="Edit address"
+                    >
+                      <Edit className="h-4 w-4 " />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleClearAddress}
+                      className="text-black hover:text-gray-600 p-1 flex-shrink-0"
+                      title="Clear address"
+                    >
+                      <span className="text-lg leading-none">×</span>
+                    </button>
+                  </>
+                )}
             </div>
           </div>
         </div>
 
         {/* Render dropdown as portal to avoid clipping */}
-        {showAddressDropdown && typeof document !== 'undefined' && 
-          createPortal(<DropdownContent />, document.body)
-        }
+        {showAddressDropdown &&
+          typeof document !== "undefined" &&
+          createPortal(<DropdownContent />, document.body)}
       </div>
 
       {/* Address Dialog */}
@@ -831,7 +842,16 @@ const handleSaveAddress = () => {
                     type="text"
                     placeholder="Enter new category name"
                     value={newCategoryName}
-                    onChange={(e) => setNewCategoryName(capitalizeFirstLetter(e.target.value))}
+                    onChange={(e) => {
+                      const value = e.target.value;
+
+                      // allow only if empty OR contains at least one letter or digit
+                      const hasAlphaNumeric = /[a-zA-Z0-9]/.test(value);
+
+                      if (value === "" || hasAlphaNumeric) {
+                        setNewCategoryName(capitalizeFirstLetter(value));
+                      }
+                    }}
                     className="flex-1"
                     onKeyDown={(e) => {
                       if (e.key === "Enter") {
@@ -915,7 +935,16 @@ const handleSaveAddress = () => {
                     type="text"
                     placeholder="Enter new type name"
                     value={newTypeName}
-                    onChange={(e) => setNewTypeName(capitalizeFirstLetter(e.target.value))}
+                    onChange={(e) => {
+                      const value = e.target.value;
+
+                      // allow only if empty OR contains at least one letter or digit
+                      const hasAlphaNumeric = /[a-zA-Z0-9]/.test(value);
+
+                      if (value === "" || hasAlphaNumeric) {
+                        setNewTypeName(capitalizeFirstLetter(value));
+                      }
+                    }}
                     className="flex-1"
                     onKeyDown={(e) => {
                       if (e.key === "Enter") {
@@ -1083,12 +1112,19 @@ const handleSaveAddress = () => {
               <Input
                 type="text"
                 value={addressForm.custom_street_name || ""}
-                onChange={(e) =>
-                  setAddressForm((prev) => ({
-                    ...prev,
-                    custom_street_name: capitalizeFirstLetter(e.target.value),
-                  }))
-                }
+                onChange={(e) => {
+                  const value = e.target.value;
+
+                  // allow only if empty OR contains at least one letter or digit
+                  const hasAlphaNumeric = /[a-zA-Z0-9]/.test(value);
+
+                  if (value === "" || hasAlphaNumeric) {
+                    setAddressForm((prev) => ({
+                      ...prev,
+                      custom_street_name: capitalizeFirstLetter(value),
+                    }));
+                  }
+                }}
                 placeholder="Enter street name"
                 className="text-sm capitalize"
               />
@@ -1100,12 +1136,19 @@ const handleSaveAddress = () => {
               <Input
                 type="text"
                 value={addressForm.custom_property_number || ""}
-                onChange={(e) =>
-                  setAddressForm((prev) => ({
-                    ...prev,
-                    custom_property_number: capitalizeFirstLetter(e.target.value),
-                  }))
-                }
+                onChange={(e) => {
+                  const value = e.target.value;
+
+                  // allow only if empty OR contains at least one letter or digit
+                  const hasAlphaNumeric = /[a-zA-Z0-9]/.test(value);
+
+                  if (value === "" || hasAlphaNumeric) {
+                    setAddressForm((prev) => ({
+                      ...prev,
+                      custom_property_number: capitalizeFirstLetter(value),
+                    }));
+                  }
+                }}
                 placeholder="Enter property number"
                 className="text-sm capitalize"
               />
@@ -1119,7 +1162,13 @@ const handleSaveAddress = () => {
             >
               Cancel
             </Button>
-            <Button onClick={handleSaveAddress} variant="outline" className="bg-green-700 text-white w-[50%]">Save Address</Button>
+            <Button
+              onClick={handleSaveAddress}
+              variant="outline"
+              className="bg-green-700 text-white w-[50%]"
+            >
+              Save Address
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
