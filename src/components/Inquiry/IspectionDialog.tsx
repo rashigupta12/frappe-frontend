@@ -99,9 +99,16 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
   const [isLoadingInspectorDetails, setIsLoadingInspectorDetails] =
     useState(false);
   // New state for available inspectors on date change
-  const [availableInspectors, setAvailableInspectors] = useState<InspectorAvailability[]>([]);
+  const [availableInspectors, setAvailableInspectors] = useState<
+    InspectorAvailability[]
+  >([]);
   const [isLoadingAvailability, setIsLoadingAvailability] = useState(false);
-  
+  const [validationErrors, setValidationErrors] = useState({
+    startTime: false,
+    duration: false,
+    endTime: false,
+  });
+
   console.log("inquiry", data);
 
   // Helper function to check if selected date is today
@@ -214,11 +221,13 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
 
       if (response.message && response.message.status === "success") {
         const availabilityData = response.message.data;
-        
+
         // Filter and process inspectors with available slots
         const inspectorsWithSlots = availabilityData
-          .filter((inspector: InspectorAvailability) => 
-            inspector.availability.free_slots && inspector.availability.free_slots.length > 0
+          .filter(
+            (inspector: InspectorAvailability) =>
+              inspector.availability.free_slots &&
+              inspector.availability.free_slots.length > 0
           )
           .map((inspector: InspectorAvailability) => {
             const isToday = isSelectedDateToday();
@@ -234,8 +243,9 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
               },
             };
           })
-          .filter((inspector: InspectorAvailability) => 
-            inspector.availability.free_slots.length > 0
+          .filter(
+            (inspector: InspectorAvailability) =>
+              inspector.availability.free_slots.length > 0
           );
 
         setAvailableInspectors(inspectorsWithSlots);
@@ -244,7 +254,7 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
         if (mode === "create" && inspectorsWithSlots.length > 0) {
           const firstInspector = inspectorsWithSlots[0];
           setSelectedInspector(firstInspector);
-          
+
           // Auto-select first slot and set time
           if (firstInspector.availability.free_slots.length > 0) {
             const firstSlot = firstInspector.availability.free_slots[0];
@@ -264,62 +274,62 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
     }
   };
 
-const fetchInspectorAvailability = async (
-  inspectorEmail: string,
-  dateStr: string
-) => {
-  try {
-    const response = await frappeAPI.makeAuthenticatedRequest(
-      "GET",
-      `/api/method/eits_app.inspector_availability.get_employee_availability?date=${dateStr}`
-    );
-
-    if (response.message && response.message.status === "success") {
-      const availabilityData = response.message.data;
-
-      // Find the specific inspector's availability
-      const inspectorData = availabilityData.find(
-        (insp: InspectorAvailability) => insp.email === inspectorEmail
+  const fetchInspectorAvailability = async (
+    inspectorEmail: string,
+    dateStr: string
+  ) => {
+    try {
+      const response = await frappeAPI.makeAuthenticatedRequest(
+        "GET",
+        `/api/method/eits_app.inspector_availability.get_employee_availability?date=${dateStr}`
       );
-      if (inspectorData) {
-        // Only apply time filtering if the selected date is today
-        const selectedDate = new Date(dateStr);
-        const today = new Date();
-        const isToday =
-          selectedDate.getDate() === today.getDate() &&
-          selectedDate.getMonth() === today.getMonth() &&
-          selectedDate.getFullYear() === today.getFullYear();
 
-        const slotsToUse = isToday
-          ? filterFutureSlots(inspectorData.availability.free_slots)
-          : inspectorData.availability.free_slots;
+      if (response.message && response.message.status === "success") {
+        const availabilityData = response.message.data;
 
-        // Create modified inspector data with appropriate slots
-        const modifiedInspector = {
-          ...inspectorData,
-          availability: {
-            ...inspectorData.availability,
-            free_slots: slotsToUse,
-          },
-        };
+        // Find the specific inspector's availability
+        const inspectorData = availabilityData.find(
+          (insp: InspectorAvailability) => insp.email === inspectorEmail
+        );
+        if (inspectorData) {
+          // Only apply time filtering if the selected date is today
+          const selectedDate = new Date(dateStr);
+          const today = new Date();
+          const isToday =
+            selectedDate.getDate() === today.getDate() &&
+            selectedDate.getMonth() === today.getMonth() &&
+            selectedDate.getFullYear() === today.getFullYear();
 
-        setSelectedInspector(modifiedInspector);
+          const slotsToUse = isToday
+            ? filterFutureSlots(inspectorData.availability.free_slots)
+            : inspectorData.availability.free_slots;
 
-        // Auto-select first slot and set time in edit mode
-        if (mode === "edit" && slotsToUse.length > 0) {
-          const firstSlot = slotsToUse[0];
-          setSelectedSlot({
-            start: firstSlot.start,
-            end: firstSlot.end,
-          });
-          setRequestedTime(firstSlot.start);
+          // Create modified inspector data with appropriate slots
+          const modifiedInspector = {
+            ...inspectorData,
+            availability: {
+              ...inspectorData.availability,
+              free_slots: slotsToUse,
+            },
+          };
+
+          setSelectedInspector(modifiedInspector);
+
+          // Auto-select first slot and set time in edit mode
+          if (mode === "edit" && slotsToUse.length > 0) {
+            const firstSlot = slotsToUse[0];
+            setSelectedSlot({
+              start: firstSlot.start,
+              end: firstSlot.end,
+            });
+            setRequestedTime(firstSlot.start);
+          }
         }
       }
+    } catch (error) {
+      console.error("Error fetching inspector availability:", error);
     }
-  } catch (error) {
-    console.error("Error fetching inspector availability:", error);
-  }
-};
+  };
 
   const findEmployeeByEmail = async (email: string): Promise<string> => {
     try {
@@ -510,6 +520,11 @@ const fetchInspectorAvailability = async (
       setIsLoadingInspectorDetails(false);
       setAvailableInspectors([]);
       setIsLoadingAvailability(false);
+      setValidationErrors({
+        startTime: false,
+        duration: false,
+        endTime: false,
+      });
     }
   }, [open]);
 
@@ -619,7 +634,7 @@ const fetchInspectorAvailability = async (
 
     if (selectedDate) {
       const dateStr = format(selectedDate, "yyyy-MM-dd");
-      
+
       if (mode === "create") {
         // Fetch all inspectors' availability for create mode
         fetchAllInspectorsAvailability(dateStr);
@@ -703,72 +718,88 @@ const fetchInspectorAvailability = async (
     return true;
   };
 
-  const validateTimeAgainstSlot = (
-    time: string,
-    durationValue: string,
-    showToast: boolean = true
-  ): boolean => {
-    // For both create and edit modes, if we have selectedInspector, validate against their slots
-    if (selectedInspector) {
-      const timeMinutes = timeToMinutes(time);
-      const durationMinutes = Math.round(parseFloat(durationValue) * 60);
-      const endTimeMinutes = timeMinutes + durationMinutes;
+ const validateTimeAgainstSlot = (
+  time: string,
+  durationValue: string,
+  showToast: boolean = true
+): boolean => {
+  // Reset validation errors first
+  setValidationErrors({
+    startTime: false,
+    duration: false,
+    endTime: false,
+  });
 
-      // Check if the time falls within any available slot
-      const isWithinAvailableSlot =
-        selectedInspector.availability.free_slots.some((slot) => {
-          const slotStart = timeToMinutes(slot.start);
-          const slotEnd = timeToMinutes(slot.end);
+  let isValid = true;
 
-          return timeMinutes >= slotStart && endTimeMinutes <= slotEnd;
-        });
+  if (selectedInspector) {
+    const timeMinutes = timeToMinutes(time);
+    const durationMinutes = Math.round(parseFloat(durationValue) * 60);
+    const endTimeMinutes = timeMinutes + durationMinutes;
 
-      if (!isWithinAvailableSlot && showToast) {
+    // Check if the time falls within any available slot
+    const isWithinAvailableSlot =
+      selectedInspector.availability.free_slots.some((slot) => {
+        const slotStart = timeToMinutes(slot.start);
+        const slotEnd = timeToMinutes(slot.end);
+
+        return timeMinutes >= slotStart && endTimeMinutes <= slotEnd;
+      });
+
+    if (!isWithinAvailableSlot) {
+      if (showToast) {
         toast.error("Selected time must be within inspector's available slots");
       }
+      isValid = false;
+    }
+  }
 
-      return isWithinAvailableSlot;
+  // For create mode with selectedSlot (fallback)
+  if (mode === "create" && selectedSlot && isValid) {
+    const timeMinutes = timeToMinutes(time);
+    const slotStart = timeToMinutes(selectedSlot.start);
+    const slotEnd = timeToMinutes(selectedSlot.end);
+    const durationMinutes = Math.round(parseFloat(durationValue) * 60);
+    const endTimeMinutes = timeMinutes + durationMinutes;
+
+    // Check if time is within slot boundaries
+    if (timeMinutes < slotStart || timeMinutes >= slotEnd) {
+      if (showToast) {
+        toast.error(
+          `Time must be between ${selectedSlot.start} and ${selectedSlot.end}`
+        );
+      }
+      isValid = false;
     }
 
-    // For create mode with selectedSlot (fallback)
-    if (mode === "create" && selectedSlot) {
-      const timeMinutes = timeToMinutes(time);
-      const slotStart = timeToMinutes(selectedSlot.start);
-      const slotEnd = timeToMinutes(selectedSlot.end);
-      const durationMinutes = Math.round(parseFloat(durationValue) * 60);
-      const endTimeMinutes = timeMinutes + durationMinutes;
-
-      // Check if time is within slot boundaries
-      if (timeMinutes < slotStart || timeMinutes >= slotEnd) {
-        if (showToast) {
-          toast.error(
-            `Time must be between ${selectedSlot.start} and ${selectedSlot.end}`
-          );
-        }
-        return false;
+    // Check if end time exceeds slot end time
+    if (endTimeMinutes > slotEnd) {
+      if (showToast) {
+        toast.error(
+          `End time (${Math.floor(endTimeMinutes / 60)
+            .toString()
+            .padStart(2, "0")}:${(endTimeMinutes % 60)
+            .toString()
+            .padStart(2, "0")}) exceeds the selected slot's end time (${
+            selectedSlot.end
+          })`
+        );
       }
-
-      // Check if end time exceeds slot end time
-      if (endTimeMinutes > slotEnd) {
-        if (showToast) {
-          toast.error(
-            `End time (${Math.floor(endTimeMinutes / 60)
-              .toString()
-              .padStart(2, "0")}:${(endTimeMinutes % 60)
-              .toString()
-              .padStart(2, "0")}) exceeds the selected slot's end time (${
-              selectedSlot.end
-            })`
-          );
-        }
-        return false;
-      }
-
-      return true;
+      isValid = false;
     }
+  }
 
-    return true;
-  };
+  // Set validation errors if not valid
+  if (!isValid) {
+    setValidationErrors({
+      startTime: true,
+      duration: true,
+      endTime: true,
+    });
+  }
+
+  return isValid;
+};
 
   const calculateEndTime = () => {
     if (!requestedTime || !duration) return null;
@@ -815,6 +846,11 @@ const fetchInspectorAvailability = async (
   };
 
   const handleTimeChange = (newTime: string) => {
+    setValidationErrors({
+      startTime: false,
+      duration: false,
+      endTime: false,
+    });
     if (mode === "create") {
       if (!selectedSlot) return;
 
@@ -1368,7 +1404,9 @@ const fetchInspectorAvailability = async (
                   size="sm"
                   variant="outline"
                   onClick={() => setShowAvailabilityModal(true)}
-                  disabled={isProcessing || (mode === "create" && isLoadingAvailability)}
+                  disabled={
+                    isProcessing || (mode === "create" && isLoadingAvailability)
+                  }
                 >
                   {selectedInspector ||
                   (mode === "edit" && data?.allocated_to) ? (
@@ -1498,6 +1536,11 @@ const fetchInspectorAvailability = async (
                       onChange={(e) => {
                         const newDuration = e.target.value;
                         setDuration(newDuration);
+                        setValidationErrors({
+                          startTime: false,
+                          duration: false,
+                          endTime: false,
+                        });
 
                         // Only validate if we have both time and duration values
                         if (
@@ -1508,7 +1551,11 @@ const fetchInspectorAvailability = async (
                           validateTimeAgainstSlot(requestedTime, newDuration);
                         }
                       }}
-                      className="text-sm h-8 rounded-r-none"
+                      className={`text-sm h-8 rounded-r-none ${
+                        validationErrors.duration
+                          ? "border-red-700 border-2"
+                          : ""
+                      }`}
                       disabled={isProcessing}
                     />
                     <span className="flex items-center justify-center px-1 text-xs text-gray-800 border rounded-r-md bg-white">
@@ -1569,7 +1616,12 @@ const fetchInspectorAvailability = async (
 
               <Textarea
                 value={
-                  description.startsWith("Inspection ") || description.startsWith(" Inspection") || description.startsWith("Inspection for") || description.startsWith("Inspection") ? "" : description
+                  description.startsWith("Inspection ") ||
+                  description.startsWith(" Inspection") ||
+                  description.startsWith("Inspection for") ||
+                  description.startsWith("Inspection")
+                    ? ""
+                    : description
                 }
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Special requirements..."
