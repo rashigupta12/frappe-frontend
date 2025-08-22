@@ -34,7 +34,7 @@ const JobCardOtherDetails: React.FC<Props> = ({ card, onClose }) => {
       </DialogHeader>
 
       {/* Top‐level fields */}
-      <div className="space-y-3 mt-4">
+      <div className="space-y-3 mt-4 capitalize">
         {/* Date and Customer Name side by side */}
         <div className="grid grid-cols-2 gap-3">
           <Field label="Date" value={fmt(card.date)} />

@@ -474,7 +474,7 @@ const JobCardOtherList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
               <div
                 key={card.name}
                 onClick={() => setSelectedCard(card)}
-                className="relative bg-white border border-gray-200 rounded-lg hover:shadow-sm transition-all duration-150 cursor-pointer group overflow-hidden"
+                className="relative bg-white border border-gray-200 rounded-lg hover:shadow-sm transition-all duration-150 cursor-pointer group overflow-hidden capitalize"
               >
                 <div className="p-2 space-y-1.5">
                   <div className="flex justify-between items-start gap-2">

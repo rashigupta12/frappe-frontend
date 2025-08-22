@@ -595,7 +595,7 @@ const filteredJobCards = useMemo(() => {
                           {formatDate(card.finish_date)}
                         </span>
                       </div>
-                      <p className="font-semibold text-gray-900 text-sm truncate">
+                      <p className="font-semibold text-gray-900 text-sm truncate capitalize">
                         {card.party_name || "No Customer Name"}
                       </p>
                     </div>
@@ -607,7 +607,7 @@ const filteredJobCards = useMemo(() => {
                   </div>
 
                   {/* Address - More compact */}
-                  <p className="text-xs text-gray-600 leading-tight line-clamp-2">
+                  <p className="text-xs text-gray-600 leading-tight line-clamp-2 capitalize">
                     {[ card.area]
                       .filter(Boolean)
                       .join(", ") || "No Address"}

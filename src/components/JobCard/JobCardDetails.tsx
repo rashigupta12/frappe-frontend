@@ -33,7 +33,7 @@ const JobCardDetails: React.FC<Props> = ({ card, onClose }) => {
       {/* Top‐level fields */}
       <div className="space-y-3 mt-4">
         {/* Customer and Property No side by side */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-3 capitalize">
           <Field label="Date" value={fmt(card.date)} />
           <Field label="Customer" value={card.party_name} />
           

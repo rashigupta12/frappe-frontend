@@ -43,6 +43,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
+import { handleKeyDown } from "../../helpers/helper";
 
 interface JobCardFormProps {
   isOpen: boolean;
@@ -521,6 +522,44 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
     } finally {
       setFetchingCustomerDetails(false);
     }
+  };
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const input = e.target.value;
+
+    if (!input.startsWith("+971 ")) {
+      setNewCustomerData((prev) => ({ ...prev, mobile_no: "+971 " }));
+      return;
+    }
+
+    const digits = input.replace(/\D/g, "").substring(3);
+    const limitedDigits = digits.substring(0, 9);
+
+    let formattedNumber = "+971 ";
+
+    if (limitedDigits.length > 0) {
+      const isMobile = limitedDigits.startsWith("5");
+
+      if (isMobile) {
+        formattedNumber += limitedDigits.substring(0, 3);
+        if (limitedDigits.length > 3) {
+          formattedNumber += " " + limitedDigits.substring(3, 6);
+          if (limitedDigits.length > 6) {
+            formattedNumber += " " + limitedDigits.substring(6, 9);
+          }
+        }
+      } else {
+        formattedNumber += limitedDigits.substring(0, 2);
+        if (limitedDigits.length > 2) {
+          formattedNumber += " " + limitedDigits.substring(2, 5);
+          if (limitedDigits.length > 5) {
+            formattedNumber += " " + limitedDigits.substring(5, 9);
+          }
+        }
+      }
+    }
+
+    setNewCustomerData((prev) => ({ ...prev, mobile_no: formattedNumber }));
   };
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1076,7 +1115,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                           <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
                         )}
                       </label>
-                      <div className="relative">
+                      <div className="relative capitalize">
                         <Input
                           id="party_name"
                           name="party_name"
@@ -1085,7 +1124,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                           placeholder="Search by name, phone, email or address"
                           disabled={isReadOnly}
                           required
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none pr-10"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none pr-10 capitalize"
                         />
                         {isSearching && (
                           <Loader2 className="absolute right-3 top-3 h-4 w-4 animate-spin text-gray-500" />
@@ -1462,6 +1501,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                                   </Label>
                                   <div className="flex w-full items-center">
                                     <Input
+                                      type="number"
                                       value={charge.thickness}
                                       onChange={(e) =>
                                         updatePressingCharge(
@@ -1830,7 +1870,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
             </button>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            <div className=" space-y-2">
+            <div className=" space-y-2 capitalize">
               <Label htmlFor="customer_name">
                 Customer Name <span className="text-red-500">*</span>
               </Label>
@@ -1842,9 +1882,10 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                 onChange={handleNewCustomerInputChange}
                 placeholder="Enter customer name"
                 required
+                className="capitalize"
               />
             </div>
-            <div className="space-y-2">
+            {/* <div className="space-y-2">
               <Label htmlFor="mobile_no">Mobile Number</Label>
               <Input
                 id="mobile_no"
@@ -1853,8 +1894,25 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                 onChange={handleNewCustomerInputChange}
                 placeholder="Enter mobile number"
               />
-            </div>
+            </div> */}
             <div className="space-y-2">
+                        <Label className="block text-sm font-medium text-gray-700 mb-1">
+                          Phone Number <span className="text-red-500">*</span>
+                        </Label>
+                        <Input
+                          type="tel"
+                          name="mobile_no"
+                          value={newCustomerData.mobile_no}
+                          onChange={handlePhoneChange}
+                          onKeyDown={handleKeyDown}
+                          placeholder="+971 XX XXX XXXX"
+                          maxLength={17}
+                          required
+                          
+                          className="w-full"
+                        />
+                      </div>
+            {/* <div className="space-y-2">
               <Label htmlFor="email_id">Email (Optional)</Label>
               <Input
                 id="email_id"
@@ -1864,7 +1922,35 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                 placeholder="Enter email address"
                 type="email"
               />
-            </div>
+            </div> */}
+
+             <div>
+            <Label htmlFor="email_id">
+              Email
+            </Label>
+            <Input
+              type="email_id"
+              name="email_id"
+              value={newCustomerData.email_id}
+              onChange={(e) => {
+                const value = e.target.value;
+                setNewCustomerData((prev: any) => ({ ...prev, email: value }));
+              }}
+              placeholder="Enter email"
+            
+              className="w-full"
+            />
+            {/* Error message */}
+            {newCustomerData.email_id && (
+              <>
+                {!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newCustomerData.email_id) && (
+                  <p className="text-sm text-red-500 mt-1">
+                    Must be a valid email format (example: user@example.com)
+                  </p>
+                )}
+              </>
+            )}
+          </div>
           </div>
           <div className="flex justify-end space-x-2 pt-4">
             <Button variant="outline" onClick={handleCloseCustomerDialog}>
