@@ -23,6 +23,7 @@ import {
   DialogFooter,
 } from "../ui/dialog";
 import { Label } from "../ui/label";
+import { capitalizeFirstLetter } from "../../helpers/helper";
 
 interface PropertyAddressSectionProps {
   formData: any;
@@ -743,7 +744,7 @@ const handleSaveAddress = () => {
               placeholder="Search by emirate, area, community, street name, or property number..."
               value={addressSearchQuery}
               onChange={handleAddressSearchChange}
-              className="w-full pl-9 pr-20"
+              className="w-full pl-9 pr-20 capitalize"
               onFocus={() => {
                 if (addressSearchQuery && !showAddressDropdown) {
                   searchAddresses(addressSearchQuery);
@@ -830,7 +831,7 @@ const handleSaveAddress = () => {
                     type="text"
                     placeholder="Enter new category name"
                     value={newCategoryName}
-                    onChange={(e) => setNewCategoryName(e.target.value)}
+                    onChange={(e) => setNewCategoryName(capitalizeFirstLetter(e.target.value))}
                     className="flex-1"
                     onKeyDown={(e) => {
                       if (e.key === "Enter") {
@@ -914,7 +915,7 @@ const handleSaveAddress = () => {
                     type="text"
                     placeholder="Enter new type name"
                     value={newTypeName}
-                    onChange={(e) => setNewTypeName(e.target.value)}
+                    onChange={(e) => setNewTypeName(capitalizeFirstLetter(e.target.value))}
                     className="flex-1"
                     onKeyDown={(e) => {
                       if (e.key === "Enter") {
@@ -989,7 +990,7 @@ const handleSaveAddress = () => {
                   }
                   value={addressForm.custom_area || ""}
                   onChange={(e) => {
-                    const value = e.target.value;
+                    const value = capitalizeFirstLetter(e.target.value);
                     setAddressForm((prev) => ({
                       ...prev,
                       custom_area: value,
@@ -1056,7 +1057,7 @@ const handleSaveAddress = () => {
                 )}
               </div>
               {communityResults.length > 0 && (
-                <div className="mt-1 border border-gray-200 rounded-md max-h-40 overflow-y-auto">
+                <div className="mt-1 border border-gray-200 rounded-md max-h-40 overflow-y-auto capitalize">
                   {communityResults.map((community) => (
                     <div
                       key={community.name}
@@ -1085,11 +1086,11 @@ const handleSaveAddress = () => {
                 onChange={(e) =>
                   setAddressForm((prev) => ({
                     ...prev,
-                    custom_street_name: e.target.value,
+                    custom_street_name: capitalizeFirstLetter(e.target.value),
                   }))
                 }
                 placeholder="Enter street name"
-                className="text-sm"
+                className="text-sm capitalize"
               />
             </div>
 
@@ -1102,11 +1103,11 @@ const handleSaveAddress = () => {
                 onChange={(e) =>
                   setAddressForm((prev) => ({
                     ...prev,
-                    custom_property_number: e.target.value,
+                    custom_property_number: capitalizeFirstLetter(e.target.value),
                   }))
                 }
                 placeholder="Enter property number"
-                className="text-sm"
+                className="text-sm capitalize"
               />
             </div>
           </div>
