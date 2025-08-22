@@ -123,9 +123,19 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
   const [isAreaSearching, setIsAreaSearching] = useState(false);
   const [communityResults, setCommunityResults] = useState<any[]>([]);
   const [isCommunitySearching, setIsCommunitySearching] = useState(false);
+  const [hasSearchedArea, setHasSearchedArea] = useState(false); // NEW: Track if user has searched for area
+  const [hasSearchedCommunity, setHasSearchedCommunity] = useState(false); // NEW: Track if user has searched for community
+  
+  // Property type states
   const [showAddType, setShowAddType] = useState(false);
   const [newTypeName, setNewTypeName] = useState("");
   const [isAddingType, setIsAddingType] = useState(false);
+
+  // NEW: Area and Community adding states
+  const [newAreaName, setNewAreaName] = useState("");
+  const [isAddingArea, setIsAddingArea] = useState(false);
+  const [newCommunityName, setNewCommunityName] = useState("");
+  const [isAddingCommunity, setIsAddingCommunity] = useState(false);
 
   // Calculate dropdown position when it should be shown
   const calculateDropdownPosition = useCallback(() => {
@@ -439,10 +449,12 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
   const searchAreas = async (emirate: string, query: string) => {
     if (!emirate || !query.trim()) {
       setAreaResults([]);
+      setHasSearchedArea(false); // Reset search state
       return;
     }
 
     setIsAreaSearching(true);
+    setHasSearchedArea(true); // Mark that user has initiated a search
     try {
       const response = await frappeAPI.makeAuthenticatedRequest(
         "GET",
@@ -467,10 +479,12 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
   const searchCommunities = async (area: string, query: string) => {
     if (!area || !query.trim()) {
       setCommunityResults([]);
+      setHasSearchedCommunity(false); // Reset search state
       return;
     }
 
     setIsCommunitySearching(true);
+    setHasSearchedCommunity(true); // Mark that user has initiated a search
     try {
       const response = await frappeAPI.makeAuthenticatedRequest(
         "GET",
@@ -491,6 +505,192 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
       setIsCommunitySearching(false);
     }
   };
+
+  // NEW: Check if area already exists
+  const checkAreaExists = async (areaName: string, emirate: string): Promise<boolean> => {
+    try {
+      const response = await frappeAPI.makeAuthenticatedRequest(
+        "GET",
+        `/api/method/eits_app.area_search.search_uae_areas?area_name=${encodeURIComponent(
+          areaName
+        )}&emirate=${encodeURIComponent(emirate)}`
+      );
+
+      if (response.message?.status === "success" && response.message.data) {
+        // Check if any result matches exactly (case-insensitive)
+        const exactMatch = response.message.data.some(
+          (area: any) => 
+            (area.area_name || area.name)?.toLowerCase() === areaName.toLowerCase()
+        );
+        return exactMatch;
+      }
+      return false;
+    } catch (error) {
+      console.error("Error checking if area exists:", error);
+      return false;
+    }
+  };
+
+  // NEW: Handle adding new area
+// NEW: Handle adding new area
+const handleAddNewArea = async (areaName?: string) => {
+  const areaToAdd = areaName || newAreaName;
+
+  if (!areaToAdd.trim()) {
+    toast.error("Please enter an area name");
+    return;
+  }
+
+  if (!addressForm.custom_emirate) {
+    toast.error("Please select an emirate first");
+    return;
+  }
+
+  setIsAddingArea(true);
+  try {
+    // Check if area already exists
+    const areaExists = await checkAreaExists(areaToAdd.trim(), addressForm.custom_emirate);
+    
+    if (areaExists) {
+      toast.error(`Area "${areaToAdd.trim()}" already exists in ${addressForm.custom_emirate}`);
+      // Still update the form with the existing area name
+      setAddressForm((prev) => ({
+        ...prev,
+        custom_area: areaToAdd.trim(),
+      }));
+      setNewAreaName("");
+      return;
+    }
+
+    const response = await frappeAPI.createArea({
+      area_name: areaToAdd.trim(),
+      emirate: addressForm.custom_emirate,
+    });
+
+    if (response) {
+      toast.success("Area added successfully!");
+      setAddressForm((prev) => ({
+        ...prev,
+        custom_area: areaToAdd.trim(),
+      }));
+      setNewAreaName("");
+      setHasSearchedArea(false); // ADD THIS LINE - Reset search state
+    }
+  } catch (error) {
+    console.error("Error creating area:", error);
+    // Check if the error is due to duplicate entry
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    if (errorMessage.toLowerCase().includes('duplicate') || 
+        errorMessage.toLowerCase().includes('already exists')) {
+      toast.error(`Area "${areaToAdd.trim()}" already exists in ${addressForm.custom_emirate}`);
+      // Still update the form with the area name
+      setAddressForm((prev) => ({
+        ...prev,
+        custom_area: areaToAdd.trim(),
+      }));
+      setNewAreaName("");
+    } else {
+      toast.error("Failed to create area. Please try again.");
+    }
+  } finally {
+    setIsAddingArea(false);
+  }
+};
+
+  // NEW: Check if community already exists
+  const checkCommunityExists = async (communityName: string, area: string): Promise<boolean> => {
+    try {
+      const response = await frappeAPI.makeAuthenticatedRequest(
+        "GET",
+        `/api/method/eits_app.community_search.search_uae_communities?community_name=${encodeURIComponent(
+          communityName
+        )}&uae_area=${encodeURIComponent(area)}`
+      );
+
+      if (response.message?.status === "success" && response.message.data) {
+        // Check if any result matches exactly (case-insensitive)
+        const exactMatch = response.message.data.some(
+          (community: any) => 
+            community.community_name?.toLowerCase() === communityName.toLowerCase()
+        );
+        return exactMatch;
+      }
+      return false;
+    } catch (error) {
+      console.error("Error checking if community exists:", error);
+      return false;
+    }
+  };
+
+  // NEW: Handle adding new community
+ // NEW: Handle adding new community
+const handleAddNewCommunity = async (communityName?: string) => {
+  const communityToAdd = communityName || newCommunityName;
+
+  if (!communityToAdd.trim()) {
+    toast.error("Please enter a community name");
+    return;
+  }
+
+  if (!addressForm.custom_area) {
+    toast.error("Please select an area first");
+    return;
+  }
+
+  setIsAddingCommunity(true);
+  try {
+    // Check if community already exists
+    const communityExists = await checkCommunityExists(communityToAdd.trim(), addressForm.custom_area);
+    
+    if (communityExists) {
+      toast.error(`Community "${communityToAdd.trim()}" already exists in ${addressForm.custom_area}`);
+      // Still update the form with the existing community name
+      setAddressForm((prev) => ({
+        ...prev,
+        custom_community: communityToAdd.trim(),
+      }));
+      setNewCommunityName("");
+      return;
+    }
+
+    const response = await frappeAPI.makeAuthenticatedRequest(
+      "POST",
+      "/api/resource/UAE Community",
+      {
+        community_name: communityToAdd.trim(),
+        area: addressForm.custom_area,
+      }
+    );
+
+    if (response.data) {
+      toast.success("Community added successfully!");
+      setAddressForm((prev) => ({
+        ...prev,
+        custom_community: communityToAdd.trim(),
+      }));
+      setNewCommunityName("");
+      setHasSearchedCommunity(false); // ADD THIS LINE - Reset search state
+    }
+  } catch (error) {
+    console.error("Error creating community:", error);
+    // Check if the error is due to duplicate entry
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    if (errorMessage.toLowerCase().includes('duplicate') || 
+        errorMessage.toLowerCase().includes('already exists')) {
+      toast.error(`Community "${communityToAdd.trim()}" already exists in ${addressForm.custom_area}`);
+      // Still update the form with the community name
+      setAddressForm((prev) => ({
+        ...prev,
+        custom_community: communityToAdd.trim(),
+      }));
+      setNewCommunityName("");
+    } else {
+      toast.error("Failed to create community. Please try again.");
+    }
+  } finally {
+    setIsAddingCommunity(false);
+  }
+};
 
   const handleAddNewCategory = async () => {
     if (!newCategoryName.trim()) {
@@ -573,6 +773,47 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
       custom_property_type: "", // Reset property type when category changes
     }));
     setShowAddCategory(value === "Other");
+  };
+
+  // NEW: Handle area input change and search
+  const handleAreaInputChange = (value: string) => {
+    setAddressForm((prev) => ({
+      ...prev,
+      custom_area: value,
+      custom_community: "", // Reset community when area changes
+    }));
+
+    // Reset search states when input changes
+    if (!value.trim()) {
+      setAreaResults([]);
+      setHasSearchedArea(false);
+    } else if (addressForm.custom_emirate) {
+      // Only search if user is actively typing (not just on form load)
+      const timeoutId = setTimeout(() => {
+        searchAreas(addressForm.custom_emirate!, value);
+      }, 300);
+      return () => clearTimeout(timeoutId);
+    }
+  };
+
+  // NEW: Handle community input change and search  
+  const handleCommunityInputChange = (value: string) => {
+    setAddressForm((prev) => ({
+      ...prev,
+      custom_community: value,
+    }));
+
+    // Reset search states when input changes
+    if (!value.trim()) {
+      setCommunityResults([]);
+      setHasSearchedCommunity(false);
+    } else if (addressForm.custom_area) {
+      // Only search if user is actively typing (not just on form load)
+      const timeoutId = setTimeout(() => {
+        searchCommunities(addressForm.custom_area!, value);
+      }, 300);
+      return () => clearTimeout(timeoutId);
+    }
   };
 
   const getUniqueCategories = () => {
@@ -699,18 +940,6 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
                     </div>
                   </div>
                 </div>
-                {/* <div className="flex items-center sp">
-                  {address.custom_property_category && (
-                    <span className="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded">
-                      {address.custom_property_category}
-                    </span>
-                  )}
-                  {address.custom_property_type && (
-                    <span className="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded">
-                      {address.custom_property_type}
-                    </span>
-                  )}
-                  </div> */}
                 <div className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded ml-2 flex-shrink-0">
                   {address.found_via}
                 </div>
@@ -844,10 +1073,7 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
                     value={newCategoryName}
                     onChange={(e) => {
                       const value = e.target.value;
-
-                      // allow only if empty OR contains at least one letter or digit
                       const hasAlphaNumeric = /[a-zA-Z0-9]/.test(value);
-
                       if (value === "" || hasAlphaNumeric) {
                         setNewCategoryName(capitalizeFirstLetter(value));
                       }
@@ -937,10 +1163,7 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
                     value={newTypeName}
                     onChange={(e) => {
                       const value = e.target.value;
-
-                      // allow only if empty OR contains at least one letter or digit
                       const hasAlphaNumeric = /[a-zA-Z0-9]/.test(value);
-
                       if (value === "" || hasAlphaNumeric) {
                         setNewTypeName(capitalizeFirstLetter(value));
                       }
@@ -1006,49 +1229,75 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
               </Select>
             </div>
 
-            {/* Area */}
+            {/* Area with Add New functionality */}
             <div className="space-y-2">
               <Label>Area</Label>
-              <div className="relative">
-                <Input
-                  type="text"
-                  placeholder={
-                    !addressForm.custom_emirate
-                      ? "Select emirate first"
-                      : "Search for area..."
-                  }
-                  value={addressForm.custom_area || ""}
-                  onChange={(e) => {
-                    const value = capitalizeFirstLetter(e.target.value);
-                    setAddressForm((prev) => ({
-                      ...prev,
-                      custom_area: value,
-                      custom_community: value ? prev.custom_community : "",
-                    }));
-                    if (addressForm.custom_emirate && value) {
-                      searchAreas(addressForm.custom_emirate, value);
+              <div className="flex gap-2">
+                <div className="flex-1 relative">
+                  <Input
+                    type="text"
+                    placeholder={
+                      !addressForm.custom_emirate
+                        ? "Select emirate first"
+                        : "Search for area..."
                     }
-                  }}
-                  className="w-full text-sm"
-                />
-                {isAreaSearching && (
-                  <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 animate-spin text-gray-400" />
-                )}
+                    value={addressForm.custom_area || ""}
+                    onChange={(e) => {
+                      const value = capitalizeFirstLetter(e.target.value);
+                      handleAreaInputChange(value);
+                    }}
+                    className="w-full text-sm"
+                    disabled={!addressForm.custom_emirate}
+                  />
+                  {isAreaSearching && (
+                    <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 animate-spin text-gray-400" />
+                  )}
+                </div>
+
+                {/* Add Area Button - Show when user has searched but no results found */}
+                {!isAreaSearching &&
+                  addressForm.custom_area &&
+                  addressForm.custom_emirate &&
+                  hasSearchedArea &&
+                  areaResults.length === 0 && (
+                    <Button
+                      type="button"
+                      onClick={() => handleAddNewArea(addressForm.custom_area)}
+                      disabled={isAddingArea || !addressForm.custom_area?.trim()}
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white whitespace-nowrap"
+                    >
+                      {isAddingArea ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                          Adding...
+                        </>
+                      ) : (
+                        <>
+                          <Plus className="h-4 w-4 mr-2" />
+                          Add
+                        </>
+                      )}
+                    </Button>
+                  )}
               </div>
+
+              {/* Area Results Dropdown */}
               {areaResults.length > 0 && (
                 <div className="mt-1 border border-gray-200 rounded-md max-h-40 overflow-y-auto">
                   {areaResults.map((area) => (
                     <div
                       key={area.name}
-                      className="px-3 py-2  hover:bg-gray-100 cursor-pointer"
-                      onClick={() => {
-                        setAddressForm((prev) => ({
-                          ...prev,
-                          custom_area: area.area_name || area.name,
-                          custom_community: "",
-                        }));
-                        setAreaResults([]);
-                      }}
+                      className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
+                      // In the area results dropdown click handler:
+onClick={() => {
+  setAddressForm((prev) => ({
+    ...prev,
+    custom_area: area.area_name || area.name,
+    custom_community: "",
+  }));
+  setAreaResults([]);
+  setHasSearchedArea(false); // Reset search state after selection
+}}
                     >
                       {area.area_name || area.name}
                     </div>
@@ -1057,47 +1306,74 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
               )}
             </div>
 
-            {/* Community */}
+            {/* Community with Add New functionality */}
             <div className="space-y-2">
               <Label>Community</Label>
-              <div className="relative text-sm">
-                <Input
-                  type="text"
-                  placeholder={
-                    !addressForm.custom_area
-                      ? "Select area first"
-                      : "Search for community..."
-                  }
-                  value={addressForm.custom_community || ""}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    setAddressForm((prev) => ({
-                      ...prev,
-                      custom_community: value,
-                    }));
-                    if (addressForm.custom_area && value) {
-                      searchCommunities(addressForm.custom_area, value);
+              <div className="flex gap-2">
+                <div className="flex-1 relative text-sm">
+                  <Input
+                    type="text"
+                    placeholder={
+                      !addressForm.custom_area
+                        ? "Select area first"
+                        : "Search for community..."
                     }
-                  }}
-                  className="w-full text-sm"
-                />
-                {isCommunitySearching && (
-                  <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 animate-spin text-gray-400" />
-                )}
+                    value={addressForm.custom_community || ""}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      handleCommunityInputChange(value);
+                    }}
+                    className="w-full text-sm"
+                    disabled={!addressForm.custom_area}
+                  />
+                  {isCommunitySearching && (
+                    <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 animate-spin text-gray-400" />
+                  )}
+                </div>
+
+                {/* Add Community Button - Show when user has searched but no results found */}
+                {!isCommunitySearching &&
+                  addressForm.custom_community &&
+                  addressForm.custom_area &&
+                  hasSearchedCommunity &&
+                  communityResults.length === 0 && (
+                    <Button
+                      type="button"
+                      onClick={() => handleAddNewCommunity(addressForm.custom_community)}
+                      disabled={isAddingCommunity || !addressForm.custom_community?.trim()}
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white whitespace-nowrap"
+                    >
+                      {isAddingCommunity ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                          Adding...
+                        </>
+                      ) : (
+                        <>
+                          <Plus className="h-4 w-4 mr-2" />
+                          Add 
+                        </>
+                      )}
+                    </Button>
+                  )}
               </div>
+
+              {/* Community Results Dropdown */}
               {communityResults.length > 0 && (
                 <div className="mt-1 border border-gray-200 rounded-md max-h-40 overflow-y-auto capitalize">
                   {communityResults.map((community) => (
                     <div
                       key={community.name}
-                      className="px-3 py-2  hover:bg-gray-100 cursor-pointer"
-                      onClick={() => {
-                        setAddressForm((prev) => ({
-                          ...prev,
-                          custom_community: community.community_name,
-                        }));
-                        setCommunityResults([]);
-                      }}
+                      className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
+                      // In the community results dropdown click handler:
+onClick={() => {
+  setAddressForm((prev) => ({
+    ...prev,
+    custom_community: community.community_name,
+  }));
+  setCommunityResults([]);
+  setHasSearchedCommunity(false); // Reset search state after selection
+}}
                     >
                       {community.community_name}
                     </div>
@@ -1114,10 +1390,7 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
                 value={addressForm.custom_street_name || ""}
                 onChange={(e) => {
                   const value = e.target.value;
-
-                  // allow only if empty OR contains at least one letter or digit
                   const hasAlphaNumeric = /[a-zA-Z0-9]/.test(value);
-
                   if (value === "" || hasAlphaNumeric) {
                     setAddressForm((prev) => ({
                       ...prev,
@@ -1138,10 +1411,7 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
                 value={addressForm.custom_property_number || ""}
                 onChange={(e) => {
                   const value = e.target.value;
-
-                  // allow only if empty OR contains at least one letter or digit
                   const hasAlphaNumeric = /[a-zA-Z0-9]/.test(value);
-
                   if (value === "" || hasAlphaNumeric) {
                     setAddressForm((prev) => ({
                       ...prev,
