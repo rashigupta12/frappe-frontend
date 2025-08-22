@@ -1360,7 +1360,7 @@ const fetchInspectorAvailability = async (
                         ? "Loading inspectors..."
                         : availableInspectors.length > 0
                         ? "Inspector Auto-Selected"
-                        : "No inspectors available"
+                        : "Select Inspector"
                       : "No inspector assigned"}
                   </div>
                 )}
@@ -1455,7 +1455,7 @@ const fetchInspectorAvailability = async (
             })()}
 
           {/* Show no inspectors available message in create mode */}
-          {mode === "create" && date && !isLoadingAvailability && 
+          {/* {mode === "create" && date && !isLoadingAvailability && 
            !selectedInspector && availableInspectors.length === 0 && (
             <div className="space-y-2 px-5 py-2 bg-red-50 border border-red-200 rounded-lg">
               <Label className="text-red-700 text-sm font-medium">
@@ -1465,7 +1465,7 @@ const fetchInspectorAvailability = async (
                 No inspectors have available time slots for the selected date. Please choose a different date or contact an administrator.
               </p>
             </div>
-          )}
+          )} */}
 
           {/* Time and Duration Settings */}
           {(mode === "create" ? selectedSlot : true) && (
@@ -1569,7 +1569,7 @@ const fetchInspectorAvailability = async (
 
               <Textarea
                 value={
-                  description.startsWith("Inspection for") ? "" : description
+                  description.startsWith("Inspection ") || description.startsWith(" Inspection") || description.startsWith("Inspection for") || description.startsWith("Inspection") ? "" : description
                 }
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Special requirements..."
