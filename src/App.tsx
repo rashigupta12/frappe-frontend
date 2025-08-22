@@ -68,22 +68,22 @@ const ProtectedRoute = ({
     // Much shorter delay to prevent stuck loading
     const delay = isRoleSwitching || isSwitchingRole ? 300 : 100;
 
-    console.log('ProtectedRoute useEffect:', {
+    console.log("ProtectedRoute useEffect:", {
       isRoleSwitching,
       isSwitchingRole,
       loading,
       currentRole,
-      delay
+      delay,
     });
 
     const timer = setTimeout(() => {
-      console.log('ProtectedRoute timer completed, clearing access check');
+      console.log("ProtectedRoute timer completed, clearing access check");
       setIsCheckingAccess(false);
-      
+
       // Clear the role switching flag after access check
       if (isRoleSwitching) {
         localStorage.removeItem("isRoleSwitching");
-        console.log('Cleared isRoleSwitching flag from localStorage');
+        console.log("Cleared isRoleSwitching flag from localStorage");
       }
     }, delay);
 
@@ -94,7 +94,11 @@ const ProtectedRoute = ({
 
   // Show loading only when necessary
   if (loading || isCheckingAccess) {
-    console.log('ProtectedRoute showing loader:', { loading, isCheckingAccess, isSwitchingRole });
+    console.log("ProtectedRoute showing loader:", {
+      loading,
+      isCheckingAccess,
+      isSwitchingRole,
+    });
     return <PasswordResetLoader />;
   }
 
@@ -104,7 +108,7 @@ const ProtectedRoute = ({
   }
 
   if (!isAuthenticated) {
-    console.log('ProtectedRoute: Not authenticated, redirecting to login');
+    console.log("ProtectedRoute: Not authenticated, redirecting to login");
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
@@ -119,11 +123,11 @@ const ProtectedRoute = ({
         : false;
     }
 
-    console.log('ProtectedRoute access check:', {
+    console.log("ProtectedRoute access check:", {
       currentRole,
       allowedRoles,
       hasAccess,
-      requireExactRole
+      requireExactRole,
     });
 
     if (!hasAccess) {
@@ -139,7 +143,10 @@ const ProtectedRoute = ({
 
         const redirectRoute = roleRoutes[primaryRole];
         if (redirectRoute && location.pathname !== redirectRoute) {
-          console.log('ProtectedRoute: Redirecting to primary role route:', redirectRoute);
+          console.log(
+            "ProtectedRoute: Redirecting to primary role route:",
+            redirectRoute
+          );
           return <Navigate to={redirectRoute} replace />;
         }
       }
@@ -148,7 +155,7 @@ const ProtectedRoute = ({
     }
   }
 
-  console.log('ProtectedRoute: Access granted, rendering children');
+  console.log("ProtectedRoute: Access granted, rendering children");
   return <>{children}</>;
 };
 
@@ -386,12 +393,9 @@ function App() {
                   color: "#dc2626",
                 },
               },
-              duration: 4000,
+              duration: 10000,
             }}
             gutter={8}
-            // Add these two props to allow multiple toasts
-            containerClassName="toast-container"
-            reverseOrder={false}
           />
         </div>
       </LeadsProvider>

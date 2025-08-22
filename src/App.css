@@ -91,3 +91,18 @@ input[type="time"]::-webkit-inner-spin-button {
     margin: 0 16px !important;
   }
 }
+
+
+/* Add this to your CSS */
+.toast-container {
+  max-height: 1px !important; /* Only show one toast at a time */
+}
+
+.toast-container > * {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+.toast-container > *:not(:first-child) {
+  display: none !important; /* Hide all except the first toast */
+}

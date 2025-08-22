@@ -1931,7 +1931,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
             <Input
               type="email_id"
               name="email_id"
-              value={newCustomerData.email_id}
+              value={newCustomerData.email_id || ""}
               onChange={(e) => {
                 const value = e.target.value;
                 setNewCustomerData((prev: any) => ({ ...prev, email: value }));
