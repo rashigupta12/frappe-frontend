@@ -128,6 +128,88 @@ frappeClient.interceptors.response.use(
 
 export const frappeAPI = {
 
+  // Add this method to your frappeAPI object
+healthCheck: async () => {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+    const response = await fetch(`${FRAPPE_BASE_URL}/api/method/ping`, {
+      method: 'GET',
+      signal: controller.signal,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    clearTimeout(timeoutId);
+    
+    return {
+      healthy: response.ok,
+      status: response.status,
+      timestamp: new Date()
+    };
+  } catch (error) {
+    return {
+      healthy: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+      timestamp: new Date()
+    };
+  }
+},
+
+// Also add the enhancedFetch method if you need it:
+enhancedFetch: async (url: string, options: RequestInit = {}) => {
+  // First check if server is reachable for critical operations
+  if (options.method === 'POST' || url.includes('login') || url.includes('checkSession')) {
+    const health = await frappeAPI.healthCheck();
+    if (!health.healthy) {
+      throw new Error('Server is not reachable. Please check your connection.');
+    }
+  }
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+    });
+
+    clearTimeout(timeoutId);
+    return response;
+  } catch (error) {
+    clearTimeout(timeoutId);
+    
+    // Enhanced error handling
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      throw new Error('Request timeout. Server may be unavailable.');
+    }
+    
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      throw new Error('Network error. Unable to connect to server.');
+    }
+    
+    throw error;
+  }
+},
+
+// And add isServerReachable method:
+isServerReachable: async (): Promise<boolean> => {
+  try {
+    const health = await frappeAPI.healthCheck();
+    return health.healthy;
+  } catch (error) {
+    console.error('Server reachability check failed:', error);
+    return false;
+  }
+},
+
   // Get user details from Frappe
 getUserDetails: async (username: string) => {
   try {
@@ -149,6 +231,8 @@ getUserDetails: async (username: string) => {
     };
   }
 },
+
+
 
 
 login: async (username: string, password: string) => {

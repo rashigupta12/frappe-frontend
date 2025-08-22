@@ -16,10 +16,14 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import { JobCardProvider } from "./context/JobCardContext";
 import { JobCardOtherProvider } from "./context/JobCardOtherContext";
 import { LeadsProvider } from "./context/LeadContext";
+// import { useServerStatus } from "./hooks/useServerStatus"; // Import the hook
+// import ServerDownScreen from "./components/ServerDownScreen"; // Import the component
 
 import "./App.css";
 import { PasswordResetLoader } from "./common/Loader";
 import { FirstTimePasswordReset } from "./components/auth/NewPassword";
+import { useServerStatus } from "./lib/ServerStatus";
+import ServerDownScreen from "./components/pages/ServerStatus";
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -320,7 +324,21 @@ function AppRoutes() {
   );
 }
 
-function App() {
+// New wrapper component that handles server status
+function AppWithServerCheck() {
+  const { isOnline, isChecking } = useServerStatus();
+
+  // Show server down screen if server is offline and not checking initially
+  if (!isOnline && !isChecking) {
+    return <ServerDownScreen />;
+  }
+
+  // Show loading while checking server status initially
+  if (isChecking) {
+    return <PasswordResetLoader />;
+  }
+
+  // Server is online, show the normal app
   return (
     <AuthProvider>
       <LeadsProvider>
@@ -369,6 +387,10 @@ function App() {
       </LeadsProvider>
     </AuthProvider>
   );
+}
+
+function App() {
+  return <AppWithServerCheck />;
 }
 
 export default App;
