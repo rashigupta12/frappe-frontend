@@ -981,7 +981,7 @@ const handleAddNewCommunity = async (communityName?: string) => {
               ref={inputRef}
               type="text"
               placeholder="Search by emirate, area, community, street name, or property number..."
-              value=(addressSearchQuery)
+              value={addressSearchQuery}
               onChange={handleAddressSearchChange}
               className="w-full pl-9 pr-20 capitalize"
               onFocus={() => {
