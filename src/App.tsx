@@ -41,6 +41,8 @@ const PublicRoute = ({ children }: { children: ReactNode }) => {
   return <>{children}</>;
 };
 
+// Fixed ProtectedRoute component in App.tsx
+
 const ProtectedRoute = ({
   children,
   allowedRoles = [],
@@ -56,27 +58,43 @@ const ProtectedRoute = ({
   } = useAuth();
   const location = useLocation();
 
-  // Extended delay during role switching to prevent unauthorized flicker
+  // Simplified loading state management
   const [isCheckingAccess, setIsCheckingAccess] = useState(true);
 
   useEffect(() => {
     // Check if we're in the middle of a role switch
     const isRoleSwitching = localStorage.getItem("isRoleSwitching") === "true";
 
-    const delay = isRoleSwitching || isSwitchingRole ? 200 : 50; // Longer delay during role switching
+    // Much shorter delay to prevent stuck loading
+    const delay = isRoleSwitching || isSwitchingRole ? 300 : 100;
+
+    console.log('ProtectedRoute useEffect:', {
+      isRoleSwitching,
+      isSwitchingRole,
+      loading,
+      currentRole,
+      delay
+    });
 
     const timer = setTimeout(() => {
+      console.log('ProtectedRoute timer completed, clearing access check');
       setIsCheckingAccess(false);
+      
       // Clear the role switching flag after access check
       if (isRoleSwitching) {
         localStorage.removeItem("isRoleSwitching");
+        console.log('Cleared isRoleSwitching flag from localStorage');
       }
     }, delay);
 
-    return () => clearTimeout(timer);
-  }, [isSwitchingRole, currentRole]);
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [isSwitchingRole, currentRole, location.pathname]); // Added location.pathname to dependencies
 
-  if (loading || isCheckingAccess || isSwitchingRole) {
+  // Show loading only when necessary
+  if (loading || isCheckingAccess) {
+    console.log('ProtectedRoute showing loader:', { loading, isCheckingAccess, isSwitchingRole });
     return <PasswordResetLoader />;
   }
 
@@ -86,6 +104,7 @@ const ProtectedRoute = ({
   }
 
   if (!isAuthenticated) {
+    console.log('ProtectedRoute: Not authenticated, redirecting to login');
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
@@ -100,6 +119,13 @@ const ProtectedRoute = ({
         : false;
     }
 
+    console.log('ProtectedRoute access check:', {
+      currentRole,
+      allowedRoles,
+      hasAccess,
+      requireExactRole
+    });
+
     if (!hasAccess) {
       // If user doesn't have access but has other roles, redirect to their primary role
       if (availableRoles.length > 0) {
@@ -113,6 +139,7 @@ const ProtectedRoute = ({
 
         const redirectRoute = roleRoutes[primaryRole];
         if (redirectRoute && location.pathname !== redirectRoute) {
+          console.log('ProtectedRoute: Redirecting to primary role route:', redirectRoute);
           return <Navigate to={redirectRoute} replace />;
         }
       }
@@ -121,6 +148,7 @@ const ProtectedRoute = ({
     }
   }
 
+  console.log('ProtectedRoute: Access granted, rendering children');
   return <>{children}</>;
 };
 

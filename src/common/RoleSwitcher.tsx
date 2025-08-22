@@ -1,8 +1,9 @@
-// components/common/RoleSwitcher.tsx
+// Updated RoleSwitcher.tsx with better error handling and session validation
+
 import { ChevronDown, User } from "lucide-react";
-import { Popover, PopoverContent, PopoverTrigger } from "../components/ui/popover";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "../components/ui/popover";
 import { useAuth } from "../context/AuthContext";
 
 interface RoleSwitcherProps {
@@ -19,7 +20,10 @@ export const RoleSwitcher = ({
     availableRoles, 
     switchRole, 
     getDisplayRoleName, 
-    isMultiRole 
+    isMultiRole,
+    // refreshAuth,
+    user,
+    isAuthenticated 
   } = useAuth();
   const navigate = useNavigate();
 
@@ -32,10 +36,23 @@ export const RoleSwitcher = ({
     if (role === currentRole) return;
     
     try {
+      console.log('Starting role switch to:', role);
+      
+      // Validate user is properly authenticated
+      if (!isAuthenticated || !user || user.requiresPasswordReset) {
+        console.error('User not properly authenticated for role switch');
+        return;
+      }
+      
+      // Set flag to indicate role switching is in progress
+      localStorage.setItem("isRoleSwitching", "true");
+      
       // Switch the role first
       const success = await switchRole(role);
       
       if (success) {
+        console.log('Role switch successful, navigating...');
+        
         // Define the role routes
         const roleRoutes: Record<string, string> = {
           'EITS_Sale_Representative': '/sales',
@@ -46,24 +63,33 @@ export const RoleSwitcher = ({
         
         const targetRoute = roleRoutes[role];
         if (targetRoute) {
-          // Use React Router navigation instead of window.location.href
-          // This prevents the full page reload and maintains React's state
-          navigate(targetRoute, { replace: true });
+          console.log('Navigating to:', targetRoute);
+          // Use React Router navigation with a small delay to ensure state is updated
+          setTimeout(() => {
+            navigate(targetRoute, { replace: true });
+          }, 150);
         }
-        window.location.reload(); // Reload to ensure the new role is applied
+        
+        console.log('Role switch completed successfully');
+      } else {
+        console.error('Role switch failed');
+        localStorage.removeItem("isRoleSwitching");
       }
+      
     } catch (error) {
       console.error("Failed to switch role:", error);
+      localStorage.removeItem("isRoleSwitching");
     }
   };
 
-   const renderMinimal = () => (
+  const renderMinimal = () => (
     <Popover>
       <PopoverTrigger asChild>
         <Button
           variant="ghost"
           size="sm"
           className={`gap-1 text-xs ${className}`}
+          disabled={!isAuthenticated || user?.requiresPasswordReset}
         >
           <User className="h-3 w-3" />
           <span className="hidden sm:inline">
@@ -87,6 +113,7 @@ export const RoleSwitcher = ({
                 ? 'bg-blue-50 text-blue-700 font-medium' 
                 : 'text-gray-700 hover:bg-gray-50'
             }`}
+            disabled={!isAuthenticated || user?.requiresPasswordReset}
           >
             {role === currentRole && (
               <div className="w-2 h-2 bg-blue-500 rounded-full mr-2" />
@@ -105,6 +132,7 @@ export const RoleSwitcher = ({
           variant="outline"
           size="sm"
           className={`gap-2 ${className}`}
+          disabled={!isAuthenticated || user?.requiresPasswordReset}
         >
           <User className="h-4 w-4" />
           <span className="font-medium">
@@ -128,6 +156,7 @@ export const RoleSwitcher = ({
                   ? 'bg-blue-50 text-blue-700 font-medium border border-blue-200' 
                   : 'text-gray-700 hover:bg-gray-50'
               }`}
+              disabled={!isAuthenticated || user?.requiresPasswordReset}
             >
               <div className="flex items-center gap-2">
                 {role === currentRole && (
@@ -153,6 +182,7 @@ export const RoleSwitcher = ({
           <Button
             variant="outline"
             className="gap-2 min-w-[140px] justify-between"
+            disabled={!isAuthenticated || user?.requiresPasswordReset}
           >
             <div className="flex items-center gap-2">
               <User className="h-4 w-4" />
@@ -180,6 +210,7 @@ export const RoleSwitcher = ({
                       ? 'bg-emerald-50 text-emerald-700 font-medium border border-emerald-200' 
                       : 'text-gray-700 hover:bg-gray-50'
                   }`}
+                  disabled={!isAuthenticated || user?.requiresPasswordReset}
                 >
                   <div className="flex items-center gap-3 w-full">
                     <div className={`w-3 h-3 rounded-full ${
