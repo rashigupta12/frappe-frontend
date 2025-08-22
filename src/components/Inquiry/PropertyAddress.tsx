@@ -23,7 +23,7 @@ import {
   DialogFooter,
 } from "../ui/dialog";
 import { Label } from "../ui/label";
-import { capitalizeFirstLetter } from "../../helpers/helper";
+import { capitalizeFirstLetter, extractAddressFromSite } from "../../helpers/helper";
 
 interface PropertyAddressSectionProps {
   formData: any;
@@ -981,7 +981,7 @@ const handleAddNewCommunity = async (communityName?: string) => {
               ref={inputRef}
               type="text"
               placeholder="Search by emirate, area, community, street name, or property number..."
-              value={addressSearchQuery}
+              value={extractAddressFromSite(addressSearchQuery)}
               onChange={handleAddressSearchChange}
               className="w-full pl-9 pr-20 capitalize"
               onFocus={() => {

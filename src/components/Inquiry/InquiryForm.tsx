@@ -975,6 +975,8 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
           name: selectedCustomer?.name || "",
           lead_name: selectedCustomer?.lead_name || "",
         };
+        
+        
 
         setSelectedCustomer(updatedCustomer);
         setSearchQuery(updatedCustomer.customer_name);
@@ -987,6 +989,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
           mobile_no: updatedCustomer.mobile_no,
           custom_jobtype: customerForm.jobType, // This is already string[]
         }));
+        
 
         setShowCustomerModal(false);
         setCustomerForm({
@@ -1981,170 +1984,139 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
 
       {/* Customer Modal */}
       <Dialog open={showCustomerModal} onOpenChange={setShowCustomerModal}>
-        <DialogContent
-          className="sm:max-w-[500px] bg-white"
-          ref={customerModalRef}
-          onInteractOutside={(e) => {
-            // Prevent closing when clicking outside
-            e.preventDefault();
-          }}
-        >
-          <DialogHeader>
-            <DialogTitle>
-              {modalMode === "create" ? "Add New Lead" : "Edit Lead"}
-            </DialogTitle>
-            <DialogDescription>
-              {modalMode === "create"
-                ? "Fill in the details to add a new lead"
-                : "Update the lead details below"}
-            </DialogDescription>
-          </DialogHeader>
+      <DialogContent
+        className="sm:max-w-[500px] max-h-[85vh] overflow-y-auto bg-white p-4 md:p-6"
+        ref={customerModalRef}
+        onInteractOutside={(e) => {
+          // Prevent closing when clicking outside
+          e.preventDefault();
+        }}
+      >
+        <DialogHeader className="mb-4">
+          <DialogTitle className="text-xl">
+            {modalMode === "create" ? "Add New Lead" : "Edit Lead"}
+          </DialogTitle>
+          <DialogDescription className="text-sm">
+            {modalMode === "create"
+              ? "Fill in the details to add a new lead"
+              : "Update the lead details below"}
+          </DialogDescription>
+        </DialogHeader>
 
-          <div className="space-y-4 py-4">
-            <div>
-              <Label className="block text-md font-medium text-gray-700 mb-1">
-                Full Name <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                type="text"
-                name="name"
-                value={customerForm.name}
-                onChange={(e) =>
-                  setCustomerForm((prev) => ({
-                    ...prev,
-                    name: capitalizeFirstLetter(e.target.value),
-                  }))
-                }
-                placeholder="Enter customer name"
-                required
-                disabled={isCreatingCustomer}
-              />
-            </div>
-
-            <div>
-              <Label className="block text-md font-medium text-gray-700 mb-1">
-                Phone Number <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                type="tel"
-                name="phone"
-                value={customerForm.phone}
-                onChange={handlePhoneChange}
-                onKeyDown={handleKeyDown}
-                placeholder="+971 XX XXX XXXX"
-                maxLength={17}
-                required
-                disabled={isCreatingCustomer}
-              />
-            </div>
-
-            {/* <div>
-              <Label className="block text-md font-medium text-gray-700 mb-1">
-                Email
-              </Label>
-              <Input
-                type="email"
-                name="email"
-                value={customerForm.email}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  setCustomerForm((prev) => ({
-                    ...prev,
-                    email: value,
-                  }));
-                }}
-                placeholder="Enter email"
-                disabled={isCreatingCustomer}
-              />
-
-              {/* Error messages */}
-            {/* {customerForm.email && (
-                <>
-                  {!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerForm.email) && (
-                    <p className="text-sm text-red-500 mt-1">
-                      Must be a valid email format (example: user@example.com)
-                    </p>
-                  )}
-                  
-                </>
-              )}
-            </div> */}
-
-            <div>
-              
-              <Label className="block text-md font-medium text-gray-700 mb-1">
-                
-                Email
-              </Label>
-              <Input
-                type="email"
-                name="email"
-                value={customerForm.email}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  setCustomerForm((prev) => ({ ...prev, email: value }));
-                }}
-                placeholder="Enter email"
-                disabled={isCreatingCustomer}
-              />
-              {/* Error message */}
-              {customerForm.email && (
-                <>
-                  {!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerForm.email) && (
-                    <p className="text-sm text-red-500 mt-1">
-                      Must be a valid email format (example: user@example.com)
-                    </p>
-                  )}
-                  
-                </>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label className="block text-md font-medium text-gray-700 mb-1">
-                Job Types <span className="text-red-500">*</span>
-              </Label>
-              <MultiSelectJobTypes
-                jobTypes={jobTypes}
-                selectedJobTypes={customerForm.jobType}
-                onSelectionChange={(selected: string[]) => {
-                  setCustomerForm((prev) => ({
-                    ...prev,
-                    jobType: selected,
-                  }));
-                }}
-                placeholder="Select job types"
-              />
-            </div>
+        <div className="space-y-4 py-2">
+          <div>
+            <Label className="block text-sm font-medium text-gray-700 mb-1">
+              Full Name <span className="text-red-500">*</span>
+            </Label>
+            <Input
+              type="text"
+              name="name"
+              value={customerForm.name}
+              onChange={(e) =>
+                setCustomerForm((prev: any) => ({
+                  ...prev,
+                  name: capitalizeFirstLetter(e.target.value),
+                }))
+              }
+              placeholder="Enter customer name"
+              required
+              disabled={isCreatingCustomer}
+              className="w-full"
+            />
           </div>
 
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={handleCancelSaveCustomer}
+          <div>
+            <Label className="block text-sm font-medium text-gray-700 mb-1">
+              Phone Number <span className="text-red-500">*</span>
+            </Label>
+            <Input
+              type="tel"
+              name="phone"
+              value={customerForm.phone}
+              onChange={handlePhoneChange}
+              onKeyDown={handleKeyDown}
+              placeholder="+971 XX XXX XXXX"
+              maxLength={17}
+              required
               disabled={isCreatingCustomer}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleSaveCustomer}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+              className="w-full"
+            />
+          </div>
+
+          <div>
+            <Label className="block text-sm font-medium text-gray-700 mb-1">
+              Email
+            </Label>
+            <Input
+              type="email"
+              name="email"
+              value={customerForm.email}
+              onChange={(e) => {
+                const value = e.target.value;
+                setCustomerForm((prev: any) => ({ ...prev, email: value }));
+              }}
+              placeholder="Enter email"
               disabled={isCreatingCustomer}
-            >
-              {isCreatingCustomer ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {modalMode === "create" ? "Creating..." : "Updating..."}
-                </>
-              ) : modalMode === "create" ? (
-                "Save Lead"
-              ) : (
-                "Update Lead"
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+              className="w-full"
+            />
+            {/* Error message */}
+            {customerForm.email && (
+              <>
+                {!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerForm.email) && (
+                  <p className="text-sm text-red-500 mt-1">
+                    Must be a valid email format (example: user@example.com)
+                  </p>
+                )}
+              </>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label className="block text-sm font-medium text-gray-700 mb-1">
+              Job Types <span className="text-red-500">*</span>
+            </Label>
+            <MultiSelectJobTypes
+              jobTypes={jobTypes}
+              selectedJobTypes={customerForm.jobType}
+              onSelectionChange={(selected: string[]) => {
+                setCustomerForm((prev: any) => ({
+                  ...prev,
+                  jobType: selected,
+                }));
+              }}
+              placeholder="Select job types"
+            />
+          </div>
+        </div>
+
+        <DialogFooter className="mt-6 flex flex-col sm:flex-row gap-2">
+          <Button
+            variant="outline"
+            onClick={handleCancelSaveCustomer}
+            disabled={isCreatingCustomer}
+            className="w-full sm:w-auto"
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleSaveCustomer}
+            className="bg-emerald-600 hover:bg-emerald-700 text-white w-full sm:w-auto"
+            disabled={isCreatingCustomer}
+          >
+            {isCreatingCustomer ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                {modalMode === "create" ? "Creating..." : "Updating..."}
+              </>
+            ) : modalMode === "create" ? (
+              "Save Lead"
+            ) : (
+              "Update Lead"
+            )}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
 
       {showEndTimeWarning && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-6">
