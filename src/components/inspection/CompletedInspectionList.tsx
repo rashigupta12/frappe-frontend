@@ -13,10 +13,26 @@ const statusFilters = [
 ];
 
 const statusOptions = [
-  { value: "Scheduled", label: "Scheduled", color: "bg-amber-100 text-amber-800" },
-  { value: "In Progress", label: "In Progress", color: "bg-blue-100 text-blue-800" },
-  { value: "Completed", label: "Completed", color: "bg-green-100 text-green-800" },
-  { value: "Pending", label: "On Hold", color: "bg-yellow-100 text-yellow-800" },
+  {
+    value: "Scheduled",
+    label: "Scheduled",
+    color: "bg-amber-100 text-amber-800",
+  },
+  {
+    value: "In Progress",
+    label: "In Progress",
+    color: "bg-blue-100 text-blue-800",
+  },
+  {
+    value: "Completed",
+    label: "Completed",
+    color: "bg-green-100 text-green-800",
+  },
+  {
+    value: "Pending",
+    label: "On Hold",
+    color: "bg-yellow-100 text-yellow-800",
+  },
 ];
 
 interface StatusDropdownProps {
@@ -42,7 +58,9 @@ const StatusDropdown = ({
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [pendingStatus, setPendingStatus] = useState("");
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const [dropdownDirection, setDropdownDirection] = useState<"up" | "down">("down");
+  const [dropdownDirection, setDropdownDirection] = useState<"up" | "down">(
+    "down"
+  );
 
   // Check if status is completed - prevent any changes
   const isCompleted = currentStatus === "Completed";
@@ -73,7 +91,11 @@ const StatusDropdown = ({
   const handleOptionClick = (newStatus: string) => {
     if (newStatus !== currentStatus && !isUpdating) {
       // Prevent moving to In Progress if date has passed
-      if (newStatus === "In Progress" && isDatePassed && currentStatus === "Scheduled") {
+      if (
+        newStatus === "In Progress" &&
+        isDatePassed &&
+        currentStatus === "Scheduled"
+      ) {
         setIsOpen(false);
         return;
       }
@@ -106,16 +128,18 @@ const StatusDropdown = ({
   // Calculate dropdown position
   const toggleDropdown = () => {
     if (isUpdating || isCompleted) return;
-    
+
     if (!isOpen && dropdownRef.current) {
       const rect = dropdownRef.current.getBoundingClientRect();
       const spaceBelow = window.innerHeight - rect.bottom;
       const spaceAbove = rect.top;
       const dropdownHeight = 200; // Approximate dropdown height
-      
-      setDropdownDirection(spaceBelow > dropdownHeight || spaceBelow > spaceAbove ? "down" : "up");
+
+      setDropdownDirection(
+        spaceBelow > dropdownHeight || spaceBelow > spaceAbove ? "down" : "up"
+      );
     }
-    
+
     setIsOpen(!isOpen);
   };
 
@@ -157,13 +181,18 @@ const StatusDropdown = ({
 
       {/* Status Dropdown */}
       {isOpen && !isUpdating && !isCompleted && (
-        <div className={`absolute ${
-          dropdownDirection === 'down' ? 'top-full mt-1' : 'bottom-full mb-1'
-        } right-0 bg-white border border-gray-200 rounded-md shadow-lg z-20 min-w-[120px]`}>
+        <div
+          className={`absolute ${
+            dropdownDirection === "down" ? "top-full mt-1" : "bottom-full mb-1"
+          } right-0 bg-white border border-gray-200 rounded-md shadow-lg z-20 min-w-[120px]`}
+        >
           {statusOptions.map((option) => {
             // Disable In Progress option if date has passed
-            const isDisabled = option.value === "In Progress" && isDatePassed && currentStatus === "Scheduled";
-            
+            const isDisabled =
+              option.value === "In Progress" &&
+              isDatePassed &&
+              currentStatus === "Scheduled";
+
             return (
               <button
                 key={option.value}
@@ -173,12 +202,16 @@ const StatusDropdown = ({
                 } ${
                   option.value === currentStatus
                     ? "opacity-60"
-                    : isDisabled 
+                    : isDisabled
                     ? "opacity-50 cursor-not-allowed"
                     : "hover:opacity-90"
                 }`}
                 disabled={!!isDisabled}
-                title={isDisabled ? "Cannot change to In Progress - inspection date has passed" : ""}
+                title={
+                  isDisabled
+                    ? "Cannot change to In Progress - inspection date has passed"
+                    : ""
+                }
               >
                 {option.label}
               </button>
@@ -296,7 +329,7 @@ const MobileSiteInspectionList = ({ userEmail }: InspectionListProps) => {
       await updateInspectionbyId(inspectionName, {
         inspection_status: newStatus,
       });
-      
+
       // Refresh the list to show updated status
       await fetchAllInspectionsByField("owner", userEmail);
     } catch (error) {
@@ -342,7 +375,7 @@ const MobileSiteInspectionList = ({ userEmail }: InspectionListProps) => {
   }
 
   if (loading) {
-    return <PasswordResetLoader/>
+    return <PasswordResetLoader />;
   }
 
   if (error) {
@@ -373,7 +406,7 @@ const MobileSiteInspectionList = ({ userEmail }: InspectionListProps) => {
                 P {inProgressCount}
               </span>
               <span className="px-2 py-1 bg-amber-100 text-amber-800 rounded-full">
-                 S {pendingCount}
+                S {pendingCount}
               </span>
               <span className="px-2 py-1 bg-gray-100 text-gray-800 rounded-full">
                 Total {siteInspections.length}
@@ -408,7 +441,7 @@ const MobileSiteInspectionList = ({ userEmail }: InspectionListProps) => {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            
+
             {/* Status Filter Pills */}
             <div className="flex space-x-2 overflow-x-auto scrollbar-hide lg:flex-wrap lg:overflow-x-visible lg:space-x-2 lg:space-y-2 pt-2">
               {statusFilters.map((filter) => (
@@ -462,8 +495,9 @@ const MobileSiteInspectionList = ({ userEmail }: InspectionListProps) => {
                     <div className="flex items-center space-x-2 text-xs lg:text-xs text-gray-500">
                       <span>
                         {inspection.inspection_date &&
-                         new Date(inspection.inspection_date).toLocaleDateString("en-GB")}
-                          
+                          new Date(
+                            inspection.inspection_date
+                          ).toLocaleDateString("en-GB")}
                       </span>
                       <span>•</span>
                       <span className="truncate">
@@ -543,13 +577,16 @@ const MobileSiteInspectionList = ({ userEmail }: InspectionListProps) => {
                 <div className="pt-2 border-t border-gray-100 flex items-center justify-between">
                   <div className="flex items-center space-x-2">
                     <span className="text-xs lg:text-sm text-gray-500">
-  Modified:{" "}
-  {new Date(inspection.modified).toLocaleDateString("en-GB", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  })}
-</span>
+                      Modified:{" "}
+                      {new Date(inspection.modified).toLocaleDateString(
+                        "en-GB",
+                        {
+                          day: "2-digit",
+                          month: "2-digit",
+                          year: "numeric",
+                        }
+                      )}
+                    </span>
 
                     {inspection.follow_up_required === 1 && (
                       <span className="px-1.5 py-0.5 bg-yellow-100 text-yellow-800 text-xs lg:text-sm rounded-full">

@@ -5,59 +5,117 @@ import { frappeAPI } from "../../../../api/frappeClient";
 import { z } from "zod";
 import { showToast } from "../../../../helpers/comman";
 
+// export const formSchema = z.object({
+//   inspection_date: z.date(),
+//   inspection_status: z.string().optional(),
+//   inspection_time: z.string(),
+//   property_type: z.string(),
+//   site_photos: z.any().optional(),
+//   measurement_sketch: z.union([
+//     z.object({
+//       id: z.string(),
+//       url: z.string(),
+//       type: z.enum(["image", "video", "audio"]),
+//       remarks: z.string().optional(),
+//     }),
+//     z.undefined()
+//   ]).optional(),
+//   inspection_notes: z.string().optional(),
+//   site_dimensions: z.array(
+//     z.object({
+//       floor: z.string().optional(),
+//       room: z.string().optional(),
+//       entity: z.string().optional(),
+//       area_name: z.string(),
+//       dimensionsunits: z.string(),
+//       notes: z.string().optional(),
+//       images: z.array(
+//         z.object({
+//           id: z.string(),
+//           url: z.string(),
+//           type: z.enum(["image", "video"]), // Only image and video allowed for images
+//           remarks: z.string().optional(),
+//         })
+//       ).optional(),
+//       media_2: z.union([
+//         z.object({
+//           id: z.string(),
+//           url: z.string(),
+//           type: z.literal("audio"), // Strictly only audio allowed
+//           remarks: z.string().optional(),
+//         }),
+//         z.undefined()
+//       ]).optional(),
+//     })
+//   ).optional(),
+//   custom_site_images: z
+//     .array(
+//       z.object({
+//         id: z.string(),
+//         url: z.string(),
+//         type: z.enum(["image", "video", "audio"]),
+//         remarks: z.string().optional(),
+//       })
+//     )
+//     .optional(),
+//   custom_measurement_notes: z.string().optional(),
+//   custom_site_images_notes: z.string().optional(),
+// });
+
+
 export const formSchema = z.object({
-  inspection_date: z.date(),
+  inspection_date: z.date({
+    required_error: "Inspection date is required",
+  }),
   inspection_status: z.string().optional(),
-  inspection_time: z.string(),
-  property_type: z.string(),
-  site_photos: z.any().optional(),
-  measurement_sketch: z.union([
-    z.object({
+  inspection_time: z.string().min(1, "Inspection time is required"),
+  property_type: z.string().min(1, "Property type is required"),
+  
+  measurement_sketch: z
+    .object({
       id: z.string(),
       url: z.string(),
-      type: z.enum(["image", "video", "audio"]),
+      type: z.enum(["image", "video", "audio", "unknown"]),
       remarks: z.string().optional(),
-    }),
-    z.undefined()
-  ]).optional(),
+    })
+    .optional()
+    .nullable(),
   inspection_notes: z.string().optional(),
   site_dimensions: z.array(
     z.object({
       floor: z.string().optional(),
       room: z.string().optional(),
       entity: z.string().optional(),
-      area_name: z.string(),
-      dimensionsunits: z.string(),
+      area_name: z.string().min(1, "Item name is required"),
+      dimensionsunits: z.string().min(1, "Dimensions/Units are required"),
       notes: z.string().optional(),
       images: z.array(
         z.object({
           id: z.string(),
           url: z.string(),
-          type: z.enum(["image", "video"]), // Only image and video allowed for images
+          type: z.enum(["image", "video", "audio", "unknown"]),
           remarks: z.string().optional(),
         })
-      ).optional(),
-      media_2: z.union([
-        z.object({
+      ).min(1, "At least one media file is required"),
+      media_2: z
+        .object({
           id: z.string(),
           url: z.string(),
-          type: z.literal("audio"), // Strictly only audio allowed
+          type: z.enum(["image", "video", "audio", "unknown"]),
           remarks: z.string().optional(),
-        }),
-        z.undefined()
-      ]).optional(),
+        })
+        .optional()
+        .nullable(),
+    })
+  ).min(1, "At least one site dimension is required"),
+  custom_site_images: z.array(
+    z.object({
+      id: z.string(),
+      url: z.string(),
+      type: z.enum(["image", "video", "audio", "unknown"]),
+      remarks: z.string().optional(),
     })
   ).optional(),
-  custom_site_images: z
-    .array(
-      z.object({
-        id: z.string(),
-        url: z.string(),
-        type: z.enum(["image", "video", "audio"]),
-        remarks: z.string().optional(),
-      })
-    )
-    .optional(),
   custom_measurement_notes: z.string().optional(),
   custom_site_images_notes: z.string().optional(),
 });
@@ -73,6 +131,8 @@ export interface MediaItem {
   remarks?: string;
   file?: File; // Optional: keep original file for new uploads
 }
+
+
 
 /**
  * Uploads a file to the server with progress tracking
@@ -208,28 +268,43 @@ export const recordAudio = async (): Promise<File | null> => {
  * @param file - File object or URL string
  * @returns Media type or 'unknown'
  */
-export const getMediaType = (file: File | string): "image" | "video" | "audio" | "unknown" => {
-
-  if (typeof file === 'string') {
-    const ext = file.split('.').pop()?.toLowerCase();
-    if (!ext) return "unknown";
-
-    if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) return "image";
-    if (['mp4', 'webm', 'mov', 'avi'].includes(ext)) return "video";
-    if (['mp3', 'wav', 'ogg', 'm4a'].includes(ext)) return "audio";
-    return "unknown";
+export const getMediaType = (fileOrUrl: File | string): "image" | "video" | "audio" | "unknown" => {
+  let fileName: string;
+  let fileSize: number = 0;
+  
+  if (typeof fileOrUrl === 'string') {
+    fileName = fileOrUrl.toLowerCase();
+  } else {
+    fileName = fileOrUrl.name.toLowerCase();
+    fileSize = fileOrUrl.size;
   }
 
-  const fileMimeType = file.type;
-  if (fileMimeType.startsWith("image/")) return "image";
-  if (fileMimeType.startsWith("video/")) return "video";
-  if (fileMimeType.startsWith("audio/")) return "audio";
-
-  // Fallback for files without proper type
-  const name = file.name.toLowerCase();
-  if (name.match(/\.(jpg|jpeg|png|gif|webp)$/)) return "image";
-  if (name.match(/\.(mp4|webm|mov|avi)$/)) return "video";
-  if (name.match(/\.(mp3|wav|ogg|m4a)$/)) return "audio";
+  // Enhanced image extensions
+  if (/\.(jpg|jpeg|png|gif|bmp|webp|svg|ico|tiff|tif)(\?.*)?$/i.test(fileName)) {
+    return "image";
+  }
+  
+  // Handle webm files - check context or size to determine if it's video or audio
+  if (fileName.includes('.webm')) {
+    // If file size is available and it's small (< 5MB), likely audio
+    // If no size info, check if it's in an audio context
+    if (fileSize > 0 && fileSize < 5 * 1024 * 1024) {
+      return "audio";
+    }
+    // For larger files or when context suggests video, return video
+    // You might need to adjust this logic based on your specific use case
+    return "video"; // Default to video for webm files
+  }
+  
+  // Enhanced video extensions
+  if (/\.(mp4|avi|mov|wmv|flv|mkv|m4v|3gp|ogv)(\?.*)?$/i.test(fileName)) {
+    return "video";
+  }
+  
+  // Enhanced audio extensions
+  if (/\.(mp3|wav|ogg|aac|m4a|wma|flac|opus)(\?.*)?$/i.test(fileName)) {
+    return "audio";
+  }
 
   return "unknown";
 };

@@ -44,7 +44,7 @@ import {
   FormMessage,
 } from "../ui/form";
 import { Input } from "../ui/input";
-import { Popover,PopoverTrigger } from "../ui/popover";
+import { Popover, PopoverTrigger } from "../ui/popover";
 import { Textarea } from "../ui/textarea";
 import InspectionHeader from "./components/InspectionHeader";
 import MediaUpload from "./components/MediaUpload/MediaUpload";
@@ -104,7 +104,7 @@ const CreateInspection = () => {
 
   // Get current date and time once and memoize
   const { currentDate, currentTime } = useMemo(() => getCurrentDateTime(), []);
-  console.log(todo)
+  console.log(todo);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -142,98 +142,106 @@ const CreateInspection = () => {
   }, []);
 
   // Memoize formatDimensionsData to prevent recreation
-  const formatDimensionsData = useCallback((siteDimensions: any[]) => {
-    return siteDimensions.map((dim: any) => {
-      let images = [];
+ const formatDimensionsData = useCallback((siteDimensions: any[]) => {
+  return siteDimensions.map((dim: any) => {
+    let images = [];
 
-      try {
-        // Handle cases where media might be double-encoded JSON string, single JSON string, or already an array
-        if (typeof dim.media === "string") {
-          let mediaString = dim.media;
+    try {
+      // Handle cases where media might be double-encoded JSON string, single JSON string, or already an array
+      if (typeof dim.media === "string") {
+        let mediaString = dim.media;
 
-          // Handle double-encoded JSON strings like "\"[]\""
-          if (mediaString.startsWith('"') && mediaString.endsWith('"')) {
-            mediaString = JSON.parse(mediaString);
-          }
-
-          // Now parse the actual JSON
-          images = mediaString ? JSON.parse(mediaString) : [];
-        } else if (Array.isArray(dim.media)) {
-          images = dim.media;
+        // Handle double-encoded JSON strings like "\"[]\""
+        if (mediaString.startsWith('"') && mediaString.endsWith('"')) {
+          mediaString = JSON.parse(mediaString);
         }
-      } catch (error) {
-        console.error(
-          "Error parsing media:",
-          error,
-          "Original media:",
-          dim.media
-        );
-        images = [];
+
+        // Now parse the actual JSON
+        images = mediaString ? JSON.parse(mediaString) : [];
+      } else if (Array.isArray(dim.media)) {
+        images = dim.media;
       }
+    } catch (error) {
+      console.error(
+        "Error parsing media:",
+        error,
+        "Original media:",
+        dim.media
+      );
+      images = [];
+    }
 
-      // Ensure images is always an array before calling map
-      if (!Array.isArray(images)) {
-        console.warn("Images is not an array after parsing:", images);
-        images = [];
+    // Ensure images is always an array before calling map
+    if (!Array.isArray(images)) {
+      console.warn("Images is not an array after parsing:", images);
+      images = [];
+    }
+
+    const formattedImages = images
+      .map((img: any) => {
+        // Handle cases where img might be an object with image_url or just a string
+        const imageUrl = typeof img === "string" ? img : img?.image_url;
+        if (!imageUrl) return null;
+
+        const mediaType = getMediaType(imageUrl);
+        // Ensure only image or video types for the images field
+        if (mediaType !== "image" && mediaType !== "video") {
+          return null;
+        }
+        return {
+          id: `${imageUrl.split("/").pop()}-${Math.random()
+            .toString(36)
+            .substr(2, 9)}`,
+          url: imageUrl,
+          type: mediaType as "image" | "video",
+          remarks: imageUrl.split("/").pop() || "",
+        };
+      })
+      .filter(
+        (
+          img: any
+        ): img is {
+          id: string;
+          url: string;
+          type: "image" | "video";
+          remarks: string;
+        } => img !== null
+      );
+
+    // Fix for media_2 (audio) handling
+    let media2Item = undefined;
+    if (dim.media_2) {
+      const media2Type = getMediaType(dim.media_2);
+      console.log("Media 2 URL:", dim.media_2, "Detected type:", media2Type);
+      
+      // Accept audio files regardless of extension
+      if (media2Type === "audio" || dim.media_2.includes('.webm')) {
+        media2Item = {
+          id: `${dim.media_2.split("/").pop()}-${Math.random()
+            .toString(36)
+            .substr(2, 9)}`,
+          url: typeof dim.media_2 === "string" ? dim.media_2 : "",
+          type: "audio" as const,
+          remarks:
+            (typeof dim.media_2 === "string"
+              ? dim.media_2.split("/").pop()
+              : "") || "",
+        };
       }
+    }
 
-      const formattedImages = images
-        .map((img: any) => {
-          // Handle cases where img might be an object with image_url or just a string
-          const imageUrl = typeof img === "string" ? img : img?.image_url;
-          if (!imageUrl) return null;
-
-          const mediaType = getMediaType(imageUrl);
-          // Ensure only image or video types
-          if (mediaType !== "image" && mediaType !== "video") {
-            return null;
-          }
-          return {
-            id: `${imageUrl.split("/").pop()}-${Math.random()
-              .toString(36)
-              .substr(2, 9)}`,
-            url: imageUrl,
-            type: mediaType as "image" | "video", // Explicit type
-            remarks: imageUrl.split("/").pop() || "",
-          };
-        })
-        .filter(
-          (
-            img: any
-          ): img is {
-            id: string;
-            url: string;
-            type: "image" | "video";
-            remarks: string;
-          } => img !== null
-        );
-
-      const media2Type = dim.media_2 ? getMediaType(dim.media_2) : null;
-      return {
-        floor: dim.floor || "",
-        room: dim.room || "",
-        entity: dim.entity || "",
-        area_name: dim.area_name || "",
-        dimensionsunits: dim.dimensionsunits || "",
-        notes: dim.notes || "",
-        images: formattedImages,
-        media_2:
-          dim.media_2 && media2Type === "audio"
-            ? {
-                id: `${dim.media_2.split("/").pop()}-${Math.random()
-                  .toString(36)
-                  .substr(2, 9)}`,
-                url: typeof dim.media_2 === "string" ? dim.media_2 : "",
-                type: "audio" as const, // Explicit audio type
-                remarks:
-                  (typeof dim.media_2 === "string"
-                    ? dim.media_2.split("/").pop()
-                    : "") || "",
-              }
-            : undefined,
-      };
-    });
-  }, []);
+    return {
+      floor: dim.floor || "",
+      room: dim.room || "",
+      entity: dim.entity || "",
+      area_name: dim.area_name || "",
+      dimensionsunits: dim.dimensionsunits || "",
+      notes: dim.notes || "",
+      images: formattedImages,
+      media_2: media2Item,
+    };
+  });
+}, []);
 
   // Memoize formatCustomImages to prevent recreation
   const formatCustomImages = useCallback((customSiteImages: any[]) => {
@@ -390,10 +398,16 @@ const CreateInspection = () => {
           form.setValue("custom_site_images", []);
         }
         if (dataToPopulate.custom_measurement_notes) {
-          form.setValue("custom_measurement_notes", dataToPopulate.custom_measurement_notes);
+          form.setValue(
+            "custom_measurement_notes",
+            dataToPopulate.custom_measurement_notes
+          );
         }
         if (dataToPopulate.custom_site_images_notes) {
-          form.setValue("custom_site_images_notes", dataToPopulate.custom_site_images_notes);
+          form.setValue(
+            "custom_site_images_notes",
+            dataToPopulate.custom_site_images_notes
+          );
         }
       }
 
@@ -420,9 +434,113 @@ const CreateInspection = () => {
     replace,
   ]);
 
+
+const validateInspectionForm = (values: z.infer<typeof formSchema>) => {
+  const errors: Record<string, string> = {};
+  
+  // 1. At least one site dimension required
+  if (!values.site_dimensions || values.site_dimensions.length === 0) {
+    errors.site_dimensions = "At least one site dimension is required";
+  } else {
+    // 2. Validate each site dimension
+    values.site_dimensions.forEach((dimension, index) => {
+      const areaName = dimension.area_name?.trim();
+      const dimensions = dimension.dimensionsunits?.trim();
+      const hasImages = dimension.images && dimension.images.length > 0;
+
+      // Item name is required
+      if (!areaName) {
+        errors[`site_dimensions.${index}.area_name`] = "Item name is required";
+      }
+
+      // Dimensions/Units are required
+      if (!dimensions) {
+        errors[`site_dimensions.${index}.dimensionsunits`] = "Dimensions/Units are required";
+      }
+
+      // At least one media file required
+      if (!hasImages) {
+        errors[`site_dimensions.${index}.images`] = "At least one media file is required";
+      }
+    });
+  }
+
+  return errors;
+};
+
+
+const getMissingItemsText = (errors: Record<string, string>) => {
+  const missingItems: string[] = [];
+  
+  Object.entries(errors).forEach(([field]) => {
+    if (field.includes('area_name')) {
+      const index = field.split('.')[1];
+      missingItems.push(`Area ${parseInt(index) + 1}: Item name`);
+    } else if (field.includes('dimensionsunits')) {
+      const index = field.split('.')[1];
+      missingItems.push(`Area ${parseInt(index) + 1}: Dimensions/Units`);
+    } else if (field.includes('images')) {
+      const index = field.split('.')[1];
+      missingItems.push(`Area ${parseInt(index) + 1}: Photos/Videos`);
+    } else if (field === 'site_dimensions') {
+      missingItems.push('Site dimensions');
+    }
+  });
+  
+  if (missingItems.length > 0) {
+    return missingItems.length === 1 
+      ? `Missing: ${missingItems[0]}` 
+      : `Missing: ${missingItems.slice(0, 3).join(', ')}${missingItems.length > 3 ? ` and ${missingItems.length - 3} more` : ''}`;
+  }
+  
+  return "Please fix the validation errors before submitting";
+};
+
+// Then in your onSubmit function:
+const onSubmit = (values: z.infer<typeof formSchema>) => {
+  const errors = validateInspectionForm(values);
+  
+  if (Object.keys(errors).length > 0) {
+  // Set errors in the form
+  Object.entries(errors).forEach(([field, message]) => {
+    form.setError(field as any, {
+      type: 'manual',
+      message,
+    });
+  });
+  
+  // Show detailed toast notification
+  const missingText = getMissingItemsText(errors);
+  showToast.error(missingText);
+  return;
+}
+  
+  // Only call handleSubmit if there are no validation errors
+  handleSubmit(values);
+};
+
+
   // Memoize handleSubmit to prevent recreation
   const handleSubmit = useCallback(
+
+    
     async (values: z.infer<typeof formSchema>) => {
+
+      // const customErrors = validateInspectionForm(values);
+      // if (Object.keys(customErrors).length > 0) {
+      //   // Set errors in the form
+      //   Object.entries(customErrors).forEach(([field, message]) => {
+      //     form.setError(field as any, {
+      //       type: "manual",
+      //       message,
+      //     });
+      //   });
+
+      //   // Show detailed toast notification
+      //   const missingText = getMissingItemsText(customErrors);
+      //   showToast.error(missingText);
+      //   return;
+      // }
       try {
         setLoading(true);
         const leadReference = todo?.reference_name || inspection?.lead;
@@ -487,7 +605,7 @@ const CreateInspection = () => {
         setLoading(false);
       }
     },
-    [
+     [
       isUpdateMode,
       todo?.reference_name,
       todo?.name,
@@ -524,6 +642,7 @@ const CreateInspection = () => {
     UpdateLeadStatus,
     navigate,
   ]);
+  
 
   // Memoize getDisplayData to prevent recreation
   const displayData = useMemo(() => {
@@ -609,7 +728,7 @@ const CreateInspection = () => {
               <div className="p-4">
                 <Form {...form}>
                   <form
-                    onSubmit={form.handleSubmit(handleSubmit)}
+                    onSubmit={form.handleSubmit(onSubmit)}
                     className="space-y-4"
                   >
                     <Accordion
@@ -632,69 +751,73 @@ const CreateInspection = () => {
                         </AccordionTrigger>
 
                         <AccordionContent className="bg-white">
-  <fieldset disabled>
-    <div className="grid grid-cols-2 md:grid-cols-2 gap-4 px-5 py-2">
-      <div className="space-y-2">
-        <FormField
-          control={form.control}
-          name="inspection_date"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel className="text-gray-700 text-sm font-medium">
-                Inspection Date
-              </FormLabel>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <FormControl>
-                    <Button
-                      variant="outline"
-                      className="w-full justify-between text-left font-normal bg-gray-100 border-gray-300 cursor-not-allowed h-10"
-                    >
-                      {field.value ? (
-                        <span className="text-gray-900">
-                          {format(field.value, "dd/MM/yyyy")}
-                        </span>
-                      ) : (
-                        <span className="text-gray-400">Select date</span>
-                      )}
-                      <CalendarIcon className="h-4 w-4 text-gray-400" />
-                    </Button>
-                  </FormControl>
-                </PopoverTrigger>
-              </Popover>
-              <FormMessage className="text-xs" />
-            </FormItem>
-          )}
-        />
-      </div>
+                          <fieldset disabled>
+                            <div className="grid grid-cols-2 md:grid-cols-2 gap-4 px-5 py-2">
+                              <div className="space-y-2">
+                                <FormField
+                                  control={form.control}
+                                  name="inspection_date"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel className="text-gray-700 text-sm font-medium">
+                                        Inspection Date
+                                      </FormLabel>
+                                      <Popover>
+                                        <PopoverTrigger asChild>
+                                          <FormControl>
+                                            <Button
+                                              variant="outline"
+                                              className="w-full justify-between text-left font-normal bg-gray-100 border-gray-300 cursor-not-allowed h-10"
+                                            >
+                                              {field.value ? (
+                                                <span className="text-gray-900">
+                                                  {format(
+                                                    field.value,
+                                                    "dd/MM/yyyy"
+                                                  )}
+                                                </span>
+                                              ) : (
+                                                <span className="text-gray-400">
+                                                  Select date
+                                                </span>
+                                              )}
+                                              <CalendarIcon className="h-4 w-4 text-gray-400" />
+                                            </Button>
+                                          </FormControl>
+                                        </PopoverTrigger>
+                                      </Popover>
+                                      <FormMessage className="text-xs" />
+                                    </FormItem>
+                                  )}
+                                />
+                              </div>
 
-      <div className="space-y-2">
-        <FormField
-          control={form.control}
-          name="inspection_time"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel className="text-gray-700 text-sm font-medium">
-                Inspection Time
-              </FormLabel>
-              <FormControl>
-                <div className="relative">
-                  <Input
-                    type="time"
-                    className="pl-3 bg-gray-100 border-gray-300 text-gray-900 cursor-not-allowed h-10"
-                    {...field}
-                  />
-                </div>
-              </FormControl>
-              <FormMessage className="text-xs" />
-            </FormItem>
-          )}
-        />
-      </div>
-    </div>
-  </fieldset>
-</AccordionContent>
-
+                              <div className="space-y-2">
+                                <FormField
+                                  control={form.control}
+                                  name="inspection_time"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel className="text-gray-700 text-sm font-medium">
+                                        Inspection Time
+                                      </FormLabel>
+                                      <FormControl>
+                                        <div className="relative">
+                                          <Input
+                                            type="time"
+                                            className="pl-3 bg-gray-100 border-gray-300 text-gray-900 cursor-not-allowed h-10"
+                                            {...field}
+                                          />
+                                        </div>
+                                      </FormControl>
+                                      <FormMessage className="text-xs" />
+                                    </FormItem>
+                                  )}
+                                />
+                              </div>
+                            </div>
+                          </fieldset>
+                        </AccordionContent>
                       </AccordionItem>
 
                       {/* Site Dimensions Section */}
