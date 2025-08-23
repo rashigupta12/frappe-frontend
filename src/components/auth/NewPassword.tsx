@@ -15,12 +15,13 @@ import { Input } from "../ui/input";
 import { Eye, EyeOff, LockKeyhole, RefreshCw } from "lucide-react";
 
 import { useAuth } from "../../context/AuthContext";
-import { toast } from "react-hot-toast";
+// import { showToast } from "react-hot-showToast";
 
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { FormError } from "../form/form-error";
 import { FormSuccess } from "../form/form-success";
+import { showToast } from "../../helpers/comman";
 
 const passwordResetSchema = z.object({
   newPassword: z.string()
@@ -92,19 +93,19 @@ export function FirstTimePasswordReset() {
       const result = await resetPassword(email, values.newPassword);
 
       if (result.success) {
-        toast.success("Password updated successfully!");
+        showToast.success("Password updated successfully!");
         setSuccess("Password updated successfully!");
         
         
         // Use replace to prevent back navigation
         navigate("/login", { replace: true });
       } else {
-        toast.error("Failed to update password. Please try again.");
+        showToast.error("Failed to update password. Please try again.");
         setError(result.error || "Failed to update password");
       }
     } catch (err) {
       console.error("Password reset error:", err);
-      toast.error("Failed to update password. Please try again.");
+      showToast.error("Failed to update password. Please try again.");
       setError("Failed to update password");
       
       // Clear session on error

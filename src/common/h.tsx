@@ -14,11 +14,12 @@ import {
 } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { toast } from "react-hot-toast";
+// import { showToast } from "react-hot-showToast";
 import { frappeAPI } from "../api/frappeClient";
 import PaymentImageUpload from "../components/account/imageupload/ImageUpload";
 import { Button } from "../components/ui/button";
 import { useAuth } from "../context/AuthContext";
+import { showToast } from "../helpers/comman";
 
 // Types
 interface ImageAttachment {
@@ -557,7 +558,7 @@ const FeedbackForm: React.FC<{
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.subject.trim()) {
-      toast.error("Please fill in all required fields");
+      showToast.error("Please fill in all required fields");
       return;
     }
 
@@ -599,7 +600,7 @@ const FeedbackForm: React.FC<{
       onClose();
     } catch (error) {
       console.error("Error submitting feedback:", error);
-      toast.error("Failed to submit feedback. Please try again.");
+      showToast.error("Failed to submit feedback. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -619,7 +620,7 @@ const FeedbackForm: React.FC<{
       return fileUrl.startsWith("http") ? fileUrl : `${fileUrl}`;
     } catch (error) {
       console.error("File upload failed:", error);
-      toast.error("Failed to upload image. Please try again.");
+      showToast.error("Failed to upload image. Please try again.");
       throw error;
     } finally {
       setIsUploading(false);
@@ -1055,7 +1056,7 @@ const FeedbackComponent: React.FC<{
       setFeedbacks(feedbacks);
     } catch (error) {
       console.error("Error fetching feedbacks:", error);
-      toast.error("Failed to load feedbacks. Please try again.");
+      showToast.error("Failed to load feedbacks. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -1087,11 +1088,11 @@ const FeedbackComponent: React.FC<{
 
       await frappeAPI.createFeedback(apiData);
 
-      toast.success("Feedback submitted successfully!");
+      showToast.success("Feedback submitted successfully!");
       await fetchFeedbacks(); // Refresh the list
     } catch (error) {
       console.error("Error submitting feedback:", error);
-      toast.error("Failed to submit feedback. Please try again.");
+      showToast.error("Failed to submit feedback. Please try again.");
       throw error;
     }
   };

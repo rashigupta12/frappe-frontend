@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import toast from "react-hot-toast";
+// import showToast from "react-hot-showToast";
 import { frappeAPI } from "../../../api/frappeClient";
 // import { useLeads } from "../../../context/LeadContext";
 import {
@@ -41,6 +41,7 @@ import { Input } from "../../ui/input";
 import { Label } from "../../ui/label";
 import { MultiSelectJobTypes } from "../MultiselectJobtypes";
 import type { Lead } from "../../../context/LeadContext";
+import { showToast } from "../../../helpers/comman";
 
 interface CustomerSearchProps {
   selectedCustomer: CustomerSearchResult | null;
@@ -295,12 +296,12 @@ const CustomerSearch: React.FC<CustomerSearchProps> = ({
 
   const handleSaveCustomer = async () => {
     if (!customerForm.name.trim()) {
-      toast.error("Customer name is required");
+      showToast.error("Customer name is required");
       return;
     }
 
     if (!customerForm.phone || customerForm.phone.length < 5) {
-      toast.error("Valid mobile number is required");
+      showToast.error("Valid mobile number is required");
       return;
     }
 
@@ -332,11 +333,11 @@ const CustomerSearch: React.FC<CustomerSearchProps> = ({
         jobType: [],
       });
 
-      toast.success(`Customer details ${modalMode === "create" ? "created" : "updated"}`);
+      showToast.success(`Customer details ${modalMode === "create" ? "created" : "updated"}`);
       
     } catch (error) {
       console.error("Error saving customer:", error);
-      toast.error(`Failed to ${modalMode === "create" ? "create" : "update"} customer`);
+      showToast.error(`Failed to ${modalMode === "create" ? "create" : "update"} customer`);
     } finally {
       setIsCreatingCustomer(false);
     }

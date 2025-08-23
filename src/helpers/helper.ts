@@ -427,20 +427,20 @@ export const capitalizeFirstLetter = (str: string) => {
     return `${hours}:${minutes}`;
   };
 
-  export const extractAddressFromSite = (siteName: string) => {
-    if (!siteName) return "";
-    // Format: "Name-Number,..." - extract everything after the first dash
-    const dashIndex = siteName.indexOf(":");
-    if (dashIndex !== -1) {
-      const afterDash = siteName.substring(dashIndex + 1);
-      // Check if what comes after dash starts with a number (address part)
-      if (/^\d/.test(afterDash)) {
-        return afterDash.trim();
-      }
-    }
-    // Fallback: return original if pattern doesn't match
-    return siteName;
-  };
+ export const extractAddressFromSite = (siteName: string) => {
+  if (!siteName) return "";
+
+  // Split on the first colon `:`
+  const colonIndex = siteName.indexOf(":");
+  if (colonIndex !== -1) {
+    const afterColon = siteName.substring(colonIndex + 1).trim();
+    return afterColon;
+  }
+
+  // Fallback: return original if no colon found
+  return siteName;
+};
+
 
    export const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
       if (

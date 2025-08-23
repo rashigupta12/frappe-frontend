@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Loader2, Plus, Search, Home, Edit, MapPin } from "lucide-react";
 import React, { useEffect, useState, useCallback, useRef } from "react";
-import { toast } from "react-hot-toast";
+// import { showToast } from "react-hot-showToast";
 import { createPortal } from "react-dom";
 import { frappeAPI } from "../../api/frappeClient";
 import { useLeads } from "../../context/LeadContext";
@@ -24,6 +24,7 @@ import {
 } from "../ui/dialog";
 import { Label } from "../ui/label";
 import { capitalizeFirstLetter } from "../../helpers/helper";
+import { showToast } from "../../helpers/comman";
 
 interface PropertyAddressSectionProps {
   formData: any;
@@ -260,7 +261,7 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
       }
     } catch (error) {
       console.error("Error fetching property categories:", error);
-      toast.error("Failed to load property categories");
+      showToast.error("Failed to load property categories");
     } finally {
       setIsAddingCategory(false);
     }
@@ -286,7 +287,7 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
       }
     } catch (error) {
       console.error("Error fetching property types:", error);
-      toast.error("Failed to load property types");
+      showToast.error("Failed to load property types");
       setPropertyTypes([]);
     } finally {
       setIsLoadingTypes(false);
@@ -356,7 +357,7 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
       } catch (error) {
         console.error("Address search error:", error);
         setAddressSearchResults([]);
-        toast.error("Failed to search addresses. Please try again.");
+        showToast.error("Failed to search addresses. Please try again.");
       } finally {
         setIsAddressSearching(false);
       }
@@ -443,7 +444,7 @@ const PropertyAddressSection: React.FC<PropertyAddressSectionProps> = ({
 
     setAddressSearchQuery(combinedAddress);
     setShowAddressDialog(false);
-    toast.success("Address updated successfully");
+    showToast.success("Address updated successfully");
   };
 
   const searchAreas = async (emirate: string, query: string) => {
@@ -537,12 +538,12 @@ const handleAddNewArea = async (areaName?: string) => {
   const areaToAdd = areaName || newAreaName;
 
   if (!areaToAdd.trim()) {
-    toast.error("Please enter an area name");
+    showToast.error("Please enter an area name");
     return;
   }
 
   if (!addressForm.custom_emirate) {
-    toast.error("Please select an emirate first");
+    showToast.error("Please select an emirate first");
     return;
   }
 
@@ -552,7 +553,7 @@ const handleAddNewArea = async (areaName?: string) => {
     const areaExists = await checkAreaExists(areaToAdd.trim(), addressForm.custom_emirate);
     
     if (areaExists) {
-      toast.error(`Area "${areaToAdd.trim()}" already exists in ${addressForm.custom_emirate}`);
+      showToast.error(`Area "${areaToAdd.trim()}" already exists in ${addressForm.custom_emirate}`);
       // Still update the form with the existing area name
       setAddressForm((prev) => ({
         ...prev,
@@ -568,7 +569,7 @@ const handleAddNewArea = async (areaName?: string) => {
     });
 
     if (response) {
-      toast.success("Area added successfully!");
+      showToast.success("Area added successfully!");
       setAddressForm((prev) => ({
         ...prev,
         custom_area: areaToAdd.trim(),
@@ -582,7 +583,7 @@ const handleAddNewArea = async (areaName?: string) => {
     const errorMessage = error instanceof Error ? error.message : String(error);
     if (errorMessage.toLowerCase().includes('duplicate') || 
         errorMessage.toLowerCase().includes('already exists')) {
-      toast.error(`Area "${areaToAdd.trim()}" already exists in ${addressForm.custom_emirate}`);
+      showToast.error(`Area "${areaToAdd.trim()}" already exists in ${addressForm.custom_emirate}`);
       // Still update the form with the area name
       setAddressForm((prev) => ({
         ...prev,
@@ -590,7 +591,7 @@ const handleAddNewArea = async (areaName?: string) => {
       }));
       setNewAreaName("");
     } else {
-      toast.error("Failed to create area. Please try again.");
+      showToast.error("Failed to create area. Please try again.");
     }
   } finally {
     setIsAddingArea(false);
@@ -628,12 +629,12 @@ const handleAddNewCommunity = async (communityName?: string) => {
   const communityToAdd = communityName || newCommunityName;
 
   if (!communityToAdd.trim()) {
-    toast.error("Please enter a community name");
+    showToast.error("Please enter a community name");
     return;
   }
 
   if (!addressForm.custom_area) {
-    toast.error("Please select an area first");
+    showToast.error("Please select an area first");
     return;
   }
 
@@ -643,7 +644,7 @@ const handleAddNewCommunity = async (communityName?: string) => {
     const communityExists = await checkCommunityExists(communityToAdd.trim(), addressForm.custom_area);
     
     if (communityExists) {
-      toast.error(`Community "${communityToAdd.trim()}" already exists in ${addressForm.custom_area}`);
+      showToast.error(`Community "${communityToAdd.trim()}" already exists in ${addressForm.custom_area}`);
       // Still update the form with the existing community name
       setAddressForm((prev) => ({
         ...prev,
@@ -663,7 +664,7 @@ const handleAddNewCommunity = async (communityName?: string) => {
     );
 
     if (response.data) {
-      toast.success("Community added successfully!");
+      showToast.success("Community added successfully!");
       setAddressForm((prev) => ({
         ...prev,
         custom_community: communityToAdd.trim(),
@@ -677,7 +678,7 @@ const handleAddNewCommunity = async (communityName?: string) => {
     const errorMessage = error instanceof Error ? error.message : String(error);
     if (errorMessage.toLowerCase().includes('duplicate') || 
         errorMessage.toLowerCase().includes('already exists')) {
-      toast.error(`Community "${communityToAdd.trim()}" already exists in ${addressForm.custom_area}`);
+      showToast.error(`Community "${communityToAdd.trim()}" already exists in ${addressForm.custom_area}`);
       // Still update the form with the community name
       setAddressForm((prev) => ({
         ...prev,
@@ -685,7 +686,7 @@ const handleAddNewCommunity = async (communityName?: string) => {
       }));
       setNewCommunityName("");
     } else {
-      toast.error("Failed to create community. Please try again.");
+      showToast.error("Failed to create community. Please try again.");
     }
   } finally {
     setIsAddingCommunity(false);
@@ -694,7 +695,7 @@ const handleAddNewCommunity = async (communityName?: string) => {
 
   const handleAddNewCategory = async () => {
     if (!newCategoryName.trim()) {
-      toast.error("Please enter a category name");
+      showToast.error("Please enter a category name");
       return;
     }
 
@@ -709,7 +710,7 @@ const handleAddNewCommunity = async (communityName?: string) => {
       );
 
       if (response.data) {
-        toast.success("Property category added successfully!");
+        showToast.success("Property category added successfully!");
         await fetchPropertyCategories();
         setAddressForm((prev) => ({
           ...prev,
@@ -720,7 +721,7 @@ const handleAddNewCommunity = async (communityName?: string) => {
       }
     } catch (error) {
       console.error("Error creating property category:", error);
-      toast.error("Failed to create property category. Please try again.");
+      showToast.error("Failed to create property category. Please try again.");
     } finally {
       setIsAddingCategory(false);
     }
@@ -728,12 +729,12 @@ const handleAddNewCommunity = async (communityName?: string) => {
 
   const handleAddNewType = async () => {
     if (!newTypeName.trim()) {
-      toast.error("Please enter a type name");
+      showToast.error("Please enter a type name");
       return;
     }
 
     if (!addressForm.custom_property_category) {
-      toast.error("Please select a property category first");
+      showToast.error("Please select a property category first");
       return;
     }
 
@@ -749,7 +750,7 @@ const handleAddNewCommunity = async (communityName?: string) => {
       );
 
       if (response.data) {
-        toast.success("Property type added successfully!");
+        showToast.success("Property type added successfully!");
         await fetchPropertyTypes(addressForm.custom_property_category);
         setAddressForm((prev) => ({
           ...prev,
@@ -760,7 +761,7 @@ const handleAddNewCommunity = async (communityName?: string) => {
       }
     } catch (error) {
       console.error("Error creating property type:", error);
-      toast.error("Failed to create property type. Please try again.");
+      showToast.error("Failed to create property type. Please try again.");
     } finally {
       setIsAddingType(false);
     }

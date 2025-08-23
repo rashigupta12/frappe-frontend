@@ -15,7 +15,7 @@ import {
   X,
 } from "lucide-react";
 import React, { useCallback, useEffect, useState } from "react";
-import { toast } from "react-hot-toast";
+// import { showToast } from "react-hot-showToast";
 import { frappeAPI } from "../../api/frappeClient";
 import {
   useJobCards,
@@ -44,6 +44,7 @@ import {
   SelectValue,
 } from "../ui/select";
 import { handleKeyDown } from "../../helpers/helper";
+import { showToast } from "../../helpers/comman";
 
 interface JobCardFormProps {
   isOpen: boolean;
@@ -209,7 +210,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
         setMaterialSoldItems(formattedItems);
       } catch (error) {
         console.error("Failed to fetch material sold items:", error);
-        toast.error("Failed to load material sold items");
+        showToast.error("Failed to load material sold items");
       } finally {
         setLoadingMaterialSoldItems(false);
       }
@@ -427,7 +428,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
       setShowDropdown(false);
       // Only show error if it's not a empty query case
       if (query.trim()) {
-        toast.error("Failed to search. Please try again.");
+        showToast.error("Failed to search. Please try again.");
       }
     } finally {
       setIsSearching(false);
@@ -593,7 +594,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
   const handleCloseCustomerDialog = () => {
     setShowAddCustomerDialog(false);
     if (!formData.customer_id && !formData.lead_id) {
-      toast.error(
+      showToast.error(
         "Please select a customer to proceed with receipt submission"
       );
       setSearchQuery("");
@@ -633,7 +634,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
 
   const handleCreateCustomer = async () => {
     if (!newCustomerData.customer_name) {
-      toast.error("Customer name is required");
+      showToast.error("Customer name is required");
       return;
     }
 
@@ -646,7 +647,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
       });
 
       if (response.data) {
-        toast.success("Customer created successfully");
+        showToast.success("Customer created successfully");
         handleCustomerSelect(response.data);
         setShowAddCustomerDialog(false);
       } else {
@@ -845,29 +846,29 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
 
   const validateForm = (): boolean => {
     if (!formData.party_name) {
-      toast.error("Customer name is required");
+      showToast.error("Customer name is required");
       return false;
     }
     if (!formData.start_date) {
-      toast.error("Start date is required");
+      showToast.error("Start date is required");
       return false;
     }
 
     // Fixed: Check for finish_date and auto-set it to start_date if empty
     const finishDate = formData.finish_date || formData.start_date;
     if (!finishDate) {
-      toast.error("Finish date is required");
+      showToast.error("Finish date is required");
       return false;
     }
 
     // Allow same day completion
     if (new Date(finishDate) < new Date(formData.start_date)) {
-      toast.error("Finish date cannot be before start date");
+      showToast.error("Finish date cannot be before start date");
       return false;
     }
 
     if (pressingCharges.length === 0 && materialsSold.length === 0) {
-      toast.error(
+      showToast.error(
         "At least one entry in Pressing Charges or Materials Sold is required"
       );
       return false;
@@ -879,7 +880,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
         : true;
 
     if (!hasValidPressingCharges && pressingCharges.length > 0) {
-      toast.error("All pressing charges must have a work type and valid price");
+      showToast.error("All pressing charges must have a work type and valid price");
       return false;
     }
 
@@ -889,7 +890,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
         : true;
 
     if (!hasValidMaterialsSold && materialsSold.length > 0) {
-      toast.error("All materials sold must have a work type and valid price");
+      showToast.error("All materials sold must have a work type and valid price");
       return false;
     }
 
@@ -899,7 +900,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
       !hasValidPressingCharges &&
       !hasValidMaterialsSold
     ) {
-      toast.error(
+      showToast.error(
         "Please add valid entries to either Pressing Charges or Materials Sold"
       );
       return false;
@@ -1033,18 +1034,15 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                     </div>
                   )}
                   <div className="flex items-center space-x-2">
-                    <span className="text-sm font-medium">
-                      Date:
-                    </span>
-                    
-                    <span className="text-sm font-medium">
-  {new Date().toLocaleDateString("en-GB", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  })}
-</span>
+                    <span className="text-sm font-medium">Date:</span>
 
+                    <span className="text-sm font-medium">
+                      {new Date().toLocaleDateString("en-GB", {
+                        day: "2-digit",
+                        month: "2-digit",
+                        year: "numeric",
+                      })}
+                    </span>
                   </div>
                 </div>
                 {/* <p className="text-blue-100 text-sm mt-1">
@@ -1124,7 +1122,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                           placeholder="Search by name, phone, email or address"
                           disabled={isReadOnly}
                           required
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none pr-10 capitalize"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none  capitalize"
                         />
                         {isSearching && (
                           <Loader2 className="absolute right-3 top-3 h-4 w-4 animate-spin text-gray-500" />
@@ -1303,7 +1301,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
 
                               // Allow today's date - only prevent past dates
                               if (new Date(selectedDate) < new Date(today)) {
-                                toast.error("Start date cannot be in the past");
+                                showToast.error("Start date cannot be in the past");
                                 return;
                               }
 
@@ -1357,7 +1355,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                                 new Date(selectedDate) <
                                   new Date(formData.start_date)
                               ) {
-                                toast.error(
+                                showToast.error(
                                   "Finish date cannot be before start date"
                                 );
                                 return;
@@ -1512,13 +1510,10 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                                       }
                                       disabled={isReadOnly}
                                       className="h-9 text-sm w-[70%] rounded-r-none"
-                                      
                                     />
-                                     <span className="flex items-center justify-center w-[30%] h-9 text-xs text-gray-800 border border-l-0 rounded-r-md bg-white">
-  mm
-</span>
-
-                                   
+                                    <span className="flex items-center justify-center w-[30%] h-9 text-xs text-gray-800 border border-l-0 rounded-r-md bg-white">
+                                      mm
+                                    </span>
                                   </div>
                                 </div>
 
@@ -1896,22 +1891,21 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
               />
             </div> */}
             <div className="space-y-2">
-                        <Label className="block text-sm font-medium text-gray-700 mb-1">
-                          Phone Number <span className="text-red-500">*</span>
-                        </Label>
-                        <Input
-                          type="tel"
-                          name="mobile_no"
-                          value={newCustomerData.mobile_no}
-                          onChange={handlePhoneChange}
-                          onKeyDown={handleKeyDown}
-                          placeholder="+971 XX XXX XXXX"
-                          maxLength={17}
-                          required
-                          
-                          className="w-full"
-                        />
-                      </div>
+              <Label className="block text-sm mb-1">
+                Phone Number <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                type="tel"
+                name="mobile_no"
+                value={newCustomerData.mobile_no}
+                onChange={handlePhoneChange}
+                onKeyDown={handleKeyDown}
+                placeholder="+971 XX XXX XXXX"
+                maxLength={17}
+                required
+                className="w-full"
+              />
+            </div>
             {/* <div className="space-y-2">
               <Label htmlFor="email_id">Email (Optional)</Label>
               <Input
@@ -1924,30 +1918,29 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
               />
             </div> */}
 
-             <div>
-            <Label htmlFor="email_id">
-              Email
-            </Label>
-            <Input
-              type="email"
-              name="email_id"
-              value={newCustomerData.email_id || ""}
-              onChange={handleNewCustomerInputChange}
-              placeholder="Enter email"
-            
-              className="w-full"
-            />
-            {/* Error message */}
-            {newCustomerData.email_id && (
-              <>
-                {!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newCustomerData.email_id) && (
-                  <p className="text-sm text-red-500 mt-1">
-                    Must be a valid email format (example: user@example.com)
-                  </p>
-                )}
-              </>
-            )}
-          </div>
+            <div className="space-y-1">
+              <Label htmlFor="email_id">Email</Label>
+              <Input
+                type="email"
+                name="email_id"
+                value={newCustomerData.email_id || ""}
+                onChange={handleNewCustomerInputChange}
+                placeholder="Enter email"
+                className="w-full"
+              />
+              {/* Error message */}
+              {newCustomerData.email_id && (
+                <>
+                  {!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
+                    newCustomerData.email_id
+                  ) && (
+                    <p className="text-sm text-red-500 mt-1">
+                      Must be a valid email format (example: user@example.com)
+                    </p>
+                  )}
+                </>
+              )}
+            </div>
           </div>
           <div className="flex justify-end space-x-2 pt-4">
             <Button variant="outline" onClick={handleCloseCustomerDialog}>

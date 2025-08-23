@@ -1,8 +1,9 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { toast } from "react-hot-toast";
+// import { showToast } from "react-hot-showToast";
 import { frappeAPI } from "../../../../api/frappeClient";
 import { z } from "zod";
+import { showToast } from "../../../../helpers/comman";
 
 export const formSchema = z.object({
   inspection_date: z.date(),
@@ -179,7 +180,7 @@ export const recordAudio = async (): Promise<File | null> => {
     });
 
     recorder.start();
-    toast.success("Recording started...");
+    showToast.success("Recording started...");
 
     // In a real app, you'd have a UI button to stop recording
     // For this example, we'll stop after 30 seconds max
@@ -192,12 +193,12 @@ export const recordAudio = async (): Promise<File | null> => {
 
     const file = await recordingPromise;
     stream.getTracks().forEach(track => track.stop());
-    toast.success("Recording completed");
+    showToast.success("Recording completed");
     return file;
 
   } catch (error) {
     console.error("Audio recording error:", error);
-    toast.error(`Recording failed`);
+    showToast.error(`Recording failed`);
     return null;
   }
 };

@@ -1,13 +1,14 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Loader2, Mail, Phone, User, X } from "lucide-react";
 import React, { useCallback, useEffect, useState, useRef } from "react";
-import { toast } from "react-hot-toast";
+// import { showToast } from "react-hot-showToast";
 import { useAuth } from "../../context/AuthContext";
 import { frappeAPI } from "../../api/frappeClient";
 import { usePaymentStore } from "../../store/payment";
 import PaymentImageUpload from "./imageupload/ImageUpload";
 import { useNavigate } from "react-router-dom";
 import { capitalizeFirstLetter } from "../../helpers/helper";
+import { showToast } from "../../helpers/comman";
 
 interface ImageItem {
   id: string;
@@ -251,7 +252,7 @@ const PaymentForm = () => {
   const handleCloseSupplierDialog = () => {
     setShowAddSupplierDialog(false);
     if (!paid_to) {
-      toast.error("Please select a supplier to proceed with payment");
+      showToast.error("Please select a supplier to proceed with payment");
       setSearchQuery("");
     }
   };
@@ -261,7 +262,7 @@ const PaymentForm = () => {
     setField("paid_to", supplierName);
     setSearchQuery(supplierName);
     setShowDropdown(false);
-    toast.success("Supplier selected");
+    showToast.success("Supplier selected");
   };
 
   const handleNewSupplierInputChange = (
@@ -286,7 +287,7 @@ const PaymentForm = () => {
 
   const handleCreateSupplier = async () => {
     if (!newSupplierData.supplier_name) {
-      toast.error("Supplier name is required");
+      showToast.error("Supplier name is required");
       return;
     }
 
@@ -299,7 +300,7 @@ const PaymentForm = () => {
       });
 
       if (response.data) {
-        toast.success("Supplier created successfully");
+        showToast.success("Supplier created successfully");
         handleSupplierSelect(response.data);
         setShowAddSupplierDialog(false);
       } else {
@@ -307,7 +308,7 @@ const PaymentForm = () => {
       }
     } catch (error) {
       console.error("Error creating supplier:", error);
-      // toast.error(
+      // showToast.error(
       //   error instanceof Error
       //     ? error.message
       //     : "Failed to create supplier. Please try again."
@@ -460,29 +461,29 @@ const PaymentForm = () => {
 
     // Validate that paid_to (supplier) is selected
     if (!paid_to || paid_to.trim() === "") {
-      toast.error("Please select a supplier");
+      showToast.error("Please select a supplier");
       return;
     }
 
     // Validate amount
     if (amountaed === "" || parseFloat(amountaed) <= 0) {
-      toast.error("Please enter a valid amount");
+      showToast.error("Please enter a valid amount");
       return;
     }
     if (custom_purpose_of_payment === "") {
-      toast.error("Please enter a purpose of payment");
+      showToast.error("Please enter a purpose of payment");
       return;
     }
 
     // Validate at least one image is uploaded
     if (images.length === 0) {
-      toast.error("Please upload at least one payment evidence image");
+      showToast.error("Please upload at least one payment evidence image");
       return;
     }
 
     const result = await submitPayment();
     if (result.success) {
-      toast.success("Payment submitted successfully!");
+      showToast.success("Payment submitted successfully!");
       // Reset form fields
       setField("bill_number", "");
       setField("amountaed", "0.00");

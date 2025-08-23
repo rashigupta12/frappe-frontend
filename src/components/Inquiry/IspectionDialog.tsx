@@ -2,7 +2,7 @@
 import { format } from "date-fns";
 import { CalendarIcon, Loader2, UserPen, UserPlus, X } from "lucide-react";
 import React, { useEffect, useState } from "react";
-import toast from "react-hot-toast";
+// import showToast from "react-hot-showToast";
 import { useNavigate } from "react-router-dom";
 import { frappeAPI } from "../../api/frappeClient";
 import { useAuth } from "../../context/AuthContext";
@@ -24,6 +24,7 @@ import { Textarea } from "../ui/textarea";
 import UserAvailability from "../ui/UserAvailability";
 import type { Lead } from "../../context/LeadContext";
 import { RestrictedTimeClock } from "./ResticritedtimeSlot";
+import { showToast } from "../../helpers/comman";
 
 // Define the AvailabilitySlot type
 type AvailabilitySlot = {
@@ -677,7 +678,7 @@ const handleDateSelect = (selectedDate: Date | undefined) => {
         });
         setRequestedTime(firstSlot.start);
       } else {
-        toast.success(`Selected ${inspector.user_name}`);
+        showToast.success(`Selected ${inspector.user_name}`);
       }
     }
     setShowAvailabilityModal(false);
@@ -720,7 +721,7 @@ const handleDateSelect = (selectedDate: Date | undefined) => {
  const validateTimeAgainstSlot = (
   time: string,
   durationValue: string,
-  showToast: boolean = true
+  see: boolean = true
 ): boolean => {
   // Reset validation errors first
   setValidationErrors({
@@ -746,8 +747,8 @@ const handleDateSelect = (selectedDate: Date | undefined) => {
       });
 
     if (!isWithinAvailableSlot) {
-      if (showToast) {
-        toast.error("Selected time must be within inspector's available slots");
+      if (see) {
+        showToast.error("Selected time must be within inspector's available slots");
       }
       isValid = false;
     }
@@ -763,8 +764,8 @@ const handleDateSelect = (selectedDate: Date | undefined) => {
 
     // Check if time is within slot boundaries
     if (timeMinutes < slotStart || timeMinutes >= slotEnd) {
-      if (showToast) {
-        toast.error(
+      if (see) {
+        showToast.error(
           `Time must be between ${selectedSlot.start} and ${selectedSlot.end}`
         );
       }
@@ -773,8 +774,8 @@ const handleDateSelect = (selectedDate: Date | undefined) => {
 
     // Check if end time exceeds slot end time
     if (endTimeMinutes > slotEnd) {
-      if (showToast) {
-        toast.error(
+      if (see) {
+        showToast.error(
           `End time (${Math.floor(endTimeMinutes / 60)
             .toString()
             .padStart(2, "0")}:${(endTimeMinutes % 60)
@@ -853,7 +854,7 @@ const handleDateSelect = (selectedDate: Date | undefined) => {
     if (mode === "create") {
       if (!selectedSlot) return;
 
-      // Validate the new time against the selected slot (without showing toast)
+      // Validate the new time against the selected slot (without showing showToast)
       if (!validateTimeAgainstSlot(newTime, duration, false)) {
         return;
       }
@@ -873,14 +874,14 @@ const handleDateSelect = (selectedDate: Date | undefined) => {
         const newMinutes = timeToMinutes(newTime);
 
         if (newMinutes < currentMinutes) {
-          toast.error(
+          showToast.error(
             `Time cannot be in the past. Current time is ${currentTime}`
           );
           return;
         }
       }
 
-      // Add validation for edit mode against available slots (without showing toast initially)
+      // Add validation for edit mode against available slots (without showing showToast initially)
       if (
         selectedInspector &&
         !validateTimeAgainstSlot(newTime, duration, false)
@@ -941,7 +942,7 @@ const handleDateSelect = (selectedDate: Date | undefined) => {
             ) {
               const startTime = existingStart.toTimeString().slice(0, 5);
               const endTime = existingEnd.toTimeString().slice(0, 5);
-              toast.error(
+              showToast.error(
                 `Time slot ${startTime} - ${endTime} is already assigned to this inspector`
               );
               return true; // Conflict found
@@ -953,7 +954,7 @@ const handleDateSelect = (selectedDate: Date | undefined) => {
       return false; // No conflict
     } catch (error) {
       console.error("Error checking assignment conflict:", error);
-      toast.error("Failed to check existing assignments");
+      showToast.error("Failed to check existing assignments");
       return true; // Assume conflict to be safe
     }
   };
@@ -982,7 +983,7 @@ const handleDateSelect = (selectedDate: Date | undefined) => {
           })
           .join(", ");
 
-        toast.error(`Please complete the information: ${missingFieldNames}`);
+        showToast.error(`Please complete the information: ${missingFieldNames}`);
         return;
       }
     }
@@ -1004,7 +1005,7 @@ const handleDateSelect = (selectedDate: Date | undefined) => {
 
     if (mode === "create") {
       if (!selectedInspector) {
-        toast.error("Please select an inspector");
+        showToast.error("Please select an inspector");
         return;
       }
 
@@ -1016,13 +1017,13 @@ const handleDateSelect = (selectedDate: Date | undefined) => {
         const durationMinutes = Math.round(parseFloat(duration) * 60);
 
         if (requestedMinutes < slotStart || requestedMinutes >= slotEnd) {
-          toast.error(
+          showToast.error(
             `Requested time must be within the selected slot (${
               selectedSlot!.start
             } - ${selectedSlot!.end})`
           );
         } else if (requestedMinutes + durationMinutes > slotEnd) {
-          toast.error(
+          showToast.error(
             `End time exceeds the selected slot's end time (${
               selectedSlot!.end
             }). Reduce duration or choose a different time.`
@@ -1032,7 +1033,7 @@ const handleDateSelect = (selectedDate: Date | undefined) => {
       }
 
       if (!data?.name) {
-        toast.error("Invalid inquiry data");
+        showToast.error("Invalid inquiry data");
         return;
       }
     }
@@ -1040,7 +1041,7 @@ const handleDateSelect = (selectedDate: Date | undefined) => {
     // Check for assignment conflicts before proceeding - only if time fields were modified
     if (timeFieldsModified) {
       if (!date || !requestedTime) {
-        toast.error("Please select date and time");
+        showToast.error("Please select date and time");
         return;
       }
 
@@ -1077,30 +1078,30 @@ const handleDateSelect = (selectedDate: Date | undefined) => {
   const proceedWithAssignment = async () => {
     setShowConfirmation(false);
     if (!date) {
-      toast.error("Please select an inspection date");
+      showToast.error("Please select an inspection date");
       return;
     }
 
     if (!requestedTime) {
-      toast.error("Please enter the requested inspection time");
+      showToast.error("Please enter the requested inspection time");
       return;
     }
 
     if (mode === "create") {
       if (!selectedInspector) {
-        toast.error("Please select an inspector");
+        showToast.error("Please select an inspector");
         return;
       }
 
       if (!validateRequestedTime()) {
-        toast.error(
+        showToast.error(
           `Requested time must be within the selected slot (${selectedSlot?.start} - ${selectedSlot?.end})`
         );
         return;
       }
 
       if (!data?.name) {
-        toast.error("Invalid inquiry data");
+        showToast.error("Invalid inquiry data");
         return;
       }
     }
@@ -1140,7 +1141,7 @@ const handleDateSelect = (selectedDate: Date | undefined) => {
           inquiryData.custom_property_area || "Property Inspection"
         );
 
-        toast.success("Inspector assigned successfully!");
+        showToast.success("Inspector assigned successfully!");
         onClose();
         navigate("/sales?tab=assign");
       } else {
@@ -1189,7 +1190,7 @@ const handleDateSelect = (selectedDate: Date | undefined) => {
             inquiryData?.custom_property_area || "Property Inspection"
           );
         }
-        toast.success("Inspection updated successfully!");
+        showToast.success("Inspection updated successfully!");
 
         onClose();
       }

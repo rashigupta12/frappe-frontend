@@ -8,7 +8,8 @@ import {
   Download,
 } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
-import { toast } from "react-hot-toast";
+import { showToast } from "../../../helpers/comman";
+// import { showToast } from "react-hot-showToast";
 
 interface ImageItem {
   id: string;
@@ -264,7 +265,7 @@ const CameraModal: React.FC<{
       }
     } catch (error) {
       console.error("Camera error:", error);
-      toast.error("Could not access camera. Please check permissions.");
+      showToast.error("Could not access camera. Please check permissions.");
       onClose();
     }
   }, [onClose]);
@@ -459,7 +460,7 @@ const handleFileUpload = async (
   const filesToUpload = Array.from(files);
 
   if (images.length + filesToUpload.length > maxImages) {
-    toast.error(`You can only upload a maximum of ${maxImages} files.`);
+    showToast.error(`You can only upload a maximum of ${maxImages} files.`);
     return;
   }
 
@@ -486,12 +487,12 @@ const handleFileUpload = async (
       console.log(`File: ${file.name}, Type: ${file.type}, Size: ${file.size}`);
 
       if (!validTypes.includes(file.type)) {
-        toast.error(`File type "${file.type}" not supported for file: ${file.name}`);
+        showToast.error(`File type "${file.type}" not supported for file: ${file.name}`);
         continue;
       }
 
       if (file.size > maxSizeMB * 1024 * 1024) {
-        toast.error(`File "${file.name}" exceeds ${maxSizeMB}MB limit.`);
+        showToast.error(`File "${file.name}" exceeds ${maxSizeMB}MB limit.`);
         continue;
       }
 
@@ -520,7 +521,7 @@ const handleFileUpload = async (
         newImages.push(newImage);
       } catch (error) {
         console.error(`Error uploading ${file.name}:`, error);
-        toast.error(`Failed to upload ${file.name}. Please try again.`);
+        showToast.error(`Failed to upload ${file.name}. Please try again.`);
       }
     }
 
@@ -528,7 +529,7 @@ const handleFileUpload = async (
       // Add new images to existing ones
       const updatedImages = [...images, ...newImages];
       onImagesChange(updatedImages);
-      toast.success(`${newImages.length} file(s) uploaded successfully!`);
+      showToast.success(`${newImages.length} file(s) uploaded successfully!`);
     }
   } finally {
     setIsUploading(false);
@@ -540,7 +541,7 @@ const handleFileUpload = async (
 
   const handleCameraCapture = async (imageData: string) => {
     if (images.length >= maxImages) {
-      toast.error(`You can only upload a maximum of ${maxImages} files.`);
+      showToast.error(`You can only upload a maximum of ${maxImages} files.`);
       return;
     }
 
@@ -572,10 +573,10 @@ const handleFileUpload = async (
       // Add new captured image to existing ones
       const updatedImages = [...images, newImage];
       onImagesChange(updatedImages);
-      toast.success("Image captured successfully!");
+      showToast.success("Image captured successfully!");
     } catch (error) {
       console.error("Error processing captured image:", error);
-      toast.error("Failed to process captured image");
+      showToast.error("Failed to process captured image");
     } finally {
       setIsUploading(false);
     }
@@ -591,7 +592,7 @@ const handleFileUpload = async (
 
     const updatedImages = images.filter((_, index) => index !== indexToDelete);
     onImagesChange(updatedImages);
-    toast.success("File deleted successfully!");
+    showToast.success("File deleted successfully!");
   };
 
   const handleImageClick = (index: number) => {

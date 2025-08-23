@@ -7,8 +7,9 @@ import React, {
   type ReactNode,
 } from "react";
 import { frappeAPI } from "../api/frappeClient";
-import { toast } from "react-hot-toast";
+// import { showToast } from "react-hot-showToast";
 import { useAuth } from "./AuthContext";
+import { showToast } from "../helpers/comman";
 
 // 🆕 NEW INTERFACE - Services instead of MaterialSold
 export interface Services {
@@ -238,7 +239,7 @@ export const JobCardOtherProvider: React.FC<JobCardOtherProviderProps> = ({
         err instanceof Error ? err.message : "Failed to fetch employees";
       setError(errorMessage);
       setEmployees([]);
-      toast.error("Failed to fetch employees");
+      showToast.error("Failed to fetch employees");
     }
   }, []);
 
@@ -318,7 +319,7 @@ export const JobCardOtherProvider: React.FC<JobCardOtherProviderProps> = ({
         err instanceof Error ? err.message : "Failed to fetch job cards";
       setError(errorMessage);
       setJobCardsOther([]);
-      toast.error("Failed to fetch job cards (Other Services)");
+      showToast.error("Failed to fetch job cards (Other Services)");
     } finally {
       setLoading(false);
     }
@@ -377,14 +378,14 @@ export const JobCardOtherProvider: React.FC<JobCardOtherProviderProps> = ({
         const response = await frappeAPI.createJobCardOther(processedData);
         console.log("✅ Job card created (Other Services):", response.data);
 
-        toast.success("Job Card (Other Services) created successfully!");
+        showToast.success("Job Card (Other Services) created successfully!");
 
         // Refresh the job cards list
         await fetchJobCardsOther();
         return transformJobCardOtherData(response.data);
       } catch (err) {
         console.error("❌ Error creating job card (Other Services):", err);
-        toast.error(
+        showToast.error(
           "Failed to create job card (Other Services). Please try again."
         );
         const errorMessage =
@@ -431,7 +432,7 @@ export const JobCardOtherProvider: React.FC<JobCardOtherProviderProps> = ({
         );
         console.log("✅ Job card updated (Other Services):", response.data);
 
-        toast.success("Job Card (Other Services) updated successfully!");
+        showToast.success("Job Card (Other Services) updated successfully!");
 
         // Refresh the job cards list
         await fetchJobCardsOther();
@@ -441,7 +442,7 @@ export const JobCardOtherProvider: React.FC<JobCardOtherProviderProps> = ({
           `❌ Error updating job card ${jobCardId} (Other Services):`,
           err
         );
-        toast.error(
+        showToast.error(
           "Failed to update job card (Other Services). Please try again."
         );
         const errorMessage =
@@ -463,14 +464,14 @@ export const JobCardOtherProvider: React.FC<JobCardOtherProviderProps> = ({
       try {
         console.log(`🗑️ Deleting job card (Other Services): ${jobCardId}`);
         await frappeAPI.deleteJobCardOther(jobCardId);
-        toast.success("Job Card (Other Services) deleted successfully!");
+        showToast.success("Job Card (Other Services) deleted successfully!");
         await fetchJobCardsOther();
       } catch (err) {
         console.error(
           `❌ Error deleting job card ${jobCardId} (Other Services):`,
           err
         );
-        toast.error(
+        showToast.error(
           "Failed to delete job card (Other Services). Please try again."
         );
         const errorMessage =

@@ -8,8 +8,9 @@ import React, {
   type ReactNode,
 } from "react";
 import { frappeAPI } from "../api/frappeClient";
-import { toast } from "react-hot-toast";
+// import { showToast } from "react-hot-showToast";
 import { useAuth } from "./AuthContext";
+import { showToast } from "../helpers/comman";
 
 // Define the Lead interface based on your API response
 export interface Lead {
@@ -298,7 +299,7 @@ export const LeadsProvider: React.FC<LeadsProviderProps> = ({ children }) => {
 
         return response.data;
       } catch (err) {
-        toast.error("Failed to create inquiry. Please try again.");
+        showToast.error("Failed to create inquiry. Please try again.");
         console.error("Error creating inquiry:", err);
         const errorMessage =
           err instanceof Error ? err.message : "Failed to create lead";
@@ -333,7 +334,7 @@ export const LeadsProvider: React.FC<LeadsProviderProps> = ({ children }) => {
 
         return response.data;
       } catch (err) {
-        toast.error(`Failed to update Inquiry ${leadId}. Please try again.`);
+        showToast.error(`Failed to update Inquiry ${leadId}. Please try again.`);
         console.error(`Error updating inquiry ${leadId}:`, err);
         const errorMessage =
           err instanceof Error

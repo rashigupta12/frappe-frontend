@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Loader2, Mail, Phone, User, X } from "lucide-react";
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { toast } from "react-hot-toast";
+// import { showToast } from "react-hot-showToast";
 import { useAuth } from "../../context/AuthContext";
 import { frappeAPI } from "../../api/frappeClient";
 
@@ -10,6 +10,7 @@ import PaymentImageUpload from "./imageupload/ImageUpload";
 import { useNavigate } from "react-router-dom";
 import { useReceiptStore } from "../../store/recipt";
 import { capitalizeFirstLetter, handleKeyDown } from "../../helpers/helper";
+import { showToast } from "../../helpers/comman";
 
 interface ImageItem {
   id: string;
@@ -256,7 +257,7 @@ const ReceiptForm = () => {
   const handleCloseCustomerDialog = () => {
     setShowAddCustomerDialog(false);
     if (!paid_from) {
-      toast.error(
+      showToast.error(
         "Please select a customer to proceed with receipt submission"
       );
       setSearchQuery("");
@@ -268,7 +269,7 @@ const ReceiptForm = () => {
     setField("paid_from", customerName);
     setSearchQuery(customerName);
     setShowDropdown(false);
-    toast.success("Customer selected");
+    showToast.success("Customer selected");
   };
 
   const handleNewCustomerInputChange = (
@@ -299,7 +300,7 @@ const ReceiptForm = () => {
 
   const handleCreateCustomer = async () => {
     if (!newCustomerData.customer_name) {
-      toast.error("Customer name is required");
+      showToast.error("Customer name is required");
       return;
     }
 
@@ -312,7 +313,7 @@ const ReceiptForm = () => {
       });
 
       if (response.data) {
-        toast.success("Customer created successfully");
+        showToast.success("Customer created successfully");
         handleCustomerSelect(response.data);
         setShowAddCustomerDialog(false);
       } else {
@@ -464,25 +465,25 @@ const ReceiptForm = () => {
 
     // Validate that paid_from (customer) is selected
     if (!paid_from || paid_from.trim() === "") {
-      toast.error("Please select a customer");
+      showToast.error("Please select a customer");
       return;
     }
 
     // Validate amount
     if (!amountaed || parseFloat(amountaed) <= 0) {
-      toast.error("Please enter a valid amount");
+      showToast.error("Please enter a valid amount");
       return;
     }
 
     // Validate at least one image is uploaded
     if (images.length === 0) {
-      toast.error("Please upload at least one receipt evidence image");
+      showToast.error("Please upload at least one receipt evidence image");
       return;
     }
 
     const result = await submitPayment();
     if (result.success) {
-      toast.success("Receipt submitted successfully!");
+      showToast.success("Receipt submitted successfully!");
       // Reset form fields
       setField("bill_number", "");
       setField("amountaed", "0.00");

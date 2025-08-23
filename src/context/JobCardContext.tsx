@@ -7,8 +7,9 @@ import React, {
   type ReactNode,
 } from "react";
 import { frappeAPI } from "../api/frappeClient";
-import { toast } from "react-hot-toast";
+// import { showToast } from "react-hot-showToast";
 import { useAuth } from "./AuthContext";
+import { showToast } from "../helpers/comman";
 
 export interface PressingCharges {
   name?: string;
@@ -250,7 +251,7 @@ const transformJobCardData = (apiResponse: any): JobCard => {
       const errorMessage = err instanceof Error ? err.message : "Failed to fetch employees";
       setError(errorMessage);
       setEmployees([]);
-      toast.error("Failed to fetch employees");
+      showToast.error("Failed to fetch employees");
     }
   }, []);
 
@@ -308,7 +309,7 @@ const fetchJobCards = useCallback(async () => {
     const errorMessage = err instanceof Error ? err.message : "Failed to fetch job cards";
     setError(errorMessage);
     setJobCards([]);
-    toast.error("Failed to fetch job cards");
+    showToast.error("Failed to fetch job cards");
   } finally {
     setLoading(false);
   }
@@ -349,14 +350,14 @@ const fetchJobCards = useCallback(async () => {
         const response = await frappeAPI.createJobCard(processedData);
         console.log("✅ Job card created:", response.data);
        
-        toast.success("Job Card created successfully!");
+        showToast.success("Job Card created successfully!");
        
         // Refresh the job cards list
         await fetchJobCards();
         return transformJobCardData(response.data);
       } catch (err) {
         console.error("❌ Error creating job card:", err);
-        toast.error("Failed to create job card. Please try again.");
+        showToast.error("Failed to create job card. Please try again.");
         const errorMessage = err instanceof Error ? err.message : "Failed to create job card";
         setError(errorMessage);
         throw err;
@@ -388,14 +389,14 @@ const fetchJobCards = useCallback(async () => {
         const response = await frappeAPI.updateJobCard(jobCardId, processedData);
         console.log("✅ Job card updated:", response.data);
        
-        toast.success("Job Card updated successfully!");
+        showToast.success("Job Card updated successfully!");
        
         // Refresh the job cards list
         await fetchJobCards();
         return transformJobCardData(response.data);
       } catch (err) {
         console.error(`❌ Error updating job card ${jobCardId}:`, err);
-        toast.error("Failed to update job card. Please try again.");
+        showToast.error("Failed to update job card. Please try again.");
         const errorMessage = err instanceof Error ? err.message : "Failed to update job card";
         setError(errorMessage);
         throw err;
@@ -414,7 +415,7 @@ const fetchJobCards = useCallback(async () => {
       try {
         console.log(`🗑️ Deleting job card: ${jobCardId}`);
         await frappeAPI.deleteJobCard(jobCardId);
-        toast.success("Job Card deleted successfully!");
+        showToast.success("Job Card deleted successfully!");
         await fetchJobCards();
       } catch (err) {
         console.error(`❌ Error deleting job card ${jobCardId}:`, err);

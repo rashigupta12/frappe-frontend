@@ -16,7 +16,7 @@ import {
   X,
 } from "lucide-react";
 import React, { useCallback, useEffect, useState } from "react";
-import { toast } from "sonner";
+// import { showToast } from "sonner";
 import { frappeAPI } from "../../api/frappeClient";
 import {
   useJobCardsOther,
@@ -46,6 +46,7 @@ import {
   SelectValue,
 } from "../ui/select";
 import { Textarea } from "../ui/textarea";
+import { showToast } from "../../helpers/comman";
 
 interface JobCardOtherFormProps {
   isOpen: boolean;
@@ -352,7 +353,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
       setShowDropdown(false);
       // Only show error if it's not a empty query case
       if (query.trim()) {
-        toast.error("Failed to search. Please try again.");
+        showToast.error("Failed to search. Please try again.");
       }
     } finally {
       setIsSearching(false);
@@ -519,7 +520,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
   const handleCloseCustomerDialog = () => {
     setShowAddCustomerDialog(false);
     if (!formData.customer_id && !formData.lead_id) {
-      toast.error(
+      showToast.error(
         "Please select a customer to proceed with receipt submission"
       );
       setSearchQuery("");
@@ -551,7 +552,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
 
   const handleCreateCustomer = async () => {
     if (!newCustomerData.customer_name) {
-      toast.error("Customer name is required");
+      showToast.error("Customer name is required");
       return;
     }
 
@@ -564,7 +565,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
       });
 
       if (response.data) {
-        toast.success("Customer created successfully");
+        showToast.success("Customer created successfully");
         handleCustomerSelect(response.data);
         setShowAddCustomerDialog(false);
       } else {
@@ -572,7 +573,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
       }
     } catch (error) {
       console.error("Error creating customer:", error);
-      toast.error("Failed to create customer. Please try again.");
+      showToast.error("Failed to create customer. Please try again.");
     } finally {
       setCreatingCustomer(false);
     }
@@ -615,21 +616,21 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
   const validateForm = (): boolean => {
     // Basic validation
     if (!formData.party_name) {
-      toast.error("Customer name is required");
+      showToast.error("Customer name is required");
       return false;
     }
     if (!formData.start_date) {
-      toast.error("Start date is required");
+      showToast.error("Start date is required");
       return false;
     }
     if (!formData.finish_date) {
-      toast.error("Finish date is required");
+      showToast.error("Finish date is required");
       return false;
     }
 
     // Services validation
     if (services.length === 0) {
-      toast.error("At least one service entry is required");
+      showToast.error("At least one service entry is required");
       return false;
     }
 
@@ -637,7 +638,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
     const hasValidServices = services.some((service) => service.work_type);
 
     if (!hasValidServices) {
-      toast.error("Each service must have at least a work type and price");
+      showToast.error("Each service must have at least a work type and price");
       return false;
     }
 
@@ -646,7 +647,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
       (service) => !validateServiceDates(service)
     );
     if (invalidServices.length > 0) {
-      toast.error("Some service dates are outside the job card date range");
+      showToast.error("Some service dates are outside the job card date range");
       return false;
     }
 
@@ -695,7 +696,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
       onClose();
     } catch (error) {
       console.error("Form submission error:", error);
-      toast.error("Failed to submit form");
+      showToast.error("Failed to submit form");
     }
   };
 
@@ -1039,7 +1040,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                                 new Date(selectedDate) <
                                 new Date(new Date().toISOString().split("T")[0])
                               ) {
-                                toast.error("Start date cannot be in the past");
+                                showToast.error("Start date cannot be in the past");
                                 return;
                               }
                               setFormData((prev) => ({
@@ -1175,7 +1176,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                                       new Date(e.target.value) >
                                         new Date(formData.finish_date)
                                     ) {
-                                      toast.error(
+                                      showToast.error(
                                         "Service start date cannot be after job finish date"
                                       );
                                       return;
@@ -1219,7 +1220,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                                       new Date(e.target.value) <
                                         new Date(service.start_date)
                                     ) {
-                                      toast.error(
+                                      showToast.error(
                                         "Finish date cannot be before start date"
                                       );
                                       return;

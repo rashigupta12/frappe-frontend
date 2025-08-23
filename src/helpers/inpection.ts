@@ -2,9 +2,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // src/helpers/inspectionHelpers.ts
 
-import { toast } from "react-hot-toast";
+// import { showToast } from "react-hot-showToast";
 import { frappeAPI } from "../api/frappeClient";
 import { format } from "date-fns";
+import { showToast } from "./comman";
 
 /**
  * File Upload Helper Functions
@@ -75,12 +76,12 @@ export const validateFile = (file: File): boolean => {
   ];
 
   if (file.size > maxSize) {
-    toast.error(`File "${file.name}" exceeds 10MB limit`);
+    showToast.error(`File "${file.name}" exceeds 10MB limit`);
     return false;
   }
 
   if (!allowedTypes.includes(file.type)) {
-    toast.error(`File "${file.name}" has unsupported format`);
+    showToast.error(`File "${file.name}" has unsupported format`);
     return false;
   }
 
@@ -100,22 +101,22 @@ export const handleMultipleImageUpload = async (
   setFormValue: (value: any[]) => void
 ) => {
   if (!files || files.length === 0) {
-    toast.error("No files selected");
+    showToast.error("No files selected");
     return currentImages;
   }
 
   const validFiles = Array.from(files).filter(validateFile);
 
   if (validFiles.length === 0) {
-    toast.error("No valid files to upload");
+    showToast.error("No valid files to upload");
     return currentImages;
   }
 
-  let toastId: string | undefined;
+  // let toastId: string | undefined;
   try {
     setUploading(true);
     setUploadProgress(0);
-    toastId = toast.loading(`Uploading ${validFiles.length} image(s)...`);
+   showToast.loading(`Uploading ${validFiles.length} image(s)...`);
 
     const newImages = await Promise.all(
       validFiles.map(async (file, index) => {
@@ -132,7 +133,7 @@ export const handleMultipleImageUpload = async (
           };
         } catch (error) {
           console.error(`Failed to upload ${file.name}:`, error);
-          toast.error(`Failed to upload ${file.name}`);
+          showToast.error(`Failed to upload ${file.name}`);
           return null;
         }
       })
@@ -142,17 +143,17 @@ export const handleMultipleImageUpload = async (
     if (successfulUploads.length > 0) {
       const updatedImages = [...currentImages, ...successfulUploads];
       setFormValue(updatedImages);
-      toast.success(`${successfulUploads.length} image(s) uploaded successfully!`);
+      showToast.success(`${successfulUploads.length} image(s) uploaded successfully!`);
       return updatedImages;
     }
     return currentImages;
   } catch (error) {
     console.error("Multiple image upload error:", error);
-    toast.error("Failed to upload images");
+    showToast.error("Failed to upload images");
     return currentImages;
   } finally {
     setUploading(false);
-    if (toastId !== undefined) toast.dismiss(toastId);
+    // if (toastId !== undefined) showToast.dismiss(toastId);
     setTimeout(() => setUploadProgress(0), 1000);
   }
 };
@@ -167,17 +168,17 @@ export const handleSingleFileUpload = async (
   index?: number
 ) => {
   if (!file) {
-    toast.error("No file selected");
+    showToast.error("No file selected");
     return;
   }
 
   if (!validateFile(file)) return;
 
-  let toastId: string | undefined;
+  // let toastId: string | undefined;
   try {
     setUploading(true);
     setUploadProgress(0);
-    toastId = toast.loading("Uploading file...");
+    showToast.loading("Uploading file...");
 
     const fileUrl = await uploadFile(file, setUploadProgress);
 
@@ -195,13 +196,13 @@ export const handleSingleFileUpload = async (
       setFormValue(fileUrl);
     }
 
-    toast.success(`File "${file.name}" uploaded successfully!`);
+    showToast.success(`File "${file.name}" uploaded successfully!`);
   } catch (error) {
     console.error("File upload error:", error);
-    toast.error("Failed to upload file");
+    showToast.error("Failed to upload file");
   } finally {
     setUploading(false);
-    if (toastId !== undefined) toast.dismiss(toastId);
+    // if (toastId !== undefined) showToast.dismiss(toastId);
     setTimeout(() => setUploadProgress(0), 1000);
   }
 };
@@ -226,7 +227,7 @@ export const captureImageFromCamera = async (): Promise<string | null> => {
     });
   } catch (error) {
     console.error("Camera capture error:", error);
-    toast.error("Failed to access camera");
+    showToast.error("Failed to access camera");
     return null;
   }
 };
@@ -345,7 +346,7 @@ export const fetchLeadData = async (leadName: string) => {
     return response.data;
   } catch (error) {
     console.error("Error fetching lead data:", error);
-    toast.error("Failed to fetch lead information");
+    showToast.error("Failed to fetch lead information");
     return null;
   }
 };
@@ -360,18 +361,18 @@ export const removeCustomImage = (
   setFormValue: (value: any[]) => void
 ) => {
   if (index < 0 || index >= currentImages.length) {
-    toast.error("Invalid image index");
+    showToast.error("Invalid image index");
     return currentImages;
   }
 
   const updatedImages = currentImages.filter((_, i) => i !== index);
   setFormValue(updatedImages);
-  toast.success("Image removed successfully");
+  showToast.success("Image removed successfully");
   return updatedImages;
 };
 
 export const clearAllCustomImages = (setFormValue: (value: any[]) => void) => {
   setFormValue([]);
-  toast.success("All images cleared");
+  showToast.success("All images cleared");
   return [];
 };

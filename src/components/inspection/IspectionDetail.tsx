@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
-import { toast } from "react-hot-toast";
+// import { showToast } from "react-hot-showToast";
 import { useLocation, useNavigate } from "react-router-dom";
 import * as z from "zod";
 import { frappeAPI } from "../../api/frappeClient";
@@ -49,6 +49,7 @@ import { Textarea } from "../ui/textarea";
 import InspectionHeader from "./components/InspectionHeader";
 import MediaUpload from "./components/MediaUpload/MediaUpload";
 import { capitalizeFirstLetter } from "../../helpers/helper";
+import { showToast } from "../../helpers/comman";
 
 // Helper function to get current date and time - memoized
 const getCurrentDateTime = () => {
@@ -135,7 +136,7 @@ const CreateInspection = () => {
       return response.data;
     } catch (error) {
       console.error("Error fetching lead data:", error);
-      toast.error("Failed to fetch lead information");
+      showToast.error("Failed to fetch lead information");
       return null;
     }
   }, []);
@@ -470,16 +471,16 @@ const CreateInspection = () => {
 
         if (isUpdateMode && inspection?.name) {
           await updateInspectionbyId(inspection.name, inspectionData);
-          toast.success("Inspection updated successfully!");
+          showToast.success("Inspection updated successfully!");
         } else {
           await createInspection(inspectionData, todo?.name);
-          toast.success("Inspection created successfully!");
+          showToast.success("Inspection created successfully!");
         }
 
         navigate("/inspector?tab=inspections");
       } catch (error) {
         console.error("Submission error:", error);
-        toast.error(
+        showToast.error(
           `Failed to ${isUpdateMode ? "update" : "create"} inspection.`
         );
       } finally {
@@ -506,11 +507,11 @@ const CreateInspection = () => {
       if (todo?.name) {
         await updateTodoStatus(todo.name, "Cancelled");
         await UpdateLeadStatus(todo.reference_name, "Lead");
-        toast.success("Todo cancelled successfully!");
+        showToast.success("Todo cancelled successfully!");
         navigate("/inspector?tab=inspections");
       }
     } catch (error) {
-      toast.error("Failed to cancel todo. Please try again.");
+      showToast.error("Failed to cancel todo. Please try again.");
       console.error("Error cancelling todo:", error);
     } finally {
       setCancelling(false);

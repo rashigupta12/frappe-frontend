@@ -20,7 +20,7 @@ import {
   X,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import toast from "react-hot-toast";
+// import showToast from "react-hot-showToast";
 import { useNavigate } from "react-router-dom";
 import { frappeAPI } from "../../api/frappeClient";
 import { useAuth } from "../../context/AuthContext";
@@ -75,6 +75,7 @@ import type {
   NewCustomerFormData,
   PriorityLevel,
 } from "../../types/inquiryFormdata";
+import { showToast } from "../../helpers/comman";
 
 interface InquiryFormProps {
   isOpen: boolean;
@@ -382,12 +383,12 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
   const validateForm = (): boolean => {
     // Customer Details validation
     if (!selectedCustomer) {
-      toast.error("Customer selection is required");
+      showToast.error("Customer selection is required");
       return false;
     }
 
     if (!formData.custom_jobtype || formData.custom_jobtype.length === 0) {
-      toast.error("At least one job type is required");
+      showToast.error("At least one job type is required");
       return false;
     }
     return true;
@@ -460,7 +461,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
               : prev.custom_preferred_inspection_date,
         }));
 
-        toast.success("Inquiry updated successfully!");
+        showToast.success("Inquiry updated successfully!");
         return existingLeadId;
       } else {
         // Create new lead only if we don't have an ID
@@ -485,7 +486,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
               : prev.custom_preferred_inspection_date,
         }));
 
-        toast.success("Inquiry created successfully!");
+        showToast.success("Inquiry created successfully!");
         return newInquiry.name;
       }
     } catch (err) {
@@ -500,7 +501,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
       //   }
       // }
 
-      toast.error("Failed to save inquiry. Please try again.");
+      showToast.error("Failed to save inquiry. Please try again.");
       return undefined;
     }
   };
@@ -530,11 +531,11 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
       if (existingLeadId) {
         // Update existing lead
         await updateLead(existingLeadId, submissionData);
-        toast.success("Inquiry updated successfully!");
+        showToast.success("Inquiry updated successfully!");
       } else {
         // Create new lead
         const newInquiry = await createLead(submissionData);
-        toast.success("Inquiry created successfully!");
+        showToast.success("Inquiry created successfully!");
 
         // Update formData with the new lead ID
         setFormData((prev) => ({
@@ -546,14 +547,14 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
       onClose();
     } catch (err) {
       console.error("Form submission error:", err);
-      toast.error("Failed to create inquiry. Please try again.");
+      showToast.error("Failed to create inquiry. Please try again.");
     }
   };
 
   const handleAssignAndSave = () => {
     // Validate form fields and show specific error messages
     if (!selectedCustomer) {
-      toast.error(
+      showToast.error(
         "Please complete customer details: Customer selection is required"
       );
       setActiveSection("contact");
@@ -561,7 +562,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     }
 
     if (!formData.custom_jobtype || formData.custom_jobtype.length === 0) {
-      toast.error(
+      showToast.error(
         "Please complete job details: At least one job type is required"
       );
       setActiveSection("job");
@@ -569,19 +570,19 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     }
 
     if (!formData.custom_budget_range) {
-      toast.error("Please complete job details: Budget range is required");
+      showToast.error("Please complete job details: Budget range is required");
       setActiveSection("job");
       return;
     }
 
     if (!formData.custom_project_urgency) {
-      toast.error("Please complete job details: Project urgency is required");
+      showToast.error("Please complete job details: Project urgency is required");
       setActiveSection("job");
       return;
     }
 
     if (!formData.source) {
-      toast.error(
+      showToast.error(
         "Please complete customer details: Source of inquiry is required"
       );
       setActiveSection("contact");
@@ -593,7 +594,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
         formData.source === "Supplier Reference") &&
       !formData.custom_reference_name
     ) {
-      toast.error(
+      showToast.error(
         "Please complete customer details: Reference name is required"
       );
       setActiveSection("contact");
@@ -602,7 +603,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
 
     // Property validation
     if (!formData.custom_property_name__number) {
-      toast.error(
+      showToast.error(
         "Please complete property details: Property number is required"
       );
       setActiveSection("property");
@@ -610,7 +611,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     }
 
     if (!formData.custom_property_category) {
-      toast.error(
+      showToast.error(
         "Please complete property details: Property category is required"
       );
       setActiveSection("property");
@@ -618,7 +619,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     }
 
     if (!formData.custom_property_area) {
-      toast.error(
+      showToast.error(
         "Please complete property details: Property area is required"
       );
       setActiveSection("property");
@@ -626,50 +627,50 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     }
 
     if (!formData.custom_street_name) {
-      toast.error("Please complete property details: Street name is required");
+      showToast.error("Please complete property details: Street name is required");
       setActiveSection("property");
       return;
     }
 
     if (!formData.custom_emirate) {
-      toast.error("Please complete property details: Emirate is required");
+      showToast.error("Please complete property details: Emirate is required");
       setActiveSection("property");
       return;
     }
 
     if (!formData.custom_community) {
-      toast.error("Please complete property details: Community is required");
+      showToast.error("Please complete property details: Community is required");
       setActiveSection("property");
       return;
     }
 
     if (!formData.custom_area) {
-      toast.error("Please complete property details: Area is required");
+      showToast.error("Please complete property details: Area is required");
       setActiveSection("property");
       return;
     }
 
     // Inspector assignment validation
     if (!selectedInspector) {
-      toast.error("Please select an inspector for assignment");
+      showToast.error("Please select an inspector for assignment");
       setActiveSection("inspector");
       return;
     }
 
     if (!date) {
-      toast.error("Please select an inspection date");
+      showToast.error("Please select an inspection date");
       setActiveSection("inspector");
       return;
     }
 
     if (!requestedTime) {
-      toast.error("Please enter the requested inspection time");
+      showToast.error("Please enter the requested inspection time");
       setActiveSection("inspector");
       return;
     }
 
     if (!validateRequestedTime()) {
-      toast.error(
+      showToast.error(
         `Requested time must be within the selected slot (${selectedSlot?.start} - ${selectedSlot?.end})`
       );
       setActiveSection("inspector");
@@ -683,7 +684,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
       const totalMinutes = hours * 60 + minutes;
 
       if (totalMinutes > 18 * 60) {
-        toast.error(
+        showToast.error(
           "Inspection cannot end after 6:00 PM. Please adjust the start time or duration."
         );
         setShowEndTimeWarning(true);
@@ -710,12 +711,12 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
         const submissionData = formatSubmissionData(formData);
         await updateLead(existingLeadId, submissionData);
         inquiryName = existingLeadId;
-        toast.success("Inquiry updated successfully!");
+        showToast.success("Inquiry updated successfully!");
       } else {
         // Only create new lead if we don't have an ID (shouldn't happen if saveNewCustomer worked correctly)
         const savedLeadName = await saveLead();
         if (!savedLeadName) {
-          toast.error("Failed to save inquiry");
+          showToast.error("Failed to save inquiry");
           return;
         }
         inquiryName = savedLeadName;
@@ -773,12 +774,12 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
         dwaPayload
       );
 
-      toast.success("Inspector assigned successfully!");
+      showToast.success("Inspector assigned successfully!");
       navigate("/sales?tab=assign");
       onClose();
     } catch (error) {
       console.error("Full error in assignment process:", error);
-      toast.error(`Failed to complete assignment`);
+      showToast.error(`Failed to complete assignment`);
     }
   };
 
@@ -954,12 +955,12 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
 
   const handleSaveCustomer = async () => {
     if (!customerForm.name.trim()) {
-      toast.error("Customer name is required");
+      showToast.error("Customer name is required");
       return;
     }
 
     if (!customerForm.phone || customerForm.phone.length < 5) {
-      toast.error("Valid mobile number is required");
+      showToast.error("Valid mobile number is required");
       return;
     }
 
@@ -999,7 +1000,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
           jobType: [],
         });
 
-        toast.success(`Customer details updated`);
+        showToast.success(`Customer details updated`);
         return;
       }
 
@@ -1116,17 +1117,202 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
         jobType: [],
       });
 
-      toast.success(
+      showToast.success(
         `Customer "${updatedCustomer.customer_name}" updated successfully!`
       );
     } catch (error) {
       console.error("Error saving lead:", error);
 
-      toast.error("Failed to save customer");
+      showToast.error("Failed to save customer");
     } finally {
       setIsCreatingCustomer(false);
     }
   };
+
+//   const handleSaveCustomer = async () => {
+//   if (!customerForm.name.trim()) {
+//     showToast.error("Customer name is required");
+//     return;
+//   }
+
+//   if (!customerForm.phone || customerForm.phone.length < 5) {
+//     showToast.error("Valid mobile number is required");
+//     return;
+//   }
+
+//   try {
+//     setIsCreatingCustomer(true);
+
+//     // For new inquiries, create the lead immediately
+//     if (!inquiry) {
+//       const formattedData = formatSubmissionData({
+//         lead_name: customerForm.name.trim(),
+//         email_id: customerForm.email || "",
+//         mobile_no: customerForm.phone,
+//         custom_jobtype: customerForm.jobType, // Helper will convert to API format
+//         custom_budget_range: "",
+//         custom_project_urgency: "",
+//         source: "",
+//         custom_property_name__number: "",
+//         custom_emirate: "",
+//         custom_area: "",
+//         custom_community: "",
+//         custom_street_name: "",
+//         custom_property_area: "",
+//         custom_property_category: "",
+//         custom_special_requirements: "",
+//       });
+      
+//       // Create the lead via API
+//       const newLead = await createLead(formattedData);
+      
+//       if (!newLead) {
+//         throw new Error("Failed to create lead");
+//       }
+
+//       // Convert API response format back to form format (string[])
+//       const convertedJobTypes = Array.isArray(newLead.custom_jobtype)
+//         ? newLead.custom_jobtype.map((item: any) =>
+//             typeof item === "string" ? item : item.job_type
+//           )
+//         : customerForm.jobType;
+
+//       // Update form data with the new lead
+//       setFormData((prev) => ({
+//         ...prev,
+//         ...newLead,
+//         name: newLead.name, // Set the lead ID
+//         custom_jobtype: convertedJobTypes, // Ensure this is string[]
+//         custom_preferred_inspection_date:
+//           newLead.custom_preferred_inspection_date
+//             ? new Date(newLead.custom_preferred_inspection_date)
+//             : prev.custom_preferred_inspection_date,
+//       }));
+
+//       // Update selected customer
+//       const updatedCustomer = {
+//         customer_name: newLead.lead_name || customerForm.name,
+//         mobile_no: newLead.mobile_no || customerForm.phone,
+//         email_id: newLead.email_id || customerForm.email,
+//         name: newLead.name,
+//         lead_name: newLead.name,
+//       };
+
+//       setSelectedCustomer(updatedCustomer);
+//       setSearchQuery(updatedCustomer.customer_name);
+
+//       setShowCustomerModal(false);
+//       setCustomerForm({
+//         name: "",
+//         email: "",
+//         phone: "+971 ",
+//         jobType: [],
+//       });
+
+//       showToast.success(`Lead "${updatedCustomer.customer_name}" created successfully!`);
+//       return;
+//     }
+
+//     // For existing inquiries, update the lead (existing logic)
+//     const leadId = formData.name || selectedCustomer?.name;
+//     if (!leadId) {
+//       throw new Error("No lead ID found for update");
+//     }
+
+//     // Fetch fresh document before updating
+//     const freshLead = await frappeAPI.makeAuthenticatedRequest(
+//       "GET",
+//       `/api/resource/Lead/${leadId}`
+//     );
+
+//     if (!freshLead?.data) {
+//       throw new Error("Could not fetch fresh lead data");
+//     }
+
+//     // Convert jobType array to the format expected by the API
+//     const apiJobTypeFormat = customerForm.jobType.map((jobType) => ({
+//       job_type: jobType,
+//     }));
+
+//     const newLeadData = {
+//       ...freshLead.data,
+//       lead_name: customerForm.name.trim(),
+//       email_id: customerForm.email || "",
+//       mobile_no: customerForm.phone,
+//       custom_jobtype: apiJobTypeFormat, // Use API format
+//     };
+
+//     // Remove undefined fields
+//     Object.keys(newLeadData).forEach((key) => {
+//       if (newLeadData[key] === undefined) {
+//         delete newLeadData[key];
+//       }
+//     });
+
+//     const updatedLead = await updateLead(leadId, newLeadData);
+
+//     if (!updatedLead) {
+//       throw new Error("Failed to update lead");
+//     }
+
+//     // Convert API response format back to form format (string[])
+//     const convertedJobTypes = Array.isArray(updatedLead.custom_jobtype)
+//       ? updatedLead.custom_jobtype.map((item: any) =>
+//           typeof item === "string" ? item : item.job_type
+//         )
+//       : customerForm.jobType;
+
+//     // Update formData with proper type conversion
+//     setFormData((prev: LeadFormData) => ({
+//       ...prev,
+//       ...updatedLead,
+//       custom_jobtype: convertedJobTypes, // Ensure this is string[]
+//       custom_preferred_inspection_date:
+//         updatedLead.custom_preferred_inspection_date
+//           ? new Date(updatedLead.custom_preferred_inspection_date)
+//           : prev.custom_preferred_inspection_date,
+//     }));
+
+//     // Update date if it exists
+//     if (updatedLead.custom_preferred_inspection_date) {
+//       setDate(new Date(updatedLead.custom_preferred_inspection_date));
+//     }
+
+//     // Update reference input visibility
+//     setShowReferenceInput(
+//       updatedLead.source === "Reference" ||
+//         updatedLead.source === "Supplier Reference"
+//     );
+
+//     // Update the selected customer with new data
+//     const updatedCustomer = {
+//       customer_name: updatedLead.lead_name || customerForm.name,
+//       mobile_no: updatedLead.mobile_no || customerForm.phone,
+//       email_id: updatedLead.email_id || customerForm.email,
+//       name: updatedLead.name,
+//       lead_name: updatedLead.name,
+//     };
+
+//     setSelectedCustomer(updatedCustomer);
+//     setSearchQuery(updatedCustomer.customer_name);
+
+//     setShowCustomerModal(false);
+//     setCustomerForm({
+//       name: "",
+//       email: "",
+//       phone: "+971 ",
+//       jobType: [],
+//     });
+
+//     showToast.success(`Lead "${updatedCustomer.customer_name}" updated successfully!`);
+    
+//   } catch (error) {
+//     console.error("Error saving lead:", error);
+//     showToast.error("Failed to save customer");
+//   } finally {
+//     setIsCreatingCustomer(false);
+//   }
+// };
   const validateRequestedTime = () => {
     if (!requestedTime || !selectedSlot) return false;
 
@@ -1196,7 +1382,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
         });
         setRequestedTime(firstSlot.start);
       } else {
-        toast.success(`Selected ${inspector.user_name}`);
+        showToast.success(`Selected ${inspector.user_name}`);
       }
     }
     setShowAvailabilityModal(false);
@@ -1209,7 +1395,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
       ...prev,
       custom_preferred_inspection_time: slot.start,
     }));
-    toast.success(`Selected time slot: ${slot.start} - ${slot.end}`);
+    showToast.success(`Selected time slot: ${slot.start} - ${slot.end}`);
   };
 
   const handleDateSelect = (selectedDate: Date | undefined) => {

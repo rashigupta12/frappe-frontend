@@ -19,7 +19,8 @@ import { FormError } from "./form-error";
 import { FormSuccess } from "./form-success";
 import { useAuth } from "../../context/AuthContext";
 import { Navigate, Link } from "react-router-dom";
-import { toast } from "react-hot-toast";
+import { showToast } from "../../helpers/comman";
+// import { showToast } from "react-hot-showToast";
 
 // Define form schema
 const loginSchema = z.object({
@@ -71,21 +72,21 @@ function LoginForm() {
           return;
         }
         
-        toast.success("Login successful!");
+        showToast.success("Login successful!");
         // Navigation will be handled by the redirect logic above
       } else {
         // Handle different error cases
         if (result.noValidRoles) {
-          toast.error("Access denied: No valid roles assigned to your account.");
+          showToast.error("Access denied: No valid roles assigned to your account.");
           setError("Access denied: Your account does not have the required permissions to access this application. Please contact your administrator.");
         } else {
-          toast.error( "Invalid email or password");
+          showToast.error( "Invalid email or password");
           setError( "Login failed");
         }
       }
     } catch (err) {
       console.error("Login error:", err);
-      toast.error("Login failed");
+      showToast.error("Login failed");
       setError("Login failed");
     } finally {
       setIsPending(false);
