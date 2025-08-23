@@ -137,6 +137,8 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     ...defaultFormData,
   });
   const [showReferenceInput, setShowReferenceInput] = useState(false);
+// Add this state for tracking validation errors
+const [durationError, setDurationError] = useState(false);
 
   // Customer search states
   const [searchQuery, setSearchQuery] = useState("");
@@ -245,22 +247,31 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     }
   }, []);
 
-  useEffect(() => {
-    if (requestedTime && duration) {
-      const endTime = calculateEndTime();
-      if (endTime) {
-        const [hours, minutes] = endTime.split(":").map(Number);
-        const totalMinutes = hours * 60 + minutes;
+  // Update the useEffect that handles end time validation
+useEffect(() => {
+  if (requestedTime && duration && selectedSlot) {
+    const endTime = calculateEndTime();
+    if (endTime) {
+      const [hours, minutes] = endTime.split(":").map(Number);
+      const totalMinutes = hours * 60 + minutes;
+      const slotEndMinutes = timeToMinutes(selectedSlot.end);
 
+      // Check if end time exceeds the selected slot
+      if (totalMinutes > slotEndMinutes) {
+        setDurationError(true);
+        showToast.error(`End time (${endTime}) exceeds the selected slot (${selectedSlot.start} - ${selectedSlot.end}). Please adjust the duration.`);
+      } else if (totalMinutes > 18 * 60) {
         // Check if end time is after 18:00 (6:00 PM)
-        if (totalMinutes > 18 * 60) {
-          setShowEndTimeWarning(true);
-        } else {
-          setShowEndTimeWarning(false);
-        }
+        setShowEndTimeWarning(true);
+        setDurationError(false);
+      } else {
+        setShowEndTimeWarning(false);
+        setDurationError(false);
       }
     }
-  }, [requestedTime, duration]);
+  }
+}, [requestedTime, duration, selectedSlot]);
+
   // Replace the existing useEffect for inquiry loading
   useEffect(() => {
     if (inquiry && hasFetchedInitialData) {
@@ -2004,7 +2015,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                                   />
                                 </div>
 
-                                <div className="space-y-1 w-full">
+                                {/* <div className="space-y-1 w-full">
                                   <Label className="text-xs text-gray-600">
                                     Duration *
                                   </Label>
@@ -2045,6 +2056,61 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                                       Hrs
                                     </span>
                                   </div>
+                                </div> */}
+
+
+
+                                <div className="space-y-1 w-full">
+                                   <Label className="text-xs text-gray-600">
+                                    Duration *
+                                  </Label>
+                                  <div className="flex w-full ">
+                                  <Input
+                                    type="number"
+                                    step="0.5"
+                                    min="0.5"
+                                    max={(() => {
+                                      if (!selectedSlot || !requestedTime)
+                                        return 8;
+                                      const requestedMinutes =
+                                        timeToMinutes(requestedTime);
+                                      const slotEndMinutes = timeToMinutes(
+                                        selectedSlot.end
+                                      );
+                                      const remainingMinutes =
+                                        slotEndMinutes - requestedMinutes;
+                                      const maxHours = remainingMinutes / 60;
+                                      return Math.max(
+                                        0.5,
+                                        Math.floor(maxHours * 2) / 2
+                                      );
+                                    })()}
+                                    value={duration}
+                                    onChange={(e) => {
+                                      const newDuration = e.target.value;
+                                      setDuration(newDuration);
+                                      setFormData((prev) => ({
+                                        ...prev,
+                                        custom_duration: newDuration,
+                                      }));
+                                    }}
+                                    placeholder="1.5"
+                                    className={`text-sm h-8 rounded-r-none ${
+                                      durationError
+                                        ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                                        : ""
+                                    }`}
+                                  />
+                                  <span className="flex items-center justify-center px-3 text-xs text-gray-700 border border-l-0 rounded-r-md bg-gray-50">
+                                    Hrs
+                                  </span>
+                                </div>
+                                
+                                {durationError && (
+                                  <p className="text-xs text-red-500 mt-1">
+                                    Duration exceeds available time slot
+                                  </p>
+                                )}
                                 </div>
 
                                 <div className="space-y-1">
