@@ -9,17 +9,17 @@ import { VitePWA } from 'vite-plugin-pwa'
 export default defineConfig(({ mode }) => {
   // Load env file based on `mode` in the current working directory.
   const env = loadEnv(mode, process.cwd(), '')
-  
+
   // Determine if we're in development mode
   const isDev = mode === 'development'
-  
+
   // Get the API base URL from environment variables
   const apiBaseUrl = env.VITE_API_BASE_URL || (isDev ? 'http://eits.local:8000/' : '')
 
 
   return {
     plugins: [
-      react(), 
+      react(),
       tailwindcss(),
       VitePWA({
         registerType: 'autoUpdate',
@@ -39,10 +39,14 @@ export default defineConfig(({ mode }) => {
             }
           ]
         },
-        includeAssets: ['logo.jpg', 'favicon.ico'],
+        includeAssets: ['favicon.ico',
+          'favicon-16x16.png',
+          'favicon-32x32.png',
+          'apple-touch-icon.png',
+          'logo.jpg'],
         manifest: {
-          "name": "EITS Services - Professional Home Solutions",
-          "short_name": "EITS Services",
+          "name": "EITS",
+          "short_name": "EITS",
           "description": "Professional home improvement services including woodwork, painting, electrical, plumbing, and equipment maintenance.",
           "start_url": "/",
           "display": "standalone",
@@ -54,23 +58,55 @@ export default defineConfig(({ mode }) => {
           "categories": ["business", "utilities", "productivity"],
           "icons": [
             {
-              "src": "/logo.jpg",
-              "sizes": "96x96",
-              "type": "image/jpeg",
-              "purpose": "any"
-            },
-            {
-              "src": "/logo.jpg",
-              "sizes": "192x192", 
-              "type": "image/jpeg",
-              "purpose": "any maskable"
-            },
-            {
-              "src": "/logo.jpg",
-              "sizes": "512x512",
-              "type": "image/jpeg", 
-              "purpose": "any maskable"
-            }
+        "src": "/favicon.ico",
+        "sizes": "16x16 32x32",
+        "type": "image/x-icon",
+        "purpose": "favicon"
+      },
+      {
+        "src": "/favicon-16x16.png",
+        "sizes": "16x16",
+        "type": "image/png",
+        "purpose": "favicon"
+      },
+      {
+        "src": "/favicon-32x32.png",
+        "sizes": "32x32",
+        "type": "image/png",
+        "purpose": "favicon"
+      },
+      // PWA icons
+      {
+        "src": "/logo.jpg",
+        "sizes": "96x96",
+        "type": "image/jpeg",
+        "purpose": "any"
+      },
+      {
+        "src": "/logo.jpg",
+        "sizes": "192x192", 
+        "type": "image/jpeg",
+        "purpose": "any maskable"
+      },
+      {
+        "src": "/logo.jpg",
+        "sizes": "256x256", 
+        "type": "image/jpeg",
+        "purpose": "any maskable"
+      },
+      {
+        "src": "/logo.jpg",
+        "sizes": "512x512",
+        "type": "image/jpeg", 
+        "purpose": "any maskable"
+      },
+      // Apple touch icon
+      {
+        "src": "/apple-touch-icon.png",
+        "sizes": "180x180",
+        "type": "image/png",
+        "purpose": "any"
+      }
           ],
           "shortcuts": [
             {
@@ -87,7 +123,7 @@ export default defineConfig(({ mode }) => {
               ]
             },
             {
-              "name": "Our Services", 
+              "name": "Our Services",
               "short_name": "Services",
               "description": "View all our home improvement services",
               "url": "/#services",
@@ -129,11 +165,11 @@ export default defineConfig(({ mode }) => {
             });
             proxy.on('proxyReq', (proxyReq, req, _res) => {
               console.log('🔵 Sending Request:', req.method, req.url);
-              
+
               // Add CORS headers for local development
               proxyReq.setHeader('Access-Control-Allow-Origin', 'http://localhost:3000');
               proxyReq.setHeader('Access-Control-Allow-Credentials', 'true');
-              
+
               // Only add JSON headers for non-multipart requests
               const contentType = req.headers['content-type'];
               if (!contentType || !contentType.includes('multipart/form-data')) {
@@ -147,7 +183,7 @@ export default defineConfig(({ mode }) => {
               } else {
                 console.log('🎯 Multipart request detected - preserving original headers');
               }
-              
+
               const cookieHeader = req.headers.cookie;
               if (cookieHeader) {
                 console.log('🍪 Cookies:', cookieHeader);
@@ -155,11 +191,11 @@ export default defineConfig(({ mode }) => {
             });
             proxy.on('proxyRes', (proxyRes, req, _res) => {
               console.log('🟢 Response:', proxyRes.statusCode, req.url);
-              
+
               // Add CORS headers to response
               proxyRes.headers['Access-Control-Allow-Origin'] = 'http://localhost:3000';
               proxyRes.headers['Access-Control-Allow-Credentials'] = 'true';
-              
+
               if (proxyRes.headers['set-cookie']) {
                 console.log('🍪 Set-Cookie:', proxyRes.headers['set-cookie']);
               }
@@ -185,7 +221,7 @@ export default defineConfig(({ mode }) => {
             });
             proxy.on('proxyReq', (proxyReq, req, _res) => {
               console.log('🔵 Sending Request:', req.method, req.url);
-              
+
               // Only add JSON headers for non-multipart requests
               const contentType = req.headers['content-type'];
               if (!contentType || !contentType.includes('multipart/form-data')) {
@@ -199,7 +235,7 @@ export default defineConfig(({ mode }) => {
               } else {
                 console.log('🎯 Multipart request detected - preserving original headers');
               }
-              
+
               const cookieHeader = req.headers.cookie;
               if (cookieHeader) {
                 console.log('🍪 Cookies:', cookieHeader);
