@@ -33,7 +33,7 @@ import {
   AccordionTrigger,
 } from "../ui/accordion";
 import { Button } from "../ui/button";
-import { Calendar } from "../ui/calendar";
+// import { Calendar } from "../ui/calendar";
 import { Card, CardContent } from "../ui/card";
 import {
   Form,
@@ -44,7 +44,7 @@ import {
   FormMessage,
 } from "../ui/form";
 import { Input } from "../ui/input";
-import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
+import { Popover,PopoverTrigger } from "../ui/popover";
 import { Textarea } from "../ui/textarea";
 import InspectionHeader from "./components/InspectionHeader";
 import MediaUpload from "./components/MediaUpload/MediaUpload";
@@ -632,105 +632,69 @@ const CreateInspection = () => {
                         </AccordionTrigger>
 
                         <AccordionContent className="bg-white">
-                          <div className="grid grid-cols-2 md:grid-cols-2 gap-4 px-5 py-2">
-                            <div className="space-y-2">
-                              <FormField
-                                control={form.control}
-                                name="inspection_date"
-                                render={({ field }) => (
-                                  <FormItem>
-                                    <FormLabel className="text-gray-700 text-sm font-medium">
-                                      Inspection Date
-                                    </FormLabel>
-                                    <Popover>
-                                      <PopoverTrigger asChild>
-                                        <FormControl>
-                                          <Button
-                                            variant="outline"
-                                            disabled={isReadOnly}
-                                            className="w-full justify-between text-left font-normal bg-white border-gray-300 hover:bg-gray-50 h-10"
-                                          >
-                                            {field.value ? (
-                                              <span className="text-gray-900">
-                                                {format(
-                                                  field.value,
-                                                  "dd/MM/yyyy"
-                                                )}
-                                              </span>
-                                            ) : (
-                                              <span className="text-gray-500">
-                                                Select date
-                                              </span>
-                                            )}
-                                            <CalendarIcon className="h-4 w-4 text-gray-500" />
-                                          </Button>
-                                        </FormControl>
-                                      </PopoverTrigger>
-                                      {!isReadOnly && (
-                                        <PopoverContent
-                                          className="w-auto p-0 bg-white"
-                                          align="start"
-                                        >
-                                          <Calendar
-                                            mode="single"
-                                            selected={field.value}
-                                            onSelect={field.onChange}
-                                            disabled={(date) => {
-                                              // Disable dates before today
-                                              const today = new Date();
-                                              today.setHours(0, 0, 0, 0);
-                                              return date < today;
-                                            }}
-                                            modifiers={{
-                                              highlighted: field.value
-                                                ? field.value
-                                                : undefined,
-                                            }}
-                                            modifiersStyles={{
-                                              highlighted: {
-                                                backgroundColor: "#3b82f6", // blue-500
-                                                color: "white",
-                                                borderRadius: "4px",
-                                              },
-                                            }}
-                                            initialFocus
-                                            className="rounded-md border bg-white *:focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                                          />
-                                        </PopoverContent>
-                                      )}
-                                    </Popover>
-                                    <FormMessage className="text-xs" />
-                                  </FormItem>
-                                )}
-                              />
-                            </div>
+  <fieldset disabled>
+    <div className="grid grid-cols-2 md:grid-cols-2 gap-4 px-5 py-2">
+      <div className="space-y-2">
+        <FormField
+          control={form.control}
+          name="inspection_date"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-gray-700 text-sm font-medium">
+                Inspection Date
+              </FormLabel>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <FormControl>
+                    <Button
+                      variant="outline"
+                      className="w-full justify-between text-left font-normal bg-gray-100 border-gray-300 cursor-not-allowed h-10"
+                    >
+                      {field.value ? (
+                        <span className="text-gray-900">
+                          {format(field.value, "dd/MM/yyyy")}
+                        </span>
+                      ) : (
+                        <span className="text-gray-400">Select date</span>
+                      )}
+                      <CalendarIcon className="h-4 w-4 text-gray-400" />
+                    </Button>
+                  </FormControl>
+                </PopoverTrigger>
+              </Popover>
+              <FormMessage className="text-xs" />
+            </FormItem>
+          )}
+        />
+      </div>
 
-                            <div className="space-y-2">
-                              <FormField
-                                control={form.control}
-                                name="inspection_time"
-                                render={({ field }) => (
-                                  <FormItem>
-                                    <FormLabel className="text-gray-700 text-sm font-medium">
-                                      Inspection Time
-                                    </FormLabel>
-                                    <FormControl>
-                                      <div className="relative">
-                                        <Input
-                                          type="time"
-                                          disabled={isReadOnly}
-                                          className="pl-3 bg-white border-gray-300 h-10 text-gray-900"
-                                          {...field}
-                                        />
-                                      </div>
-                                    </FormControl>
-                                    <FormMessage className="text-xs" />
-                                  </FormItem>
-                                )}
-                              />
-                            </div>
-                          </div>
-                        </AccordionContent>
+      <div className="space-y-2">
+        <FormField
+          control={form.control}
+          name="inspection_time"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-gray-700 text-sm font-medium">
+                Inspection Time
+              </FormLabel>
+              <FormControl>
+                <div className="relative">
+                  <Input
+                    type="time"
+                    className="pl-3 bg-gray-100 border-gray-300 text-gray-900 cursor-not-allowed h-10"
+                    {...field}
+                  />
+                </div>
+              </FormControl>
+              <FormMessage className="text-xs" />
+            </FormItem>
+          )}
+        />
+      </div>
+    </div>
+  </fieldset>
+</AccordionContent>
+
                       </AccordionItem>
 
                       {/* Site Dimensions Section */}

@@ -953,158 +953,259 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     setShowCustomerModal(true);
   };
 
+  // const handleSaveCustomer = async () => {
+  //   if (!customerForm.name.trim()) {
+  //     showToast.error("Customer name is required");
+  //     return;
+  //   }
+
+  //   if (!customerForm.phone || customerForm.phone.length < 5) {
+  //     showToast.error("Valid mobile number is required");
+  //     return;
+  //   }
+
+  //   try {
+  //     setIsCreatingCustomer(true);
+
+  //     // For new inquiries, just update local state without creating/updating lead
+  //     if (!inquiry) {
+  //       const updatedCustomer = {
+  //         customer_name: customerForm.name.trim(),
+  //         mobile_no: customerForm.phone,
+  //         email_id: customerForm.email || "",
+  //         name: selectedCustomer?.name || "",
+  //         lead_name: selectedCustomer?.lead_name || "",
+  //       };
+        
+        
+
+  //       setSelectedCustomer(updatedCustomer);
+  //       setSearchQuery(updatedCustomer.customer_name);
+
+  //       // Update form data locally - ensure custom_jobtype is string[]
+  //       setFormData((prev) => ({
+  //         ...prev,
+  //         lead_name: updatedCustomer.customer_name,
+  //         email_id: updatedCustomer.email_id,
+  //         mobile_no: updatedCustomer.mobile_no,
+  //         custom_jobtype: customerForm.jobType, // This is already string[]
+  //       }));
+        
+
+  //       setShowCustomerModal(false);
+  //       setCustomerForm({
+  //         name: "",
+  //         email: "",
+  //         phone: "+971 ",
+  //         jobType: [],
+  //       });
+
+  //       showToast.success(`Customer details updated`);
+  //       return;
+  //     }
+
+  //     // For existing inquiries, update the lead
+  //     const leadId = formData.name || selectedCustomer?.name;
+  //     if (!leadId) {
+  //       throw new Error("No lead ID found for update");
+  //     }
+
+  //     // Fetch fresh document before updating
+  //     const freshLead = await frappeAPI.makeAuthenticatedRequest(
+  //       "GET",
+  //       `/api/resource/Lead/${leadId}`
+  //     );
+
+  //     if (!freshLead?.data) {
+  //       throw new Error("Could not fetch fresh lead data");
+  //     }
+
+  //     // Convert jobType array to the format expected by the API
+  //     const apiJobTypeFormat = customerForm.jobType.map((jobType) => ({
+  //       job_type: jobType,
+  //     }));
+
+  //     const newLeadData = {
+  //       ...freshLead.data,
+  //       lead_name: customerForm.name.trim(),
+  //       email_id: customerForm.email || "",
+  //       mobile_no: customerForm.phone,
+  //       custom_jobtype: apiJobTypeFormat, // Use API format
+  //     };
+
+  //     // Remove undefined fields
+  //     Object.keys(newLeadData).forEach((key) => {
+  //       if (newLeadData[key] === undefined) {
+  //         delete newLeadData[key];
+  //       }
+  //     });
+
+  //     let updatedLead;
+  //     if (modalMode === "create") {
+  //       const formattedData = formatSubmissionData({
+  //         lead_name: customerForm.name.trim(),
+  //         email_id: customerForm.email || "",
+  //         mobile_no: customerForm.phone,
+  //         custom_jobtype: customerForm.jobType, // Helper will convert to API format
+  //         custom_budget_range: "",
+  //         custom_project_urgency: "",
+  //         source: "",
+  //         custom_property_name__number: "",
+  //         custom_emirate: "",
+  //         custom_area: "",
+  //         custom_community: "",
+  //         custom_street_name: "",
+  //         custom_property_area: "",
+  //         custom_property_category: "",
+  //         custom_special_requirements: "",
+  //       });
+  //       updatedLead = await createLead(formattedData);
+  //     } else {
+  //       updatedLead = await updateLead(leadId, newLeadData);
+  //     }
+
+  //     if (!updatedLead) {
+  //       throw new Error("Failed to save lead");
+  //     }
+
+  //     // Convert API response format back to form format (string[])
+  //     const convertedJobTypes = Array.isArray(updatedLead.custom_jobtype)
+  //       ? updatedLead.custom_jobtype.map((item: any) =>
+  //           typeof item === "string" ? item : item.job_type
+  //         )
+  //       : customerForm.jobType;
+
+  //     // Update formData with proper type conversion
+  //     setFormData((prev: LeadFormData) => ({
+  //       ...prev,
+  //       ...updatedLead,
+  //       custom_jobtype: convertedJobTypes, // Ensure this is string[]
+  //       custom_preferred_inspection_date:
+  //         updatedLead.custom_preferred_inspection_date
+  //           ? new Date(updatedLead.custom_preferred_inspection_date)
+  //           : prev.custom_preferred_inspection_date,
+  //     }));
+
+  //     // Update date if it exists
+  //     if (updatedLead.custom_preferred_inspection_date) {
+  //       setDate(new Date(updatedLead.custom_preferred_inspection_date));
+  //     }
+
+  //     // Update reference input visibility
+  //     setShowReferenceInput(
+  //       updatedLead.source === "Reference" ||
+  //         updatedLead.source === "Supplier Reference"
+  //     );
+
+  //     // Update the selected customer with new data
+  //     const updatedCustomer = {
+  //       customer_name: updatedLead.lead_name || customerForm.name,
+  //       mobile_no: updatedLead.mobile_no || customerForm.phone,
+  //       email_id: updatedLead.email_id || customerForm.email,
+  //       name: updatedLead.name,
+  //       lead_name: updatedLead.name,
+  //     };
+
+  //     setSelectedCustomer(updatedCustomer);
+  //     setSearchQuery(updatedCustomer.customer_name);
+
+  //     setShowCustomerModal(false);
+  //     setCustomerForm({
+  //       name: "",
+  //       email: "",
+  //       phone: "+971 ",
+  //       jobType: [],
+  //     });
+
+  //     showToast.success(
+  //       `Customer "${updatedCustomer.customer_name}" updated successfully!`
+  //     );
+  //   } catch (error) {
+  //     console.error("Error saving lead:", error);
+
+  //     showToast.error("Failed to save customer");
+  //   } finally {
+  //     setIsCreatingCustomer(false);
+  //   }
+  // };
+
   const handleSaveCustomer = async () => {
-    if (!customerForm.name.trim()) {
-      showToast.error("Customer name is required");
-      return;
-    }
+  if (!customerForm.name.trim()) {
+    showToast.error("Customer name is required");
+    return;
+  }
 
-    if (!customerForm.phone || customerForm.phone.length < 5) {
-      showToast.error("Valid mobile number is required");
-      return;
-    }
+  if (!customerForm.phone || customerForm.phone.length < 5) {
+    showToast.error("Valid mobile number is required");
+    return;
+  }
+  if (customerForm.jobType.length === 0) {
+    showToast.error("At least one job type is required");
+    return;
+  }
 
-    try {
-      setIsCreatingCustomer(true);
+  try {
+    setIsCreatingCustomer(true);
 
-      // For new inquiries, just update local state without creating/updating lead
-      if (!inquiry) {
-        const updatedCustomer = {
-          customer_name: customerForm.name.trim(),
-          mobile_no: customerForm.phone,
-          email_id: customerForm.email || "",
-          name: selectedCustomer?.name || "",
-          lead_name: selectedCustomer?.lead_name || "",
-        };
-        
-        
-
-        setSelectedCustomer(updatedCustomer);
-        setSearchQuery(updatedCustomer.customer_name);
-
-        // Update form data locally - ensure custom_jobtype is string[]
-        setFormData((prev) => ({
-          ...prev,
-          lead_name: updatedCustomer.customer_name,
-          email_id: updatedCustomer.email_id,
-          mobile_no: updatedCustomer.mobile_no,
-          custom_jobtype: customerForm.jobType, // This is already string[]
-        }));
-        
-
-        setShowCustomerModal(false);
-        setCustomerForm({
-          name: "",
-          email: "",
-          phone: "+971 ",
-          jobType: [],
-        });
-
-        showToast.success(`Customer details updated`);
-        return;
-      }
-
-      // For existing inquiries, update the lead
-      const leadId = formData.name || selectedCustomer?.name;
-      if (!leadId) {
-        throw new Error("No lead ID found for update");
-      }
-
-      // Fetch fresh document before updating
-      const freshLead = await frappeAPI.makeAuthenticatedRequest(
-        "GET",
-        `/api/resource/Lead/${leadId}`
-      );
-
-      if (!freshLead?.data) {
-        throw new Error("Could not fetch fresh lead data");
-      }
-
-      // Convert jobType array to the format expected by the API
-      const apiJobTypeFormat = customerForm.jobType.map((jobType) => ({
-        job_type: jobType,
-      }));
-
-      const newLeadData = {
-        ...freshLead.data,
+    // For new inquiries, create the lead immediately
+    if (!inquiry) {
+      const formattedData = formatSubmissionData({
         lead_name: customerForm.name.trim(),
         email_id: customerForm.email || "",
         mobile_no: customerForm.phone,
-        custom_jobtype: apiJobTypeFormat, // Use API format
-      };
-
-      // Remove undefined fields
-      Object.keys(newLeadData).forEach((key) => {
-        if (newLeadData[key] === undefined) {
-          delete newLeadData[key];
-        }
+        custom_jobtype: customerForm.jobType, // Helper will convert to API format
+        custom_budget_range: "",
+        custom_project_urgency: "",
+        source: "",
+        custom_property_name__number: "",
+        custom_emirate: "",
+        custom_area: "",
+        custom_community: "",
+        custom_street_name: "",
+        custom_property_area: "",
+        custom_property_category: "",
+        custom_special_requirements: "",
       });
-
-      let updatedLead;
-      if (modalMode === "create") {
-        const formattedData = formatSubmissionData({
-          lead_name: customerForm.name.trim(),
-          email_id: customerForm.email || "",
-          mobile_no: customerForm.phone,
-          custom_jobtype: customerForm.jobType, // Helper will convert to API format
-          custom_budget_range: "",
-          custom_project_urgency: "",
-          source: "",
-          custom_property_name__number: "",
-          custom_emirate: "",
-          custom_area: "",
-          custom_community: "",
-          custom_street_name: "",
-          custom_property_area: "",
-          custom_property_category: "",
-          custom_special_requirements: "",
-        });
-        updatedLead = await createLead(formattedData);
-      } else {
-        updatedLead = await updateLead(leadId, newLeadData);
-      }
-
-      if (!updatedLead) {
-        throw new Error("Failed to save lead");
+      
+      // Create the lead via API
+      const newLead = await createLead(formattedData);
+      console.log("Newly created lead:", newLead);
+      if (!newLead) {
+        throw new Error("Failed to create lead");
       }
 
       // Convert API response format back to form format (string[])
-      const convertedJobTypes = Array.isArray(updatedLead.custom_jobtype)
-        ? updatedLead.custom_jobtype.map((item: any) =>
+      const convertedJobTypes = Array.isArray(newLead.custom_jobtype)
+        ? newLead.custom_jobtype.map((item: any) =>
             typeof item === "string" ? item : item.job_type
           )
         : customerForm.jobType;
 
-      // Update formData with proper type conversion
-      setFormData((prev: LeadFormData) => ({
+        
+      // Update form data with the new lead
+      setFormData((prev) => ({
         ...prev,
-        ...updatedLead,
+        ...newLead,
+        name: newLead.name, // Set the lead ID
         custom_jobtype: convertedJobTypes, // Ensure this is string[]
         custom_preferred_inspection_date:
-          updatedLead.custom_preferred_inspection_date
-            ? new Date(updatedLead.custom_preferred_inspection_date)
+          newLead.custom_preferred_inspection_date
+            ? new Date(newLead.custom_preferred_inspection_date)
             : prev.custom_preferred_inspection_date,
       }));
 
-      // Update date if it exists
-      if (updatedLead.custom_preferred_inspection_date) {
-        setDate(new Date(updatedLead.custom_preferred_inspection_date));
-      }
+      
 
-      // Update reference input visibility
-      setShowReferenceInput(
-        updatedLead.source === "Reference" ||
-          updatedLead.source === "Supplier Reference"
-      );
-
-      // Update the selected customer with new data
+      // Update selected customer
       const updatedCustomer = {
-        customer_name: updatedLead.lead_name || customerForm.name,
-        mobile_no: updatedLead.mobile_no || customerForm.phone,
-        email_id: updatedLead.email_id || customerForm.email,
-        name: updatedLead.name,
-        lead_name: updatedLead.name,
+        customer_name: newLead.lead_name || customerForm.name,
+        mobile_no: newLead.mobile_no || customerForm.phone,
+        email_id: newLead.email_id || customerForm.email,
+        name: newLead.name,
+        lead_name: newLead.name,
       };
+
+      console.log("Updated customer after lead creation:", updatedCustomer);
 
       setSelectedCustomer(updatedCustomer);
       setSearchQuery(updatedCustomer.customer_name);
@@ -1117,202 +1218,111 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
         jobType: [],
       });
 
-      showToast.success(
-        `Customer "${updatedCustomer.customer_name}" updated successfully!`
-      );
-    } catch (error) {
-      console.error("Error saving lead:", error);
-
-      showToast.error("Failed to save customer");
-    } finally {
-      setIsCreatingCustomer(false);
+      showToast.success(`Lead "${updatedCustomer.customer_name}" created successfully!`);
+      return;
     }
-  };
 
-//   const handleSaveCustomer = async () => {
-//   if (!customerForm.name.trim()) {
-//     showToast.error("Customer name is required");
-//     return;
-//   }
+    // For existing inquiries, update the lead (existing logic)
+    const leadId = formData.name || selectedCustomer?.name;
+    if (!leadId) {
+      throw new Error("No lead ID found for update");
+    }
 
-//   if (!customerForm.phone || customerForm.phone.length < 5) {
-//     showToast.error("Valid mobile number is required");
-//     return;
-//   }
+    // Fetch fresh document before updating
+    const freshLead = await frappeAPI.makeAuthenticatedRequest(
+      "GET",
+      `/api/resource/Lead/${leadId}`
+    );
+    console.log("Fetched fresh lead data:", freshLead);
 
-//   try {
-//     setIsCreatingCustomer(true);
+    if (!freshLead?.data) {
+      throw new Error("Could not fetch fresh lead data");
+    }
 
-//     // For new inquiries, create the lead immediately
-//     if (!inquiry) {
-//       const formattedData = formatSubmissionData({
-//         lead_name: customerForm.name.trim(),
-//         email_id: customerForm.email || "",
-//         mobile_no: customerForm.phone,
-//         custom_jobtype: customerForm.jobType, // Helper will convert to API format
-//         custom_budget_range: "",
-//         custom_project_urgency: "",
-//         source: "",
-//         custom_property_name__number: "",
-//         custom_emirate: "",
-//         custom_area: "",
-//         custom_community: "",
-//         custom_street_name: "",
-//         custom_property_area: "",
-//         custom_property_category: "",
-//         custom_special_requirements: "",
-//       });
-      
-//       // Create the lead via API
-//       const newLead = await createLead(formattedData);
-      
-//       if (!newLead) {
-//         throw new Error("Failed to create lead");
-//       }
+    // Convert jobType array to the format expected by the API
+    const apiJobTypeFormat = customerForm.jobType.map((jobType) => ({
+      job_type: jobType,
+    }));
 
-//       // Convert API response format back to form format (string[])
-//       const convertedJobTypes = Array.isArray(newLead.custom_jobtype)
-//         ? newLead.custom_jobtype.map((item: any) =>
-//             typeof item === "string" ? item : item.job_type
-//           )
-//         : customerForm.jobType;
+    const newLeadData = {
+      ...freshLead.data,
+      lead_name: customerForm.name.trim(),
+      email_id: customerForm.email || "",
+      mobile_no: customerForm.phone,
+      custom_jobtype: apiJobTypeFormat, // Use API format
+    };
 
-//       // Update form data with the new lead
-//       setFormData((prev) => ({
-//         ...prev,
-//         ...newLead,
-//         name: newLead.name, // Set the lead ID
-//         custom_jobtype: convertedJobTypes, // Ensure this is string[]
-//         custom_preferred_inspection_date:
-//           newLead.custom_preferred_inspection_date
-//             ? new Date(newLead.custom_preferred_inspection_date)
-//             : prev.custom_preferred_inspection_date,
-//       }));
+    // Remove undefined fields
+    Object.keys(newLeadData).forEach((key) => {
+      if (newLeadData[key] === undefined) {
+        delete newLeadData[key];
+      }
+    });
 
-//       // Update selected customer
-//       const updatedCustomer = {
-//         customer_name: newLead.lead_name || customerForm.name,
-//         mobile_no: newLead.mobile_no || customerForm.phone,
-//         email_id: newLead.email_id || customerForm.email,
-//         name: newLead.name,
-//         lead_name: newLead.name,
-//       };
+    const updatedLead = await updateLead(leadId, newLeadData);
 
-//       setSelectedCustomer(updatedCustomer);
-//       setSearchQuery(updatedCustomer.customer_name);
+    if (!updatedLead) {
+      throw new Error("Failed to update lead");
+    }
 
-//       setShowCustomerModal(false);
-//       setCustomerForm({
-//         name: "",
-//         email: "",
-//         phone: "+971 ",
-//         jobType: [],
-//       });
+    // Convert API response format back to form format (string[])
+    const convertedJobTypes = Array.isArray(updatedLead.custom_jobtype)
+      ? updatedLead.custom_jobtype.map((item: any) =>
+          typeof item === "string" ? item : item.job_type
+        )
+      : customerForm.jobType;
 
-//       showToast.success(`Lead "${updatedCustomer.customer_name}" created successfully!`);
-//       return;
-//     }
+    // Update formData with proper type conversion
+    setFormData((prev: LeadFormData) => ({
+      ...prev,
+      ...updatedLead,
+      custom_jobtype: convertedJobTypes, // Ensure this is string[]
+      custom_preferred_inspection_date:
+        updatedLead.custom_preferred_inspection_date
+          ? new Date(updatedLead.custom_preferred_inspection_date)
+          : prev.custom_preferred_inspection_date,
+    }));
 
-//     // For existing inquiries, update the lead (existing logic)
-//     const leadId = formData.name || selectedCustomer?.name;
-//     if (!leadId) {
-//       throw new Error("No lead ID found for update");
-//     }
+    // Update date if it exists
+    if (updatedLead.custom_preferred_inspection_date) {
+      setDate(new Date(updatedLead.custom_preferred_inspection_date));
+    }
 
-//     // Fetch fresh document before updating
-//     const freshLead = await frappeAPI.makeAuthenticatedRequest(
-//       "GET",
-//       `/api/resource/Lead/${leadId}`
-//     );
+    // Update reference input visibility
+    setShowReferenceInput(
+      updatedLead.source === "Reference" ||
+        updatedLead.source === "Supplier Reference"
+    );
 
-//     if (!freshLead?.data) {
-//       throw new Error("Could not fetch fresh lead data");
-//     }
+    // Update the selected customer with new data
+    const updatedCustomer = {
+      customer_name: updatedLead.lead_name || customerForm.name,
+      mobile_no: updatedLead.mobile_no || customerForm.phone,
+      email_id: updatedLead.email_id || customerForm.email,
+      name: updatedLead.name,
+      lead_name: updatedLead.name,
+    };
 
-//     // Convert jobType array to the format expected by the API
-//     const apiJobTypeFormat = customerForm.jobType.map((jobType) => ({
-//       job_type: jobType,
-//     }));
+    setSelectedCustomer(updatedCustomer);
+    setSearchQuery(updatedCustomer.customer_name);
 
-//     const newLeadData = {
-//       ...freshLead.data,
-//       lead_name: customerForm.name.trim(),
-//       email_id: customerForm.email || "",
-//       mobile_no: customerForm.phone,
-//       custom_jobtype: apiJobTypeFormat, // Use API format
-//     };
+    setShowCustomerModal(false);
+    setCustomerForm({
+      name: "",
+      email: "",
+      phone: "+971 ",
+      jobType: [],
+    });
 
-//     // Remove undefined fields
-//     Object.keys(newLeadData).forEach((key) => {
-//       if (newLeadData[key] === undefined) {
-//         delete newLeadData[key];
-//       }
-//     });
-
-//     const updatedLead = await updateLead(leadId, newLeadData);
-
-//     if (!updatedLead) {
-//       throw new Error("Failed to update lead");
-//     }
-
-//     // Convert API response format back to form format (string[])
-//     const convertedJobTypes = Array.isArray(updatedLead.custom_jobtype)
-//       ? updatedLead.custom_jobtype.map((item: any) =>
-//           typeof item === "string" ? item : item.job_type
-//         )
-//       : customerForm.jobType;
-
-//     // Update formData with proper type conversion
-//     setFormData((prev: LeadFormData) => ({
-//       ...prev,
-//       ...updatedLead,
-//       custom_jobtype: convertedJobTypes, // Ensure this is string[]
-//       custom_preferred_inspection_date:
-//         updatedLead.custom_preferred_inspection_date
-//           ? new Date(updatedLead.custom_preferred_inspection_date)
-//           : prev.custom_preferred_inspection_date,
-//     }));
-
-//     // Update date if it exists
-//     if (updatedLead.custom_preferred_inspection_date) {
-//       setDate(new Date(updatedLead.custom_preferred_inspection_date));
-//     }
-
-//     // Update reference input visibility
-//     setShowReferenceInput(
-//       updatedLead.source === "Reference" ||
-//         updatedLead.source === "Supplier Reference"
-//     );
-
-//     // Update the selected customer with new data
-//     const updatedCustomer = {
-//       customer_name: updatedLead.lead_name || customerForm.name,
-//       mobile_no: updatedLead.mobile_no || customerForm.phone,
-//       email_id: updatedLead.email_id || customerForm.email,
-//       name: updatedLead.name,
-//       lead_name: updatedLead.name,
-//     };
-
-//     setSelectedCustomer(updatedCustomer);
-//     setSearchQuery(updatedCustomer.customer_name);
-
-//     setShowCustomerModal(false);
-//     setCustomerForm({
-//       name: "",
-//       email: "",
-//       phone: "+971 ",
-//       jobType: [],
-//     });
-
-//     showToast.success(`Lead "${updatedCustomer.customer_name}" updated successfully!`);
+    showToast.success(`Lead "${updatedCustomer.customer_name}" updated successfully!`);
     
-//   } catch (error) {
-//     console.error("Error saving lead:", error);
-//     showToast.error("Failed to save customer");
-//   } finally {
-//     setIsCreatingCustomer(false);
-//   }
-// };
+  } catch (error) {
+    console.error("Error saving lead:", error);
+    showToast.error("Failed to save customer");
+  } finally {
+    setIsCreatingCustomer(false);
+  }
+};
   const validateRequestedTime = () => {
     if (!requestedTime || !selectedSlot) return false;
 
