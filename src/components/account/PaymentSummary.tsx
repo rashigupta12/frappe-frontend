@@ -224,21 +224,24 @@ const PaymentSummary: React.FC<Props> = ({
 
         {/* quick mode filter buttons */}
         <div className="flex gap-2 mt-2">
-          {(["cash", "card", "bank", "credit"] as const).map((m) => (
-            <Button
-              key={m}
-              variant={modeFilter === m ? "default" : "outline"}
-              size="sm"
-              onClick={() => {
-                const newMode = modeFilter === m ? "all" : m;
-                setModeFilter(newMode);
-                updateFilterState(searchQuery, newMode, fromDate, toDate);
-              }}
-              className="h-8 px-3 text-xs"
-            >
-              {m === "card" ? "Credit Card" : m.charAt(0).toUpperCase() + m.slice(1)}
-            </Button>
-          ))}
+         {(["cash", "card", "bank", "credit"] as const).map((m) => (
+  <Button
+    key={m}
+    variant="outline"
+    size="sm"
+    onClick={() => {
+      const newMode = modeFilter === m ? "all" : m;
+      setModeFilter(newMode);
+      updateFilterState(searchQuery, newMode, fromDate, toDate);
+    }}
+    className={`h-8 px-3 text-xs ${
+      modeFilter === m ? "border-emerald-600 text-black  " : " border-gray-200"
+    }`}
+  >
+    {m === "card" ? "Credit Card" : m.charAt(0).toUpperCase() + m.slice(1)}
+  </Button>
+))}
+
         </div>
 
         {/* collapsible advanced filters */}
