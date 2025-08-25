@@ -160,6 +160,26 @@ export default function AccountDashboard() {
               Receipts
             </button>
           </nav>
+          <div className="flex-shrink-0 p-2 sm:p-3   border-t border-emerald-100 capitalize ">
+            <div className="bg-emerald-50 rounded-lg border border-emerald-100 p-2 sm:p-3 ">
+              <div className="min-w-0"> {/* min-w-0 allows flex children to shrink below content size */}
+                <div className="text-xs sm:text-sm font-medium text-black truncate mb-1">
+                  {user?.full_name || user?.username || "User"}
+                </div>
+                {user?.email && (
+                  <div className="text-xs text-emerald-600 truncate opacity-90 mb-1">
+                    {user.email}
+                  </div>
+                )}
+                {/* Role badge for mobile if multi-role */}
+                {isMultiRole && (
+                  <div className="text-xs text-emerald-900 bg-emerald-100 px-2 py-1 rounded mt-1 truncate lg:hidden">
+                    Role:  <span className="font-medium">Account</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 

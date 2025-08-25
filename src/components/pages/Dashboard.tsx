@@ -249,7 +249,7 @@ export default function SalesDashboard() {
       </nav>
 
       {/* Main Content Area with Sidebar */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden capitalize">
         {/* Mobile Sidebar Overlay */}
         {sidebarOpen && (
           <div
@@ -258,12 +258,14 @@ export default function SalesDashboard() {
           />
         )}
 
-        {/* Sidebar - Fixed on desktop, overlay on mobile */}
+        {/* Responsive Sidebar */}
         <aside
           className={`
-            fixed lg:relative z-40 w-64 bg-white border-r-2 border-emerald-200 
-            h-full p-4 shadow-lg lg:shadow-none overflow-y-auto flex-shrink-0
-            transform transition-transform duration-300 ease-in-out lg:transform-none
+            fixed lg:relative z-40 bg-white border-r-2 border-emerald-200 
+            h-full shadow-lg lg:shadow-none overflow-hidden flex-shrink-0
+            transform transition-all duration-300 ease-in-out lg:transform-none
+            flex flex-col
+            w-56 xs:w-64 sm:w-64 lg:w-64
             ${
               sidebarOpen
                 ? "translate-x-0"
@@ -271,40 +273,67 @@ export default function SalesDashboard() {
             }
           `}
         >
-          <nav className="space-y-2">
-            <Button
-              variant={activeTab === "inquiry-form" ? "default" : "ghost"}
-              onClick={() => handleTabChange("inquiry-form")}
-              className={`w-full justify-start gap-3 rounded-xl p-3 text-left transition-all duration-200 ${
-                activeTab === "inquiry-form"
-                  ? "bg-emerald-500 text-white shadow-lg transform scale-105 hover:emerald-900 border border-emerald-600"
-                  : "text-emerald-700 hover:bg-emerald-50 hover:shadow-md"
-              }`}
-            >
-              <HomeIcon className="h-5 w-5" />
-              <span className="font-medium">Inquiries</span>
-            </Button>
-            <Button
-              variant="ghost"
-              onClick={openInquiryForm}
-              className="w-full justify-start gap-3 rounded-xl p-3 text-left transition-all duration-200 text-emerald-700 hover:bg-emerald-50 hover:shadow-md"
-            >
-              <Plus className="h-4 w-4" />
-              Add Inquiry
-            </Button>
-            <Button
-              variant={activeTab === "assign" ? "default" : "ghost"}
-              onClick={() => handleTabChange("assign")}
-              className={`w-full justify-start gap-3 rounded-xl p-3 text-left transition-all duration-200 ${
-                activeTab === "assign"
-                  ? "bg-emerald-500 text-white shadow-lg transform scale-105 hover:emerald-600"
-                  : "text-emerald-700 hover:bg-emerald-50 hover:shadow-md"
-              }`}
-            >
-              <Users className="h-5 w-5" />
-              <span className="font-medium">Assigned Inquires</span>
-            </Button>
-          </nav>
+          {/* Scrollable Navigation Area */}
+          <div className="flex-1 overflow-y-auto p-3 sm:p-4">
+            <nav className="space-y-2">
+              <Button
+                variant={activeTab === "inquiry-form" ? "default" : "ghost"}
+                onClick={() => handleTabChange("inquiry-form")}
+                className={`w-full justify-start gap-2 sm:gap-3 rounded-xl p-2 sm:p-3 text-left transition-all duration-200 text-sm sm:text-base ${
+                  activeTab === "inquiry-form"
+                    ? "bg-emerald-500 text-white shadow-lg transform scale-105 hover:emerald-900 border border-emerald-600"
+                    : "text-emerald-700 hover:bg-emerald-50 hover:shadow-md"
+                }`}
+              >
+                <HomeIcon className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
+                <span className="font-medium truncate">Inquiries</span>
+              </Button>
+              
+              <Button
+                variant="ghost"
+                onClick={openInquiryForm}
+                className="w-full justify-start gap-2 sm:gap-3 rounded-xl p-2 sm:p-3 text-left transition-all duration-200 text-emerald-700 hover:bg-emerald-50 hover:shadow-md text-sm sm:text-base"
+              >
+                <Plus className="h-4 w-4 flex-shrink-0" />
+                <span className="truncate">Add Inquiry</span>
+              </Button>
+              
+              <Button
+                variant={activeTab === "assign" ? "default" : "ghost"}
+                onClick={() => handleTabChange("assign")}
+                className={`w-full justify-start gap-2 sm:gap-3 rounded-xl p-2 sm:p-3 text-left transition-all duration-200 text-sm sm:text-base ${
+                  activeTab === "assign"
+                    ? "bg-emerald-500 text-white shadow-lg transform scale-105 hover:emerald-600"
+                    : "text-emerald-700 hover:bg-emerald-50 hover:shadow-md"
+                }`}
+              >
+                <Users className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
+                <span className="font-medium truncate">Assigned Inquires</span>
+              </Button>
+            </nav>
+          </div>
+          
+          {/* User Info Section - Fixed at Bottom */}
+          <div className="flex-shrink-0 p-2 sm:p-3 pb-20 px-2 border-t border-emerald-100 ">
+            <div className="bg-emerald-50 rounded-lg border border-emerald-100 p-2 sm:p-3 ">
+              <div className="min-w-0"> {/* min-w-0 allows flex children to shrink below content size */}
+                <div className="text-xs sm:text-sm font-medium text-black truncate mb-1">
+                  {user?.full_name || user?.username || "User"}
+                </div>
+                {user?.email && (
+                  <div className="text-xs text-emerald-600 truncate opacity-90 mb-1">
+                    {user.email}
+                  </div>
+                )}
+                {/* Role badge for mobile if multi-role */}
+                {isMultiRole && (
+                  <div className="text-xs text-emerald-900 bg-emerald-100 px-2 py-1 rounded mt-1 truncate lg:hidden">
+                    Role: <span className="font-medium">Sales</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
         </aside>
 
         {/* Main Content Container */}
@@ -413,6 +442,8 @@ export default function SalesDashboard() {
             </div>
           </div>
         </div>
+
+        
       </div>
       <AlertDialog open={showLogoutConfirm} onOpenChange={setShowLogoutConfirm}>
         <AlertDialogContent className="bg-white">
