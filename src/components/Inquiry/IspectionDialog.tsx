@@ -511,6 +511,7 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
             work_description: propertyArea || "Property Inspection",
             expected_start_date: startTime,
             expected_time_in_hours: durationHours,
+            end_time: endTime,
           },
         ],
       };
@@ -1114,6 +1115,7 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
             durationHours,
             inquiryData?.custom_job_type || "Site Inspection",
             inquiryData?.custom_property_area || "Property Inspection"
+
           );
         }
         showToast.success("Inspection updated successfully!");

@@ -822,6 +822,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
             work_description: formData.custom_property_area,
             expected_start_date: requestedTime,
             expected_time_in_hours: parseFloat(duration),
+            end_time: endTime,
           },
         ],
       };
