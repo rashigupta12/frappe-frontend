@@ -6,10 +6,16 @@ import axios from 'axios';
 const isDevelopment = import.meta.env.DEV;
 
 // For local development with different hosts, use direct API URL
-// For production, use relative URLs to leverage proxy/rewrites
+// For production, use relative URLs to leverage Vercel rewrites
 const FRAPPE_BASE_URL = isDevelopment
-  ? '' // Direct backend URL for development
-  : ''; // Use relative URLs in production
+  ? '' // Use proxy in development (handled by Vite)
+  : ''; // Use relative URLs in production (handled by Vercel rewrites)
+
+console.log('Environment:', {
+  isDevelopment,
+  mode: import.meta.env.MODE,
+  baseURL: FRAPPE_BASE_URL
+});
 
 // Create axios instance with default config
 const frappeClient = axios.create({
@@ -34,7 +40,11 @@ const frappeFileClient = axios.create({
 // Add request interceptor for file client
 frappeFileClient.interceptors.request.use(
   (config) => {
-    // Log file upload requests
+    console.log('File upload request:', {
+      url: config.url,
+      method: config.method,
+      baseURL: config.baseURL
+    });
 
     // For development, add CORS headers
     if (isDevelopment) {
@@ -58,6 +68,11 @@ frappeFileClient.interceptors.request.use(
 
 frappeFileClient.interceptors.response.use(
   (response) => {
+    console.log('File upload response:', {
+      status: response.status,
+      url: response.config.url
+    });
+    
     if (response.headers['set-cookie']) {
       console.log('Cookies received:', response.headers['set-cookie']);
     }
@@ -76,6 +91,10 @@ frappeFileClient.interceptors.response.use(
     if (error.response?.status === 401 || error.response?.status === 403) {
       localStorage.removeItem('frappe_user');
       localStorage.removeItem('frappe_session');
+      // Optionally redirect to login
+      if (typeof window !== 'undefined') {
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }
@@ -84,6 +103,12 @@ frappeFileClient.interceptors.response.use(
 // Add request interceptor
 frappeClient.interceptors.request.use(
   (config) => {
+    console.log('API request:', {
+      url: config.url,
+      method: config.method,
+      baseURL: config.baseURL
+    });
+
     // For development, add CORS headers
     if (isDevelopment) {
       config.headers['Access-Control-Allow-Origin'] = 'http://localhost:3000';
@@ -102,6 +127,11 @@ frappeClient.interceptors.request.use(
 // Add response interceptor for error handling
 frappeClient.interceptors.response.use(
   (response) => {
+    console.log('API response:', {
+      status: response.status,
+      url: response.config.url
+    });
+    
     // Log successful responses
     if (response.headers['set-cookie']) {
       console.log('Cookies received:', response.headers['set-cookie']);
@@ -121,98 +151,118 @@ frappeClient.interceptors.response.use(
       // Handle unauthorized access
       localStorage.removeItem('frappe_user');
       localStorage.removeItem('frappe_session');
+      
+      // Optionally redirect to login
+      if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }
 );
 
 export const frappeAPI = {
-
   // Get user details from Frappe
-getUserDetails: async (username: string) => {
-  try {
-    const response = await frappeClient.get(`/api/resource/User/${username}`);
-    console.log('User details response:', response.data); // Add debugging
-    
-    return {
-      success: true,
-      data: response.data.data,
-      roles: response.data.data.roles || []
-    };
-  } catch (error) {
-    console.error('Error fetching user details:', error);
-    return {
-      success: false,
-      error: axios.isAxiosError(error) ? 
-        (error.response?.data?.message || error.message) : 
-        (error as Error).message
-    };
-  }
-},
-
-
-login: async (username: string, password: string) => {
-  try {
-    const response = await frappeClient.post('/api/method/login', {
-      usr: username,
-      pwd: password
-    });
-
-    // Check for successful login
-    if (response.data.message === 'Logged In' || response.status === 200) {
-      // First check if this is a first-time login
-      const firstLoginCheck = await frappeAPI.checkFirstLogin(username);
+  getUserDetails: async (username: string) => {
+    try {
+      const response = await frappeClient.get(`/api/resource/User/${username}`);
+      console.log('User details response:', response.data);
       
-      // Fetch user details after successful login - CRITICAL!
-      const userDetails = await frappeAPI.getUserDetails(username);
-      console.log('Login - user details:', userDetails); // Add debugging
-      
-      const userData = {
-        username: username,
-        full_name: userDetails.data?.full_name || username.split('@')[0] || 'User',
-        email: userDetails.data?.email || username,
-        role: userDetails.data?.role || '',
-        roles: userDetails.data?.roles || [], // This should contain the actual roles
-        authenticated: true,
-        loginTime: Date.now(),
-        requiresPasswordReset: firstLoginCheck.requiresPasswordReset || false
+      return {
+        success: true,
+        data: response.data.data,
+        roles: response.data.data.roles || []
       };
+    } catch (error) {
+      console.error('Error fetching user details:', error);
+      return {
+        success: false,
+        error: axios.isAxiosError(error) ? 
+          (error.response?.data?.message || error.message) : 
+          (error as Error).message
+      };
+    }
+  },
 
-      // Store user data
-      localStorage.setItem('frappe_user', JSON.stringify(userData));
+  // // Check if user needs to reset password on first login
+  // checkFirstLogin: async (username: string) => {
+  //   try {
+  //     const response = await frappeClient.get(`/api/method/check_first_login?username=${username}`);
+  //     return {
+  //       success: true,
+  //       requiresPasswordReset: response.data.message?.requires_password_reset || false
+  //     };
+  //   } catch (error) {
+  //     console.error('Error checking first login:', error);
+  //     return {
+  //       success: false,
+  //       requiresPasswordReset: false
+  //     };
+  //   }
+  // },
+
+  login: async (username: string, password: string) => {
+    try {
+      const response = await frappeClient.post('/api/method/login', {
+        usr: username,
+        pwd: password
+      });
+
+      // Check for successful login
+      if (response.data.message === 'Logged In' || response.status === 200) {
+        // First check if this is a first-time login
+        const firstLoginCheck = await frappeAPI.checkFirstLogin(username);
+        
+        // Fetch user details after successful login - CRITICAL!
+        const userDetails = await frappeAPI.getUserDetails(username);
+        console.log('Login - user details:', userDetails);
+        
+        const userData = {
+          username: username,
+          full_name: userDetails.data?.full_name || username.split('@')[0] || 'User',
+          email: userDetails.data?.email || username,
+          role: userDetails.data?.role || '',
+          roles: userDetails.data?.roles || [],
+          authenticated: true,
+          loginTime: Date.now(),
+          requiresPasswordReset: firstLoginCheck.requiresPasswordReset || false
+        };
+
+        // Store user data
+        localStorage.setItem('frappe_user', JSON.stringify(userData));
+
+        return { 
+          success: true, 
+          data: response.data, 
+          user: userData,
+          details: userDetails.data,
+          requiresPasswordReset: firstLoginCheck.requiresPasswordReset
+        };
+      }
 
       return { 
-        success: true, 
+        success: false, 
         data: response.data, 
-        user: userData,
-        details: userDetails.data, // Return details separately
-        requiresPasswordReset: firstLoginCheck.requiresPasswordReset
+        error: response.data.message || 'Login failed' 
+      };
+    } catch (error) {
+      console.error('Login error details:', error);
+
+      let errorMessage = 'Login failed';
+      if (axios.isAxiosError(error)) {
+        errorMessage = error.response?.data?.message ||
+          error.response?.data?.exc ||
+          `Login failed: ${error.response?.status} ${error.response?.statusText}`;
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+
+      return { 
+        success: false, 
+        error: errorMessage 
       };
     }
-
-    return { 
-      success: false, 
-      data: response.data, 
-      error: response.data.message || 'Login failed' 
-    };
-  } catch (error) {
-    console.error('Login error details:', error);
-
-    let errorMessage = 'Login failed';
-    if (axios.isAxiosError(error)) {
-      errorMessage = error.response?.data?.message ||
-        error.response?.data?.exc ||
-        `Login failed: ${error.response?.status} ${error.response?.statusText}`;
-    } else if (error instanceof Error) {
-      errorMessage = error.message;
-    }
-
-    return { 
-      success: false, 
-      error: errorMessage 
-    };
-  }
-},
+  },
 
 // Improved checkFirstLogin method
 checkFirstLogin: async (username: string) => {

@@ -16,13 +16,15 @@ export default defineConfig(({ mode }) => {
   // Get the API base URL from environment variables
   const apiBaseUrl = env.VITE_API_BASE_URL || (isDev ? 'http://eits.local:8000/' : '')
 
-
   return {
     plugins: [
       react(),
       tailwindcss(),
+      // Only include PWA plugin with proper configuration
       VitePWA({
         registerType: 'autoUpdate',
+        // Disable PWA in development to avoid conflicts
+        disable: isDev,
         workbox: {
           globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2,ttf,eot}'],
           runtimeCaching: [
@@ -39,11 +41,13 @@ export default defineConfig(({ mode }) => {
             }
           ]
         },
-        includeAssets: ['favicon.ico',
+        includeAssets: [
+          'favicon.ico',
           'favicon-16x16.png',
           'favicon-32x32.png',
           'apple-touch-icon.png',
-          'logo.jpg'],
+          'logo.jpg'
+        ],
         manifest: {
           "name": "EITS",
           "short_name": "EITS",
@@ -58,55 +62,55 @@ export default defineConfig(({ mode }) => {
           "categories": ["business", "utilities", "productivity"],
           "icons": [
             {
-        "src": "/favicon.ico",
-        "sizes": "16x16 32x32",
-        "type": "image/x-icon",
-        "purpose": "favicon"
-      },
-      {
-        "src": "/favicon-16x16.png",
-        "sizes": "16x16",
-        "type": "image/png",
-        "purpose": "favicon"
-      },
-      {
-        "src": "/favicon-32x32.png",
-        "sizes": "32x32",
-        "type": "image/png",
-        "purpose": "favicon"
-      },
-      // PWA icons
-      {
-        "src": "/logo.jpg",
-        "sizes": "96x96",
-        "type": "image/jpeg",
-        "purpose": "any"
-      },
-      {
-        "src": "/logo.jpg",
-        "sizes": "192x192", 
-        "type": "image/jpeg",
-        "purpose": "any maskable"
-      },
-      {
-        "src": "/logo.jpg",
-        "sizes": "256x256", 
-        "type": "image/jpeg",
-        "purpose": "any maskable"
-      },
-      {
-        "src": "/logo.jpg",
-        "sizes": "512x512",
-        "type": "image/jpeg", 
-        "purpose": "any maskable"
-      },
-      // Apple touch icon
-      {
-        "src": "/apple-touch-icon.png",
-        "sizes": "180x180",
-        "type": "image/png",
-        "purpose": "any"
-      }
+              "src": "/favicon.ico",
+              "sizes": "16x16 32x32",
+              "type": "image/x-icon",
+              "purpose": "favicon"
+            },
+            {
+              "src": "/favicon-16x16.png",
+              "sizes": "16x16",
+              "type": "image/png",
+              "purpose": "favicon"
+            },
+            {
+              "src": "/favicon-32x32.png",
+              "sizes": "32x32",
+              "type": "image/png",
+              "purpose": "favicon"
+            },
+            // PWA icons
+            {
+              "src": "/logo.jpg",
+              "sizes": "96x96",
+              "type": "image/jpeg",
+              "purpose": "any"
+            },
+            {
+              "src": "/logo.jpg",
+              "sizes": "192x192", 
+              "type": "image/jpeg",
+              "purpose": "any maskable"
+            },
+            {
+              "src": "/logo.jpg",
+              "sizes": "256x256", 
+              "type": "image/jpeg",
+              "purpose": "any maskable"
+            },
+            {
+              "src": "/logo.jpg",
+              "sizes": "512x512",
+              "type": "image/jpeg", 
+              "purpose": "any maskable"
+            },
+            // Apple touch icon
+            {
+              "src": "/apple-touch-icon.png",
+              "sizes": "180x180",
+              "type": "image/png",
+              "purpose": "any"
+            }
           ],
           "shortcuts": [
             {
@@ -137,8 +141,9 @@ export default defineConfig(({ mode }) => {
             }
           ]
         },
+        // Only enable dev options in development
         devOptions: {
-          enabled: true,
+          enabled: isDev,
           type: 'module'
         }
       })
@@ -151,6 +156,10 @@ export default defineConfig(({ mode }) => {
     server: {
       port: 3000,
       host: true,
+      // Ensure HMR is properly configured
+      hmr: {
+        port: 3001
+      },
       proxy: isDev ? {
         '/api': {
           target: apiBaseUrl,
@@ -253,7 +262,7 @@ export default defineConfig(({ mode }) => {
     },
     build: {
       outDir: 'dist',
-      sourcemap: true,
+      sourcemap: false, // Disable sourcemaps for production to reduce bundle size
       // Ensure proper chunking for better caching
       rollupOptions: {
         output: {
@@ -262,10 +271,20 @@ export default defineConfig(({ mode }) => {
             axios: ['axios']
           }
         }
+      },
+      // Add minification options
+      minify: 'terser',
+      terserOptions: {
+        compress: {
+          drop_console: true, // Remove console logs in production
+          drop_debugger: true
+        }
       }
     },
     define: {
       __FRAPPE_BASE_URL__: JSON.stringify(apiBaseUrl)
-    }
+    },
+    // Ensure proper environment handling
+    base: '/'
   }
 })
