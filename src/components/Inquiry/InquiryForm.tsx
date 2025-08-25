@@ -17,10 +17,10 @@ import {
   User,
   UserPen,
   UserPlus,
-  X,
+  X
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-// import showToast from "react-hot-showToast";
+import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { frappeAPI } from "../../api/frappeClient";
 import { useAuth } from "../../context/AuthContext";
@@ -29,6 +29,7 @@ import {
   type Lead,
   type LeadFormData,
 } from "../../context/LeadContext";
+import { showToast } from "../../helpers/comman";
 import {
   budgetRanges,
   capitalizeFirstLetter,
@@ -44,7 +45,21 @@ import {
 } from "../../helpers/helper";
 import { timeToMinutes } from "../../lib/timeUtils";
 import { useAssignStore } from "../../store/assign";
+import type {
+  CustomerSearchResult,
+  InspectorAvailability,
+  NewCustomerFormData,
+  PriorityLevel,
+} from "../../types/inquiryFormdata";
 import { Button } from "../ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "../ui/dialog";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import {
@@ -60,50 +75,35 @@ import { ConfirmationModal } from "./ConfirmationModal";
 import { MultiSelectJobTypes } from "./MultiselectJobtypes";
 import PropertyAddressSection from "./PropertyAddress";
 import { RestrictedTimeClock } from "./ResticritedtimeSlot";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "../ui/dialog";
-import { createPortal } from "react-dom";
-import type {
-  CustomerSearchResult,
-  InspectorAvailability,
-  NewCustomerFormData,
-  PriorityLevel,
-} from "../../types/inquiryFormdata";
-import { showToast } from "../../helpers/comman";
 
 interface InquiryFormProps {
   isOpen: boolean;
   onClose: () => void;
   inquiry?: Lead | null;
 }
+
 const sections: FormSection[] = [
   {
     id: "contact",
-    title: "Customer Details",
+    title: "Customer Information",
     icon: <Phone className="h-4 w-4" />,
     completed: false,
   },
   {
     id: "job",
-    title: "Job Details",
+    title: "Service Requirements",
     icon: <Home className="h-4 w-4" />,
     completed: false,
   },
   {
     id: "property",
-    title: "Property Information",
+    title: "Property Details",
     icon: <Building className="h-4 w-4" />,
     completed: false,
   },
   {
     id: "inspector",
-    title: "Assign Inspector",
+    title: "Schedule Inspection",
     icon: <User className="h-4 w-4" />,
     completed: false,
   },
@@ -129,6 +129,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
 
   const { createTodo, createTodoLoading } = useAssignStore();
 
+  // State management
   const [activeSection, setActiveSection] = useState<string>("contact");
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [priority, setPriority] = useState<PriorityLevel>("Medium");
@@ -137,20 +138,17 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     ...defaultFormData,
   });
   const [showReferenceInput, setShowReferenceInput] = useState(false);
-// Add this state for tracking validation errors
-const [durationError, setDurationError] = useState(false);
+  const [validationErrors, setValidationErrors] = useState({
+    startTime: false,
+    endTime: false,
+  });
 
   // Customer search states
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<CustomerSearchResult[]>(
-    []
-  );
+  const [searchResults, setSearchResults] = useState<CustomerSearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
-  const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(
-    null
-  );
-  const [selectedCustomer, setSelectedCustomer] =
-    useState<CustomerSearchResult | null>(null);
+  const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [selectedCustomer, setSelectedCustomer] = useState<CustomerSearchResult | null>(null);
   const [showDropdown, setShowDropdown] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState({
     top: 0,
@@ -171,14 +169,13 @@ const [durationError, setDurationError] = useState(false);
   const customerModalRef = useRef<HTMLDivElement>(null);
 
   // Inspector assignment states
-  const [selectedInspector, setSelectedInspector] =
-    useState<InspectorAvailability | null>(null);
+  const [selectedInspector, setSelectedInspector] = useState<InspectorAvailability | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<{
     start: string;
     end: string;
   } | null>(null);
   const [requestedTime, setRequestedTime] = useState("");
-  const [duration, setDuration] = useState("0.5");
+  const [endTime, setEndTime] = useState("");
   const [showAvailabilityModal, setShowAvailabilityModal] = useState(false);
 
   // Confirmation modal state
@@ -200,7 +197,13 @@ const [durationError, setDurationError] = useState(false);
               (!showReferenceInput || !!formData.custom_reference_name),
           };
         case "job":
-          return { ...section, completed: !!formData.custom_job_type };
+          return { 
+            ...section, 
+            completed: !!formData.custom_job_type && 
+                      !!formData.custom_budget_range && 
+                      !!formData.custom_project_urgency &&
+                      !!formData.source
+          };
         case "property":
           return {
             ...section,
@@ -214,13 +217,28 @@ const [durationError, setDurationError] = useState(false);
               !!formData.custom_area,
           };
         case "inspector":
-          return { ...section, completed: !!selectedInspector };
+          return { 
+            ...section, 
+            completed: !!selectedInspector && !!date && !!requestedTime && !!endTime
+          };
         default:
           return section;
       }
     });
-  }, [formData, showReferenceInput, selectedInspector, selectedCustomer]);
+  }, [formData, showReferenceInput, selectedInspector, selectedCustomer, date, requestedTime, endTime]);
 
+  const calculateDuration = (): number => {
+    if (!requestedTime || !endTime) return 0;
+    
+    const startMinutes = timeToMinutes(requestedTime);
+    const endMinutes = timeToMinutes(endTime);
+    
+    if (endMinutes <= startMinutes) return 0;
+    
+    return (endMinutes - startMinutes) / 60;
+  };
+
+  // Initialize form data
   useEffect(() => {
     if (!hasFetchedInitialData && isOpen) {
       const fetchData = async () => {
@@ -231,13 +249,8 @@ const [durationError, setDurationError] = useState(false);
       };
       fetchData();
     }
-  }, [
-    isOpen,
-    hasFetchedInitialData,
-    fetchJobTypes,
-    fetchProjectUrgency,
-    fetchUtmSource,
-  ]);
+  }, [isOpen, hasFetchedInitialData, fetchJobTypes, fetchProjectUrgency, fetchUtmSource]);
+
   useEffect(() => {
     if (!formData.custom_preferred_inspection_time) {
       setFormData((prev) => ({
@@ -247,38 +260,36 @@ const [durationError, setDurationError] = useState(false);
     }
   }, []);
 
-  // Update the useEffect that handles end time validation
-useEffect(() => {
-  if (requestedTime && duration && selectedSlot) {
-    const endTime = calculateEndTime();
-    if (endTime) {
-      const [hours, minutes] = endTime.split(":").map(Number);
-      const totalMinutes = hours * 60 + minutes;
+  // Time validation effect
+  useEffect(() => {
+    if (requestedTime && endTime && selectedSlot) {
+      if (!validateTimeSelection(requestedTime, endTime, false)) {
+        return;
+      }
+      
+      const endMinutes = timeToMinutes(endTime);
       const slotEndMinutes = timeToMinutes(selectedSlot.end);
 
-      // Check if end time exceeds the selected slot
-      if (totalMinutes > slotEndMinutes) {
-        setDurationError(true);
-        showToast.error(`End time (${endTime}) exceeds the selected slot (${selectedSlot.start} - ${selectedSlot.end}). Please adjust the duration.`);
-      } else if (totalMinutes > 18 * 60) {
-        // Check if end time is after 18:00 (6:00 PM)
+      if (endMinutes > slotEndMinutes) {
+        setValidationErrors({ startTime: true, endTime: true });
+        showToast.error(`End time (${endTime}) exceeds the selected slot (${selectedSlot.start} - ${selectedSlot.end}). Please adjust the end time.`);
+      } else if (endMinutes > 18 * 60) {
         setShowEndTimeWarning(true);
-        setDurationError(false);
+        setValidationErrors({ startTime: false, endTime: false });
       } else {
         setShowEndTimeWarning(false);
-        setDurationError(false);
+        setValidationErrors({ startTime: false, endTime: false });
       }
     }
-  }
-}, [requestedTime, duration, selectedSlot]);
+  }, [requestedTime, endTime, selectedSlot]);
 
-  // Replace the existing useEffect for inquiry loading
+  // Load inquiry data
   useEffect(() => {
     if (inquiry && hasFetchedInitialData) {
       setFormData({
         ...defaultFormData,
         ...inquiry,
-        custom_jobtype: convertJobTypesToFormFormat(inquiry.custom_jobtype), // Use helper
+        custom_jobtype: convertJobTypesToFormFormat(inquiry.custom_jobtype),
         custom_project_urgency: inquiry.custom_project_urgency || "",
         source: inquiry.source || "",
         custom_preferred_inspection_date:
@@ -298,7 +309,6 @@ useEffect(() => {
           inquiry.source === "Supplier Reference"
       );
 
-      // Set selected customer from inquiry data
       if (inquiry.lead_name) {
         setSelectedCustomer({
           customer_name: inquiry.lead_name,
@@ -318,7 +328,7 @@ useEffect(() => {
     setSelectedInspector(null);
     setSelectedSlot(null);
     setRequestedTime("");
-    setDuration("0.5");
+    setEndTime("");
     setPriority("Medium");
     setDate(new Date());
     setHasFetchedInitialData(false);
@@ -327,6 +337,7 @@ useEffect(() => {
     setSearchResults([]);
     setShowDropdown(false);
     setShowAvailabilityModal(false);
+    setActiveSection("contact");
   };
 
   const toggleSection = (sectionId: string) => {
@@ -338,6 +349,168 @@ useEffect(() => {
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: capitalizeFirstLetter(value) }));
+  };
+
+  const validateTimeSelection = (startTime: string, endTime: string, showError: boolean = true): boolean => {
+    setValidationErrors({
+      startTime: false,
+      endTime: false,
+    });
+
+    let isValid = true;
+    let errorMessage = "";
+
+    if (!startTime || !endTime) {
+      if (showError) {
+        showToast.error("Please select both start and end times");
+      }
+      return false;
+    }
+
+    const startMinutes = timeToMinutes(startTime);
+    const endMinutes = timeToMinutes(endTime);
+
+    if (endMinutes <= startMinutes) {
+      errorMessage = "End time must be after start time";
+      isValid = false;
+      setValidationErrors({ startTime: true, endTime: true });
+    }
+
+    if (isValid && (endMinutes - startMinutes) < 15) {
+      errorMessage = "There must be at least 15 minutes between start and end time";
+      isValid = false;
+      setValidationErrors({ startTime: true, endTime: true });
+    }
+
+    if (isValid && selectedInspector) {
+      const isWithinAvailableSlot = selectedInspector.availability.free_slots.some((slot) => {
+        const slotStart = timeToMinutes(slot.start);
+        const slotEnd = timeToMinutes(slot.end);
+        return startMinutes >= slotStart && endMinutes <= slotEnd;
+      });
+
+      if (!isWithinAvailableSlot) {
+        errorMessage = "Selected times must be within inspector's available slots";
+        isValid = false;
+        setValidationErrors({ startTime: true, endTime: true });
+      }
+    }
+
+    if (!isValid && showError && errorMessage) {
+      showToast.error(errorMessage);
+    }
+
+    return isValid;
+  };
+
+  const getEndTimeConstraints = () => {
+    if (selectedSlot) {
+      const minEndTime = requestedTime ? 
+        (() => {
+          const startMinutes = timeToMinutes(requestedTime);
+          const minEndMinutes = startMinutes + 15;
+          const hours = Math.floor(minEndMinutes / 60);
+          const minutes = minEndMinutes % 60;
+          return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+        })() : 
+        selectedSlot.start;
+      
+      return {
+        minTime: minEndTime,
+        maxTime: selectedSlot.end,
+      };
+    }
+    
+    const minEndTime = requestedTime ? 
+      (() => {
+        const startMinutes = timeToMinutes(requestedTime);
+        const minEndMinutes = startMinutes + 15;
+        const hours = Math.floor(minEndMinutes / 60);
+        const minutes = minEndMinutes % 60;
+        return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+      })() : 
+      "09:15";
+    
+    return {
+      minTime: minEndTime,
+      maxTime: "18:00",
+    };
+  };
+
+  const handleStartTimeChange = (newTime: string) => {
+    setValidationErrors({
+      startTime: false,
+      endTime: false,
+    });
+
+    setRequestedTime(newTime);
+
+    if (endTime) {
+      const startMinutes = timeToMinutes(newTime);
+      const currentEndMinutes = timeToMinutes(endTime);
+
+      if (currentEndMinutes - startMinutes < 15) {
+        const newEndMinutes = startMinutes + 15;
+        
+        let maxEndMinutes = 18 * 60;
+        
+        if (selectedInspector) {
+          const containingSlot = selectedInspector.availability.free_slots.find((slot) => {
+            const slotStart = timeToMinutes(slot.start);
+            const slotEnd = timeToMinutes(slot.end);
+            return startMinutes >= slotStart && startMinutes < slotEnd;
+          });
+          
+          if (containingSlot) {
+            maxEndMinutes = timeToMinutes(containingSlot.end);
+          }
+        } else if (selectedSlot) {
+          maxEndMinutes = timeToMinutes(selectedSlot.end);
+        }
+
+        const finalEndMinutes = Math.min(newEndMinutes, maxEndMinutes);
+        const hours = Math.floor(finalEndMinutes / 60);
+        const minutes = finalEndMinutes % 60;
+        setEndTime(`${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`);
+      }
+    } else {
+      const startMinutes = timeToMinutes(newTime);
+      const defaultEndMinutes = startMinutes + 15;
+      
+      let maxEndMinutes = 18 * 60;
+      
+      if (selectedInspector) {
+        const containingSlot = selectedInspector.availability.free_slots.find((slot) => {
+          const slotStart = timeToMinutes(slot.start);
+          const slotEnd = timeToMinutes(slot.end);
+          return startMinutes >= slotStart && startMinutes < slotEnd;
+        });
+        
+        if (containingSlot) {
+          maxEndMinutes = timeToMinutes(containingSlot.end);
+        }
+      } else if (selectedSlot) {
+        maxEndMinutes = timeToMinutes(selectedSlot.end);
+      }
+
+      const finalEndMinutes = Math.min(defaultEndMinutes, maxEndMinutes);
+      const hours = Math.floor(finalEndMinutes / 60);
+      const minutes = finalEndMinutes % 60;
+      setEndTime(`${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`);
+    }
+  };
+
+  const handleEndTimeChange = (newEndTime: string) => {
+    setValidationErrors({
+      startTime: false,
+      endTime: false,
+    });
+
+    setEndTime(newEndTime);
+
+    if (requestedTime) {
+      validateTimeSelection(requestedTime, newEndTime, false);
+    }
   };
 
   const handleSelectChange = (name: string, value: string) => {
@@ -392,24 +565,27 @@ useEffect(() => {
   };
 
   const validateForm = (): boolean => {
-    // Customer Details validation
     if (!selectedCustomer) {
       showToast.error("Customer selection is required");
+      setActiveSection("contact");
       return false;
     }
 
     if (!formData.custom_jobtype || formData.custom_jobtype.length === 0) {
       showToast.error("At least one job type is required");
+      setActiveSection("job");
       return false;
     }
+
     return true;
   };
 
   const saveLead = async (): Promise<string | undefined> => {
     try {
-      let submissionData = formatSubmissionData(formData);
+      const existingLeadId = inquiry?.name || formData.name;
+      const isUpdate = !!existingLeadId;
+      let submissionData = formatSubmissionData(formData, isUpdate);
 
-      // For new inquiries, ensure we use the locally stored customer data
       if (!inquiry && selectedCustomer) {
         submissionData = {
           ...submissionData,
@@ -419,11 +595,7 @@ useEffect(() => {
         };
       }
 
-      // Check if we already have a lead ID (either from inquiry prop or from newly created lead)
-      const existingLeadId = inquiry?.name || formData.name;
-
       if (existingLeadId) {
-        // For updates, fetch fresh document to avoid TimestampMismatchError
         try {
           const freshLead = await frappeAPI.makeAuthenticatedRequest(
             "GET",
@@ -431,13 +603,11 @@ useEffect(() => {
           );
 
           if (freshLead?.data) {
-            // Merge fresh data with our changes
             submissionData = {
-              ...freshLead.data, // Start with fresh data including timestamps
-              ...submissionData, // Apply our changes
+              ...freshLead.data,
+              ...submissionData,
             };
 
-            // Remove any undefined fields
             Object.keys(submissionData).forEach((key) => {
               if (submissionData[key] === undefined) {
                 delete submissionData[key];
@@ -445,27 +615,21 @@ useEffect(() => {
             });
           }
         } catch (fetchError) {
-          console.warn(
-            "Could not fetch fresh lead data, proceeding with existing data:",
-            fetchError
-          );
+          console.warn("Could not fetch fresh lead data, proceeding with existing data:", fetchError);
         }
 
-        // Update existing lead
         const updatedLead = await updateLead(existingLeadId, submissionData);
 
-        // Convert API response format back to form format (string[])
         const convertedJobTypes = Array.isArray(updatedLead.custom_jobtype)
           ? updatedLead.custom_jobtype.map((item: any) =>
               typeof item === "string" ? item : item.job_type
             )
           : formData.custom_jobtype || [];
 
-        // Update formData with proper type conversion
         setFormData((prev) => ({
           ...prev,
           ...updatedLead,
-          custom_jobtype: convertedJobTypes, // Ensure this is string[]
+          custom_jobtype: convertedJobTypes,
           custom_preferred_inspection_date:
             updatedLead.custom_preferred_inspection_date
               ? new Date(updatedLead.custom_preferred_inspection_date)
@@ -475,22 +639,19 @@ useEffect(() => {
         showToast.success("Inquiry updated successfully!");
         return existingLeadId;
       } else {
-        // Create new lead only if we don't have an ID
         const newInquiry = await createLead(submissionData);
 
-        // Convert API response format back to form format (string[])
         const convertedJobTypes = Array.isArray(newInquiry.custom_jobtype)
           ? newInquiry.custom_jobtype.map((item: any) =>
               typeof item === "string" ? item : item.job_type
             )
           : formData.custom_jobtype || [];
 
-        // Update formData with the new lead ID and fresh data
         setFormData((prev) => ({
           ...prev,
           ...newInquiry,
           name: newInquiry.name,
-          custom_jobtype: convertedJobTypes, // Ensure this is string[]
+          custom_jobtype: convertedJobTypes,
           custom_preferred_inspection_date:
             newInquiry.custom_preferred_inspection_date
               ? new Date(newInquiry.custom_preferred_inspection_date)
@@ -502,16 +663,6 @@ useEffect(() => {
       }
     } catch (err) {
       console.error("Error saving lead:", err);
-
-      // // Handle specific timestamp errors
-      // let errorMessage = "Failed to save inquiry. Please try again.";
-      // if (err && typeof err === "object" && "message" in err) {
-      //   const errorMsg = (err as { message: string }).message;
-      //   if (errorMsg.includes("TimestampMismatchError") || errorMsg.includes("Document has been modified")) {
-      //     errorMessage = "The document has been modified. Please refresh the form and try again.";
-      //   }
-      // }
-
       showToast.error("Failed to save inquiry. Please try again.");
       return undefined;
     }
@@ -520,14 +671,13 @@ useEffect(() => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Only validate on submit
     if (!validateForm()) return;
 
     try {
-      // For new inquiries, ensure we use the locally stored customer data
-      let submissionData = formatSubmissionData(formData);
+      const existingLeadId = inquiry?.name || formData.name;
+      const isUpdate = !!existingLeadId;
+      let submissionData = formatSubmissionData(formData, isUpdate);
 
-      // If this is a new inquiry and we have selected customer data, use it
       if (!inquiry && selectedCustomer) {
         submissionData = {
           ...submissionData,
@@ -537,18 +687,12 @@ useEffect(() => {
         };
       }
 
-      const existingLeadId = inquiry?.name || formData.name;
-
       if (existingLeadId) {
-        // Update existing lead
         await updateLead(existingLeadId, submissionData);
         showToast.success("Inquiry updated successfully!");
       } else {
-        // Create new lead
         const newInquiry = await createLead(submissionData);
         showToast.success("Inquiry created successfully!");
-
-        // Update formData with the new lead ID
         setFormData((prev) => ({
           ...prev,
           name: newInquiry.name,
@@ -562,149 +706,59 @@ useEffect(() => {
     }
   };
 
-  const handleAssignAndSave = () => {
-    // Validate form fields and show specific error messages
-    if (!selectedCustomer) {
-      showToast.error(
-        "Please complete customer details: Customer selection is required"
-      );
-      setActiveSection("contact");
-      return;
-    }
+  const validateFormForAssignment = (): boolean => {
+    const requiredFields = [
+      { field: selectedCustomer, message: "Customer selection is required", section: "contact" },
+      { field: formData.custom_jobtype?.length, message: "At least one job type is required", section: "job" },
+      { field: formData.custom_budget_range, message: "Budget range is required", section: "job" },
+      { field: formData.custom_project_urgency, message: "Project urgency is required", section: "job" },
+      { field: formData.source, message: "Source of inquiry is required", section: "contact" },
+      { field: formData.custom_property_name__number, message: "Property number is required", section: "property" },
+      { field: formData.custom_property_category, message: "Property category is required", section: "property" },
+      { field: formData.custom_property_area, message: "Property area is required", section: "property" },
+      { field: formData.custom_street_name, message: "Street name is required", section: "property" },
+      { field: formData.custom_emirate, message: "Emirate is required", section: "property" },
+      { field: formData.custom_community, message: "Community is required", section: "property" },
+      { field: formData.custom_area, message: "Area is required", section: "property" },
+      { field: selectedInspector, message: "Inspector selection is required", section: "inspector" },
+      { field: date, message: "Inspection date is required", section: "inspector" },
+      { field: requestedTime, message: "Requested inspection time is required", section: "inspector" },
+    ];
 
-    if (!formData.custom_jobtype || formData.custom_jobtype.length === 0) {
-      showToast.error(
-        "Please complete job details: At least one job type is required"
-      );
-      setActiveSection("job");
-      return;
-    }
-
-    if (!formData.custom_budget_range) {
-      showToast.error("Please complete job details: Budget range is required");
-      setActiveSection("job");
-      return;
-    }
-
-    if (!formData.custom_project_urgency) {
-      showToast.error("Please complete job details: Project urgency is required");
-      setActiveSection("job");
-      return;
-    }
-
-    if (!formData.source) {
-      showToast.error(
-        "Please complete customer details: Source of inquiry is required"
-      );
-      setActiveSection("contact");
-      return;
-    }
-
-    if (
-      (formData.source === "Reference" ||
-        formData.source === "Supplier Reference") &&
-      !formData.custom_reference_name
-    ) {
-      showToast.error(
-        "Please complete customer details: Reference name is required"
-      );
-      setActiveSection("contact");
-      return;
-    }
-
-    // Property validation
-    if (!formData.custom_property_name__number) {
-      showToast.error(
-        "Please complete property details: Property number is required"
-      );
-      setActiveSection("property");
-      return;
-    }
-
-    if (!formData.custom_property_category) {
-      showToast.error(
-        "Please complete property details: Property category is required"
-      );
-      setActiveSection("property");
-      return;
-    }
-
-    if (!formData.custom_property_area) {
-      showToast.error(
-        "Please complete property details: Property area is required"
-      );
-      setActiveSection("property");
-      return;
-    }
-
-    if (!formData.custom_street_name) {
-      showToast.error("Please complete property details: Street name is required");
-      setActiveSection("property");
-      return;
-    }
-
-    if (!formData.custom_emirate) {
-      showToast.error("Please complete property details: Emirate is required");
-      setActiveSection("property");
-      return;
-    }
-
-    if (!formData.custom_community) {
-      showToast.error("Please complete property details: Community is required");
-      setActiveSection("property");
-      return;
-    }
-
-    if (!formData.custom_area) {
-      showToast.error("Please complete property details: Area is required");
-      setActiveSection("property");
-      return;
-    }
-
-    // Inspector assignment validation
-    if (!selectedInspector) {
-      showToast.error("Please select an inspector for assignment");
-      setActiveSection("inspector");
-      return;
-    }
-
-    if (!date) {
-      showToast.error("Please select an inspection date");
-      setActiveSection("inspector");
-      return;
-    }
-
-    if (!requestedTime) {
-      showToast.error("Please enter the requested inspection time");
-      setActiveSection("inspector");
-      return;
-    }
-
-    if (!validateRequestedTime()) {
-      showToast.error(
-        `Requested time must be within the selected slot (${selectedSlot?.start} - ${selectedSlot?.end})`
-      );
-      setActiveSection("inspector");
-      return;
-    }
-
-    // Check if end time is after 18:00 and show warning instead of proceeding
-    const endTime = calculateEndTime();
-    if (endTime) {
-      const [hours, minutes] = endTime.split(":").map(Number);
-      const totalMinutes = hours * 60 + minutes;
-
-      if (totalMinutes > 18 * 60) {
-        showToast.error(
-          "Inspection cannot end after 6:00 PM. Please adjust the start time or duration."
-        );
-        setShowEndTimeWarning(true);
-        setActiveSection("inspector");
-        return;
+    for (const { field, message, section } of requiredFields) {
+      if (!field) {
+        showToast.error(`Please complete ${section} section: ${message}`);
+        setActiveSection(section);
+        return false;
       }
     }
 
-    // If all validations pass, show confirmation modal
+    // Additional validations
+    if ((formData.source === "Reference" || formData.source === "Supplier Reference") && !formData.custom_reference_name) {
+      showToast.error("Please complete customer details: Reference name is required");
+      setActiveSection("contact");
+      return false;
+    }
+
+    if (!validateRequestedTime()) {
+      showToast.error(`Requested time must be within the selected slot (${selectedSlot?.start} - ${selectedSlot?.end})`);
+      setActiveSection("inspector");
+      return false;
+    }
+
+    const endMinutes = timeToMinutes(endTime);
+    if (endMinutes > 18 * 60) {
+      showToast.error("Inspection cannot end after 6:00 PM. Please adjust the end time.");
+      setShowEndTimeWarning(true);
+      setActiveSection("inspector");
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleAssignAndSave = () => {
+    if (!validateFormForAssignment()) return;
     setShowConfirmModal(true);
   };
 
@@ -712,19 +766,17 @@ useEffect(() => {
     setShowConfirmModal(false);
 
     try {
-      // Get the lead ID - either from existing inquiry or from formData
       const existingLeadId = inquiry?.name || formData.name;
+      const isUpdate = !!existingLeadId;
 
       let inquiryName: string;
 
       if (existingLeadId) {
-        // If we already have a lead ID, just update it
-        const submissionData = formatSubmissionData(formData);
+        const submissionData = formatSubmissionData(formData, isUpdate);
         await updateLead(existingLeadId, submissionData);
         inquiryName = existingLeadId;
         showToast.success("Inquiry updated successfully!");
       } else {
-        // Only create new lead if we don't have an ID (shouldn't happen if saveNewCustomer worked correctly)
         const savedLeadName = await saveLead();
         if (!savedLeadName) {
           showToast.error("Failed to save inquiry");
@@ -734,9 +786,9 @@ useEffect(() => {
       }
 
       const preferredDate = format(date!, "yyyy-MM-dd");
-      const endTime = calculateEndTime();
       const startDateTime = `${preferredDate} ${requestedTime}:00`;
       const endDateTime = `${preferredDate} ${endTime}:00`;
+      const duration = calculateDuration().toString();
 
       await createTodo({
         assigned_by: user?.username || "sales_rep@eits.com",
@@ -749,21 +801,16 @@ useEffect(() => {
         custom_end_time: endDateTime,
       });
 
-      // Rest of the assignment logic remains the same...
       let employeeName = "";
       const employeeResponse = await frappeAPI.makeAuthenticatedRequest(
         "GET",
-        `/api/resource/Employee?filters=[["user_id","=","${
-          selectedInspector!.email
-        }"]]`
+        `/api/resource/Employee?filters=[["user_id","=","${selectedInspector!.email}"]]`
       );
 
       if (employeeResponse?.data?.length > 0) {
         employeeName = employeeResponse.data[0].name;
       } else {
-        throw new Error(
-          `Could not find employee record for ${selectedInspector!.email}`
-        );
+        throw new Error(`Could not find employee record for ${selectedInspector!.email}`);
       }
 
       const dwaPayload = {
@@ -798,6 +845,7 @@ useEffect(() => {
     resetForm();
     onClose();
   };
+
   const searchCustomers = useCallback(async (query: string) => {
     if (!query.trim()) {
       setSearchResults([]);
@@ -809,9 +857,7 @@ useEffect(() => {
     try {
       const response = await frappeAPI.makeAuthenticatedRequest(
         "GET",
-        `/api/method/eits_app.site_address_search.search_site_addresses?search_term=${encodeURIComponent(
-          query
-        )}`
+        `/api/method/eits_app.site_address_search.search_site_addresses?search_term=${encodeURIComponent(query)}`
       );
 
       if (!response.message?.data) {
@@ -821,8 +867,7 @@ useEffect(() => {
       const results = response.message.data;
 
       const transformedResults = results.map((result: any) => {
-        const nameFromSite =
-          result.site_name?.split("-")[0]?.split(",")[0] || "Unknown";
+        const nameFromSite = result.site_name?.split("-")[0]?.split(",")[0] || "Unknown";
         return {
           ...result,
           search_type: "address",
@@ -896,7 +941,6 @@ useEffect(() => {
     setSearchQuery(result.customer_name);
     setShowDropdown(false);
 
-    // Update form data with customer information
     setFormData((prev) => ({
       ...prev,
       lead_name: result.customer_name,
@@ -906,18 +950,15 @@ useEffect(() => {
       lead_id: result.lead_name || "",
     }));
 
-    // If address details are available, populate property fields
     if (result.address_details) {
       setFormData((prev) => ({
         ...prev,
-        custom_property_category:
-          result.address_details?.property_category || "",
+        custom_property_category: result.address_details?.property_category || "",
         custom_emirate: result.address_details?.emirate || "",
         custom_community: result.address_details?.community || "",
         custom_area: result.address_details?.area || "",
         custom_street_name: result.address_details?.street_name || "",
-        custom_property_name__number:
-          result.address_details?.property_number || "",
+        custom_property_name__number: result.address_details?.property_number || "",
         custom_property_area: result.address_details?.combined_address || "",
         custom_property_type: result.address_details?.property_type || "",
       }));
@@ -957,285 +998,80 @@ useEffect(() => {
       name: selectedCustomer.customer_name,
       email: selectedCustomer.email_id || "",
       phone: selectedCustomer.mobile_no || "+971 ",
-      jobType:
-        formData.custom_jobtype ||
-        (jobTypes.length > 0 ? [jobTypes[0].name] : []),
+      jobType: formData.custom_jobtype || (jobTypes.length > 0 ? [jobTypes[0].name] : []),
     });
     setShowCustomerModal(true);
   };
 
-const handleSaveCustomer = async () => {
-  // Validation
-  if (!customerForm.name.trim()) {
-    showToast.error("Customer name is required");
-    return;
-  }
+  const handleSaveCustomer = async () => {
+    if (!customerForm.name.trim()) {
+      showToast.error("Customer name is required");
+      return;
+    }
 
-  if (!customerForm.phone || customerForm.phone.length < 5) {
-    showToast.error("Valid mobile number is required");
-    return;
-  }
+    if (!customerForm.phone || customerForm.phone.length < 5) {
+      showToast.error("Valid mobile number is required");
+      return;
+    }
 
-  try {
-    setIsCreatingCustomer(true);
+    try {
+      setIsCreatingCustomer(true);
 
-    // Create/update customer object for local state
-    const updatedCustomer = {
-      customer_name: customerForm.name.trim(),
-      mobile_no: customerForm.phone,
-      email_id: customerForm.email || "",
-      name: selectedCustomer?.name || "", // Keep existing customer ID if editing
-      lead_name: selectedCustomer?.lead_name || "",
-    };
+      const updatedCustomer = {
+        customer_name: customerForm.name.trim(),
+        mobile_no: customerForm.phone,
+        email_id: customerForm.email || "",
+        name: selectedCustomer?.name || "",
+        lead_name: selectedCustomer?.lead_name || "",
+      };
 
-    // Update selected customer state
-    setSelectedCustomer(updatedCustomer);
-    setSearchQuery(updatedCustomer.customer_name);
+      setSelectedCustomer(updatedCustomer);
+      setSearchQuery(updatedCustomer.customer_name);
 
-    // Update form data locally - this will be saved when handleSubmit is called
-    setFormData((prev) => ({
-      ...prev,
-      lead_name: updatedCustomer.customer_name,
-      email_id: updatedCustomer.email_id,
-      mobile_no: updatedCustomer.mobile_no,
-      // Also update customer_id and lead_id if they exist
-      customer_id: updatedCustomer.name || prev.customer_id,
-      lead_id: updatedCustomer.lead_name || prev.lead_id,
-    }));
+      setFormData((prev) => ({
+        ...prev,
+        lead_name: updatedCustomer.customer_name,
+        email_id: updatedCustomer.email_id,
+        mobile_no: updatedCustomer.mobile_no,
+        customer_id: updatedCustomer.name || prev.customer_id,
+        lead_id: updatedCustomer.lead_name || prev.lead_id,
+      }));
 
-    // Close modal and reset form
-    setShowCustomerModal(false);
-    setCustomerForm({
-      name: "",
-      email: "",
-      phone: "+971 ",
-      jobType: [],
-    });
+      setShowCustomerModal(false);
+      setCustomerForm({
+        name: "",
+        email: "",
+        phone: "+971 ",
+        jobType: [],
+      });
 
-    showToast.success(
-      modalMode === "create" 
-        ? `Customer "${updatedCustomer.customer_name}" details added ` 
-        : `Customer "${updatedCustomer.customer_name}" details updated `
-    );
+      showToast.success(
+        modalMode === "create" 
+          ? `Customer "${updatedCustomer.customer_name}" details added` 
+          : `Customer "${updatedCustomer.customer_name}" details updated`
+      );
 
-  } catch (error) {
-    console.error("Error updating customer details:", error);
-    showToast.error("Failed to update customer details");
-  } finally {
-    setIsCreatingCustomer(false);
-  }
-};
-//   const handleSaveCustomer = async () => {
-//   if (!customerForm.name.trim()) {
-//     showToast.error("Customer name is required");
-//     return;
-//   }
+    } catch (error) {
+      console.error("Error updating customer details:", error);
+      showToast.error("Failed to update customer details");
+    } finally {
+      setIsCreatingCustomer(false);
+    }
+  };
 
-//   if (!customerForm.phone || customerForm.phone.length < 5) {
-//     showToast.error("Valid mobile number is required");
-//     return;
-//   }
-//   if (customerForm.jobType.length === 0) {
-//     showToast.error("At least one job type is required");
-//     return;
-//   }
-
-//   try {
-//     setIsCreatingCustomer(true);
-
-//     // For new inquiries, create the lead immediately
-//     if (!inquiry) {
-//       const formattedData = formatSubmissionData({
-//         lead_name: customerForm.name.trim(),
-//         email_id: customerForm.email || "",
-//         mobile_no: customerForm.phone,
-//         custom_jobtype: customerForm.jobType, // Helper will convert to API format
-//         custom_budget_range: "",
-//         custom_project_urgency: "",
-//         source: "",
-//         custom_property_name__number: "",
-//         custom_emirate: "",
-//         custom_area: "",
-//         custom_community: "",
-//         custom_street_name: "",
-//         custom_property_area: "",
-//         custom_property_category: "",
-//         custom_special_requirements: "",
-//       });
-      
-//       // Create the lead via API
-//       const newLead = await createLead(formattedData);
-//       console.log("Newly created lead:", newLead);
-//       if (!newLead) {
-//         throw new Error("Failed to create lead");
-//       }
-
-//       // Convert API response format back to form format (string[])
-//       const convertedJobTypes = Array.isArray(newLead.custom_jobtype)
-//         ? newLead.custom_jobtype.map((item: any) =>
-//             typeof item === "string" ? item : item.job_type
-//           )
-//         : customerForm.jobType;
-
-        
-//       // Update form data with the new lead
-//       setFormData((prev) => ({
-//         ...prev,
-//         ...newLead,
-//         name: newLead.name, // Set the lead ID
-//         custom_jobtype: convertedJobTypes, // Ensure this is string[]
-//         custom_preferred_inspection_date:
-//           newLead.custom_preferred_inspection_date
-//             ? new Date(newLead.custom_preferred_inspection_date)
-//             : prev.custom_preferred_inspection_date,
-//       }));
-
-      
-
-//       // Update selected customer
-//       const updatedCustomer = {
-//         customer_name: newLead.lead_name || customerForm.name,
-//         mobile_no: newLead.mobile_no || customerForm.phone,
-//         email_id: newLead.email_id || customerForm.email,
-//         name: newLead.name,
-//         lead_name: newLead.name,
-//       };
-
-//       console.log("Updated customer after lead creation:", updatedCustomer);
-
-//       setSelectedCustomer(updatedCustomer);
-//       setSearchQuery(updatedCustomer.customer_name);
-
-//       setShowCustomerModal(false);
-//       setCustomerForm({
-//         name: "",
-//         email: "",
-//         phone: "+971 ",
-//         jobType: [],
-//       });
-
-//       showToast.success(`Lead "${updatedCustomer.customer_name}" created successfully!`);
-//       return;
-//     }
-
-//     // For existing inquiries, update the lead (existing logic)
-//     const leadId = formData.name || selectedCustomer?.name;
-//     if (!leadId) {
-//       throw new Error("No lead ID found for update");
-//     }
-
-//     // Fetch fresh document before updating
-//     const freshLead = await frappeAPI.makeAuthenticatedRequest(
-//       "GET",
-//       `/api/resource/Lead/${leadId}`
-//     );
-//     console.log("Fetched fresh lead data:", freshLead);
-
-//     if (!freshLead?.data) {
-//       throw new Error("Could not fetch fresh lead data");
-//     }
-
-//     // Convert jobType array to the format expected by the API
-//     const apiJobTypeFormat = customerForm.jobType.map((jobType) => ({
-//       job_type: jobType,
-//     }));
-
-//     const newLeadData = {
-//       ...freshLead.data,
-//       lead_name: customerForm.name.trim(),
-//       email_id: customerForm.email || "",
-//       mobile_no: customerForm.phone,
-//       custom_jobtype: apiJobTypeFormat, // Use API format
-//     };
-
-//     // Remove undefined fields
-//     Object.keys(newLeadData).forEach((key) => {
-//       if (newLeadData[key] === undefined) {
-//         delete newLeadData[key];
-//       }
-//     });
-
-//     const updatedLead = await updateLead(leadId, newLeadData);
-
-//     if (!updatedLead) {
-//       throw new Error("Failed to update lead");
-//     }
-
-//     // Convert API response format back to form format (string[])
-//     const convertedJobTypes = Array.isArray(updatedLead.custom_jobtype)
-//       ? updatedLead.custom_jobtype.map((item: any) =>
-//           typeof item === "string" ? item : item.job_type
-//         )
-//       : customerForm.jobType;
-
-//     // Update formData with proper type conversion
-//     setFormData((prev: LeadFormData) => ({
-//       ...prev,
-//       ...updatedLead,
-//       custom_jobtype: convertedJobTypes, // Ensure this is string[]
-//       custom_preferred_inspection_date:
-//         updatedLead.custom_preferred_inspection_date
-//           ? new Date(updatedLead.custom_preferred_inspection_date)
-//           : prev.custom_preferred_inspection_date,
-//     }));
-
-//     // Update date if it exists
-//     if (updatedLead.custom_preferred_inspection_date) {
-//       setDate(new Date(updatedLead.custom_preferred_inspection_date));
-//     }
-
-//     // Update reference input visibility
-//     setShowReferenceInput(
-//       updatedLead.source === "Reference" ||
-//         updatedLead.source === "Supplier Reference"
-//     );
-
-//     // Update the selected customer with new data
-//     const updatedCustomer = {
-//       customer_name: updatedLead.lead_name || customerForm.name,
-//       mobile_no: updatedLead.mobile_no || customerForm.phone,
-//       email_id: updatedLead.email_id || customerForm.email,
-//       name: updatedLead.name,
-//       lead_name: updatedLead.name,
-//     };
-
-//     setSelectedCustomer(updatedCustomer);
-//     setSearchQuery(updatedCustomer.customer_name);
-
-//     setShowCustomerModal(false);
-//     setCustomerForm({
-//       name: "",
-//       email: "",
-//       phone: "+971 ",
-//       jobType: [],
-//     });
-
-//     showToast.success(`Lead "${updatedCustomer.customer_name}" updated successfully!`);
-    
-//   } catch (error) {
-//     console.error("Error saving lead:", error);
-//     showToast.error("Failed to save customer");
-//   } finally {
-//     setIsCreatingCustomer(false);
-//   }
-// };
   const validateRequestedTime = () => {
     if (!requestedTime || !selectedSlot) return false;
 
     const requestedMinutes = timeToMinutes(requestedTime);
     const slotStartMinutes = timeToMinutes(selectedSlot.start);
     const slotEndMinutes = timeToMinutes(selectedSlot.end);
-    const durationMinutes = Math.round(parseFloat(duration) * 60);
+    const duration = calculateDuration();
+    const durationMinutes = Math.round(duration * 60);
 
-    // Check if requested time is within slot
-    if (
-      requestedMinutes < slotStartMinutes ||
-      requestedMinutes >= slotEndMinutes
-    ) {
+    if (requestedMinutes < slotStartMinutes || requestedMinutes >= slotEndMinutes) {
       return false;
     }
 
-    // Check if duration fits within the remaining slot time
     if (requestedMinutes + durationMinutes > slotEndMinutes) {
       return false;
     }
@@ -1243,34 +1079,13 @@ const handleSaveCustomer = async () => {
     return true;
   };
 
-  const calculateEndTime = () => {
-    if (!requestedTime || !duration) return null;
-
-    const startMinutes = timeToMinutes(requestedTime);
-    const durationMinutes = Math.round(parseFloat(duration) * 60);
-    const endMinutes = startMinutes + durationMinutes;
-
-    // Check if end time is valid
-    if (endMinutes > 24 * 60) return null; // Beyond midnight
-
-    const hours = Math.floor(endMinutes / 60);
-    const mins = endMinutes % 60;
-
-    return `${hours.toString().padStart(2, "0")}:${mins
-      .toString()
-      .padStart(2, "0")}`;
-  };
-
   const handleInspectorSelect = (
     email: string,
     availabilityData: InspectorAvailability[],
     modifiedSlots: { start: string; end: string; duration_hours?: number }[]
   ) => {
-    const inspector = availabilityData.find(
-      (inspector) => inspector.email === email
-    );
+    const inspector = availabilityData.find((inspector) => inspector.email === email);
     if (inspector) {
-      // Create a new inspector object with the modified slots
       const modifiedInspector = {
         ...inspector,
         availability: {
@@ -1297,10 +1112,12 @@ const handleSaveCustomer = async () => {
   const handleSlotSelect = (slot: { start: string; end: string }) => {
     setSelectedSlot(slot);
     setRequestedTime(slot.start);
-    setFormData((prev) => ({
-      ...prev,
-      custom_preferred_inspection_time: slot.start,
-    }));
+    const startMinutes = timeToMinutes(slot.start);
+    const slotEndMinutes = timeToMinutes(slot.end);
+    const defaultEndMinutes = Math.min(startMinutes + 15, slotEndMinutes);
+    const hours = Math.floor(defaultEndMinutes / 60);
+    const minutes = defaultEndMinutes % 60;
+    setEndTime(`${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`);
     showToast.success(`Selected time slot: ${slot.start} - ${slot.end}`);
   };
 
@@ -1316,7 +1133,7 @@ const handleSaveCustomer = async () => {
     }
   };
 
-  // Update dropdown position when shown
+  // Update dropdown position
   useEffect(() => {
     if (showDropdown && inputRef.current) {
       const rect = inputRef.current.getBoundingClientRect();
@@ -1331,7 +1148,6 @@ const handleSaveCustomer = async () => {
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      // If customer modal is open and click is outside customer modal, don't close
       if (
         showCustomerModal &&
         customerModalRef.current &&
@@ -1354,7 +1170,7 @@ const handleSaveCustomer = async () => {
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [showCustomerModal]); // Add showCustomerModal as dependency
+  }, [showCustomerModal]);
 
   const DropdownContent = () => (
     <div
@@ -1633,57 +1449,6 @@ const handleSaveCustomer = async () => {
                               createPortal(<DropdownContent />, document.body)}
                           </div>
 
-                          {/* <div className="col-span-1 md:col-span-2">
-                            <Label
-                              htmlFor="source"
-                              className="text-md font-medium text-gray-700 mb-1"
-                            >
-                              Source Of Inquiry{" "}
-                            </Label>
-                            <Select
-                              value={formData.source || ""}
-                              onValueChange={(value) => {
-                                handleSelectChange("source", value);
-                              }}
-                            >
-                              <SelectTrigger className="w-full text-md">
-                                <SelectValue placeholder="Select source" />
-                              </SelectTrigger>
-                              <SelectContent className="bg-white">
-                                {[...utmSource]
-                                  .sort((a, b) => a.name.localeCompare(b.name))
-                                  .map((utms) => (
-                                    <SelectItem
-                                      key={utms.name}
-                                      value={utms.name}
-                                    >
-                                      {utms.name}
-                                    </SelectItem>
-                                  ))}
-                              </SelectContent>
-                            </Select>
-
-                            {showReferenceInput && (
-                              <div className="mt-4">
-                                <Label
-                                  htmlFor="custom_reference_name"
-                                  className="text-md font-medium text-gray-700"
-                                >
-                                  Reference Name{" "}
-                                  <span className="text-red-500">*</span>
-                                </Label>
-                                <Input
-                                  type="text"
-                                  id="custom_reference_name"
-                                  name="custom_reference_name"
-                                  value={formData.custom_reference_name || ""}
-                                  onChange={handleInputChange}
-                                  required
-                                  placeholder="Enter reference name"
-                                />
-                              </div>
-                            )}
-                          </div> */}
                         </div>
                       )}
 
@@ -1931,138 +1696,53 @@ const handleSaveCustomer = async () => {
                               <Label className="text-gray-700 text-md font-medium mb-1">
                                 Finalize Time & Duration
                               </Label>
-                              <div className="grid grid-cols-3 gap-3">
-                                <div className="space-y-1 time-picker-container">
-                                  <Label className="text-xs text-gray-600">
-                                    Start Time *
-                                  </Label>
-                                  <RestrictedTimeClock
-                                    value={requestedTime}
-                                    onChange={(time) => {
-                                      setRequestedTime(time);
-                                      setFormData((prev) => ({
-                                        ...prev,
-                                        custom_preferred_inspection_time: time,
-                                      }));
-                                    }}
-                                    minTime={selectedSlot.start}
-                                    maxTime={selectedSlot.end}
-                                    className="text-sm h-8"
-                                    selectedDate={date}
-                                  />
-                                </div>
+                             <div className="grid grid-cols-3 gap-3">
+  <div className="space-y-1 time-picker-container">
+    <Label className="text-xs text-gray-600">
+      Start Time *
+    </Label>
+    <RestrictedTimeClock
+      value={requestedTime}
+      onChange={handleStartTimeChange}
+      minTime={selectedSlot.start}
+      maxTime={selectedSlot.end}
+      className={`text-sm h-8 ${
+        validationErrors.startTime ? "border-red-500" : ""
+      }`}
+      selectedDate={date}
+    />
+  </div>
 
-                                {/* <div className="space-y-1 w-full">
-                                  <Label className="text-xs text-gray-600">
-                                    Duration *
-                                  </Label>
-                                  <div className="flex w-full ">
-                                    <Input
-                                      type="number"
-                                      step="0.5"
-                                      min="0.5"
-                                      max={(() => {
-                                        if (!selectedSlot || !requestedTime)
-                                          return 8;
-                                        const requestedMinutes =
-                                          timeToMinutes(requestedTime);
-                                        const slotEndMinutes = timeToMinutes(
-                                          selectedSlot.end
-                                        );
-                                        const remainingMinutes =
-                                          slotEndMinutes - requestedMinutes;
-                                        const maxHours = remainingMinutes / 60;
-                                        return Math.max(
-                                          0.5,
-                                          Math.floor(maxHours * 2) / 2
-                                        );
-                                      })()}
-                                      value={duration}
-                                      onChange={(e) => {
-                                        const newDuration = e.target.value;
-                                        setDuration(newDuration);
-                                        setFormData((prev) => ({
-                                          ...prev,
-                                          custom_duration: newDuration,
-                                        }));
-                                      }}
-                                      placeholder="1.5"
-                                      className="text-sm h-8 rounded-r-none "
-                                    />
-                                    <span className="flex items-center justify-center px-3 text-xs text-gray-700 border border-l-0 rounded-r-md bg-gray-50">
-                                      Hrs
-                                    </span>
-                                  </div>
-                                </div> */}
+  <div className="space-y-1">
+    <Label className="text-xs text-gray-600">
+      End Time *
+    </Label>
+    <RestrictedTimeClock
+      value={endTime}
+      onChange={handleEndTimeChange}
+      minTime={getEndTimeConstraints().minTime}
+      maxTime={getEndTimeConstraints().maxTime}
+      className={`text-sm h-8 ${
+        validationErrors.endTime ? "border-red-500" : ""
+      }`}
+      selectedDate={date}
+    />
+  </div>
 
+  <div className="space-y-1">
+    <Label className="text-xs text-gray-600">
+      Duration
+    </Label>
+    <Input
+      type="text"
+      value={calculateDuration() > 0 ? `${calculateDuration().toFixed(1)} hrs` : ""}
+      className="text-sm h-8 bg-gray-100"
+      disabled
+      readOnly
+    />
+  </div>
+</div>
 
-
-                                <div className="space-y-1 w-full">
-                                   <Label className="text-xs text-gray-600">
-                                    Duration *
-                                  </Label>
-                                  <div className="flex w-full ">
-                                  <Input
-                                    type="number"
-                                    step="0.5"
-                                    min="0.5"
-                                    max={(() => {
-                                      if (!selectedSlot || !requestedTime)
-                                        return 8;
-                                      const requestedMinutes =
-                                        timeToMinutes(requestedTime);
-                                      const slotEndMinutes = timeToMinutes(
-                                        selectedSlot.end
-                                      );
-                                      const remainingMinutes =
-                                        slotEndMinutes - requestedMinutes;
-                                      const maxHours = remainingMinutes / 60;
-                                      return Math.max(
-                                        0.5,
-                                        Math.floor(maxHours * 2) / 2
-                                      );
-                                    })()}
-                                    value={duration}
-                                    onChange={(e) => {
-                                      const newDuration = e.target.value;
-                                      setDuration(newDuration);
-                                      setFormData((prev) => ({
-                                        ...prev,
-                                        custom_duration: newDuration,
-                                      }));
-                                    }}
-                                    placeholder="1.5"
-                                    className={`text-sm h-8 rounded-r-none ${
-                                      durationError
-                                        ? "border-red-500 focus:border-red-500 focus:ring-red-500"
-                                        : ""
-                                    }`}
-                                  />
-                                  <span className="flex items-center justify-center px-3 text-xs text-gray-700 border border-l-0 rounded-r-md bg-gray-50">
-                                    Hrs
-                                  </span>
-                                </div>
-                                
-                                {durationError && (
-                                  <p className="text-xs text-red-500 mt-1">
-                                    Duration exceeds available time slot
-                                  </p>
-                                )}
-                                </div>
-
-                                <div className="space-y-1">
-                                  <Label className="text-xs text-gray-600">
-                                    End Time
-                                  </Label>
-                                  <Input
-                                    type="text"
-                                    value={calculateEndTime() ?? ""}
-                                    className="text-sm h-8 bg-gray-100"
-                                    disabled
-                                    readOnly
-                                  />
-                                </div>
-                              </div>
                             </div>
                           )}
                           <div className="space-y-2">
@@ -2270,23 +1950,6 @@ const handleSaveCustomer = async () => {
               </>
             )}
           </div>
-
-          {/* <div className="space-y-2">
-            <Label className="block text-sm font-medium text-gray-700 mb-1">
-              Job Types <span className="text-red-500">*</span>
-            </Label>
-            <MultiSelectJobTypes
-              jobTypes={jobTypes}
-              selectedJobTypes={customerForm.jobType}
-              onSelectionChange={(selected: string[]) => {
-                setCustomerForm((prev: any) => ({
-                  ...prev,
-                  jobType: selected,
-                }));
-              }}
-              placeholder="Select job types"
-            />
-          </div> */}
         </div>
 
         <DialogFooter className="mt-6 flex flex-col sm:flex-row gap-2">
@@ -2331,7 +1994,7 @@ const handleSaveCustomer = async () => {
               </button>
             </div>
             <p className="mb-4 text-gray-700">
-              The calculated end time ({calculateEndTime()}) is after 6:00 PM.
+              The calculated end time  is after 6:00 PM.
               Time shouldn't extend beyond 6:00 PM.
             </p>
 

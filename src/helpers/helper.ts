@@ -212,8 +212,47 @@ export const  budgetRanges = [
 
 
 // Data Formatting for Submission
-export const formatSubmissionData = (formData: any) => {
+export const formatSubmissionData = (formData: any, isUpdate = false) => {
   const submissionData = { ...formData };
+
+  // Helper function to split name into components
+  const splitName = (fullName: string) => {
+    if (!fullName) return { first_name: "", middle_name: "", last_name: "" };
+    
+    const nameParts = fullName.trim().split(/\s+/);
+    
+    if (nameParts.length === 1) {
+      return {
+        first_name: nameParts[0],
+        middle_name: "",
+        last_name: ""
+      };
+    } else if (nameParts.length === 2) {
+      return {
+        first_name: nameParts[0],
+        middle_name: "",
+        last_name: nameParts[1]
+      };
+    } else {
+      return {
+        first_name: nameParts[0],
+        middle_name: nameParts.slice(1, -1).join(" "),
+        last_name: nameParts[nameParts.length - 1]
+      };
+    }
+  };
+
+  // Handle name field differently based on whether it's an update or create
+  if (isUpdate && formData.lead_name) {
+    // For updates, split the lead_name into separate name components
+    const nameComponents = splitName(formData.lead_name);
+    submissionData.first_name = nameComponents.first_name;
+    submissionData.middle_name = nameComponents.middle_name;
+    submissionData.last_name = nameComponents.last_name;
+    // Remove lead_name for updates since we're using separate name fields
+    delete submissionData.lead_name;
+  }
+  // For creates, lead_name remains as is (no changes needed)
 
   // Format job types for backend
   if (formData.custom_jobtype && Array.isArray(formData.custom_jobtype)) {
@@ -224,8 +263,6 @@ export const formatSubmissionData = (formData: any) => {
   } else {
     submissionData.custom_jobtype = [];
   }
-
-  
 
   const getDateString = (date: string | Date | null | undefined): string => {
     if (!date) return "";
@@ -250,7 +287,6 @@ export const formatSubmissionData = (formData: any) => {
     if (!date) return "";
     return getDateString(date);
   };
-  
 
   if (formData.custom_preferred_inspection_time && formData.custom_preferred_inspection_date) {
     const dateStr = getDateString(formData.custom_preferred_inspection_date);
@@ -278,7 +314,6 @@ export const formatSubmissionData = (formData: any) => {
   submissionData.custom_alternative_inspection_date = formatDate(
     formData.custom_alternative_inspection_date
   );
-  
 
   return submissionData;
 };
@@ -502,6 +537,5 @@ export const convertJobTypesToApiFormat = (jobTypes: string[]): { job_type: stri
   return jobTypes.map(jobType => ({ job_type: jobType }));
 };
 
-// Usage examples:
-// For form data: custom_jobtype: convertJobTypesToFormFormat(apiResponse.custom_jobtype)
-// For API calls: custom_jobtype: convertJobTypesToApiFormat(formData.custom_jobtype)
+
+ 
