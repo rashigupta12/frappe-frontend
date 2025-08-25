@@ -26,6 +26,8 @@ import {
 } from "./components/utils/fileUpload";
 
 import { PasswordResetLoader } from "../../common/Loader";
+import { showToast } from "../../helpers/comman";
+import { capitalizeFirstLetter } from "../../helpers/helper";
 import {
   Accordion,
   AccordionContent,
@@ -33,7 +35,6 @@ import {
   AccordionTrigger,
 } from "../ui/accordion";
 import { Button } from "../ui/button";
-import { Calendar } from "../ui/calendar";
 import { Card, CardContent } from "../ui/card";
 import {
   Form,
@@ -48,8 +49,6 @@ import { Popover, PopoverTrigger } from "../ui/popover";
 import { Textarea } from "../ui/textarea";
 import InspectionHeader from "./components/InspectionHeader";
 import MediaUpload from "./components/MediaUpload/MediaUpload";
-import { capitalizeFirstLetter } from "../../helpers/helper";
-import { showToast } from "../../helpers/comman";
 
 // Helper function to get current date and time - memoized
 const getCurrentDateTime = () => {

@@ -1024,8 +1024,6 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
 
     try {
       setIsCreatingCustomer(true);
-    try {
-      setIsCreatingCustomer(true);
 
       const updatedCustomer = {
         customer_name: customerForm.name.trim(),
