@@ -17,7 +17,7 @@ import {
   User,
   UserPen,
   UserPlus,
-  X
+  X,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -145,10 +145,15 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
 
   // Customer search states
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<CustomerSearchResult[]>([]);
+  const [searchResults, setSearchResults] = useState<CustomerSearchResult[]>(
+    []
+  );
   const [isSearching, setIsSearching] = useState(false);
-  const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
-  const [selectedCustomer, setSelectedCustomer] = useState<CustomerSearchResult | null>(null);
+  const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(
+    null
+  );
+  const [selectedCustomer, setSelectedCustomer] =
+    useState<CustomerSearchResult | null>(null);
   const [showDropdown, setShowDropdown] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState({
     top: 0,
@@ -169,7 +174,8 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
   const customerModalRef = useRef<HTMLDivElement>(null);
 
   // Inspector assignment states
-  const [selectedInspector, setSelectedInspector] = useState<InspectorAvailability | null>(null);
+  const [selectedInspector, setSelectedInspector] =
+    useState<InspectorAvailability | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<{
     start: string;
     end: string;
@@ -197,12 +203,13 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
               (!showReferenceInput || !!formData.custom_reference_name),
           };
         case "job":
-          return { 
-            ...section, 
-            completed: !!formData.custom_job_type && 
-                      !!formData.custom_budget_range && 
-                      !!formData.custom_project_urgency &&
-                      !!formData.source
+          return {
+            ...section,
+            completed:
+              !!formData.custom_job_type &&
+              !!formData.custom_budget_range &&
+              !!formData.custom_project_urgency &&
+              !!formData.source,
           };
         case "property":
           return {
@@ -217,43 +224,54 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
               !!formData.custom_area,
           };
         case "inspector":
-          return { 
-            ...section, 
-            completed: !!selectedInspector && !!date && !!requestedTime && !!endTime
+          return {
+            ...section,
+            completed:
+              !!selectedInspector && !!date && !!requestedTime && !!endTime,
           };
         default:
           return section;
       }
     });
-  }, [formData, showReferenceInput, selectedInspector, selectedCustomer, date, requestedTime, endTime]);
+  }, [
+    formData,
+    showReferenceInput,
+    selectedInspector,
+    selectedCustomer,
+    date,
+    requestedTime,
+    endTime,
+  ]);
 
   const calculateDuration = (): number => {
     if (!requestedTime || !endTime) return 0;
-    
+
     const startMinutes = timeToMinutes(requestedTime);
     const endMinutes = timeToMinutes(endTime);
-    
+
     if (endMinutes <= startMinutes) return 0;
-    
+
     return (endMinutes - startMinutes) / 60;
   };
 
-const getDefaultStartTime = () => {
-  const now = new Date();
-  const currentMinutes = now.getHours() * 60 + now.getMinutes();
-  const roundedCurrentMinutes = Math.ceil(currentMinutes / 15) * 15; // Round up to next 15-minute interval
-  
-  let defaultStartMinutes = roundedCurrentMinutes;
-  
-  if (selectedSlot) {
-    const slotStartMinutes = timeToMinutes(selectedSlot.start);
-    defaultStartMinutes = Math.max(defaultStartMinutes, slotStartMinutes);
-  }
-  
-  const hours = Math.floor(defaultStartMinutes / 60);
-  const minutes = defaultStartMinutes % 60;
-  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-};
+  const getDefaultStartTime = () => {
+    const now = new Date();
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+    const roundedCurrentMinutes = Math.ceil(currentMinutes / 15) * 15; // Round up to next 15-minute interval
+
+    let defaultStartMinutes = roundedCurrentMinutes;
+
+    if (selectedSlot) {
+      const slotStartMinutes = timeToMinutes(selectedSlot.start);
+      defaultStartMinutes = Math.max(defaultStartMinutes, slotStartMinutes);
+    }
+
+    const hours = Math.floor(defaultStartMinutes / 60);
+    const minutes = defaultStartMinutes % 60;
+    return `${hours.toString().padStart(2, "0")}:${minutes
+      .toString()
+      .padStart(2, "0")}`;
+  };
 
   // Initialize form data
   useEffect(() => {
@@ -266,7 +284,13 @@ const getDefaultStartTime = () => {
       };
       fetchData();
     }
-  }, [isOpen, hasFetchedInitialData, fetchJobTypes, fetchProjectUrgency, fetchUtmSource]);
+  }, [
+    isOpen,
+    hasFetchedInitialData,
+    fetchJobTypes,
+    fetchProjectUrgency,
+    fetchUtmSource,
+  ]);
 
   useEffect(() => {
     if (!formData.custom_preferred_inspection_time) {
@@ -283,13 +307,15 @@ const getDefaultStartTime = () => {
       if (!validateTimeSelection(requestedTime, endTime, false)) {
         return;
       }
-      
+
       const endMinutes = timeToMinutes(endTime);
       const slotEndMinutes = timeToMinutes(selectedSlot.end);
 
       if (endMinutes > slotEndMinutes) {
         setValidationErrors({ startTime: true, endTime: true });
-        showToast.error(`End time (${endTime}) exceeds the selected slot (${selectedSlot.start} - ${selectedSlot.end}). Please adjust the end time.`);
+        showToast.error(
+          `End time (${endTime}) exceeds the selected slot (${selectedSlot.start} - ${selectedSlot.end}). Please adjust the end time.`
+        );
       } else if (endMinutes > 18 * 60) {
         setShowEndTimeWarning(true);
         setValidationErrors({ startTime: false, endTime: false });
@@ -368,7 +394,11 @@ const getDefaultStartTime = () => {
     setFormData((prev) => ({ ...prev, [name]: capitalizeFirstLetter(value) }));
   };
 
-  const validateTimeSelection = (startTime: string, endTime: string, showError: boolean = true): boolean => {
+  const validateTimeSelection = (
+    startTime: string,
+    endTime: string,
+    showError: boolean = true
+  ): boolean => {
     setValidationErrors({
       startTime: false,
       endTime: false,
@@ -393,21 +423,24 @@ const getDefaultStartTime = () => {
       setValidationErrors({ startTime: true, endTime: true });
     }
 
-    if (isValid && (endMinutes - startMinutes) < 15) {
-      errorMessage = "There must be at least 15 minutes between start and end time";
+    if (isValid && endMinutes - startMinutes < 15) {
+      errorMessage =
+        "There must be at least 15 minutes between start and end time";
       isValid = false;
       setValidationErrors({ startTime: true, endTime: true });
     }
 
     if (isValid && selectedInspector) {
-      const isWithinAvailableSlot = selectedInspector.availability.free_slots.some((slot) => {
-        const slotStart = timeToMinutes(slot.start);
-        const slotEnd = timeToMinutes(slot.end);
-        return startMinutes >= slotStart && endMinutes <= slotEnd;
-      });
+      const isWithinAvailableSlot =
+        selectedInspector.availability.free_slots.some((slot) => {
+          const slotStart = timeToMinutes(slot.start);
+          const slotEnd = timeToMinutes(slot.end);
+          return startMinutes >= slotStart && endMinutes <= slotEnd;
+        });
 
       if (!isWithinAvailableSlot) {
-        errorMessage = "Selected times must be within inspector's available slots";
+        errorMessage =
+          "Selected times must be within inspector's available slots";
         isValid = false;
         setValidationErrors({ startTime: true, endTime: true });
       }
@@ -422,32 +455,36 @@ const getDefaultStartTime = () => {
 
   const getEndTimeConstraints = () => {
     if (selectedSlot) {
-      const minEndTime = requestedTime ? 
-        (() => {
-          const startMinutes = timeToMinutes(requestedTime);
-          const minEndMinutes = startMinutes + 15;
-          const hours = Math.floor(minEndMinutes / 60);
-          const minutes = minEndMinutes % 60;
-          return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-        })() : 
-        selectedSlot.start;
-      
+      const minEndTime = requestedTime
+        ? (() => {
+            const startMinutes = timeToMinutes(requestedTime);
+            const minEndMinutes = startMinutes + 15;
+            const hours = Math.floor(minEndMinutes / 60);
+            const minutes = minEndMinutes % 60;
+            return `${hours.toString().padStart(2, "0")}:${minutes
+              .toString()
+              .padStart(2, "0")}`;
+          })()
+        : selectedSlot.start;
+
       return {
         minTime: minEndTime,
         maxTime: selectedSlot.end,
       };
     }
-    
-    const minEndTime = requestedTime ? 
-      (() => {
-        const startMinutes = timeToMinutes(requestedTime);
-        const minEndMinutes = startMinutes + 15;
-        const hours = Math.floor(minEndMinutes / 60);
-        const minutes = minEndMinutes % 60;
-        return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-      })() : 
-      "09:15";
-    
+
+    const minEndTime = requestedTime
+      ? (() => {
+          const startMinutes = timeToMinutes(requestedTime);
+          const minEndMinutes = startMinutes + 15;
+          const hours = Math.floor(minEndMinutes / 60);
+          const minutes = minEndMinutes % 60;
+          return `${hours.toString().padStart(2, "0")}:${minutes
+            .toString()
+            .padStart(2, "0")}`;
+        })()
+      : "09:15";
+
     return {
       minTime: minEndTime,
       maxTime: "18:00",
@@ -468,16 +505,18 @@ const getDefaultStartTime = () => {
 
       if (currentEndMinutes - startMinutes < 15) {
         const newEndMinutes = startMinutes + 15;
-        
+
         let maxEndMinutes = 18 * 60;
-        
+
         if (selectedInspector) {
-          const containingSlot = selectedInspector.availability.free_slots.find((slot) => {
-            const slotStart = timeToMinutes(slot.start);
-            const slotEnd = timeToMinutes(slot.end);
-            return startMinutes >= slotStart && startMinutes < slotEnd;
-          });
-          
+          const containingSlot = selectedInspector.availability.free_slots.find(
+            (slot) => {
+              const slotStart = timeToMinutes(slot.start);
+              const slotEnd = timeToMinutes(slot.end);
+              return startMinutes >= slotStart && startMinutes < slotEnd;
+            }
+          );
+
           if (containingSlot) {
             maxEndMinutes = timeToMinutes(containingSlot.end);
           }
@@ -488,21 +527,27 @@ const getDefaultStartTime = () => {
         const finalEndMinutes = Math.min(newEndMinutes, maxEndMinutes);
         const hours = Math.floor(finalEndMinutes / 60);
         const minutes = finalEndMinutes % 60;
-        setEndTime(`${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`);
+        setEndTime(
+          `${hours.toString().padStart(2, "0")}:${minutes
+            .toString()
+            .padStart(2, "0")}`
+        );
       }
     } else {
       const startMinutes = timeToMinutes(newTime);
       const defaultEndMinutes = startMinutes + 15;
-      
+
       let maxEndMinutes = 18 * 60;
-      
+
       if (selectedInspector) {
-        const containingSlot = selectedInspector.availability.free_slots.find((slot) => {
-          const slotStart = timeToMinutes(slot.start);
-          const slotEnd = timeToMinutes(slot.end);
-          return startMinutes >= slotStart && startMinutes < slotEnd;
-        });
-        
+        const containingSlot = selectedInspector.availability.free_slots.find(
+          (slot) => {
+            const slotStart = timeToMinutes(slot.start);
+            const slotEnd = timeToMinutes(slot.end);
+            return startMinutes >= slotStart && startMinutes < slotEnd;
+          }
+        );
+
         if (containingSlot) {
           maxEndMinutes = timeToMinutes(containingSlot.end);
         }
@@ -513,7 +558,11 @@ const getDefaultStartTime = () => {
       const finalEndMinutes = Math.min(defaultEndMinutes, maxEndMinutes);
       const hours = Math.floor(finalEndMinutes / 60);
       const minutes = finalEndMinutes % 60;
-      setEndTime(`${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`);
+      setEndTime(
+        `${hours.toString().padStart(2, "0")}:${minutes
+          .toString()
+          .padStart(2, "0")}`
+      );
     }
   };
 
@@ -588,11 +637,23 @@ const getDefaultStartTime = () => {
       return false;
     }
 
+    const isValidEmail = (email: string) => {
+      const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      return regex.test(email);
+    };
+
+    if (formData.email_id && !isValidEmail(formData.email_id)) {
+      showToast.error("Please enter a valid email address");
+      return false;
+    }
+
     if (!formData.custom_jobtype || formData.custom_jobtype.length === 0) {
       showToast.error("At least one job type is required");
       setActiveSection("job");
       return false;
     }
+
+    
 
     return true;
   };
@@ -632,7 +693,10 @@ const getDefaultStartTime = () => {
             });
           }
         } catch (fetchError) {
-          console.warn("Could not fetch fresh lead data, proceeding with existing data:", fetchError);
+          console.warn(
+            "Could not fetch fresh lead data, proceeding with existing data:",
+            fetchError
+          );
         }
 
         const updatedLead = await updateLead(existingLeadId, submissionData);
@@ -717,29 +781,117 @@ const getDefaultStartTime = () => {
       }
 
       onClose();
-    } catch (err) {
+    } catch (err: any) {
       console.error("Form submission error:", err);
-      showToast.error("Failed to create inquiry. Please try again.");
+
+      let errorMessage = "Failed to create inquiry. Please try again.";
+
+      try {
+        const serverMessages =
+          err?.response?.data?._server_messages || err?._server_messages;
+
+        if (serverMessages) {
+          try {
+            const parsed = JSON.parse(serverMessages);
+            if (parsed.length > 0) {
+              errorMessage = parsed[0].message || parsed[0];
+            }
+          } catch {
+            // If already string and not JSON
+            errorMessage = serverMessages;
+          }
+        } else if (err?.response?.data?.exception) {
+          errorMessage =
+            err.response.data.exception.split(":").pop()?.trim() ||
+            errorMessage;
+        } else if (err?.message) {
+          errorMessage = err.message;
+        }
+      } catch (parseErr) {
+        console.warn("Error parsing server error:", parseErr);
+      }
+
+      showToast.error(errorMessage);
     }
   };
 
   const validateFormForAssignment = (): boolean => {
     const requiredFields = [
-      { field: selectedCustomer, message: "Customer selection is required", section: "contact" },
-      { field: formData.custom_jobtype?.length, message: "At least one job type is required", section: "job" },
-      { field: formData.custom_budget_range, message: "Budget range is required", section: "job" },
-      { field: formData.custom_project_urgency, message: "Project urgency is required", section: "job" },
-      { field: formData.source, message: "Source of inquiry is required", section: "contact" },
-      { field: formData.custom_property_name__number, message: "Property number is required", section: "property" },
-      { field: formData.custom_property_category, message: "Property category is required", section: "property" },
-      { field: formData.custom_property_area, message: "Property area is required", section: "property" },
-      { field: formData.custom_street_name, message: "Street name is required", section: "property" },
-      { field: formData.custom_emirate, message: "Emirate is required", section: "property" },
-      { field: formData.custom_community, message: "Community is required", section: "property" },
-      { field: formData.custom_area, message: "Area is required", section: "property" },
-      { field: selectedInspector, message: "Inspector selection is required", section: "inspector" },
-      { field: date, message: "Inspection date is required", section: "inspector" },
-      { field: requestedTime, message: "Requested inspection time is required", section: "inspector" },
+      {
+        field: selectedCustomer,
+        message: "Customer selection is required",
+        section: "contact",
+      },
+      {
+        field: formData.custom_jobtype?.length,
+        message: "At least one job type is required",
+        section: "job",
+      },
+      {
+        field: formData.custom_budget_range,
+        message: "Budget range is required",
+        section: "job",
+      },
+      {
+        field: formData.custom_project_urgency,
+        message: "Project urgency is required",
+        section: "job",
+      },
+      {
+        field: formData.source,
+        message: "Source of inquiry is required",
+        section: "contact",
+      },
+      {
+        field: formData.custom_property_name__number,
+        message: "Property number is required",
+        section: "property",
+      },
+      {
+        field: formData.custom_property_category,
+        message: "Property category is required",
+        section: "property",
+      },
+      {
+        field: formData.custom_property_area,
+        message: "Property area is required",
+        section: "property",
+      },
+      {
+        field: formData.custom_street_name,
+        message: "Street name is required",
+        section: "property",
+      },
+      {
+        field: formData.custom_emirate,
+        message: "Emirate is required",
+        section: "property",
+      },
+      {
+        field: formData.custom_community,
+        message: "Community is required",
+        section: "property",
+      },
+      {
+        field: formData.custom_area,
+        message: "Area is required",
+        section: "property",
+      },
+      {
+        field: selectedInspector,
+        message: "Inspector selection is required",
+        section: "inspector",
+      },
+      {
+        field: date,
+        message: "Inspection date is required",
+        section: "inspector",
+      },
+      {
+        field: requestedTime,
+        message: "Requested inspection time is required",
+        section: "inspector",
+      },
     ];
 
     for (const { field, message, section } of requiredFields) {
@@ -751,21 +903,31 @@ const getDefaultStartTime = () => {
     }
 
     // Additional validations
-    if ((formData.source === "Reference" || formData.source === "Supplier Reference") && !formData.custom_reference_name) {
-      showToast.error("Please complete job details: Reference name is required");
+    if (
+      (formData.source === "Reference" ||
+        formData.source === "Supplier Reference") &&
+      !formData.custom_reference_name
+    ) {
+      showToast.error(
+        "Please complete job details: Reference name is required"
+      );
       setActiveSection("job");
       return false;
     }
 
     if (!validateRequestedTime()) {
-      showToast.error(`Requested time must be within the selected slot (${selectedSlot?.start} - ${selectedSlot?.end})`);
+      showToast.error(
+        `Requested time must be within the selected slot (${selectedSlot?.start} - ${selectedSlot?.end})`
+      );
       setActiveSection("inspector");
       return false;
     }
 
     const endMinutes = timeToMinutes(endTime);
     if (endMinutes > 18 * 60) {
-      showToast.error("Inspection cannot end after 6:00 PM. Please adjust the end time.");
+      showToast.error(
+        "Inspection cannot end after 6:00 PM. Please adjust the end time."
+      );
       setShowEndTimeWarning(true);
       setActiveSection("inspector");
       return false;
@@ -821,13 +983,17 @@ const getDefaultStartTime = () => {
       let employeeName = "";
       const employeeResponse = await frappeAPI.makeAuthenticatedRequest(
         "GET",
-        `/api/resource/Employee?filters=[["user_id","=","${selectedInspector!.email}"]]`
+        `/api/resource/Employee?filters=[["user_id","=","${
+          selectedInspector!.email
+        }"]]`
       );
 
       if (employeeResponse?.data?.length > 0) {
         employeeName = employeeResponse.data[0].name;
       } else {
-        throw new Error(`Could not find employee record for ${selectedInspector!.email}`);
+        throw new Error(
+          `Could not find employee record for ${selectedInspector!.email}`
+        );
       }
 
       const dwaPayload = {
@@ -875,7 +1041,9 @@ const getDefaultStartTime = () => {
     try {
       const response = await frappeAPI.makeAuthenticatedRequest(
         "GET",
-        `/api/method/eits_app.site_address_search.search_site_addresses?search_term=${encodeURIComponent(query)}`
+        `/api/method/eits_app.site_address_search.search_site_addresses?search_term=${encodeURIComponent(
+          query
+        )}`
       );
 
       if (!response.message?.data) {
@@ -885,7 +1053,8 @@ const getDefaultStartTime = () => {
       const results = response.message.data;
 
       const transformedResults = results.map((result: any) => {
-        const nameFromSite = result.site_name?.split("-")[0]?.split(",")[0] || "Unknown";
+        const nameFromSite =
+          result.site_name?.split("-")[0]?.split(",")[0] || "Unknown";
         return {
           ...result,
           search_type: "address",
@@ -971,12 +1140,14 @@ const getDefaultStartTime = () => {
     if (result.address_details) {
       setFormData((prev) => ({
         ...prev,
-        custom_property_category: result.address_details?.property_category || "",
+        custom_property_category:
+          result.address_details?.property_category || "",
         custom_emirate: result.address_details?.emirate || "",
         custom_community: result.address_details?.community || "",
         custom_area: result.address_details?.area || "",
         custom_street_name: result.address_details?.street_name || "",
-        custom_property_name__number: result.address_details?.property_number || "",
+        custom_property_name__number:
+          result.address_details?.property_number || "",
         custom_property_area: result.address_details?.combined_address || "",
         custom_property_type: result.address_details?.property_type || "",
       }));
@@ -1016,7 +1187,9 @@ const getDefaultStartTime = () => {
       name: selectedCustomer.customer_name,
       email: selectedCustomer.email_id || "",
       phone: selectedCustomer.mobile_no || "+971 ",
-      jobType: formData.custom_jobtype || (jobTypes.length > 0 ? [jobTypes[0].name] : []),
+      jobType:
+        formData.custom_jobtype ||
+        (jobTypes.length > 0 ? [jobTypes[0].name] : []),
     });
     setShowCustomerModal(true);
   };
@@ -1079,11 +1252,10 @@ const getDefaultStartTime = () => {
       });
 
       showToast.success(
-        modalMode === "create" 
-          ? `Customer "${updatedCustomer.customer_name}" details added` 
+        modalMode === "create"
+          ? `Customer "${updatedCustomer.customer_name}" details added`
           : `Customer "${updatedCustomer.customer_name}" details updated`
       );
-
     } catch (error) {
       console.error("Error updating customer details:", error);
       showToast.error("Failed to update customer details");
@@ -1101,7 +1273,10 @@ const getDefaultStartTime = () => {
     const duration = calculateDuration();
     const durationMinutes = Math.round(duration * 60);
 
-    if (requestedMinutes < slotStartMinutes || requestedMinutes >= slotEndMinutes) {
+    if (
+      requestedMinutes < slotStartMinutes ||
+      requestedMinutes >= slotEndMinutes
+    ) {
       return false;
     }
 
@@ -1117,7 +1292,9 @@ const getDefaultStartTime = () => {
     availabilityData: InspectorAvailability[],
     modifiedSlots: { start: string; end: string; duration_hours?: number }[]
   ) => {
-    const inspector = availabilityData.find((inspector) => inspector.email === email);
+    const inspector = availabilityData.find(
+      (inspector) => inspector.email === email
+    );
     if (inspector) {
       const modifiedInspector = {
         ...inspector,
@@ -1143,20 +1320,24 @@ const getDefaultStartTime = () => {
   };
 
   const handleSlotSelect = (slot: { start: string; end: string }) => {
-  setSelectedSlot(slot);
-  
-  const defaultStartTime = getDefaultStartTime();
-  setRequestedTime(defaultStartTime);
-  
-  const startMinutes = timeToMinutes(defaultStartTime);
-  const slotEndMinutes = timeToMinutes(slot.end);
-  const defaultEndMinutes = Math.min(startMinutes + 15, slotEndMinutes);
-  const hours = Math.floor(defaultEndMinutes / 60);
-  const minutes = defaultEndMinutes % 60;
-  setEndTime(`${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`);
-  
-  showToast.success(`Selected time slot: ${slot.start} - ${slot.end}`);
-};
+    setSelectedSlot(slot);
+
+    const defaultStartTime = getDefaultStartTime();
+    setRequestedTime(defaultStartTime);
+
+    const startMinutes = timeToMinutes(defaultStartTime);
+    const slotEndMinutes = timeToMinutes(slot.end);
+    const defaultEndMinutes = Math.min(startMinutes + 15, slotEndMinutes);
+    const hours = Math.floor(defaultEndMinutes / 60);
+    const minutes = defaultEndMinutes % 60;
+    setEndTime(
+      `${hours.toString().padStart(2, "0")}:${minutes
+        .toString()
+        .padStart(2, "0")}`
+    );
+
+    showToast.success(`Selected time slot: ${slot.start} - ${slot.end}`);
+  };
 
   const handleDateSelect = (selectedDate: Date | undefined) => {
     setDate(selectedDate);
@@ -1485,7 +1666,6 @@ const getDefaultStartTime = () => {
                               typeof document !== "undefined" &&
                               createPortal(<DropdownContent />, document.body)}
                           </div>
-
                         </div>
                       )}
 
@@ -1733,60 +1913,75 @@ const getDefaultStartTime = () => {
                               <Label className="text-gray-700 text-md font-medium mb-1">
                                 Finalize Time & Duration
                               </Label>
-                             <div className="grid grid-cols-3 gap-3">
-  <div className="space-y-1 time-picker-container">
-    <Label className="text-xs text-gray-600">
-      Start Time *
-    </Label>
-  <RestrictedTimeClock
-  value={requestedTime}
-  onChange={handleStartTimeChange}
-  minTime={selectedSlot ? 
-    (() => {
-      const defaultStart = getDefaultStartTime();
-      const slotStart = selectedSlot.start;
-      return timeToMinutes(defaultStart) > timeToMinutes(slotStart) ? defaultStart : slotStart;
-    })() : 
-    getDefaultStartTime()
-  }
-  maxTime={selectedSlot.end}
-  className={`text-sm h-8 ${
-    validationErrors.startTime ? "border-red-500" : ""
-  }`}
-  selectedDate={date}
-/>
-  </div>
+                              <div className="grid grid-cols-3 gap-3">
+                                <div className="space-y-1 time-picker-container">
+                                  <Label className="text-xs text-gray-600">
+                                    Start Time *
+                                  </Label>
+                                  <RestrictedTimeClock
+                                    value={requestedTime}
+                                    onChange={handleStartTimeChange}
+                                    minTime={
+                                      selectedSlot
+                                        ? (() => {
+                                            const defaultStart =
+                                              getDefaultStartTime();
+                                            const slotStart =
+                                              selectedSlot.start;
+                                            return timeToMinutes(defaultStart) >
+                                              timeToMinutes(slotStart)
+                                              ? defaultStart
+                                              : slotStart;
+                                          })()
+                                        : getDefaultStartTime()
+                                    }
+                                    maxTime={selectedSlot.end}
+                                    className={`text-sm h-8 ${
+                                      validationErrors.startTime
+                                        ? "border-red-500"
+                                        : ""
+                                    }`}
+                                    selectedDate={date}
+                                  />
+                                </div>
 
-  <div className="space-y-1 time-picker-container">
-    <Label className="text-xs text-gray-600">
-      End Time *
-    </Label>
-    <RestrictedTimeClock
-      value={endTime}
-      onChange={handleEndTimeChange}
-      minTime={getEndTimeConstraints().minTime}
-      maxTime={getEndTimeConstraints().maxTime}
-      className={`text-sm h-8 p-0 ${
-        validationErrors.endTime ? "border-red-500" : ""
-      }`}
-      selectedDate={date}
-    />
-  </div>
+                                <div className="space-y-1 time-picker-container">
+                                  <Label className="text-xs text-gray-600">
+                                    End Time *
+                                  </Label>
+                                  <RestrictedTimeClock
+                                    value={endTime}
+                                    onChange={handleEndTimeChange}
+                                    minTime={getEndTimeConstraints().minTime}
+                                    maxTime={getEndTimeConstraints().maxTime}
+                                    className={`text-sm h-8 p-0 ${
+                                      validationErrors.endTime
+                                        ? "border-red-500"
+                                        : ""
+                                    }`}
+                                    selectedDate={date}
+                                  />
+                                </div>
 
-  <div className="space-y-1">
-    <Label className="text-xs text-gray-600">
-      Duration
-    </Label>
-    <Input
-      type="text"
-      value={calculateDuration() > 0 ? `${calculateDuration().toFixed(1)} hrs` : ""}
-      className="text-sm h-8 bg-gray-100"
-      disabled
-      readOnly
-    />
-  </div>
-</div>
-
+                                <div className="space-y-1">
+                                  <Label className="text-xs text-gray-600">
+                                    Duration
+                                  </Label>
+                                  <Input
+                                    type="text"
+                                    value={
+                                      calculateDuration() > 0
+                                        ? `${calculateDuration().toFixed(
+                                            1
+                                          )} hrs`
+                                        : ""
+                                    }
+                                    className="text-sm h-8 bg-gray-100"
+                                    disabled
+                                    readOnly
+                                  />
+                                </div>
+                              </div>
                             </div>
                           )}
                           <div className="space-y-2">
@@ -1886,7 +2081,6 @@ const getDefaultStartTime = () => {
                   type="submit"
                   disabled={loading}
                   className="px-6 bg-emerald-600 hover:bg-emerald-700"
-
                 >
                   {loading ? (
                     <div className="flex items-center gap-2">
@@ -1908,122 +2102,122 @@ const getDefaultStartTime = () => {
 
       {/* Customer Modal */}
       <Dialog open={showCustomerModal} onOpenChange={setShowCustomerModal}>
-      <DialogContent
-        className="sm:max-w-[500px] max-h-[85vh] overflow-y-auto bg-white p-4 md:p-6"
-        ref={customerModalRef}
-        onInteractOutside={(e) => {
-          // Prevent closing when clicking outside
-          e.preventDefault();
-        }}
-      >
-        <DialogHeader className="mb-4">
-          <DialogTitle className="text-xl">
-            {modalMode === "create" ? "Add New Lead" : "Edit Lead"}
-          </DialogTitle>
-          <DialogDescription className="text-sm">
-            {modalMode === "create"
-              ? "Fill in the details to add a new lead"
-              : "Update the lead details below"}
-          </DialogDescription>
-        </DialogHeader>
+        <DialogContent
+          className="sm:max-w-[500px] max-h-[85vh] overflow-y-auto bg-white p-4 md:p-6"
+          ref={customerModalRef}
+          onInteractOutside={(e) => {
+            // Prevent closing when clicking outside
+            e.preventDefault();
+          }}
+        >
+          <DialogHeader className="mb-4">
+            <DialogTitle className="text-xl">
+              {modalMode === "create" ? "Add New Lead" : "Edit Lead"}
+            </DialogTitle>
+            <DialogDescription className="text-sm">
+              {modalMode === "create"
+                ? "Fill in the details to add a new lead"
+                : "Update the lead details below"}
+            </DialogDescription>
+          </DialogHeader>
 
-        <div className="space-y-4 py-2">
-          <div>
-            <Label className="block text-sm font-medium text-gray-700 mb-1">
-              Full Name <span className="text-red-500">*</span>
-            </Label>
-            <Input
-              type="text"
-              name="name"
-              value={customerForm.name}
-              onChange={(e) =>
-                setCustomerForm((prev: any) => ({
-                  ...prev,
-                  name: capitalizeFirstLetter(e.target.value),
-                }))
-              }
-              placeholder="Enter customer name"
-              required
-              disabled={isCreatingCustomer}
-              className="w-full"
-            />
+          <div className="space-y-4 py-2">
+            <div>
+              <Label className="block text-sm font-medium text-gray-700 mb-1">
+                Full Name <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                type="text"
+                name="name"
+                value={customerForm.name}
+                onChange={(e) =>
+                  setCustomerForm((prev: any) => ({
+                    ...prev,
+                    name: capitalizeFirstLetter(e.target.value),
+                  }))
+                }
+                placeholder="Enter customer name"
+                required
+                disabled={isCreatingCustomer}
+                className="w-full"
+              />
+            </div>
+
+            <div>
+              <Label className="block text-sm font-medium text-gray-700 mb-1">
+                Phone Number <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                type="tel"
+                name="phone"
+                value={customerForm.phone}
+                onChange={handlePhoneChange}
+                onKeyDown={handleKeyDown}
+                placeholder="+971 XX XXX XXXX"
+                maxLength={17}
+                required
+                disabled={isCreatingCustomer}
+                className="w-full"
+              />
+            </div>
+
+            <div>
+              <Label className="block text-sm font-medium text-gray-700 mb-1">
+                Email
+              </Label>
+              <Input
+                type="email"
+                name="email"
+                value={customerForm.email}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setCustomerForm((prev: any) => ({ ...prev, email: value }));
+                }}
+                placeholder="Enter email"
+                disabled={isCreatingCustomer}
+                className="w-full"
+              />
+              {/* Error message */}
+              {customerForm.email && (
+                <>
+                  {!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerForm.email) && (
+                    <p className="text-sm text-red-500 mt-1">
+                      Must be a valid email format (example: user@example.com)
+                    </p>
+                  )}
+                </>
+              )}
+            </div>
           </div>
 
-          <div>
-            <Label className="block text-sm font-medium text-gray-700 mb-1">
-              Phone Number <span className="text-red-500">*</span>
-            </Label>
-            <Input
-              type="tel"
-              name="phone"
-              value={customerForm.phone}
-              onChange={handlePhoneChange}
-              onKeyDown={handleKeyDown}
-              placeholder="+971 XX XXX XXXX"
-              maxLength={17}
-              required
+          <DialogFooter className="mt-6 flex flex-col sm:flex-row gap-2">
+            <Button
+              variant="outline"
+              onClick={handleCancelSaveCustomer}
               disabled={isCreatingCustomer}
-              className="w-full"
-            />
-          </div>
-
-          <div>
-            <Label className="block text-sm font-medium text-gray-700 mb-1">
-              Email
-            </Label>
-            <Input
-              type="email"
-              name="email"
-              value={customerForm.email}
-              onChange={(e) => {
-                const value = e.target.value;
-                setCustomerForm((prev: any) => ({ ...prev, email: value }));
-              }}
-              placeholder="Enter email"
+              className="w-full sm:w-auto"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSaveCustomer}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white w-full sm:w-auto"
               disabled={isCreatingCustomer}
-              className="w-full"
-            />
-            {/* Error message */}
-            {customerForm.email && (
-              <>
-                {!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerForm.email) && (
-                  <p className="text-sm text-red-500 mt-1">
-                    Must be a valid email format (example: user@example.com)
-                  </p>
-                )}
-              </>
-            )}
-          </div>
-        </div>
-
-        <DialogFooter className="mt-6 flex flex-col sm:flex-row gap-2">
-          <Button
-            variant="outline"
-            onClick={handleCancelSaveCustomer}
-            disabled={isCreatingCustomer}
-            className="w-full sm:w-auto"
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleSaveCustomer}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white w-full sm:w-auto"
-            disabled={isCreatingCustomer}
-          >
-            {isCreatingCustomer ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                {modalMode === "create" ? "Creating..." : "Updating..."}
-              </>
-            ) : modalMode === "create" ? (
-              "Save"
-            ) : (
-              "Update"
-            )}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+            >
+              {isCreatingCustomer ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {modalMode === "create" ? "Creating..." : "Updating..."}
+                </>
+              ) : modalMode === "create" ? (
+                "Save"
+              ) : (
+                "Update"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {showEndTimeWarning && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-6">
@@ -2038,8 +2232,8 @@ const getDefaultStartTime = () => {
               </button>
             </div>
             <p className="mb-4 text-gray-700">
-              The calculated end time  is after 6:00 PM.
-              Time shouldn't extend beyond 6:00 PM.
+              The calculated end time is after 6:00 PM. Time shouldn't extend
+              beyond 6:00 PM.
             </p>
 
             <div className="flex justify-end">
