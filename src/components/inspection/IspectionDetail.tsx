@@ -954,7 +954,7 @@ const onSubmit = (values: z.infer<typeof formSchema>) => {
                                               }}
                                             />
                                           </FormControl>
-                                          <FormMessage className="text-xs" />
+                                          <FormMessage className="text-xs text-red-500" />
                                         </FormItem>
                                       )}
                                     />
@@ -985,7 +985,7 @@ const onSubmit = (values: z.infer<typeof formSchema>) => {
                                               }}
                                             />
                                           </FormControl>
-                                          <FormMessage className="text-xs" />
+                                          <FormMessage className="text-xs text-red-500" />
                                         </FormItem>
                                       )}
                                     />
@@ -1018,7 +1018,7 @@ const onSubmit = (values: z.infer<typeof formSchema>) => {
                                             )}
                                             isReadOnly={isReadOnly}
                                           />
-                                          <FormMessage className="text-xs" />
+                                          <FormMessage className="text-xs text-red-500" />
                                         </FormItem>
                                       )}
                                     />
@@ -1154,7 +1154,7 @@ const onSubmit = (values: z.infer<typeof formSchema>) => {
                                     );
                                   }}
                                 />
-                                <FormMessage className="text-xs" />
+                                <FormMessage className="text-xs text-red-400" />
                               </FormItem>
                             )}
                           />
@@ -1216,7 +1216,7 @@ const onSubmit = (values: z.infer<typeof formSchema>) => {
                                     );
                                   }}
                                 />
-                                <FormMessage className="text-xs" />
+                                <FormMessage className="text-xs " />
                               </FormItem>
                             )}
                           />

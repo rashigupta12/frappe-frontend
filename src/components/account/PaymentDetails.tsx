@@ -341,10 +341,17 @@ const PaymentDetails: React.FC<Props> = ({ payment, onClose }) => {
         <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-2">
           <SimpleField label="Payment Date" value={fmt(payment.date)} />
           <SimpleField label="Bill Number" value={payment.bill_number} />
-          <SimpleField label="Paid To" value={payment.paid_to} />
-          <SimpleField label="Paid By" value={payment.paid_by} />
+          
+         
           {/* <SimpleField label="Modified By" value={payment.modified_by} /> */}
         </div>
+        <div className="mb-2">
+          <SimpleField label="Paid To" value={payment.paid_to} />
+        </div>
+        <div className="mb-2">
+<SimpleField label="Paid By" value={payment.paid_by} />
+        </div>
+         
         {/* Purpose */}
         {payment.custom_purpose_of_payment && (
           <div className="bg-gray-100 rounded-lg p-3 mb-2">

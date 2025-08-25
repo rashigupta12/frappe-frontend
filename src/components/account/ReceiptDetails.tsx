@@ -338,19 +338,23 @@ const ReceiptDetails: React.FC<Props> = ({ receipt, onClose }) => {
             label="Bill Number"
             value={receipt.bill_number}
           />
+          
+         
+        </div>
+        <div className="mb-2">
           <SimpleField
             label="Paid From"
             value={receipt.paid_from}
           />
-          <SimpleField
+          </div>
+
+          <div className="mb-2">
+             <SimpleField
             label="Paid By"
             value={receipt.paid_by}
           />
-          <SimpleField
-            label="Status"
-            value={receipt.docstatus === 0 ? "Draft" : "Submitted"}
-          />
-        </div>
+          
+          </div>
 
         {/* Purpose */}
         {receipt.custom_purpose_of_payment && (
