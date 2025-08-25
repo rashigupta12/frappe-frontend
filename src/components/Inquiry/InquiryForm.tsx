@@ -238,6 +238,23 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     return (endMinutes - startMinutes) / 60;
   };
 
+const getDefaultStartTime = () => {
+  const now = new Date();
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+  const roundedCurrentMinutes = Math.ceil(currentMinutes / 15) * 15; // Round up to next 15-minute interval
+  
+  let defaultStartMinutes = roundedCurrentMinutes;
+  
+  if (selectedSlot) {
+    const slotStartMinutes = timeToMinutes(selectedSlot.start);
+    defaultStartMinutes = Math.max(defaultStartMinutes, slotStartMinutes);
+  }
+  
+  const hours = Math.floor(defaultStartMinutes / 60);
+  const minutes = defaultStartMinutes % 60;
+  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+};
+
   // Initialize form data
   useEffect(() => {
     if (!hasFetchedInitialData && isOpen) {
@@ -1126,16 +1143,20 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
   };
 
   const handleSlotSelect = (slot: { start: string; end: string }) => {
-    setSelectedSlot(slot);
-    setRequestedTime(slot.start);
-    const startMinutes = timeToMinutes(slot.start);
-    const slotEndMinutes = timeToMinutes(slot.end);
-    const defaultEndMinutes = Math.min(startMinutes + 15, slotEndMinutes);
-    const hours = Math.floor(defaultEndMinutes / 60);
-    const minutes = defaultEndMinutes % 60;
-    setEndTime(`${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`);
-    showToast.success(`Selected time slot: ${slot.start} - ${slot.end}`);
-  };
+  setSelectedSlot(slot);
+  
+  const defaultStartTime = getDefaultStartTime();
+  setRequestedTime(defaultStartTime);
+  
+  const startMinutes = timeToMinutes(defaultStartTime);
+  const slotEndMinutes = timeToMinutes(slot.end);
+  const defaultEndMinutes = Math.min(startMinutes + 15, slotEndMinutes);
+  const hours = Math.floor(defaultEndMinutes / 60);
+  const minutes = defaultEndMinutes % 60;
+  setEndTime(`${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`);
+  
+  showToast.success(`Selected time slot: ${slot.start} - ${slot.end}`);
+};
 
   const handleDateSelect = (selectedDate: Date | undefined) => {
     setDate(selectedDate);
@@ -1717,16 +1738,23 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     <Label className="text-xs text-gray-600">
       Start Time *
     </Label>
-    <RestrictedTimeClock
-      value={requestedTime}
-      onChange={handleStartTimeChange}
-      minTime={selectedSlot.start}
-      maxTime={selectedSlot.end}
-      className={`text-sm h-8 ${
-        validationErrors.startTime ? "border-red-500" : ""
-      }`}
-      selectedDate={date}
-    />
+  <RestrictedTimeClock
+  value={requestedTime}
+  onChange={handleStartTimeChange}
+  minTime={selectedSlot ? 
+    (() => {
+      const defaultStart = getDefaultStartTime();
+      const slotStart = selectedSlot.start;
+      return timeToMinutes(defaultStart) > timeToMinutes(slotStart) ? defaultStart : slotStart;
+    })() : 
+    getDefaultStartTime()
+  }
+  maxTime={selectedSlot.end}
+  className={`text-sm h-8 ${
+    validationErrors.startTime ? "border-red-500" : ""
+  }`}
+  selectedDate={date}
+/>
   </div>
 
   <div className="space-y-1 time-picker-container">
