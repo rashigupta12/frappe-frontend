@@ -53,23 +53,23 @@ const JobCardOtherDetails: React.FC<Props> = ({ card, onClose }) => {
 
       {/* Services Section */}
       <Section title={`Services (${card.services?.length || 0})`}>
-        {!card.services || card.services.length === 0 ? (
-          <p className="text-sm text-gray-500">None</p>
-        ) : (
-          <ChildTable
-            rows={card.services}
-            cols={[
-              'work_type',
-              'work_description',
-              'start_date',
-              'finish_date',
-              'price',
-            ]}
-            dateFields={['start_date', 'finish_date']}
-            fmt={fmt}
-          />
-        )}
-      </Section>
+  {!card.services || card.services.length === 0 ? (
+    <p className="text-sm text-gray-500">None</p>
+  ) : (
+    <ChildTable
+      rows={card.services}
+      cols={[
+        'work_type',
+        'work_description',
+        'start_date',
+        'finish_date',
+      ]}
+      dateFields={['start_date', 'finish_date']}
+      fmt={fmt}
+    />
+  )}
+</Section>
+
 
       <DialogFooter className="mt-6">
         <Button onClick={onClose}>Close</Button>
@@ -126,13 +126,12 @@ function ChildTable({
 }) {
   return (
     <div className="w-full">
-      <table className="w-full text-xs border-collapse border border-gray-300 table-auto"> {/* table-auto allows columns to grow */}
+      <table className="w-full text-xs border-collapse border border-gray-300 table-auto">
         <colgroup>
-          <col className="w-[15%]" /> {/* work_type */}
-          <col className="w-[35%]" /> {/* work_description - wider for mobile */}
+          <col className="w-[20%]" /> {/* work_type */}
+          <col className="w-[50%]" /> {/* work_description */}
           <col className="w-[15%]" /> {/* start_date */}
           <col className="w-[15%]" /> {/* finish_date */}
-          <col className="w-[10%]" /> {/* price */}
         </colgroup>
         <thead className="bg-gray-50">
           <tr>
@@ -141,12 +140,7 @@ function ChildTable({
                 key={c}
                 className="px-1 py-1 text-left font-medium text-gray-700 border border-gray-300 text-xs"
               >
-                {c === 'price' 
-                  ? 'Price (AED)'
-                  : c
-                      .replace(/_/g, ' ')
-                      .replace(/\b\w/g, (l) => l.toUpperCase())
-                }
+                {c.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())}
               </th>
             ))}
           </tr>
@@ -155,22 +149,17 @@ function ChildTable({
           {rows.map((r, i) => (
             <tr key={i}>
               {cols.map((c) => (
-                <td 
+                <td
                   key={c}
                   className={
                     c === 'work_description'
                       ? 'px-2 py-2 border border-gray-300 text-xs align-top break-words whitespace-pre-line max-w-[100px]'
-                      : c === 'price'
-                        ? 'px-2 py-2 border border-gray-300 text-xs align-top text-right'
-                        : 'px-2 py-2 border border-gray-300 text-xs align-top'
+                      : 'px-2 py-2 border border-gray-300 text-xs align-top'
                   }
                 >
-                  {c === 'price' && r[c] 
-                    ? `${r[c]} AED`
-                    : dateFields.includes(c) && fmt && r[c] 
-                      ? fmt(r[c])
-                      : r[c] ?? '—'
-                  }
+                  {dateFields.includes(c) && fmt && r[c]
+                    ? fmt(r[c])
+                    : r[c] ?? '—'}
                 </td>
               ))}
             </tr>
@@ -180,3 +169,4 @@ function ChildTable({
     </div>
   );
 }
+
