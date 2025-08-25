@@ -91,7 +91,7 @@ const sections: FormSection[] = [
   },
   {
     id: "job",
-    title: "Service Requirements",
+    title: "Job Details",
     icon: <Home className="h-4 w-4" />,
     completed: false,
   },
@@ -1728,7 +1728,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     />
   </div>
 
-  <div className="space-y-1">
+  <div className="space-y-1 time-picker-container">
     <Label className="text-xs text-gray-600">
       End Time *
     </Label>
@@ -1737,7 +1737,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
       onChange={handleEndTimeChange}
       minTime={getEndTimeConstraints().minTime}
       maxTime={getEndTimeConstraints().maxTime}
-      className={`text-sm h-8 ${
+      className={`text-sm h-8 p-0 ${
         validationErrors.endTime ? "border-red-500" : ""
       }`}
       selectedDate={date}

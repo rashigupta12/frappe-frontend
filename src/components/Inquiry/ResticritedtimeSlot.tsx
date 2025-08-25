@@ -307,8 +307,8 @@ export const RestrictedTimeClock: React.FC<RestrictedTimeClockProps> = ({
         className="w-full bg-white border border-gray-700 rounded-md px-2 py-2 text-xs cursor-pointer flex items-center justify-between hover:border-gray-400 transition-colors"
         onClick={() => setIsOpen(!isOpen)}
       >
-        <span className={value ? 'text-gray-900 text-xs ' : 'text-gray-500 text-xs'}>
-          {value ? formatDisplayTime(value) : 'Select time'}
+        <span className={value ? 'text-gray-900 text-xs ' : 'text-gray-500 text-xs '}>
+          {value ? formatDisplayTime(value) : 'Select'}
         </span>
         <Clock className="h-3.5 w-3.5 text-gray-400 " />
       </div>
