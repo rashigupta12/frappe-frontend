@@ -752,8 +752,8 @@ const getDefaultStartTime = () => {
 
     // Additional validations
     if ((formData.source === "Reference" || formData.source === "Supplier Reference") && !formData.custom_reference_name) {
-      showToast.error("Please complete customer details: Reference name is required");
-      setActiveSection("contact");
+      showToast.error("Please complete job details: Reference name is required");
+      setActiveSection("job");
       return false;
     }
 
