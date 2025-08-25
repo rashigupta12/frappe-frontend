@@ -1008,12 +1008,22 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
       showToast.error("Customer name is required");
       return;
     }
+    if (!customerForm.name.trim()) {
+      showToast.error("Customer name is required");
+      return;
+    }
 
     if (!customerForm.phone || customerForm.phone.length < 5) {
       showToast.error("Valid mobile number is required");
       return;
     }
+    if (!customerForm.phone || customerForm.phone.length < 5) {
+      showToast.error("Valid mobile number is required");
+      return;
+    }
 
+    try {
+      setIsCreatingCustomer(true);
     try {
       setIsCreatingCustomer(true);
 
@@ -1037,6 +1047,13 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
         lead_id: updatedCustomer.lead_name || prev.lead_id,
       }));
 
+      setShowCustomerModal(false);
+      setCustomerForm({
+        name: "",
+        email: "",
+        phone: "+971 ",
+        jobType: [],
+      });
       setShowCustomerModal(false);
       setCustomerForm({
         name: "",
