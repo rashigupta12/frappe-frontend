@@ -67,10 +67,7 @@ export const ServerDownScreen: React.FC<ServerDownScreenProps> = ({
           </ul>
 
           {/* Contact Info */}
-          <div className="mt-3 border-t pt-3 text-center">
-            <p className="text-gray-600">
-              If you have any questions, reach us at:
-            </p>
+          
            <div className="mt-3 border-t pt-3 text-center space-y-1">
   <p className="text-gray-600">If you have any questions, reach us at:</p>
 
@@ -90,9 +87,10 @@ export const ServerDownScreen: React.FC<ServerDownScreenProps> = ({
     +971 050 176 8742
   </a>
 </div>
-          </div>
+</div>
+          
         </div>
       </div>
-    </div>
+  
   );
 };
