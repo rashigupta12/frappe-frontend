@@ -782,37 +782,46 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
 
       onClose();
     } catch (err: any) {
-      console.error("Form submission error:", err);
+  console.error("Form submission error:", err);
 
-      let errorMessage = "Failed to create inquiry. Please try again.";
+  let errorMessage = "Failed to create inquiry. Please try again.";
 
-      try {
-        const serverMessages =
-          err?.response?.data?._server_messages || err?._server_messages;
+  try {
+    // ✅ Handle 502 / 503 first
+    if (err?.response?.status === 502 || err?.response?.status === 503) {
+      errorMessage = "Server is temporarily unavailable. Please try again later.";
+    } else {
+      const serverMessages =
+        err?.response?.data?._server_messages || err?._server_messages;
 
-        if (serverMessages) {
-          try {
-            const parsed = JSON.parse(serverMessages);
-            if (parsed.length > 0) {
-              errorMessage = parsed[0].message || parsed[0];
-            }
-          } catch {
-            // If already string and not JSON
-            errorMessage = serverMessages;
+      if (serverMessages) {
+        try {
+          const parsed = JSON.parse(serverMessages);
+          if (parsed.length > 0) {
+            errorMessage = parsed[0].message || parsed[0];
           }
-        } else if (err?.response?.data?.exception) {
-          errorMessage =
-            err.response.data.exception.split(":").pop()?.trim() ||
-            errorMessage;
-        } else if (err?.message) {
-          errorMessage = err.message;
+        } catch {
+          // If already string and not JSON
+          errorMessage = serverMessages;
         }
-      } catch (parseErr) {
-        console.warn("Error parsing server error:", parseErr);
+      } else if (err?.response?.data?.exception) {
+        errorMessage =
+          err.response.data.exception.split(":").pop()?.trim() ||
+          errorMessage;
+      } else if (err?.message) {
+        errorMessage = err.message;
+        console.log("General error message:", errorMessage);
       }
-
-      showToast.error(errorMessage);
     }
+  } catch (parseErr) {
+    console.warn("Error parsing server error:", parseErr);
+  }
+
+  
+
+  showToast.error("Failed to create inquiry");
+}
+
   };
 
   const validateFormForAssignment = (): boolean => {
