@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useState, type ReactNode } from "react";
 import { Toaster } from "react-hot-toast";
 import {
@@ -20,6 +21,7 @@ import { LeadsProvider } from "./context/LeadContext";
 import "./App.css";
 import { PasswordResetLoader } from "./common/Loader";
 import { FirstTimePasswordReset } from "./components/auth/NewPassword";
+import { ServerDownScreen } from "./common/SeverdownScrren";
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -259,6 +261,33 @@ const Unauthorized = () => {
 };
 
 function AppRoutes() {
+
+  const { serverDown, checkServerHealth, setServerDown } = useAuth();
+
+  // Listen for server down events
+  useEffect(() => {
+    const handleServerDown = (event: CustomEvent) => {
+      setServerDown(event.detail);
+    };
+
+    window.addEventListener('serverDown' as any, handleServerDown);
+    
+    return () => {
+      window.removeEventListener('serverDown' as any, handleServerDown);
+    };
+  }, [setServerDown]);
+
+  const handleServerRetry = async () => {
+    const isHealthy = await checkServerHealth();
+    if (!isHealthy) {
+      throw new Error('Server is still unavailable');
+    }
+  };
+
+  // Show server down screen if server is down
+  if (serverDown) {
+    return <ServerDownScreen onRetry={handleServerRetry} />;
+  }
   return (
     <Router>
       <Routes>

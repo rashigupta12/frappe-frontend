@@ -330,10 +330,10 @@ const handleLogout = async () => {
           </div>
           
           {/* User Info Section - Fixed at Bottom */}
-          <div className="flex-shrink-0 p-2 pb-20 sm:p-3 border-t border-emerald-100 capitalize">
+          <div className="flex-shrink-0 p-2 pb-20 sm:p-3 border-t border-emerald-100 ">
             <div className="bg-emerald-50 rounded-lg border border-emerald-100 p-2 sm:p-3">
               <div className="min-w-0"> {/* min-w-0 allows flex children to shrink below content size */}
-                <div className="text-xs sm:text-sm font-medium text-emerald-800 truncate mb-0.5">
+                <div className="text-xs sm:text-sm font-medium text-emerald-800 truncate mb-0.5 capitalize">
                   {user?.full_name || user?.username || "User"}
                 </div>
                 {user?.email && (
@@ -343,7 +343,7 @@ const handleLogout = async () => {
                 )}
                 {/* Role badge for mobile if multi-role */}
                 {isMultiRole && (
-                  <div className="text-xs text-emerald-700 bg-emerald-100 px-2 py-1 rounded mt-1 truncate lg:hidden">
+                  <div className="text-xs text-emerald-700 bg-emerald-100 px-2 py-1 rounded mt-1 truncate lg:hidden capitalize">
                     Role: <span className="font-medium">Project Manager</span>
                   </div>
                 )}

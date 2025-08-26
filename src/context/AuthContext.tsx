@@ -38,6 +38,9 @@ interface AuthContextType {
   getDisplayRoleName: (role: string) => string;
   isMultiRole: boolean;
   isSwitchingRole: boolean;
+ serverDown: boolean;
+  setServerDown: (down: boolean) => void;
+  checkServerHealth: () => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -59,6 +62,9 @@ const AuthContext = createContext<AuthContextType>({
   getDisplayRoleName: () => '',
   isMultiRole: false,
   isSwitchingRole: false,
+  serverDown: false,
+  setServerDown: () => {}, // Simple no-op function
+  checkServerHealth: async () => false, // Simple fallback
 });
 
 // Only these roles are allowed
@@ -145,6 +151,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [currentRole, setCurrentRole] = useState<AllowedRole | null>(null);
   const [availableRoles, setAvailableRoles] = useState<AllowedRole[]>([]);
   const [isSwitchingRole, setIsSwitchingRole] = useState(false);
+  const [serverDown, setServerDown] = useState(false);
 
   useEffect(() => {
     checkAuthStatus();
@@ -156,6 +163,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.setItem(`currentRole_${user.username}`, currentRole);
     }
   }, [currentRole, user?.username]);
+
+const checkServerHealth = async (): Promise<boolean> => {
+  try {
+    const response = await frappeAPI.testConnection(); // Use your existing testConnection method
+    if (response.success) {
+      setServerDown(false);
+      return true;
+    }
+    setServerDown(true);
+    return false;
+  } catch (error) {
+    console.error('Server health check failed:', error);
+    setServerDown(true);
+    return false;
+  }
+};
+
+// Add auto-retry mechanism in AuthProvider
+useEffect(() => {
+  let retryInterval: NodeJS.Timeout;
+  
+  if (serverDown) {
+    retryInterval = setInterval(async () => {
+      console.log('Auto-retrying server connection...');
+      await checkServerHealth();
+    }, 30000); // Retry every 30 seconds
+  }
+  
+  return () => {
+    if (retryInterval) {
+      clearInterval(retryInterval);
+    }
+  };
+}, [serverDown]); // Remove checkServerHealth from dependencies to avoid re-creating interval
 // Update the resetPassword function in AuthContext.tsx
 
 const resetPassword = async (username: string, newPassword: string) => {
@@ -614,7 +655,8 @@ const login = async (username: string, password: string) => {
     return roleDisplayMap[role] || role.replace(/_/g, ' ');
   };
 
- const value = {
+// In your AuthProvider component, the value object should be:
+const value = {
   user,
   login,
   logout,
@@ -623,9 +665,8 @@ const login = async (username: string, password: string) => {
   resetPassword,
   loading,
   error,
-  // CRITICAL FIX: Only authenticated if user exists AND doesn't need password reset AND has valid roles
   isAuthenticated: !!user && !user?.requiresPasswordReset && !!currentRole,
-  needsPasswordReset: !!user?.requiresPasswordReset, // New property to check password reset status
+  needsPasswordReset: !!user?.requiresPasswordReset,
   role: currentRole,
   canAccess,
   currentRole,
@@ -634,6 +675,9 @@ const login = async (username: string, password: string) => {
   getDisplayRoleName,
   isMultiRole: availableRoles.length > 1,
   isSwitchingRole,
+  serverDown,
+  setServerDown, // This uses the actual state setter
+  checkServerHealth, // This uses the actual function you defined
   hasRole: (roleToCheck: string): boolean => {
     return currentRole === roleToCheck;
   },
@@ -641,7 +685,6 @@ const login = async (username: string, password: string) => {
     if (!currentRole || !rolesToCheck.length) return false;
     return rolesToCheck.includes(currentRole);
   },
-
 };
   return (
     <AuthContext.Provider value={value}>

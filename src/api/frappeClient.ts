@@ -124,15 +124,13 @@ frappeClient.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Add response interceptor for error handling
 frappeClient.interceptors.response.use(
   (response) => {
     console.log('API response:', {
       status: response.status,
-      url: response.config.url
+      url: response.config.url,
     });
-    
-    // Log successful responses
+
     if (response.headers['set-cookie']) {
       console.log('Cookies received:', response.headers['set-cookie']);
     }
@@ -144,22 +142,46 @@ frappeClient.interceptors.response.use(
       statusText: error.response?.statusText,
       message: error.response?.data?.message || error.message,
       url: error.config?.url,
-      data: error.response?.data
+      data: error.response?.data,
+      code: error.code,
     });
 
-    if (error.response?.status === 401 || error.response?.status === 403) {
-      // Handle unauthorized access
+    // ✅ Check if user is offline (no internet)
+    if (!navigator.onLine) {
+      console.warn("User is offline, internet disconnected.");
+      window.dispatchEvent(new CustomEvent('offline', { detail: true }));
+      return Promise.reject(new Error("No internet connection"));
+    }
+
+    // ✅ Check for server down conditions
+    const isServerDown =
+      error.response?.status === 502 || // Bad Gateway
+      error.response?.status === 503 || // Service Unavailable
+      error.code === 'ERR_NETWORK' ||   // Network error
+      error.code === 'ECONNREFUSED' ||  // Connection refused
+      error.message?.includes('ERR_CONNECTION_REFUSED');
+
+    if (isServerDown) {
+      window.dispatchEvent(new CustomEvent('serverDown', { detail: true }));
+
+      if (import.meta.env.DEV) {
+        console.error('Server is down:', error.message);
+      }
+    } else if (error.response?.status === 401 || error.response?.status === 403) {
       localStorage.removeItem('frappe_user');
       localStorage.removeItem('frappe_session');
-      
-      // Optionally redirect to login
+
       if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
         window.location.href = '/login';
       }
     }
+
     return Promise.reject(error);
   }
 );
+
+
+// Exported API methods
 
 export const frappeAPI = {
   // Get user details from Frappe
