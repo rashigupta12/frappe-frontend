@@ -254,10 +254,15 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     return (endMinutes - startMinutes) / 60;
   };
 
-  const getDefaultStartTime = () => {
-    const now = new Date();
+ const getDefaultStartTime = () => {
+  // Use the selected date instead of current date
+  const selectedDate = date || new Date();
+  const now = new Date();
+  
+  // Only use current time if the selected date is today
+  if (selectedDate.toDateString() === now.toDateString()) {
     const currentMinutes = now.getHours() * 60 + now.getMinutes();
-    const roundedCurrentMinutes = Math.ceil(currentMinutes / 15) * 15; // Round up to next 15-minute interval
+    const roundedCurrentMinutes = Math.ceil(currentMinutes / 15) * 15;
 
     let defaultStartMinutes = roundedCurrentMinutes;
 
@@ -271,7 +276,11 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     return `${hours.toString().padStart(2, "0")}:${minutes
       .toString()
       .padStart(2, "0")}`;
-  };
+  } else {
+    // For future dates, use the start of the slot or 9:00 AM as default
+    return selectedSlot ? selectedSlot.start : "09:00";
+  }
+};
 
   // Initialize form data
   useEffect(() => {
@@ -394,64 +403,79 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     setFormData((prev) => ({ ...prev, [name]: capitalizeFirstLetter(value) }));
   };
 
-  const validateTimeSelection = (
-    startTime: string,
-    endTime: string,
-    showError: boolean = true
-  ): boolean => {
-    setValidationErrors({
-      startTime: false,
-      endTime: false,
-    });
+ const validateTimeSelection = (
+  startTime: string,
+  endTime: string,
+  showError: boolean = true
+): boolean => {
+  setValidationErrors({
+    startTime: false,
+    endTime: false,
+  });
 
-    let isValid = true;
-    let errorMessage = "";
+  let isValid = true;
+  let errorMessage = "";
 
-    if (!startTime || !endTime) {
-      if (showError) {
-        showToast.error("Please select both start and end times");
-      }
-      return false;
+  if (!startTime || !endTime) {
+    if (showError) {
+      showToast.error("Please select both start and end times");
     }
+    return false;
+  }
 
-    const startMinutes = timeToMinutes(startTime);
-    const endMinutes = timeToMinutes(endTime);
+  const startMinutes = timeToMinutes(startTime);
+  const endMinutes = timeToMinutes(endTime);
 
-    if (endMinutes <= startMinutes) {
-      errorMessage = "End time must be after start time";
+  if (endMinutes <= startMinutes) {
+    errorMessage = "End time must be after start time";
+    isValid = false;
+    setValidationErrors({ startTime: true, endTime: true });
+  }
+
+  if (isValid && endMinutes - startMinutes < 15) {
+    errorMessage =
+      "There must be at least 15 minutes between start and end time";
+    isValid = false;
+    setValidationErrors({ startTime: true, endTime: true });
+  }
+
+  // Check if the selected date is today
+  const selectedDate = date || new Date();
+  const today = new Date();
+  const isToday = selectedDate.toDateString() === today.toDateString();
+  
+  if (isValid && isToday) {
+    // For today, check if times are in the future
+    const currentMinutes = today.getHours() * 60 + today.getMinutes();
+    if (startMinutes < currentMinutes) {
+      errorMessage = "Start time cannot be in the past for today's inspection";
       isValid = false;
-      setValidationErrors({ startTime: true, endTime: true });
+      setValidationErrors({ startTime: true, endTime: false });
     }
+  }
 
-    if (isValid && endMinutes - startMinutes < 15) {
+  if (isValid && selectedInspector) {
+    const isWithinAvailableSlot =
+      selectedInspector.availability.free_slots.some((slot) => {
+        const slotStart = timeToMinutes(slot.start);
+        const slotEnd = timeToMinutes(slot.end);
+        return startMinutes >= slotStart && endMinutes <= slotEnd;
+      });
+
+    if (!isWithinAvailableSlot) {
       errorMessage =
-        "There must be at least 15 minutes between start and end time";
+        "Selected times must be within inspector's available slots";
       isValid = false;
       setValidationErrors({ startTime: true, endTime: true });
     }
+  }
 
-    if (isValid && selectedInspector) {
-      const isWithinAvailableSlot =
-        selectedInspector.availability.free_slots.some((slot) => {
-          const slotStart = timeToMinutes(slot.start);
-          const slotEnd = timeToMinutes(slot.end);
-          return startMinutes >= slotStart && endMinutes <= slotEnd;
-        });
+  if (!isValid && showError && errorMessage) {
+    showToast.error(errorMessage);
+  }
 
-      if (!isWithinAvailableSlot) {
-        errorMessage =
-          "Selected times must be within inspector's available slots";
-        isValid = false;
-        setValidationErrors({ startTime: true, endTime: true });
-      }
-    }
-
-    if (!isValid && showError && errorMessage) {
-      showToast.error(errorMessage);
-    }
-
-    return isValid;
-  };
+  return isValid;
+};
 
   const getEndTimeConstraints = () => {
     if (selectedSlot) {
@@ -1327,26 +1351,26 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     }
     setShowAvailabilityModal(false);
   };
+// Update the handleSlotSelect function to use the correct date
+const handleSlotSelect = (slot: { start: string; end: string }) => {
+  setSelectedSlot(slot);
 
-  const handleSlotSelect = (slot: { start: string; end: string }) => {
-    setSelectedSlot(slot);
+  const defaultStartTime = getDefaultStartTime();
+  setRequestedTime(defaultStartTime);
 
-    const defaultStartTime = getDefaultStartTime();
-    setRequestedTime(defaultStartTime);
+  const startMinutes = timeToMinutes(defaultStartTime);
+  const slotEndMinutes = timeToMinutes(slot.end);
+  const defaultEndMinutes = Math.min(startMinutes + 15, slotEndMinutes);
+  const hours = Math.floor(defaultEndMinutes / 60);
+  const minutes = defaultEndMinutes % 60;
+  setEndTime(
+    `${hours.toString().padStart(2, "0")}:${minutes
+      .toString()
+      .padStart(2, "0")}`
+  );
 
-    const startMinutes = timeToMinutes(defaultStartTime);
-    const slotEndMinutes = timeToMinutes(slot.end);
-    const defaultEndMinutes = Math.min(startMinutes + 15, slotEndMinutes);
-    const hours = Math.floor(defaultEndMinutes / 60);
-    const minutes = defaultEndMinutes % 60;
-    setEndTime(
-      `${hours.toString().padStart(2, "0")}:${minutes
-        .toString()
-        .padStart(2, "0")}`
-    );
-
-    showToast.success(`Selected time slot: ${slot.start} - ${slot.end}`);
-  };
+  showToast.success(`Selected time slot: ${slot.start} - ${slot.end}`);
+};
 
   const handleDateSelect = (selectedDate: Date | undefined) => {
     setDate(selectedDate);

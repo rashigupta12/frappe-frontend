@@ -65,11 +65,14 @@ const onLoginSubmit = async (values: LoginFormValues) => {
   try {
     const result = await login(values.email, values.password);
 
+    console.log("Login result:", result);
+
     if (result.success) {
       if (result.requiresPasswordReset) {
         window.location.href = `/first-time-password-reset?email=${encodeURIComponent(values.email)}`;
         return;
       }
+
 
       showToast.success("Login successful!");
     } else {
@@ -78,11 +81,22 @@ const onLoginSubmit = async (values: LoginFormValues) => {
         showToast.error("Access denied: No valid roles assigned to your account.");
         setError("Access denied: Your account does not have the required permissions. Please contact your administrator.");
       } 
+      
+    if (result.error === "Login failed: 500 INTERNAL SERVER ERROR") {
+        showToast.error("Invalid email or password.");
+        setError("Invalid email or password. Please try again.");
+      } else {
+        showToast.error("Login failed. Please try again.");
+        setError("Login failed. Please check your credentials and try again.");
+      }
+
     }
   } catch (err: any) {
-    console.error("Login error:", err);
+    console.error("Login error: on login page", err);
     
     // ✅ Handle backend down / 502 explicitly
+
+    
     if (err?.response?.status === 502) {
       showToast.error("Server is temporarily unavailable. Please try again later.");
       setError("Server is down. Please try again later.");
@@ -90,12 +104,6 @@ const onLoginSubmit = async (values: LoginFormValues) => {
       showToast.error("Login failed");
       setError("Login failed");
     }
-
-    if(err.message === "Invalid login credentials") {
-      showToast.error("Invalid email or password");
-      setError("Login failed");
-    }
-
   } finally {
     setIsPending(false);
   }
