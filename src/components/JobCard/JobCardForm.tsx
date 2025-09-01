@@ -459,12 +459,15 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
         setSearchQuery(customer.customer_name);
       } else {
         // Handle existing customer/lead
+
+        // const customerName = extractCustomerNameFromSite(customer.site_name);
+      const address = extractAddressFromSite(customer.site_name);
         const customerData = {
           party_name:
             customer.customer_name || customer.lead_details?.lead_name || "",
           customer_id: customer.customer_details?.name || "",
           lead_id: customer.lead_details?.name || "",
-          area: customer.site_name || "",
+          area: address || "",
           custom_property_category: customer.custom_property_category || "",
           custom_emirate: customer.custom_emirate || "",
           custom_uae_area: customer.custom_area || "",

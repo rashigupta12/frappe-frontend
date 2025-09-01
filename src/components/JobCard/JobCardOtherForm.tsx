@@ -332,14 +332,14 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
             result.customer_details?.email_id,
           name: result.customer_details?.name || result.lead_details?.name,
           lead_name: result.lead_details?.name,
-          area: result.site_name,
+          area: extractCustomerNameFromSite(result.site_name),
           address_details: {
             emirate: result.custom_emirate,
             area: result.custom_area,
             community: result.custom_community,
             street_name: result.custom_street_name,
             property_number: result.custom_property_number,
-            combined_address: result.site_name,
+            combined_address: extractCustomerNameFromSite(result.site_name),
           },
           match_info: result.match_info,
         };
@@ -422,13 +422,17 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
         }));
         setSearchQuery(customer.customer_name);
       } else {
+
+
+        // const customerName = extractCustomerNameFromSite(customer.site_name);
+      const address = extractAddressFromSite(customer.site_name);
         // Handle existing customer/lead
         const customerData = {
           party_name:
             customer.customer_name || customer.lead_details?.lead_name || "",
           customer_id: customer.customer_details?.name || "",
           lead_id: customer.lead_details?.name || "",
-          area: customer.site_name || "",
+          area: address,
           custom_property_category: customer.custom_property_category || "",
           custom_emirate: customer.custom_emirate || "",
           custom_uae_area: customer.custom_area || "",
@@ -718,36 +722,66 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
       return newData;
     });
   }, []);
-  const extractCustomerNameFromSite = (siteName: string) => {
-    if (!siteName) return "Unknown";
-    // Format: "Name-Number,..." - extract everything before the first dash and number
+ const extractCustomerNameFromSite = (siteName: string) => {
+  if (!siteName) return "Unknown";
+  
+  // Handle format 1: "You:H135,Streeet 123568,Al Fahidi (Al Bastakiya),Bur Dubai (South of Dubai Creek),Dubai-608"
+  if (siteName.includes(":")) {
+    const parts = siteName.split(":");
+    if (parts.length >= 2) {
+      // Check if the part after colon starts with a number (address part)
+      const afterColon = parts[1];
+      if (/^\d/.test(afterColon)) {
+        return parts[0].trim(); // Return "You"
+      }
+    }
+  }
+  
+  // Handle format 2: "Utkarsh-36546,Backstreet,Al Bithnah,Central Abu Dhabi,Abu Dhabi"
+  if (siteName.includes("-")) {
     const parts = siteName.split("-");
     if (parts.length >= 2) {
-      // Check if the part after dash starts with a number
+      // Check if the part after dash starts with a number (address part)
       const afterDash = parts[1];
       if (/^\d/.test(afterDash)) {
-        return parts[0].trim();
+        return parts[0].trim(); // Return "Utkarsh"
       }
     }
-    // Fallback: take first part before comma
-    return siteName.split(",")[0].trim();
-  };
+  }
+  
+  // Fallback: take first part before comma
+  return siteName.split(",")[0].trim();
+};
 
-  // Helper function to extract address from site_name (remove customer name part)
-  const extractAddressFromSite = (siteName: string) => {
-    if (!siteName) return "";
-    // Format: "Name-Number,..." - extract everything after the first dash
+// Helper function to extract address from site_name (remove customer name part)
+const extractAddressFromSite = (siteName: string) => {
+  if (!siteName) return "";
+  
+  // Handle format 1: "You:H135,Streeet 123568,..." - extract everything after colon
+  if (siteName.includes(":")) {
+    const colonIndex = siteName.indexOf(":");
+    if (colonIndex !== -1) {
+      const afterColon = siteName.substring(colonIndex + 1);
+      // Remove the trailing "-608" part
+      const dashIndex = afterColon.lastIndexOf("-");
+      if (dashIndex !== -1) {
+        return afterColon.substring(0, dashIndex).trim();
+      }
+      return afterColon.trim();
+    }
+  }
+  
+  // Handle format 2: "Utkarsh-36546,Backstreet,..." - extract everything after dash
+  if (siteName.includes("-")) {
     const dashIndex = siteName.indexOf("-");
     if (dashIndex !== -1) {
-      const afterDash = siteName.substring(dashIndex + 1);
-      // Check if what comes after dash starts with a number (address part)
-      if (/^\d/.test(afterDash)) {
-        return afterDash.trim();
-      }
+      return siteName.substring(dashIndex + 1).trim();
     }
-    // Fallback: return original if pattern doesn't match
-    return siteName;
-  };
+  }
+  
+  // Fallback: return original if pattern doesn't match
+  return siteName;
+};
   if (!isOpen) return null;
 
   return (
