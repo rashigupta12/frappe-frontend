@@ -12,8 +12,7 @@ import {
 import React, { useState } from "react";
 import AttachmentPreviewModal from "./AttachmentperviewModal";
 import { Button } from "../ui/button";
-
-
+import { createPortal } from "react-dom";
 // Types
 interface ImageAttachment {
   name: string;
@@ -54,8 +53,6 @@ interface FeedbackItem {
   custom_images: ImageAttachment[];
 }
 
-
-
 // Helper function to strip HTML tags
 const stripHtml = (html: string): string => {
   const tmp = document.createElement("div");
@@ -88,10 +85,7 @@ const isImageFile = (attachment: any): boolean => {
   return imageExtensions.includes(extension);
 };
 
-// Image Preview Modal Component
-
-
-// Feedback Details Component
+// Feedback Details Component with createPortal
 const FeedbackDetails: React.FC<{
   feedback: FeedbackItem;
   onClose: () => void;
@@ -188,186 +182,189 @@ const FeedbackDetails: React.FC<{
     }
   };
 
-return (
-  <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[10001] flex items-center justify-center p-4 capitalize">
-    <div
-      className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col"
-      onClick={(e) => e.stopPropagation()}
-    >
-      {/* Header */}
-      <div className="bg-emerald-500 text-white p-6 flex-shrink-0 ">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            {getIssueTypeIcon(feedback.issue_type)}
-            <h2 className="text-2xl font-bold">Feedback Details</h2>
+  return createPortal(
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[10001] flex items-center justify-center p-4">
+      <div
+        className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="bg-emerald-500 text-white p-4 flex-shrink-0">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              {getIssueTypeIcon(feedback.issue_type)}
+              <h2 className="text-xl font-bold">Feedback Details</h2>
+            </div>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+            >
+              <X className="h-5 w-5" />
+            </button>
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-white/20 rounded-lg transition-colors"
-          >
-            <X className="h-6 w-6" />
-          </button>
         </div>
-      </div>
 
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto p-8">
-        <div className="max-w-4xl mx-auto space-y-8">
-          {/* Status and Priority */}
-          <div className="flex flex-wrap gap-4">
-            <div className="flex items-center gap-2">
-              <span
-                className={`px-4 py-2 rounded-full text-sm font-medium ${getStatusColor(
-                  feedback.status
-                )}`}
-              >
-                {feedback.status}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span
-                className={`px-4 py-2 rounded-full text-sm font-medium ${getPriorityColor(
-                  feedback.priority
-                )}`}
-              >
-                {feedback.priority}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="px-4 py-2 rounded-full text-sm font-medium bg-gray-200 text-gray-800">
-                {feedback.issue_type}
-              </span>
-            </div>
-          </div>
-
-          {/* Subject */}
-          <div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-3">
-              Subject
-            </h3>
-            <p className="text-gray-700 bg-gray-50 p-4 rounded-lg text-lg">
-              {feedback.subject}
-            </p>
-          </div>
-
-          {/* Description */}
-          <div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-3">
-              Description
-            </h3>
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">
-                {renderHtmlContent(feedback.description)}
-              </p>
-            </div>
-          </div>
-
-          {/* Resolution Details if available */}
-          {feedback.resolution_details && feedback.status === "Replied" && (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <CheckCircle className="h-6 w-6 text-green-600" />
-                <h3 className="font-semibold text-green-800 text-xl">
-                  Response from Support Team
-                </h3>
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto p-6">
+          <div className="space-y-6">
+            {/* Status and Priority */}
+            <div className="flex flex-wrap gap-4">
+              <div className="flex items-center gap-2">
+                <span
+                  className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(
+                    feedback.status
+                  )}`}
+                >
+                  {feedback.status}
+                </span>
               </div>
-              <div className="text-green-700 bg-white p-4 rounded border leading-relaxed">
-                {renderHtmlContent(feedback.resolution_details)}
+              <div className="flex items-center gap-2">
+                <span
+                  className={`px-3 py-1 rounded-full text-sm font-medium ${getPriorityColor(
+                    feedback.priority
+                  )}`}
+                >
+                  {feedback.priority}
+                </span>
               </div>
-            </div>
-          )}
-
-          {/* Dates */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <h4 className="text-lg font-medium text-gray-700 mb-2">
-                Created
-              </h4>
-              <div className="flex items-center gap-3 text-gray-600">
-                <Calendar className="h-5 w-5" />
-                <span className="text-base">
-                  {fmt(feedback.opening_date)}
-                  {feedback.opening_time && ` at ${feedback.opening_time}`}
+              <div className="flex items-center gap-2">
+                <span className="px-3 py-1 rounded-full text-sm font-medium bg-gray-300 text-gray-800">
+                  {feedback.issue_type}
                 </span>
               </div>
             </div>
-          </div>
 
-          {/* Attachments */}
-          {feedback.custom_images && feedback.custom_images.length > 0 && (
+            {/* Subject */}
             <div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-3">
-                <Paperclip className="h-6 w-6" />
-                Attachments ({feedback.custom_images.length})
+              <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                Subject
               </h3>
+              <p className="text-gray-700 bg-gray-50 p-2 rounded-lg">
+                {feedback.subject}
+              </p>
+            </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {feedback.custom_images.map((attachment, index) => {
-                  const isImage = isImageFile(attachment);
-                  const fileName =
-                    attachment.image?.split("/").pop() ||
-                    `Attachment ${index + 1}`;
-
-                  return (
-                    <div
-                      key={index}
-                      className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-                    >
-                      <div className="flex items-center gap-3 flex-1 min-w-0">
-                        {isImage ? (
-                          <div className="w-12 h-12 rounded bg-blue-50 flex items-center justify-center">
-                            <Eye className="h-6 w-6 text-blue-500" />
-                          </div>
-                        ) : (
-                          <div className="w-12 h-12 rounded bg-gray-100 flex items-center justify-center">
-                            <Paperclip className="h-6 w-6 text-gray-500" />
-                          </div>
-                        )}
-                        <div className="min-w-0 flex-1">
-                          <p className="text-sm font-medium text-gray-900 truncate">
-                            {fileName}
-                          </p>
-                          {attachment.remarks && (
-                            <p className="text-xs text-gray-500 truncate">
-                              {attachment.remarks}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleAttachmentView(attachment, index)}
-                        className="h-8 ml-2"
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  );
-                })}
+            {/* Description */}
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                Description
+              </h3>
+              <div className="bg-gray-50 p-2 rounded-lg">
+                <p className="text-gray-700 whitespace-pre-wrap">
+                  {renderHtmlContent(feedback.description)}
+                </p>
               </div>
             </div>
-          )}
-        </div>
-      </div>
 
-      {/* Footer */}
-      <div className="border-t border-gray-200 p-6 bg-white flex-shrink-0">
-        <div className="flex justify-end">
-          <Button onClick={onClose} size="lg">Close</Button>
-        </div>
-      </div>
+            {/* Resolution Details if available */}
+            {feedback.resolution_details && feedback.status === "Replied" && (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <CheckCircle className="h-5 w-5 text-green-600" />
+                  <h3 className="font-semibold text-green-800 text-lg">
+                    Response from Support Team
+                  </h3>
+                </div>
+                <div className="text-green-700 bg-white p-4 rounded border">
+                  {renderHtmlContent(feedback.resolution_details)}
+                </div>
+              </div>
+            )}
 
-      <AttachmentPreviewModal
-        isOpen={showAttachmentPreview}
-        onClose={() => setShowAttachmentPreview(false)}
-        attachments={feedback.custom_images || []}
-        currentIndex={currentAttachmentIndex}
-        onIndexChange={setCurrentAttachmentIndex}
-      />
-    </div>
-  </div>
-);
+            {/* Dates */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <h4 className="text-sm font-medium text-gray-700 mb-1">
+                  Created
+                </h4>
+                <div className="flex items-center gap-2 text-gray-600">
+                  <Calendar className="h-4 w-4" />
+                  <span>
+                    {fmt(feedback.opening_date)}
+                    {feedback.opening_time && ` at ${feedback.opening_time}`}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Attachments */}
+            {feedback.custom_images && feedback.custom_images.length > 0 && (
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                  <Paperclip className="h-5 w-5" />
+                  Attachments ({feedback.custom_images.length})
+                </h3>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {feedback.custom_images.map((attachment, index) => {
+                    const isImage = isImageFile(attachment);
+                    const fileName =
+                      attachment.image?.split("/").pop() ||
+                      `Attachment ${index + 1}`;
+
+                    return (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                      >
+                        <div className="flex items-center gap-3">
+                          {isImage ? (
+                            <div className="w-10 h-10 rounded bg-blue-50 flex items-center justify-center">
+                              <Eye className="h-5 w-5 text-blue-500" />
+                            </div>
+                          ) : (
+                            <div className="w-10 h-10 rounded bg-gray-100 flex items-center justify-center">
+                              <Paperclip className="h-5 w-5 text-gray-500" />
+                            </div>
+                          )}
+                          <div>
+                            <p className="text-sm font-medium text-gray-900 truncate max-w-[150px]">
+                              {fileName}
+                            </p>
+                            {attachment.remarks && (
+                              <p className="text-xs text-gray-500 truncate max-w-[150px]">
+                                {attachment.remarks}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() =>
+                            handleAttachmentView(attachment, index)
+                          }
+                          className="h-8"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="border-t border-gray-200 p-4 bg-white flex-shrink-0">
+          <div className="flex justify-end">
+            <Button onClick={onClose}>Close</Button>
+          </div>
+        </div>
+
+        <AttachmentPreviewModal
+          isOpen={showAttachmentPreview}
+          onClose={() => setShowAttachmentPreview(false)}
+          attachments={feedback.custom_images || []}
+          currentIndex={currentAttachmentIndex}
+          onIndexChange={setCurrentAttachmentIndex}
+        />
+      </div>
+    </div>,
+    document.body
+  );
 };
 
 export default FeedbackDetails;
