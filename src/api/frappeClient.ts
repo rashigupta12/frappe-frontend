@@ -38,6 +38,7 @@ const frappeFileClient = axios.create({
 });
 
 // Add request interceptor for file client
+// Add request interceptor for file client
 frappeFileClient.interceptors.request.use(
   (config) => {
     console.log('File upload request:', {
@@ -88,7 +89,29 @@ frappeFileClient.interceptors.response.use(
       requestData: error.config?.data instanceof FormData ? 'FormData object' : error.config?.data
     });
 
-    if (error.response?.status === 401 || error.response?.status === 403) {
+    // Enhanced server down detection for file uploads
+    const isServerDown =
+      error.response?.status === 502 || // Bad Gateway
+      error.response?.status === 503 || // Service Unavailable
+      error.response?.status === 500 || // Internal Server Error
+      error.code === 'ERR_NETWORK' ||   // Network error
+      error.code === 'ECONNREFUSED' ||  // Connection refused
+      error.message?.includes('ERR_CONNECTION_REFUSED') ||
+      // Database connection errors
+      error.response?.data?.message?.includes('Can\'t connect to MySQL server') ||
+      error.response?.data?.message?.includes('Connection refused') ||
+      error.response?.data?.message?.includes('pymysql.err.OperationalError') ||
+      error.response?.data?.message?.includes('Database connection failed') ||
+      // Check for HTML error pages (Werkzeug debugger)
+      (error.response?.data && typeof error.response.data === 'string' && 
+       error.response.data.includes('Werkzeug Debugger')) ||
+      // Exception patterns
+      error.response?.data?.exc?.includes('OperationalError') ||
+      error.response?.data?.exc?.includes('Can\'t connect to MySQL');
+
+    if (isServerDown) {
+      window.dispatchEvent(new CustomEvent('serverDown', { detail: true }));
+    } else if (error.response?.status === 401 || error.response?.status === 403) {
       localStorage.removeItem('frappe_user');
       localStorage.removeItem('frappe_session');
       // Optionally redirect to login
@@ -146,27 +169,48 @@ frappeClient.interceptors.response.use(
       code: error.code,
     });
 
-    // ✅ Check if user is offline (no internet)
+    // Check if user is offline (no internet)
     if (!navigator.onLine) {
       console.warn("User is offline, internet disconnected.");
       window.dispatchEvent(new CustomEvent('offline', { detail: true }));
       return Promise.reject(new Error("No internet connection"));
     }
 
-    // ✅ Check for server down conditions
+    // Enhanced server down conditions detection
     const isServerDown =
       error.response?.status === 502 || // Bad Gateway
       error.response?.status === 503 || // Service Unavailable
+      error.response?.status === 500 || // Internal Server Error
       error.code === 'ERR_NETWORK' ||   // Network error
       error.code === 'ECONNREFUSED' ||  // Connection refused
-      error.message?.includes('ERR_CONNECTION_REFUSED');
+      error.message?.includes('ERR_CONNECTION_REFUSED') ||
+      // Database connection errors
+      error.response?.data?.message?.includes('Can\'t connect to MySQL server') ||
+      error.response?.data?.message?.includes('Connection refused') ||
+      error.response?.data?.message?.includes('pymysql.err.OperationalError') ||
+      error.response?.data?.message?.includes('Database connection failed') ||
+      // Check for HTML error pages (like the Werkzeug debugger page)
+      (error.response?.data && typeof error.response.data === 'string' && 
+       error.response.data.includes('Werkzeug Debugger')) ||
+      // Check for common database error patterns
+      error.response?.data?.exc?.includes('OperationalError') ||
+      error.response?.data?.exc?.includes('Can\'t connect to MySQL');
 
     if (isServerDown) {
+      console.error('Server/Database is down:', {
+        status: error.response?.status,
+        message: error.response?.data?.message,
+        exc: error.response?.data?.exc
+      });
+      
       window.dispatchEvent(new CustomEvent('serverDown', { detail: true }));
 
       if (import.meta.env.DEV) {
-        console.error('Server is down:', error.message);
+        console.error('Server/Database connection failed:', error.message);
       }
+      
+      // Return a more descriptive error for database issues
+      return Promise.reject(new Error("Server database connection failed"));
     } else if (error.response?.status === 401 || error.response?.status === 403) {
       localStorage.removeItem('frappe_user');
       localStorage.removeItem('frappe_session');
@@ -550,16 +594,32 @@ checkSession: async () => {
       throw error;
     }
   },
-
   testConnection: async () => {
     try {
       const response = await frappeClient.get('/api/method/ping');
       return { success: true, data: response.data };
     } catch (error) {
+      console.error('Connection test failed:', error);
+      
+      // Check if this is a database-related error
+      const isDatabaseError = 
+        axios.isAxiosError(error) && (
+          error.response?.data?.message?.includes('Can\'t connect to MySQL server') ||
+          error.response?.data?.message?.includes('Connection refused') ||
+          error.response?.data?.message?.includes('pymysql.err.OperationalError') ||
+          error.response?.data?.exc?.includes('OperationalError') ||
+          error.response?.status === 500 ||
+          (error.response?.data && typeof error.response.data === 'string' && 
+           error.response.data.includes('Werkzeug Debugger'))
+        );
+
       return {
         success: false,
-        error: axios.isAxiosError(error) ? (error.response?.data?.message || error.message) : (error as Error).message,
-        status: axios.isAxiosError(error) ? error.response?.status : undefined
+        error: axios.isAxiosError(error) ? 
+          (error.response?.data?.message || error.message) : 
+          (error as Error).message,
+        status: axios.isAxiosError(error) ? error.response?.status : undefined,
+        isDatabaseError // Add flag to indicate database issues
       };
     }
   },
