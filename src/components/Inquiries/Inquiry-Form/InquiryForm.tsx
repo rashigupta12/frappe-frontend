@@ -5,12 +5,12 @@ import { format } from "date-fns";
 import { Building, Home, Phone, Save, User, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../../context/AuthContext";
 import {
   useLeads,
   type Lead,
   type LeadFormData,
-} from "../../context/LeadContext";
+} from "../../../context/LeadContext";
 import {
   capitalizeFirstLetter,
   convertJobTypesToFormFormat,
@@ -21,29 +21,29 @@ import {
   formatSubmissionData,
   getCurrentTime,
   type FormSection,
-} from "../../helpers/helper";
-import { useAssignStore } from "../../store/assign";
+} from "../../../helpers/helper";
+import { useAssignStore } from "../../../store/assign";
 import type {
   CustomerSearchResult,
   InspectorAvailability,
   NewCustomerFormData,
   PriorityLevel,
-} from "../../types/inquiryFormdata";
-import { Button } from "../ui/button";
-import { Label } from "../ui/label";
-import { Textarea } from "../ui/textarea";
+} from "../../../types/inquiryFormdata";
+import { Button } from "../../ui/button";
+import { Label } from "../../ui/label";
+import { Textarea } from "../../ui/textarea";
 
-import { timeToMinutes } from "../../lib/timeUtils";
-import { showToast } from "../../helpers/comman";
-import { ConfirmationModal } from "../Inquiry/ConfirmationModal";
-import { frappeAPI } from "../../api/frappeClient";
-import { CustomerSearchSection } from "../Inquiries/Inquiry-Form/CustomerSearchSection";
-import { FormSectionHeader } from "../Inquiries/Inquiry-Form/FormSectionHeader";
-import { PropertyDetailsSection } from "../Inquiries/Inquiry-Form/PropertyDetailsSection";
-import { InspectorAssignmentSection } from "../Inquiries/Inquiry-Form/InspectorAssignmentSection";
-import { CustomerModal } from "../Inquiries/Inquiry-Form/CustomerModal";
-import { TimeWarningModal } from "../Inquiries/Inquiry-Form/TimeWarningModal";
-import { JobDetailsSection } from "../Inquiries/Inquiry-Form/JobDetailsSection";
+import { CustomerModal } from "./CustomerModal";
+import { CustomerSearchSection } from "./CustomerSearchSection";
+import { FormSectionHeader } from "./FormSectionHeader";
+import { InspectorAssignmentSection } from "./InspectorAssignmentSection";
+import { JobDetailsSection } from "./JobDetailsSection";
+import { PropertyDetailsSection } from "./PropertyDetailsSection";
+import { TimeWarningModal } from "./TimeWarningModal";
+import { timeToMinutes } from "../../../lib/timeUtils";
+import { showToast } from "../../../helpers/comman";
+import { ConfirmationModal } from "../../Inquiry/ConfirmationModal";
+import { frappeAPI } from "../../../api/frappeClient";
 
 interface InquiryFormProps {
   isOpen: boolean;
@@ -1083,7 +1083,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
             street_name: result.custom_street_name,
             property_number: result.custom_property_number,
             combined_address:
-              extractAddressFromSite(result.custom_combine_address) ||
+              result.custom_combine_address ||
               extractAddressFromSite(result.site_name),
             property_category: result.custom_property_category,
             property_type: result.custom_property_type,
@@ -1139,7 +1139,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     }));
 
     if (result.address_details) {
-      const address = extractAddressFromSite(result.address_details.combined_address)
+      const address = extractAddressFromSite(result.address_details?.combined_address)
       setFormData((prev) => ({
         ...prev,
         custom_property_category:
@@ -1353,17 +1353,6 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     }
   };
 
-  // Update dropdown position
-  useEffect(() => {
-    if (showDropdown && inputRef.current) {
-      const rect = inputRef.current.getBoundingClientRect();
-      setDropdownPosition({
-        top: rect.bottom + window.scrollY,
-        left: rect.left + window.scrollX,
-        width: rect.width,
-      });
-    }
-  }, [showDropdown]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -1455,23 +1444,23 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                   >
                     <div className="p-4 pt-2 space-y-4">
                       {section.id === "contact" && (
-                       <CustomerSearchSection
-  selectedCustomer={selectedCustomer}
-  searchQuery={searchQuery}
-  searchResults={searchResults}
-  isSearching={isSearching}
-  showDropdown={showDropdown}
-  dropdownPosition={dropdownPosition}
-  onSearchChange={handleSearchChange}
-  onCustomerSelect={handleCustomerSelect}
-  onClearCustomer={handleClearCustomer}
-  onOpenCreateModal={handleOpenCreateModal}
-  onOpenEditModal={handleOpenEditModal}
-  showReferenceInput={showReferenceInput}
-  formData={formData}
-  handleInputChange={handleInputChange}
-  setDropdownPosition={setDropdownPosition} // Add this
-/>
+                        <CustomerSearchSection
+                          selectedCustomer={selectedCustomer}
+                          searchQuery={searchQuery}
+                          searchResults={searchResults}
+                          isSearching={isSearching}
+                          showDropdown={showDropdown}
+                          dropdownPosition={dropdownPosition}
+                          onSearchChange={handleSearchChange}
+                          onCustomerSelect={handleCustomerSelect}
+                          onClearCustomer={handleClearCustomer}
+                          onOpenCreateModal={handleOpenCreateModal}
+                          onOpenEditModal={handleOpenEditModal}
+                          showReferenceInput={showReferenceInput}
+                          formData={formData}
+                          handleInputChange={handleInputChange}
+                          setDropdownPosition={setDropdownPosition} // Add this
+                        />
                       )}
 
                       {section.id === "job" && (

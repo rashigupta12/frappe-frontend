@@ -17,7 +17,7 @@ import FeedbackComponent from "../../common/FeedbackManagement";
 import { RoleSwitcherMinimal } from "../../common/RoleSwitcher";
 import { useAuth } from "../../context/AuthContext";
 import TodoPage from "../Inquiry/Assign";
-import InquiryPage from "../Inquiry/h";
+import InquiryPage from "../Inquiry/InquiryListHome";
 import InquiryForm from "../Inquiry/InquiryForm";
 import {
   AlertDialog,

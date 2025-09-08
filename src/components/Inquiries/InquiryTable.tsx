@@ -97,7 +97,7 @@ const InquiryTable: React.FC<InquiryTableProps> = ({
                   <div className="font-semibold text-emerald-700 hover:text-emerald-800 hover:underline">
                     {inquiry.lead_name || "N/A"}
                     <div className="text-xs text-gray-500 mt-1">
-                    Ph.-{inquiry.mobile_no}
+                    Ph : {inquiry.mobile_no}
                   </div>
                    <div className="text-xs text-gray-500 mt-1">
                      {inquiry.email_id || "N/A"}

@@ -22,11 +22,16 @@ import {
 import { Textarea } from "../ui/textarea";
 import UserAvailability from "../ui/UserAvailability";
 import type { Lead } from "../../context/LeadContext";
-import { RestrictedTimeClock } from "./ResticritedtimeSlot";
+import { RestrictedTimeClock } from "../Inquiries/ResticritedtimeSlot";
 import { showToast } from "../../helpers/comman";
-import type { AvailabilitySlot, InspectionDialogProps, InspectorAvailability, InspectorDetails, PriorityLevel } from "../../types/inspectionType";
+import type {
+  AvailabilitySlot,
+  InspectionDialogProps,
+  InspectorAvailability,
+  InspectorDetails,
+  PriorityLevel,
+} from "../../types/inspectionType";
 import { getCurrentTime } from "../../helpers/helper";
-
 
 const InspectionDialog: React.FC<InspectionDialogProps> = ({
   open,
@@ -88,7 +93,6 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
     );
   };
 
-
   // Helper function to filter future slots based on current time
   const filterFutureSlots = (slots: AvailabilitySlot[]): AvailabilitySlot[] => {
     // If it's not today, return all slots
@@ -137,17 +141,21 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
   // Calculate duration in hours from start and end time
   const calculateDuration = (): number => {
     if (!requestedTime || !endTime) return 0;
-    
+
     const startMinutes = timeToMinutes(requestedTime);
     const endMinutes = timeToMinutes(endTime);
-    
+
     if (endMinutes <= startMinutes) return 0;
-    
+
     return (endMinutes - startMinutes) / 60;
   };
 
   // Validate time selection
-  const validateTimeSelection = (startTime: string, endTime: string, showError: boolean = true): boolean => {
+  const validateTimeSelection = (
+    startTime: string,
+    endTime: string,
+    showError: boolean = true
+  ): boolean => {
     // Reset validation errors first
     setValidationErrors({
       startTime: false,
@@ -175,22 +183,25 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
     }
 
     // Check if there's at least 15 minutes gap
-    if (isValid && (endMinutes - startMinutes) < 15) {
-      errorMessage = "There must be at least 15 minutes between start and end time";
+    if (isValid && endMinutes - startMinutes < 15) {
+      errorMessage =
+        "There must be at least 15 minutes between start and end time";
       isValid = false;
       setValidationErrors({ startTime: true, endTime: true });
     }
 
     // Check if times are within available slots
     if (isValid && selectedInspector) {
-      const isWithinAvailableSlot = selectedInspector.availability.free_slots.some((slot) => {
-        const slotStart = timeToMinutes(slot.start);
-        const slotEnd = timeToMinutes(slot.end);
-        return startMinutes >= slotStart && endMinutes <= slotEnd;
-      });
+      const isWithinAvailableSlot =
+        selectedInspector.availability.free_slots.some((slot) => {
+          const slotStart = timeToMinutes(slot.start);
+          const slotEnd = timeToMinutes(slot.end);
+          return startMinutes >= slotStart && endMinutes <= slotEnd;
+        });
 
       if (!isWithinAvailableSlot) {
-        errorMessage = "Selected times must be within inspector's available slots";
+        errorMessage =
+          "Selected times must be within inspector's available slots";
         isValid = false;
         setValidationErrors({ startTime: true, endTime: true });
       }
@@ -244,47 +255,53 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
   // Get time constraints for end time
   const getEndTimeConstraints = () => {
     if (mode === "create" && selectedSlot) {
-      const minEndTime = requestedTime ? 
-        (() => {
-          const startMinutes = timeToMinutes(requestedTime);
-          const minEndMinutes = startMinutes + 15; // At least 15 minutes after start
-          const hours = Math.floor(minEndMinutes / 60);
-          const minutes = minEndMinutes % 60;
-          return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-        })() : 
-        selectedSlot.start;
-      
+      const minEndTime = requestedTime
+        ? (() => {
+            const startMinutes = timeToMinutes(requestedTime);
+            const minEndMinutes = startMinutes + 15; // At least 15 minutes after start
+            const hours = Math.floor(minEndMinutes / 60);
+            const minutes = minEndMinutes % 60;
+            return `${hours.toString().padStart(2, "0")}:${minutes
+              .toString()
+              .padStart(2, "0")}`;
+          })()
+        : selectedSlot.start;
+
       return {
         minTime: minEndTime,
         maxTime: selectedSlot.end,
       };
     } else if (mode === "edit") {
-      const minEndTime = requestedTime ? 
-        (() => {
-          const startMinutes = timeToMinutes(requestedTime);
-          const minEndMinutes = startMinutes + 15; // At least 15 minutes after start
-          const hours = Math.floor(minEndMinutes / 60);
-          const minutes = minEndMinutes % 60;
-          return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-        })() : 
-        "09:15";
-      
+      const minEndTime = requestedTime
+        ? (() => {
+            const startMinutes = timeToMinutes(requestedTime);
+            const minEndMinutes = startMinutes + 15; // At least 15 minutes after start
+            const hours = Math.floor(minEndMinutes / 60);
+            const minutes = minEndMinutes % 60;
+            return `${hours.toString().padStart(2, "0")}:${minutes
+              .toString()
+              .padStart(2, "0")}`;
+          })()
+        : "09:15";
+
       return {
         minTime: minEndTime,
         maxTime: "18:00", // 6 PM
       };
     }
-    
-    const minEndTime = requestedTime ? 
-      (() => {
-        const startMinutes = timeToMinutes(requestedTime);
-        const minEndMinutes = startMinutes + 15;
-        const hours = Math.floor(minEndMinutes / 60);
-        const minutes = minEndMinutes % 60;
-        return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-      })() : 
-      "09:15";
-    
+
+    const minEndTime = requestedTime
+      ? (() => {
+          const startMinutes = timeToMinutes(requestedTime);
+          const minEndMinutes = startMinutes + 15;
+          const hours = Math.floor(minEndMinutes / 60);
+          const minutes = minEndMinutes % 60;
+          return `${hours.toString().padStart(2, "0")}:${minutes
+            .toString()
+            .padStart(2, "0")}`;
+        })()
+      : "09:15";
+
     return {
       minTime: minEndTime,
       maxTime: "18:00",
@@ -391,10 +408,17 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
             // Set end time to 15 minutes after start time or slot end, whichever is smaller
             const startMinutes = timeToMinutes(firstSlot.start);
             const slotEndMinutes = timeToMinutes(firstSlot.end);
-            const defaultEndMinutes = Math.min(startMinutes + 15, slotEndMinutes);
+            const defaultEndMinutes = Math.min(
+              startMinutes + 15,
+              slotEndMinutes
+            );
             const hours = Math.floor(defaultEndMinutes / 60);
             const minutes = defaultEndMinutes % 60;
-            setEndTime(`${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`);
+            setEndTime(
+              `${hours.toString().padStart(2, "0")}:${minutes
+                .toString()
+                .padStart(2, "0")}`
+            );
           }
         }
       }
@@ -615,13 +639,22 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
           setRequestedTime(inquiryData.custom_preferred_inspection_time);
         }
         // For create mode, calculate default end time from duration if available
-        if (inquiryData?.custom_duration && inquiryData?.custom_preferred_inspection_time) {
-          const startMinutes = timeToMinutes(inquiryData.custom_preferred_inspection_time);
+        if (
+          inquiryData?.custom_duration &&
+          inquiryData?.custom_preferred_inspection_time
+        ) {
+          const startMinutes = timeToMinutes(
+            inquiryData.custom_preferred_inspection_time
+          );
           const durationMinutes = parseFloat(inquiryData.custom_duration) * 60;
           const endMinutes = startMinutes + durationMinutes;
           const hours = Math.floor(endMinutes / 60);
           const minutes = endMinutes % 60;
-          setEndTime(`${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`);
+          setEndTime(
+            `${hours.toString().padStart(2, "0")}:${minutes
+              .toString()
+              .padStart(2, "0")}`
+          );
         }
       } else {
         if (data?.description) {
@@ -756,7 +789,11 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
         const defaultEndMinutes = Math.min(startMinutes + 15, slotEndMinutes);
         const hours = Math.floor(defaultEndMinutes / 60);
         const minutes = defaultEndMinutes % 60;
-        setEndTime(`${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`);
+        setEndTime(
+          `${hours.toString().padStart(2, "0")}:${minutes
+            .toString()
+            .padStart(2, "0")}`
+        );
       } else {
         showToast.success(`Selected ${inspector.user_name}`);
       }
@@ -773,7 +810,11 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
     const defaultEndMinutes = Math.min(startMinutes + 15, slotEndMinutes);
     const hours = Math.floor(defaultEndMinutes / 60);
     const minutes = defaultEndMinutes % 60;
-    setEndTime(`${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`);
+    setEndTime(
+      `${hours.toString().padStart(2, "0")}:${minutes
+        .toString()
+        .padStart(2, "0")}`
+    );
   };
 
   const handleStartTimeChange = (newTime: string) => {
@@ -792,18 +833,20 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
       // If end time is not at least 15 minutes after new start time, adjust it
       if (currentEndMinutes - startMinutes < 15) {
         const newEndMinutes = startMinutes + 15;
-        
+
         // Check if the new end time would exceed available slots
         let maxEndMinutes = 18 * 60; // Default to 6 PM
-        
+
         if (selectedInspector) {
           // Find the slot that contains the start time
-          const containingSlot = selectedInspector.availability.free_slots.find((slot) => {
-            const slotStart = timeToMinutes(slot.start);
-            const slotEnd = timeToMinutes(slot.end);
-            return startMinutes >= slotStart && startMinutes < slotEnd;
-          });
-          
+          const containingSlot = selectedInspector.availability.free_slots.find(
+            (slot) => {
+              const slotStart = timeToMinutes(slot.start);
+              const slotEnd = timeToMinutes(slot.end);
+              return startMinutes >= slotStart && startMinutes < slotEnd;
+            }
+          );
+
           if (containingSlot) {
             maxEndMinutes = timeToMinutes(containingSlot.end);
           }
@@ -815,22 +858,28 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
         const finalEndMinutes = Math.min(newEndMinutes, maxEndMinutes);
         const hours = Math.floor(finalEndMinutes / 60);
         const minutes = finalEndMinutes % 60;
-        setEndTime(`${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`);
+        setEndTime(
+          `${hours.toString().padStart(2, "0")}:${minutes
+            .toString()
+            .padStart(2, "0")}`
+        );
       }
     } else {
       // If no end time is set, set a default 15 minutes after start
       const startMinutes = timeToMinutes(newTime);
       const defaultEndMinutes = startMinutes + 15;
-      
+
       let maxEndMinutes = 18 * 60; // Default to 6 PM
-      
+
       if (selectedInspector) {
-        const containingSlot = selectedInspector.availability.free_slots.find((slot) => {
-          const slotStart = timeToMinutes(slot.start);
-          const slotEnd = timeToMinutes(slot.end);
-          return startMinutes >= slotStart && startMinutes < slotEnd;
-        });
-        
+        const containingSlot = selectedInspector.availability.free_slots.find(
+          (slot) => {
+            const slotStart = timeToMinutes(slot.start);
+            const slotEnd = timeToMinutes(slot.end);
+            return startMinutes >= slotStart && startMinutes < slotEnd;
+          }
+        );
+
         if (containingSlot) {
           maxEndMinutes = timeToMinutes(containingSlot.end);
         }
@@ -841,7 +890,11 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
       const finalEndMinutes = Math.min(defaultEndMinutes, maxEndMinutes);
       const hours = Math.floor(finalEndMinutes / 60);
       const minutes = finalEndMinutes % 60;
-      setEndTime(`${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`);
+      setEndTime(
+        `${hours.toString().padStart(2, "0")}:${minutes
+          .toString()
+          .padStart(2, "0")}`
+      );
     }
   };
 
@@ -943,7 +996,9 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
           })
           .join(", ");
 
-        showToast.error(`Please complete the information: ${missingFieldNames}`);
+        showToast.error(
+          `Please complete the information: ${missingFieldNames}`
+        );
         return;
       }
     }
@@ -1115,7 +1170,6 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
             durationHours,
             inquiryData?.custom_job_type || "Site Inspection",
             inquiryData?.custom_property_area || "Property Inspection"
-
           );
         }
         showToast.success("Inspection updated successfully!");
@@ -1424,9 +1478,7 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
           {(mode === "create" ? selectedSlot : true) && (
             <div className="space-y-3 px-4 py-2 ">
               <Label className="text-gray-700 text-sm font-medium">
-                {mode === "edit"
-                  ? "Update Time Schedule"
-                  : "Set Time Schedule"}
+                {mode === "edit" ? "Update Time Schedule" : "Set Time Schedule"}
               </Label>
               <div className="grid grid-cols-3 gap-3">
                 <div className="space-y-1">
@@ -1459,7 +1511,11 @@ const InspectionDialog: React.FC<InspectionDialogProps> = ({
                   <Label className="text-xs text-gray-600">Duration</Label>
                   <Input
                     type="text"
-                    value={calculateDuration() > 0 ? `${calculateDuration().toFixed(1)} hrs` : ""}
+                    value={
+                      calculateDuration() > 0
+                        ? `${calculateDuration().toFixed(1)} hrs`
+                        : ""
+                    }
                     className="text-sm h-8 bg-gray-100"
                     disabled
                     readOnly
