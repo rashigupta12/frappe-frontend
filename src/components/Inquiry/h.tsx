@@ -1,33 +1,15 @@
+// src/components/InquiryPage.tsx
+
 "use client";
 
-import {
-  Building,
-  Calendar,
-  Edit,
-  FileText,
-  Home,
-  MapPin,
-  Phone,
-  Plus,
-  Search,
-  User,
-  X,
-} from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLeads, type Lead } from "../../context/LeadContext";
-import {
-  getBudgetColor,
-  getJobTypeColor,
-  getUrgencyColor,
-  getUrgencyShortLabel,
-} from "../../helpers/helper";
 import { Alert, AlertDescription } from "../ui/alert";
-import { Badge } from "../ui/badge";
-import { Button } from "../ui/button";
-import { Input } from "../ui/input";
-import { format } from "date-fns";
 import InquiryForm from "./InquiryForm";
 import InspectionDialog from "./IspectionDialog";
+import InquiryHeader from "../Inquiries/InquiriesHeader";
+import InquiryList from "../Inquiries/InquiryList";
+import InquiryViewModal from "../Inquiries/InquiryViewModal";
 
 const InquiryPage = () => {
   const {
@@ -39,52 +21,56 @@ const InquiryPage = () => {
     fetchUtmSource,
   } = useLeads();
 
-  // State management
   const [searchTerm, setSearchTerm] = useState("");
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [viewInquiry, setViewInquiry] = useState<Lead | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [selectedInquiryForDialog, setSelectedInquiryForDialog] = useState<Lead | null>(null);
+  const [selectedInquiryForDialog, setSelectedInquiryForDialog] =
+    useState<Lead | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedInquiry, setSelectedInquiry] = useState<Lead | null>(null);
-  const [hasInitialized, setHasInitialized] = useState(false);
+  const [hasInitialized, setHasInitialized] = useState(false); // --- Helper Functions (remain in parent for filtering) ---
 
-  // Helper function to normalize job type to string
-  const normalizeJobType = useCallback((jobType: string | { job_type: string }): string => {
-    if (typeof jobType === "string") {
-      return jobType;
-    }
-    return jobType.job_type;
-  }, []);
+  const normalizeJobType = useCallback(
+    (jobType: string | { job_type: string }): string => {
+      if (typeof jobType === "string") return jobType;
+      return jobType.job_type;
+    },
+    []
+  );
 
-  // Helper function to get job types for display
-  const getJobTypesForInquiry = useCallback((inquiry: Lead): string[] => {
-    // Priority: use custom_jobtype array if available, fallback to custom_job_type
-    if (inquiry.custom_jobtype && Array.isArray(inquiry.custom_jobtype) && inquiry.custom_jobtype.length > 0) {
-      return inquiry.custom_jobtype.map(normalizeJobType);
-    } else if (inquiry.custom_job_type) {
-      return [normalizeJobType(inquiry.custom_job_type)];
-    }
-    return [];
-  }, [normalizeJobType]);
+  const getJobTypesForInquiry = useCallback(
+    (inquiry: Lead): string[] => {
+      if (
+        inquiry.custom_jobtype &&
+        Array.isArray(inquiry.custom_jobtype) &&
+        inquiry.custom_jobtype.length > 0
+      ) {
+        return inquiry.custom_jobtype.map(normalizeJobType);
+      } else if (inquiry.custom_job_type) {
+        return [normalizeJobType(inquiry.custom_job_type)];
+      }
+      return [];
+    },
+    [normalizeJobType]
+  );
 
-  // Helper function to get job types as string for search
-  const getJobTypesAsString = useCallback((inquiry: Lead) => {
-    const jobTypes = getJobTypesForInquiry(inquiry);
-    return jobTypes.join(" ").toLowerCase();
-  }, [getJobTypesForInquiry]);
+  const getJobTypesAsString = useCallback(
+    (inquiry: Lead) => {
+      const jobTypes = getJobTypesForInquiry(inquiry);
+      return jobTypes.join(" ").toLowerCase();
+    },
+    [getJobTypesForInquiry]
+  );
 
-  // Memoized filtered inquiries to prevent unnecessary re-calculations
   const filteredInquiries = useMemo(() => {
     if (!leads || leads.length === 0) return [];
-    
     return leads
       .filter((inquiry: Lead) => inquiry.status === "Lead")
       .filter((inquiry: Lead) => {
         const searchLower = searchTerm.toLowerCase();
         const jobTypesString = getJobTypesAsString(inquiry);
-        
         return (
           (inquiry.lead_name?.toLowerCase() || "").includes(searchLower) ||
           (inquiry.email_id?.toLowerCase() || "").includes(searchLower) ||
@@ -92,33 +78,32 @@ const InquiryPage = () => {
           jobTypesString.includes(searchLower)
         );
       });
-  }, [leads, searchTerm, getJobTypesAsString]);
+  }, [leads, searchTerm, getJobTypesAsString]); // --- Data Loading Effect ---
 
-  // Optimized data loading with proper dependency management
   const loadData = useCallback(async () => {
-    if (hasInitialized) return; // Prevent multiple initializations
-    
+    if (hasInitialized) return;
     setIsLoading(true);
     try {
-      // Execute API calls in parallel but handle errors individually
       const promises = [
-        fetchLeads().catch(err => console.error("Error fetching leads:", err)),
-        fetchJobTypes().catch(err => console.error("Error fetching job types:", err)),
+        fetchLeads().catch((err) =>
+          console.error("Error fetching leads:", err)
+        ),
+        fetchJobTypes().catch((err) =>
+          console.error("Error fetching job types:", err)
+        ),
       ];
-
-      // Only add optional functions if they exist
-      if (fetchProjectUrgency) {
+      if (fetchProjectUrgency)
         promises.push(
-          fetchProjectUrgency().catch(err => console.error("Error fetching project urgency:", err))
+          fetchProjectUrgency().catch((err) =>
+            console.error("Error fetching project urgency:", err)
+          )
         );
-      }
-      
-      if (fetchUtmSource) {
+      if (fetchUtmSource)
         promises.push(
-          fetchUtmSource().catch(err => console.error("Error fetching UTM source:", err))
+          fetchUtmSource().catch((err) =>
+            console.error("Error fetching UTM source:", err)
+          )
         );
-      }
-
       await Promise.allSettled(promises);
       setHasInitialized(true);
     } catch (error) {
@@ -126,27 +111,25 @@ const InquiryPage = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [fetchLeads, fetchJobTypes, fetchProjectUrgency, fetchUtmSource, hasInitialized]);
+  }, [
+    fetchLeads,
+    fetchJobTypes,
+    fetchProjectUrgency,
+    fetchUtmSource,
+    hasInitialized,
+  ]);
 
-  // Effect with proper cleanup and dependency management
   useEffect(() => {
     let isMounted = true;
-
     const initializeData = async () => {
-      if (isMounted) {
-        await loadData();
-      }
+      if (isMounted) await loadData();
     };
-
     initializeData();
-
-    // Cleanup function
     return () => {
       isMounted = false;
     };
-  }, [loadData]); // Fixed: include loadData in dependencies
+  }, [loadData]); // --- Handlers for modals and dialogs ---
 
-  // Dialog handlers
   const handleOpenDialog = useCallback((inquiry: Lead) => {
     setSelectedInquiryForDialog(inquiry);
     setIsDialogOpen(true);
@@ -157,7 +140,6 @@ const InquiryPage = () => {
     setSelectedInquiryForDialog(null);
   }, []);
 
-  // Form handlers
   const openNewInquiryForm = useCallback(() => {
     setSelectedInquiry(null);
     setIsFormOpen(true);
@@ -173,7 +155,6 @@ const InquiryPage = () => {
     setSelectedInquiry(null);
   }, []);
 
-  // Modal handlers
   const openViewModal = useCallback((inquiry: Lead) => {
     setViewInquiry(inquiry);
     setViewModalOpen(true);
@@ -184,91 +165,6 @@ const InquiryPage = () => {
     setViewInquiry(null);
   }, []);
 
-  // Optimized search handler with debouncing effect
-  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(e.target.value);
-  }, []);
-
-  // Component to render multiple job type badges
-  const JobTypeBadges = useCallback(({ inquiry, maxVisible = 2 }: { inquiry: Lead; maxVisible?: number }) => {
-    const jobTypes = getJobTypesForInquiry(inquiry);
-    
-    if (jobTypes.length === 0) return null;
-
-    const visibleJobTypes = jobTypes.slice(0, maxVisible);
-    const remainingCount = jobTypes.length - maxVisible;
-
-    return (
-      <div className="flex items-center gap-1 flex-wrap">
-        {visibleJobTypes.map((jobType, index) => (
-          <Badge
-            key={index}
-            variant="outline"
-            className="text-xs px-1.5 py-0.5 rounded-full border shadow-none"
-            style={{
-              backgroundColor: getJobTypeColor(jobType).bg + "20",
-              color: getJobTypeColor(jobType).text,
-              borderColor: getJobTypeColor(jobType).border,
-            }}
-          >
-            {jobType}
-          </Badge>
-        ))}
-        {remainingCount > 0 && (
-          <Badge
-            variant="outline"
-            className="text-xs px-1.5 py-0.5 rounded-full border shadow-none bg-gray-100 text-gray-600 border-gray-300"
-          >
-            +{remainingCount}
-          </Badge>
-        )}
-      </div>
-    );
-  }, [getJobTypesForInquiry]);
-
-  // Skeleton loader component
-  const SkeletonCard = () => (
-    <div className="bg-gradient-to-br from-white to-gray-50 rounded-lg p-3 border border-gray-300 shadow-2xs animate-pulse lg:p-4">
-      <div className="flex justify-between items-start gap-2">
-        <div className="flex items-start gap-2 min-w-0 flex-1">
-          <div className="bg-gray-200 rounded-md p-1.5 mt-0.5 flex-shrink-0">
-            <div className="h-4 w-4 bg-gray-300 rounded"></div>
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
-              <div className="h-4 bg-gray-200 rounded w-32"></div>
-              <div className="h-6 bg-gray-200 rounded w-20"></div>
-            </div>
-          </div>
-        </div>
-        <div className="flex items-center gap-1 flex-shrink-0">
-          <div className="h-5 w-5 bg-gray-200 rounded-full"></div>
-          <div className="h-5 w-5 bg-gray-200 rounded"></div>
-        </div>
-      </div>
-      <div className="mt-2 space-y-2">
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-1.5">
-            <div className="w-2 h-2 bg-gray-200 rounded-full"></div>
-            <div className="h-3 bg-gray-200 rounded w-16"></div>
-          </div>
-          <div className="h-5 bg-gray-200 rounded w-20"></div>
-        </div>
-        <div className="flex items-start gap-2">
-          <div className="h-3.5 w-3.5 bg-gray-200 rounded mt-0.5"></div>
-          <div className="h-3 bg-gray-200 rounded flex-1"></div>
-        </div>
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <div className="h-3.5 w-3.5 bg-gray-200 rounded"></div>
-            <div className="h-3 bg-gray-200 rounded w-20"></div>
-          </div>
-          <div className="h-7 bg-gray-200 rounded w-16"></div>
-        </div>
-      </div>
-    </div>
-  );
-
   return (
     <div className="w-full pb-20">
       {error && (
@@ -277,250 +173,24 @@ const InquiryPage = () => {
         </Alert>
       )}
 
-      {/* Header */}
-      <div className="bg-white shadow-sm p-3 mb-2 border border-emerald-100">
-        <div className="flex flex-col gap-2">
-          {/* Filters and Search */}
-          <div className="bg-white rounded-md">
-            {/* Desktop View */}
-            <div className="hidden md:flex items-center gap-4 w-full">
-              <div className="relative flex-[7]">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input
-                  type="text"
-                  placeholder="Search by customer name, email, phone, or job types"
-                  className="pl-10 w-full bg-white border border-gray-300"
-                  value={searchTerm}
-                  onChange={handleSearchChange}
-                  disabled={isLoading}
-                />
-              </div>
+      <InquiryHeader
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+        onOpenNewInquiry={openNewInquiryForm}
+        isLoading={isLoading}
+      />
 
-              <Button
-                onClick={openNewInquiryForm}
-                disabled={isLoading}
-                className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white shadow-md hover:shadow-lg transition-all duration-300 disabled:opacity-50"
-              >
-                <Plus className="h-3 w-3 mr-1" />
-                Create New Inquiry
-              </Button>
-            </div>
+      <InquiryList
+        inquiries={filteredInquiries}
+        isLoading={isLoading}
+        searchTerm={searchTerm}
+        openViewModal={openViewModal}
+        openEditInquiryForm={openEditInquiryForm}
+        handleOpenDialog={handleOpenDialog}
+        openNewInquiryForm={openNewInquiryForm}
+        getJobTypesForInquiry={getJobTypesForInquiry}
+      />
 
-            {/* Mobile View */}
-            <div className="md:hidden flex items-center gap-2 w-full">
-              <div className="relative w-full">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input
-                  type="text"
-                  placeholder="Search by name, email, phone, job types"
-                  className="pl-10 w-full bg-white border border-gray-300"
-                  value={searchTerm}
-                  onChange={handleSearchChange}
-                  disabled={isLoading}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Inquiry List */}
-      <div className="">
-        {isLoading ? (
-          // Show skeleton loaders while loading
-          <div className="space-y-3 p-2 lg:grid lg:grid-cols-2 lg:gap-4 lg:space-y-0">
-            {Array.from({ length: 6 }).map((_, index) => (
-              <SkeletonCard key={index} />
-            ))}
-          </div>
-        ) : filteredInquiries.length === 0 ? (
-          <div className="text-center py-8 px-4 text-gray-500 lg:py-12 lg:px-6">
-            <div className="inline-flex items-center justify-center bg-emerald-50/50 rounded-full p-3 mb-3 lg:p-4 lg:mb-4">
-              <FileText className="h-6 w-6 lg:h-7 lg:w-7 text-emerald-500" />
-            </div>
-            <h3 className="text-base lg:text-lg font-medium text-gray-700 mb-1">
-              No inquiries found
-            </h3>
-            <p className="text-xs lg:text-sm text-gray-500 mb-4">
-              {searchTerm ? "Try adjusting your search terms" : "Start by creating your first inquiry"}
-            </p>
-            <Button
-              onClick={openNewInquiryForm}
-              className="mt-1 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white shadow-md hover:shadow-lg transition-all duration-300 text-sm lg:text-base lg:px-6 lg:py-2"
-              size="sm"
-            >
-              <Plus className="h-3 w-3 mr-1 lg:h-4 lg:w-4" />
-              Create New Inquiry
-            </Button>
-          </div>
-        ) : (
-          <div className="space-y-3 p-2 lg:grid lg:grid-cols-2 lg:gap-4 lg:space-y-0">
-            {filteredInquiries.map((inquiry) => (
-              <div
-                key={inquiry.name}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  openViewModal(inquiry);
-                }}
-                className="bg-gradient-to-br from-white to-gray-50 rounded-lg p-3 border border-gray-300 shadow-2xs hover:shadow-sm hover:border-emerald-100 transition-all duration-300 cursor-pointer group lg:p-4 lg:hover:shadow-md"
-              >
-                <div className="flex justify-between items-start gap-2">
-                  <div className="flex items-start gap-2 min-w-0 flex-1">
-                    <div className="bg-emerald-100/50 text-emerald-800 rounded-md p-1.5 mt-0.5 flex-shrink-0">
-                      <User className="h-4 w-4 lg:h-4 lg:w-4" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      {/* Mobile: Stack vertically, Desktop: Better layout */}
-                      <div className="sm:hidden">
-                        {/* Mobile Layout - Stack vertically */}
-                        <h4 className="font-semibold text-sm text-gray-800 truncate group-hover:text-emerald-700 transition-colors mb-1">
-                          {inquiry.lead_name.charAt(0).toUpperCase() +
-                            inquiry.lead_name.slice(1)}
-                        </h4>
-                        <JobTypeBadges inquiry={inquiry} maxVisible={2} />
-                      </div>
-                      
-                      <div className="hidden sm:block">
-                        {/* Desktop Layout - Name always visible, job types below */}
-                        <div className="mb-2">
-                          <h4 className="font-semibold text-sm lg:text-base text-gray-800 truncate group-hover:text-emerald-700 transition-colors">
-                            {inquiry.lead_name.charAt(0).toUpperCase() +
-                              inquiry.lead_name.slice(1)}
-                          </h4>
-                        </div>
-                        <div className="flex flex-wrap gap-1">
-                          <JobTypeBadges inquiry={inquiry} maxVisible={3} />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-1 flex-shrink-0">
-                    <a
-                      href={`tel:${inquiry.mobile_no}`}
-                      className="flex items-center justify-center h-5 w-5 lg:h-5 lg:w-5 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"
-                      onClick={(e) => e.stopPropagation()}
-                      title={`Call ${inquiry.mobile_no}`}
-                    >
-                      <Phone className="h-3 w-3 lg:h-3 lg:w-3" />
-                    </a>
-
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-5 w-5 lg:h-5 lg:w-5 p-0 bg-white text-emerald-600 border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 transition-colors shadow-sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        openEditInquiryForm(inquiry);
-                      }}
-                    >
-                      <Edit className="h-3 w-3 lg:h-3 lg:w-3" />
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="mt-2 space-y-2">
-                  {(inquiry.custom_project_urgency ||
-                    inquiry.custom_budget_range) && (
-                    <div className="flex items-center justify-between gap-2">
-                      {inquiry.custom_project_urgency && (
-                        <div className="flex items-center gap-1.5">
-                          <div
-                            className="w-2 h-2 rounded-full flex-shrink-0"
-                            style={{
-                              backgroundColor: getUrgencyColor(
-                                inquiry.custom_project_urgency
-                              ).bg,
-                            }}
-                          />
-                          <span
-                            className="text-xs font-medium truncate"
-                            style={{
-                              color: getUrgencyColor(
-                                inquiry.custom_project_urgency
-                              ).text,
-                            }}
-                          >
-                            {getUrgencyShortLabel(
-                              inquiry.custom_project_urgency
-                            )}
-                          </span>
-                        </div>
-                      )}
-                      {inquiry.custom_budget_range && (
-                        <Badge
-                          variant="outline"
-                          className="px-2 py-0.5 rounded-md text-xs font-medium shadow-none ml-auto"
-                          style={{
-                            backgroundColor:
-                              getBudgetColor(inquiry.custom_budget_range).bg +
-                              "15",
-                            color: getBudgetColor(inquiry.custom_budget_range)
-                              .text,
-                            borderColor:
-                              getBudgetColor(inquiry.custom_budget_range)
-                                .border + "40",
-                          }}
-                        >
-                          {inquiry.custom_budget_range}
-                        </Badge>
-                      )}
-                    </div>
-                  )}
-
-                  {inquiry.custom_property_area && (
-                    <div className="flex items-start gap-2">
-                      <MapPin className="h-3.5 w-3.5 mt-0.5 text-gray-400 flex-shrink-0" />
-                      <span className="text-xs text-gray-600 leading-tight flex-1 line-clamp-2">
-                        {inquiry.custom_property_area}
-                      </span>
-                    </div>
-                  )}
-
-                  <div className="flex items-center justify-between gap-2">
-                    {inquiry.custom_preferred_inspection_date && (
-                      <div className="flex items-center gap-2">
-                        <Calendar className="h-3.5 w-3.5 text-gray-400" />
-                        <span className="text-xs text-gray-600">
-                          {format(
-                            new Date(inquiry.custom_preferred_inspection_date),
-                            "dd/MM/yyyy"
-                          )}
-                        </span>
-                      </div>
-                    )}
-
-                    <div className="ml-auto">
-                      {inquiry.status === "Open" ? (
-                        <Badge
-                          variant="outline"
-                          className="text-xs px-2 py-0.5 rounded-md text-emerald-600 border border-emerald-200 bg-emerald-50"
-                        >
-                          Assigned
-                        </Badge>
-                      ) : (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-7 px-3 text-xs bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white border-none shadow-sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleOpenDialog(inquiry);
-                          }}
-                        >
-                          Assign
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Dialogs and Modals */}
       {isDialogOpen && selectedInquiryForDialog && (
         <InspectionDialog
           open={isDialogOpen}
@@ -538,193 +208,13 @@ const InquiryPage = () => {
         />
       )}
 
-      {/* View Modal */}
       {viewModalOpen && viewInquiry && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg w-full max-w-2xl shadow-xl relative max-h-[90vh] overflow-y-auto">
-            {/* Header */}
-            <div className="bg-emerald-600 p-4 text-white rounded-t-lg sticky top-0 z-10">
-              <div className="flex justify-between items-center">
-                <h2 className="text-xl font-semibold">Inquiry Details</h2>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 w-8 p-0 rounded-full text-white hover:bg-white/10"
-                  onClick={closeViewModal}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-
-            {/* Content */}
-            <div className="p-4 space-y-4">
-              {/* Customer Details */}
-              <div className="bg-gray-50 p-4 py-2 rounded-lg">
-                <h3 className="font-medium text-gray-900 flex items-center gap-2">
-                  <Phone className="h-5 w-5 text-emerald-600" />
-                  Contact Details
-                </h3>
-                <div className="text-sm">
-                  {viewInquiry.lead_name ||
-                  viewInquiry.email_id ||
-                  viewInquiry.mobile_no ? (
-                    <div className="break-words">
-                      <span className="text-gray-900">
-                        {[
-                          viewInquiry.lead_name,
-                          viewInquiry.mobile_no,
-                          viewInquiry.email_id,
-                        ]
-                          .filter(Boolean)
-                          .join(" | ")}
-                      </span>
-                    </div>
-                  ) : (
-                    <div className="text-gray-500">
-                      No contact details available
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Job Details */}
-              <div className="bg-gray-50 p-4 py-2 rounded-lg">
-                <h3 className="font-medium text-gray-900 flex items-center gap-2">
-                  <Home className="h-5 w-5 text-emerald-600" />
-                  Job Details
-                </h3>
-                <div className="text-sm space-y-2">
-                  {/* Job Types */}
-                  {getJobTypesForInquiry(viewInquiry).length > 0 && (
-                    <div>
-                      <span className="text-gray-700 font-medium">Job Types: </span>
-                      <div className="mt-1 flex flex-wrap gap-1">
-                        {getJobTypesForInquiry(viewInquiry).map((jobType, index) => (
-                          <Badge
-                            key={index}
-                            variant="outline"
-                            className="text-xs px-2 py-0.5 rounded-full border shadow-none"
-                            style={{
-                              backgroundColor: getJobTypeColor(jobType).bg + "20",
-                              color: getJobTypeColor(jobType).text,
-                              borderColor: getJobTypeColor(jobType).border,
-                            }}
-                          >
-                            {jobType}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* Other job details */}
-                  {(viewInquiry.custom_budget_range || viewInquiry.custom_project_urgency) && (
-                    <div className="break-words">
-                      <span className="text-gray-900">
-                        {[
-                          viewInquiry.custom_budget_range,
-                          viewInquiry.custom_project_urgency,
-                        ]
-                          .filter(Boolean)
-                          .join(" | ")}
-                      </span>
-                    </div>
-                  )}
-                  
-                  {!getJobTypesForInquiry(viewInquiry).length && !viewInquiry.custom_budget_range && !viewInquiry.custom_project_urgency && (
-                    <span className="text-gray-500">N/A</span>
-                  )}
-                </div>
-              </div>
-
-              {/* Property Information */}
-              <div className="bg-gray-50 p-4 py-2 rounded-lg">
-                <h3 className="font-medium text-gray-900 flex items-center gap-2">
-                  <Building className="h-5 w-5 text-emerald-600" />
-                  Property Information
-                </h3>
-                <div className="text-sm">
-                  <div className="break-words">
-                    <span className="text-gray-900">
-                      {[
-                        viewInquiry.custom_property_category,
-                        viewInquiry.custom_property_area,
-                      ]
-                        .filter(Boolean)
-                        .join(" | ")}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Inspection Schedule */}
-              <div className="bg-gray-50 p-4 py-2 rounded-lg">
-                <h3 className="font-medium text-gray-900 flex items-center gap-2">
-                  <Calendar className="h-5 w-5 text-emerald-600" />
-                  Inspection Schedule
-                </h3>
-                <div className="text-sm">
-                  {viewInquiry.custom_preferred_inspection_date ||
-                  viewInquiry.custom_preferred_inspection_time ? (
-                    <div className="break-words">
-                      <span className="text-gray-900">
-                        {[
-                          viewInquiry.custom_preferred_inspection_date &&
-                            format(
-                              new Date(
-                                viewInquiry.custom_preferred_inspection_date
-                              ),
-                              "dd/MM/yyyy"
-                            ),
-                          viewInquiry.custom_preferred_inspection_time,
-                        ]
-                          .filter(Boolean)
-                          .join(" | ")}
-                      </span>
-                    </div>
-                  ) : (
-                    <span className="text-gray-500">N/A</span>
-                  )}
-                </div>
-              </div>
-
-              {/* Special Requirements */}
-              {viewInquiry.custom_special_requirements && (
-                <div className="bg-gray-50 p-4 py-2 rounded-lg">
-                  <h3 className="font-medium text-gray-900 flex items-center gap-2">
-                    <FileText className="h-5 w-5 text-emerald-600" />
-                    Special Requirements
-                  </h3>
-                  <div className="text-sm text-gray-900 mt-1">
-                    {viewInquiry.custom_special_requirements}
-                  </div>
-                </div>
-              )}
-
-              {/* Action Buttons */}
-              <div className="flex justify-end gap-2 pt-4 border-t border-gray-200">
-                <Button
-                  variant="outline"
-                  onClick={closeViewModal}
-                  className="px-6"
-                >
-                  Close
-                </Button>
-                <Button
-                  onClick={() => {
-                    closeViewModal();
-                    openEditInquiryForm(viewInquiry);
-                  }}
-                  className="px-6 bg-emerald-700 text-white hover:bg-emerald-800"
-                >
-                  <Edit className="h-4 w-4 mr-2" />
-                  Edit
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <InquiryViewModal
+          inquiry={viewInquiry}
+          onClose={closeViewModal}
+          onEdit={openEditInquiryForm}
+          getJobTypesForInquiry={getJobTypesForInquiry}
+        />
       )}
     </div>
   );

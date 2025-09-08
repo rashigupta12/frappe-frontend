@@ -14,6 +14,7 @@ import { showToast } from "../helpers/comman";
 
 // Define the Lead interface based on your API response
 export interface Lead {
+  custom_property_type: ReactNode;
   name: string;
   owner: string;
   creation: string;
