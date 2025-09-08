@@ -26,7 +26,7 @@ import {
 } from "../../context/JobCardOtherContext";
 
 import { handleKeyDown } from "../../helpers/helper";
-import PropertyAddressSection from "../Inquiries/PropertyAddress";
+import PropertyAddressSection from "../common/PropertyAddress";
 import { Button } from "../ui/button";
 import {
   Dialog,

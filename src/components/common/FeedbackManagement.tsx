@@ -1,12 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useState } from "react";
 // import { showToast } from "react-hot-showToast";
-import { frappeAPI } from "../api/frappeClient";
-import { useAuth } from "../context/AuthContext";
-import { showToast } from "../helpers/comman";
-import FeedbackList from "../components/feedback/FeedBackList";
-import FeedbackForm from "../components/feedback/FeedbackForm";
-import FeedbackDetails from "../components/feedback/FeedBackDetails";
+import { frappeAPI } from "../../api/frappeClient";
+import { useAuth } from "../../context/AuthContext";
+import { showToast } from "../../helpers/comman";
+import FeedbackList from "../feedback/FeedBackList";
+import FeedbackForm from "../feedback/FeedbackForm";
+import FeedbackDetails from "../feedback/FeedBackDetails";
 
 // Types
 interface ImageAttachment {
@@ -48,7 +48,6 @@ interface FeedbackItem {
   custom_images: ImageAttachment[];
 }
 
-
 // Main Feedback Component
 const FeedbackComponent: React.FC<{
   children: React.ReactNode;
@@ -58,7 +57,7 @@ const FeedbackComponent: React.FC<{
   const [showList, setShowList] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
-  console.log(showDetails)
+  console.log(showDetails);
   const [selectedFeedback, setSelectedFeedback] = useState<FeedbackItem | null>(
     null
   );
@@ -130,13 +129,11 @@ const FeedbackComponent: React.FC<{
   };
 
   // In FeedbackComponent, update the state management
-const handleViewFeedback = (feedback: FeedbackItem) => {
-  setSelectedFeedback(feedback);
-  setShowDetails(true);
-  setShowList(false); // Close the list when viewing details
-};
-
-
+  const handleViewFeedback = (feedback: FeedbackItem) => {
+    setSelectedFeedback(feedback);
+    setShowDetails(true);
+    setShowList(false); // Close the list when viewing details
+  };
 
   const handleNewFeedback = () => {
     setShowForm(true);
@@ -163,7 +160,7 @@ const handleViewFeedback = (feedback: FeedbackItem) => {
       >
         {children}
       </div>
-      
+
       <FeedbackList
         isOpen={showList}
         onClose={() => setShowList(false)}

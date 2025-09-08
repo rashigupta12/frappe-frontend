@@ -1,18 +1,12 @@
 // src/components/account/ReceiptSummary.tsx
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import {
-  Calendar,
-  Filter,
-  Plus,
-  Search,
-  Trash2
-} from "lucide-react";
+import { Calendar, Filter, Plus, Search, Trash2 } from "lucide-react";
 import React, { useMemo, useState } from "react";
-import DeleteConfirmation from "../../common/DeleteComfirmation";
+import DeleteConfirmation from "../common/DeleteComfirmation";
 import ReceiptDetails from "./ReceiptDetails";
 
 import { Link } from "react-router-dom";
-import { PasswordResetLoader } from "../../common/Loader";
+import { Loader } from "../common/Loader";
 import { Button } from "../ui/button";
 import { Dialog } from "../ui/dialog";
 
@@ -28,7 +22,7 @@ export interface Receipt {
   custom_account_number?: string;
   custom_card_number?: string;
   docstatus: number; // 0 = draft, 1 = submitted
-  date: string;      // yyyy-mm-dd
+  date: string; // yyyy-mm-dd
   custom_attachments: any[];
   custom_ifscibanswift_code?: string;
   custom_account_holder_name?: string;
@@ -54,9 +48,9 @@ const ReceiptSummary: React.FC<Props> = ({
   const [fromDate, setFromDate] = useState(todayStr);
   const [toDate, setToDate] = useState(todayStr);
   const [searchQuery, setSearchQuery] = useState("");
-  const [modeFilter, setModeFilter] = useState<"all" | "cash" | "bank" | "card" | "credit">(
-    "all"
-  );
+  const [modeFilter, setModeFilter] = useState<
+    "all" | "cash" | "bank" | "card" | "credit"
+  >("all");
   const [showFilters, setShowFilters] = useState(false);
   const [isDefaultFilter, setIsDefaultFilter] = useState(true);
 
@@ -65,7 +59,7 @@ const ReceiptSummary: React.FC<Props> = ({
 
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [selectedReceipt, setSelectedReceipt] = useState<Receipt | null>(null);
-  
+
   const formatDate = (d: string) =>
     new Date(d).toLocaleDateString("en-GB", {
       day: "2-digit",
@@ -90,7 +84,12 @@ const ReceiptSummary: React.FC<Props> = ({
       setToDate(newFromDate);
     }
     // Update filter state immediately
-    updateFilterState(searchQuery, modeFilter, newFromDate, newFromDate > toDate ? newFromDate : toDate);
+    updateFilterState(
+      searchQuery,
+      modeFilter,
+      newFromDate,
+      newFromDate > toDate ? newFromDate : toDate
+    );
   };
 
   const handleToDateChange = (newToDate: string) => {
@@ -99,11 +98,22 @@ const ReceiptSummary: React.FC<Props> = ({
       setFromDate(newToDate);
     }
     // Update filter state immediately
-    updateFilterState(searchQuery, modeFilter, newToDate < fromDate ? newToDate : fromDate, newToDate);
+    updateFilterState(
+      searchQuery,
+      modeFilter,
+      newToDate < fromDate ? newToDate : fromDate,
+      newToDate
+    );
   };
 
-  const updateFilterState = (query: string, mode: string, from: string, to: string) => {
-    const isDefault = query === "" && mode === "all" && from === todayStr && to === todayStr;
+  const updateFilterState = (
+    query: string,
+    mode: string,
+    from: string,
+    to: string
+  ) => {
+    const isDefault =
+      query === "" && mode === "all" && from === todayStr && to === todayStr;
     setIsDefaultFilter(isDefault);
   };
 
@@ -117,34 +127,45 @@ const ReceiptSummary: React.FC<Props> = ({
         (r.paid_by && r.paid_by.toLowerCase().includes(q)) ||
         (r.paid_from && r.paid_from.toLowerCase().includes(q)) ||
         (r.bill_number && r.bill_number.includes(q)) ||
-        (r.custom_purpose_of_payment && r.custom_purpose_of_payment.toLowerCase().includes(q));
+        (r.custom_purpose_of_payment &&
+          r.custom_purpose_of_payment.toLowerCase().includes(q));
 
       // Payment mode filter
       const paymentMode = r.custom_mode_of_payment?.toLowerCase() || "";
-      const mode = 
-        paymentMode.includes("cash") ? "cash" :
-        paymentMode.includes("card") ? "card" :
-        paymentMode.includes("credit") ? "credit" :
-        "bank";
-      
+      const mode = paymentMode.includes("cash")
+        ? "cash"
+        : paymentMode.includes("card")
+        ? "card"
+        : paymentMode.includes("credit")
+        ? "credit"
+        : "bank";
+
       const modeOk = modeFilter === "all" || modeFilter === mode;
 
       // Date filter (only applies when no search is active)
-      const dateOk = searchQuery.trim() !== "" ? true : (
-        isDefaultFilter
+      const dateOk =
+        searchQuery.trim() !== ""
+          ? true
+          : isDefaultFilter
           ? r.date === todayStr
-          : isDateInRange(r.date)
-      );
+          : isDateInRange(r.date);
 
       return searchOk && modeOk && dateOk;
     });
-  }, [receipts, searchQuery, modeFilter, isDefaultFilter, isDateInRange, todayStr]);
+  }, [
+    receipts,
+    searchQuery,
+    modeFilter,
+    isDefaultFilter,
+    isDateInRange,
+    todayStr,
+  ]);
 
   const askDelete = (name: string) => {
     setReceiptToDelete(name);
     setDeleteModalOpen(true);
   };
-  
+
   const confirmDelete = async () => {
     if (receiptToDelete) {
       await onDelete(receiptToDelete);
@@ -160,7 +181,7 @@ const ReceiptSummary: React.FC<Props> = ({
   };
 
   if (loading) {
-    return <PasswordResetLoader/>
+    return <Loader />;
   }
 
   return (
@@ -219,26 +240,29 @@ const ReceiptSummary: React.FC<Props> = ({
         </div>
 
         {/* quick mode filter buttons */}
-         <div className="flex gap-2 mt-2">
-                 {(["cash", "card", "bank", "credit"] as const).map((m) => (
-          <Button
-            key={m}
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              const newMode = modeFilter === m ? "all" : m;
-              setModeFilter(newMode);
-              updateFilterState(searchQuery, newMode, fromDate, toDate);
-            }}
-            className={`h-8 px-3 text-xs ${
-              modeFilter === m ? "border-emerald-600 text-black  " : " border-gray-200"
-            }`}
-          >
-            {m === "card" ? "Credit Card" : m.charAt(0).toUpperCase() + m.slice(1)}
-          </Button>
-        ))}
-        
-                </div>
+        <div className="flex gap-2 mt-2">
+          {(["cash", "card", "bank", "credit"] as const).map((m) => (
+            <Button
+              key={m}
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const newMode = modeFilter === m ? "all" : m;
+                setModeFilter(newMode);
+                updateFilterState(searchQuery, newMode, fromDate, toDate);
+              }}
+              className={`h-8 px-3 text-xs ${
+                modeFilter === m
+                  ? "border-emerald-600 text-black  "
+                  : " border-gray-200"
+              }`}
+            >
+              {m === "card"
+                ? "Credit Card"
+                : m.charAt(0).toUpperCase() + m.slice(1)}
+            </Button>
+          ))}
+        </div>
 
         {/* collapsible advanced filters */}
         {showFilters && (
@@ -445,7 +469,10 @@ const ReceiptSummary: React.FC<Props> = ({
                     </span>
 
                     {!readOnly && (
-                      <div className="flex gap-0.5" onClick={(e) => e.stopPropagation()}>
+                      <div
+                        className="flex gap-0.5"
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         <Button
                           variant="ghost"
                           size="sm"

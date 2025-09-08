@@ -14,8 +14,8 @@ import { useAuth } from "../../context/AuthContext";
 import { Button } from "../ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 
-import FeedbackComponent from "../../common/FeedbackManagement";
-import { RoleSwitcherMinimal } from "../../common/RoleSwitcher";
+import FeedbackComponent from "../common/FeedbackManagement";
+import { RoleSwitcherMinimal } from "../common/RoleSwitcher";
 import PaymentContainer from "../account/PaymentContainer";
 import PaymentForm from "../account/Paytmentform";
 import ReceiptForm from "../account/Recipt";
@@ -162,7 +162,9 @@ export default function AccountDashboard() {
           </nav>
           <div className="flex-shrink-0 p-2 sm:p-3   border-t border-emerald-100  ">
             <div className="bg-emerald-50 rounded-lg border border-emerald-100 p-2 sm:p-3 ">
-              <div className="min-w-0"> {/* min-w-0 allows flex children to shrink below content size */}
+              <div className="min-w-0">
+                {" "}
+                {/* min-w-0 allows flex children to shrink below content size */}
                 <div className="text-xs sm:text-sm font-medium text-black truncate mb-1 capitalize">
                   {user?.full_name || user?.username || "User"}
                 </div>
@@ -174,7 +176,7 @@ export default function AccountDashboard() {
                 {/* Role badge for mobile if multi-role */}
                 {isMultiRole && (
                   <div className="text-xs text-emerald-900 bg-emerald-100 px-2 py-1 rounded mt-1 truncate lg:hidden capitalize">
-                    Role:  <span className="font-medium">Account</span>
+                    Role: <span className="font-medium">Account</span>
                   </div>
                 )}
               </div>

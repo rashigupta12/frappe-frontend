@@ -1,17 +1,11 @@
 // src/components/account/PaymentSummary.tsx
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import {
-  Calendar,
-  Filter,
-  Plus,
-  Search,
-  Trash2
-} from "lucide-react";
+import { Calendar, Filter, Plus, Search, Trash2 } from "lucide-react";
 import React, { useMemo, useState } from "react";
-import DeleteConfirmation from "../../common/DeleteComfirmation";
+import DeleteConfirmation from "../common/DeleteComfirmation";
 
 import { Link } from "react-router-dom";
-import { PasswordResetLoader } from "../../common/Loader";
+import { Loader } from "../common/Loader";
 import { Button } from "../ui/button";
 import { Dialog } from "../ui/dialog";
 import PaymentDetails from "./PaymentDetails";
@@ -32,7 +26,7 @@ export interface Payment {
   custom_name_of_bank?: string;
   custom_card_number?: string;
   docstatus: number; // 0 = draft, 1 = submitted
-  date: string;      // yyyy-mm-dd
+  date: string; // yyyy-mm-dd
   custom_attachments: any[];
 }
 
@@ -56,9 +50,9 @@ const PaymentSummary: React.FC<Props> = ({
   const [fromDate, setFromDate] = useState(todayStr);
   const [toDate, setToDate] = useState(todayStr);
   const [searchQuery, setSearchQuery] = useState("");
-  const [modeFilter, setModeFilter] = useState<"all" | "cash" | "card" | "bank" | "credit">(
-    "all"
-  );
+  const [modeFilter, setModeFilter] = useState<
+    "all" | "cash" | "card" | "bank" | "credit"
+  >("all");
   const [showFilters, setShowFilters] = useState(false);
   const [isDefaultFilter, setIsDefaultFilter] = useState(true);
 
@@ -67,7 +61,7 @@ const PaymentSummary: React.FC<Props> = ({
 
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
-  
+
   const formatDate = (d: string) =>
     new Date(d).toLocaleDateString("en-GB", {
       day: "2-digit",
@@ -92,7 +86,12 @@ const PaymentSummary: React.FC<Props> = ({
       setToDate(newFromDate);
     }
     // Update filter state immediately
-    updateFilterState(searchQuery, modeFilter, newFromDate, newFromDate > toDate ? newFromDate : toDate);
+    updateFilterState(
+      searchQuery,
+      modeFilter,
+      newFromDate,
+      newFromDate > toDate ? newFromDate : toDate
+    );
   };
 
   const handleToDateChange = (newToDate: string) => {
@@ -101,11 +100,22 @@ const PaymentSummary: React.FC<Props> = ({
       setFromDate(newToDate);
     }
     // Update filter state immediately
-    updateFilterState(searchQuery, modeFilter, newToDate < fromDate ? newToDate : fromDate, newToDate);
+    updateFilterState(
+      searchQuery,
+      modeFilter,
+      newToDate < fromDate ? newToDate : fromDate,
+      newToDate
+    );
   };
 
-  const updateFilterState = (query: string, mode: string, from: string, to: string) => {
-    const isDefault = query === "" && mode === "all" && from === todayStr && to === todayStr;
+  const updateFilterState = (
+    query: string,
+    mode: string,
+    from: string,
+    to: string
+  ) => {
+    const isDefault =
+      query === "" && mode === "all" && from === todayStr && to === todayStr;
     setIsDefaultFilter(isDefault);
   };
 
@@ -119,34 +129,45 @@ const PaymentSummary: React.FC<Props> = ({
         (p.paid_by && p.paid_by.toLowerCase().includes(q)) ||
         (p.paid_to && p.paid_to.toLowerCase().includes(q)) ||
         (p.bill_number && p.bill_number.includes(q)) ||
-        (p.custom_purpose_of_payment && p.custom_purpose_of_payment.toLowerCase().includes(q));
+        (p.custom_purpose_of_payment &&
+          p.custom_purpose_of_payment.toLowerCase().includes(q));
 
       // Payment mode filter
       const paymentMode = p.custom_mode_of_payment?.toLowerCase() || "";
-      const mode = 
-        paymentMode.includes("cash") ? "cash" :
-        paymentMode.includes("card") ? "card" :
-        paymentMode.includes("credit") ? "credit" :
-        "bank";
-      
+      const mode = paymentMode.includes("cash")
+        ? "cash"
+        : paymentMode.includes("card")
+        ? "card"
+        : paymentMode.includes("credit")
+        ? "credit"
+        : "bank";
+
       const modeOk = modeFilter === "all" || modeFilter === mode;
 
       // Date filter (only applies when no search is active)
-      const dateOk = searchQuery.trim() !== "" ? true : (
-        isDefaultFilter
+      const dateOk =
+        searchQuery.trim() !== ""
+          ? true
+          : isDefaultFilter
           ? p.date === todayStr
-          : isDateInRange(p.date)
-      );
+          : isDateInRange(p.date);
 
       return searchOk && modeOk && dateOk;
     });
-  }, [payments, searchQuery, modeFilter, isDefaultFilter, isDateInRange, todayStr]);
+  }, [
+    payments,
+    searchQuery,
+    modeFilter,
+    isDefaultFilter,
+    isDateInRange,
+    todayStr,
+  ]);
 
   const askDelete = (name: string) => {
     setPaymentToDelete(name);
     setDeleteModalOpen(true);
   };
-  
+
   const confirmDelete = async () => {
     if (paymentToDelete) {
       await onDelete(paymentToDelete);
@@ -162,7 +183,7 @@ const PaymentSummary: React.FC<Props> = ({
   };
 
   if (loading) {
-    return <PasswordResetLoader/>
+    return <Loader />;
   }
 
   return (
@@ -184,7 +205,6 @@ const PaymentSummary: React.FC<Props> = ({
               size="sm"
               className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-md px-3 py-2"
             >
-
               <Plus className="h-4 w-4 mr-1" />
               Add Payment
             </Button>
@@ -224,24 +244,27 @@ const PaymentSummary: React.FC<Props> = ({
 
         {/* quick mode filter buttons */}
         <div className="flex gap-2 mt-2">
-         {(["cash", "card", "bank", "credit"] as const).map((m) => (
-  <Button
-    key={m}
-    variant="outline"
-    size="sm"
-    onClick={() => {
-      const newMode = modeFilter === m ? "all" : m;
-      setModeFilter(newMode);
-      updateFilterState(searchQuery, newMode, fromDate, toDate);
-    }}
-    className={`h-8 px-3 text-xs ${
-      modeFilter === m ? "border-emerald-600 text-black  " : " border-gray-200"
-    }`}
-  >
-    {m === "card" ? "Credit Card" : m.charAt(0).toUpperCase() + m.slice(1)}
-  </Button>
-))}
-
+          {(["cash", "card", "bank", "credit"] as const).map((m) => (
+            <Button
+              key={m}
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const newMode = modeFilter === m ? "all" : m;
+                setModeFilter(newMode);
+                updateFilterState(searchQuery, newMode, fromDate, toDate);
+              }}
+              className={`h-8 px-3 text-xs ${
+                modeFilter === m
+                  ? "border-emerald-600 text-black  "
+                  : " border-gray-200"
+              }`}
+            >
+              {m === "card"
+                ? "Credit Card"
+                : m.charAt(0).toUpperCase() + m.slice(1)}
+            </Button>
+          ))}
         </div>
 
         {/* collapsible advanced filters */}
@@ -449,7 +472,10 @@ const PaymentSummary: React.FC<Props> = ({
                     </span>
 
                     {!readOnly && (
-                      <div className="flex gap-0.5" onClick={(e) => e.stopPropagation()}>
+                      <div
+                        className="flex gap-0.5"
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         <Button
                           variant="ghost"
                           size="sm"

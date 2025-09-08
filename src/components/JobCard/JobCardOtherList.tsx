@@ -8,8 +8,8 @@ import {
   Wrench,
 } from "lucide-react";
 import React, { useEffect, useMemo, useState } from "react";
-import DeleteConfirmation from "../../common/DeleteComfirmation";
-import { PasswordResetLoader } from "../../common/Loader";
+import DeleteConfirmation from "../common/DeleteComfirmation";
+import { Loader } from "../common/Loader";
 import {
   useJobCardsOther,
   type JobCardOther,
@@ -226,7 +226,7 @@ const JobCardOtherList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
   };
 
   if (loading) {
-    return <PasswordResetLoader />;
+    return <Loader />;
   }
 
   return (
@@ -498,9 +498,7 @@ const JobCardOtherList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
                   </div>
 
                   <p className="text-xs text-gray-600 leading-tight line-clamp-2">
-                    {[ card.area]
-                      .filter(Boolean)
-                      .join(", ") || "No Address"}
+                    {[card.area].filter(Boolean).join(", ") || "No Address"}
                   </p>
 
                   <div className="flex items-center justify-between gap-1">

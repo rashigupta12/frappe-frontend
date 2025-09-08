@@ -19,9 +19,9 @@ import { JobCardOtherProvider } from "./context/JobCardOtherContext";
 import { LeadsProvider } from "./context/LeadContext";
 
 import "./App.css";
-import { PasswordResetLoader } from "./common/Loader";
+import { Loader } from "./components/common/Loader";
 import { FirstTimePasswordReset } from "./components/auth/NewPassword";
-import { ServerDownScreen } from "./common/SeverdownScrren";
+import { ServerDownScreen } from "./components/common/SeverdownScrren";
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -101,7 +101,7 @@ const ProtectedRoute = ({
       isCheckingAccess,
       isSwitchingRole,
     });
-    return <PasswordResetLoader />;
+    return <Loader />;
   }
 
   // Check for password reset requirement first
@@ -166,7 +166,7 @@ const PasswordResetRoute = ({ children }: { children: ReactNode }) => {
     useAuth();
 
   if (loading) {
-    return <PasswordResetLoader />;
+    return <Loader />;
   }
 
   // Allow access to first-time-password-reset if user exists and needs reset
@@ -261,7 +261,6 @@ const Unauthorized = () => {
 };
 
 function AppRoutes() {
-
   const { serverDown, checkServerHealth, setServerDown } = useAuth();
 
   // Listen for server down events
@@ -270,17 +269,17 @@ function AppRoutes() {
       setServerDown(event.detail);
     };
 
-    window.addEventListener('serverDown' as any, handleServerDown);
-    
+    window.addEventListener("serverDown" as any, handleServerDown);
+
     return () => {
-      window.removeEventListener('serverDown' as any, handleServerDown);
+      window.removeEventListener("serverDown" as any, handleServerDown);
     };
   }, [setServerDown]);
 
   const handleServerRetry = async () => {
     const isHealthy = await checkServerHealth();
     if (!isHealthy) {
-      throw new Error('Server is still unavailable');
+      throw new Error("Server is still unavailable");
     }
   };
 

@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { useInspectionStore } from "../../store/inspectionStore";
 import { Button } from "../ui/button";
 import { useNavigate } from "react-router-dom";
-import { PasswordResetLoader } from "../../common/Loader";
+import { Loader } from "../common/Loader";
 import { Eye } from "lucide-react";
 
 const statusFilters = [
@@ -375,7 +375,7 @@ const MobileSiteInspectionList = ({ userEmail }: InspectionListProps) => {
   }
 
   if (loading) {
-    return <PasswordResetLoader />;
+    return <Loader />;
   }
 
   if (error) {

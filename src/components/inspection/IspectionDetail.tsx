@@ -17,7 +17,7 @@ import { useFieldArray, useForm } from "react-hook-form";
 import { useLocation, useNavigate } from "react-router-dom";
 import * as z from "zod";
 import { frappeAPI } from "../../api/frappeClient";
-import DeleteConfirmation from "../../common/DeleteComfirmation";
+import DeleteConfirmation from "../common/DeleteComfirmation";
 import { useInspectionStore } from "../../store/inspectionStore";
 import {
   formSchema,
@@ -25,7 +25,7 @@ import {
   type MediaItem,
 } from "./components/utils/fileUpload";
 
-import { PasswordResetLoader } from "../../common/Loader";
+import { Loader } from "../common/Loader";
 import { showToast } from "../../helpers/comman";
 import { capitalizeFirstLetter } from "../../helpers/helper";
 import {
@@ -141,106 +141,106 @@ const CreateInspection = () => {
   }, []);
 
   // Memoize formatDimensionsData to prevent recreation
- const formatDimensionsData = useCallback((siteDimensions: any[]) => {
-  return siteDimensions.map((dim: any) => {
-    let images = [];
+  const formatDimensionsData = useCallback((siteDimensions: any[]) => {
+    return siteDimensions.map((dim: any) => {
+      let images = [];
 
-    try {
-      // Handle cases where media might be double-encoded JSON string, single JSON string, or already an array
-      if (typeof dim.media === "string") {
-        let mediaString = dim.media;
+      try {
+        // Handle cases where media might be double-encoded JSON string, single JSON string, or already an array
+        if (typeof dim.media === "string") {
+          let mediaString = dim.media;
 
-        // Handle double-encoded JSON strings like "\"[]\""
-        if (mediaString.startsWith('"') && mediaString.endsWith('"')) {
-          mediaString = JSON.parse(mediaString);
+          // Handle double-encoded JSON strings like "\"[]\""
+          if (mediaString.startsWith('"') && mediaString.endsWith('"')) {
+            mediaString = JSON.parse(mediaString);
+          }
+
+          // Now parse the actual JSON
+          images = mediaString ? JSON.parse(mediaString) : [];
+        } else if (Array.isArray(dim.media)) {
+          images = dim.media;
         }
-
-        // Now parse the actual JSON
-        images = mediaString ? JSON.parse(mediaString) : [];
-      } else if (Array.isArray(dim.media)) {
-        images = dim.media;
+      } catch (error) {
+        console.error(
+          "Error parsing media:",
+          error,
+          "Original media:",
+          dim.media
+        );
+        images = [];
       }
-    } catch (error) {
-      console.error(
-        "Error parsing media:",
-        error,
-        "Original media:",
-        dim.media
-      );
-      images = [];
-    }
 
-    // Ensure images is always an array before calling map
-    if (!Array.isArray(images)) {
-      console.warn("Images is not an array after parsing:", images);
-      images = [];
-    }
+      // Ensure images is always an array before calling map
+      if (!Array.isArray(images)) {
+        console.warn("Images is not an array after parsing:", images);
+        images = [];
+      }
 
-    const formattedImages = images
-      .map((img: any) => {
-        // Handle cases where img might be an object with image_url or just a string
-        const imageUrl = typeof img === "string" ? img : img?.image_url;
-        if (!imageUrl) return null;
+      const formattedImages = images
+        .map((img: any) => {
+          // Handle cases where img might be an object with image_url or just a string
+          const imageUrl = typeof img === "string" ? img : img?.image_url;
+          if (!imageUrl) return null;
 
-        const mediaType = getMediaType(imageUrl);
-        // Ensure only image or video types for the images field
-        if (mediaType !== "image" && mediaType !== "video") {
-          return null;
+          const mediaType = getMediaType(imageUrl);
+          // Ensure only image or video types for the images field
+          if (mediaType !== "image" && mediaType !== "video") {
+            return null;
+          }
+          return {
+            id: `${imageUrl.split("/").pop()}-${Math.random()
+              .toString(36)
+              .substr(2, 9)}`,
+            url: imageUrl,
+            type: mediaType as "image" | "video",
+            remarks: imageUrl.split("/").pop() || "",
+          };
+        })
+        .filter(
+          (
+            img: any
+          ): img is {
+            id: string;
+            url: string;
+            type: "image" | "video";
+            remarks: string;
+          } => img !== null
+        );
+
+      // Fix for media_2 (audio) handling
+      let media2Item = undefined;
+      if (dim.media_2) {
+        const media2Type = getMediaType(dim.media_2);
+        console.log("Media 2 URL:", dim.media_2, "Detected type:", media2Type);
+
+        // Accept audio files regardless of extension
+        if (media2Type === "audio" || dim.media_2.includes(".webm")) {
+          media2Item = {
+            id: `${dim.media_2.split("/").pop()}-${Math.random()
+              .toString(36)
+              .substr(2, 9)}`,
+            url: typeof dim.media_2 === "string" ? dim.media_2 : "",
+            type: "audio" as const,
+            remarks:
+              (typeof dim.media_2 === "string"
+                ? dim.media_2.split("/").pop()
+                : "") || "",
+          };
         }
-        return {
-          id: `${imageUrl.split("/").pop()}-${Math.random()
-            .toString(36)
-            .substr(2, 9)}`,
-          url: imageUrl,
-          type: mediaType as "image" | "video",
-          remarks: imageUrl.split("/").pop() || "",
-        };
-      })
-      .filter(
-        (
-          img: any
-        ): img is {
-          id: string;
-          url: string;
-          type: "image" | "video";
-          remarks: string;
-        } => img !== null
-      );
-
-    // Fix for media_2 (audio) handling
-    let media2Item = undefined;
-    if (dim.media_2) {
-      const media2Type = getMediaType(dim.media_2);
-      console.log("Media 2 URL:", dim.media_2, "Detected type:", media2Type);
-      
-      // Accept audio files regardless of extension
-      if (media2Type === "audio" || dim.media_2.includes('.webm')) {
-        media2Item = {
-          id: `${dim.media_2.split("/").pop()}-${Math.random()
-            .toString(36)
-            .substr(2, 9)}`,
-          url: typeof dim.media_2 === "string" ? dim.media_2 : "",
-          type: "audio" as const,
-          remarks:
-            (typeof dim.media_2 === "string"
-              ? dim.media_2.split("/").pop()
-              : "") || "",
-        };
       }
-    }
 
-    return {
-      floor: dim.floor || "",
-      room: dim.room || "",
-      entity: dim.entity || "",
-      area_name: dim.area_name || "",
-      dimensionsunits: dim.dimensionsunits || "",
-      notes: dim.notes || "",
-      images: formattedImages,
-      media_2: media2Item,
-    };
-  });
-}, []);
+      return {
+        floor: dim.floor || "",
+        room: dim.room || "",
+        entity: dim.entity || "",
+        area_name: dim.area_name || "",
+        dimensionsunits: dim.dimensionsunits || "",
+        notes: dim.notes || "",
+        images: formattedImages,
+        media_2: media2Item,
+      };
+    });
+  }, []);
 
   // Memoize formatCustomImages to prevent recreation
   const formatCustomImages = useCallback((customSiteImages: any[]) => {
@@ -433,98 +433,99 @@ const CreateInspection = () => {
     replace,
   ]);
 
+  const validateInspectionForm = (values: z.infer<typeof formSchema>) => {
+    const errors: Record<string, string> = {};
 
-const validateInspectionForm = (values: z.infer<typeof formSchema>) => {
-  const errors: Record<string, string> = {};
-  
-  // 1. At least one site dimension required
-  if (!values.site_dimensions || values.site_dimensions.length === 0) {
-    errors.site_dimensions = "At least one site dimension is required";
-  } else {
-    // 2. Validate each site dimension
-    values.site_dimensions.forEach((dimension, index) => {
-      const areaName = dimension.area_name?.trim();
-      const dimensions = dimension.dimensionsunits?.trim();
-      const hasImages = dimension.images && dimension.images.length > 0;
+    // 1. At least one site dimension required
+    if (!values.site_dimensions || values.site_dimensions.length === 0) {
+      errors.site_dimensions = "At least one site dimension is required";
+    } else {
+      // 2. Validate each site dimension
+      values.site_dimensions.forEach((dimension, index) => {
+        const areaName = dimension.area_name?.trim();
+        const dimensions = dimension.dimensionsunits?.trim();
+        const hasImages = dimension.images && dimension.images.length > 0;
 
-      // Item name is required
-      if (!areaName) {
-        errors[`site_dimensions.${index}.area_name`] = "Item name is required";
-      }
+        // Item name is required
+        if (!areaName) {
+          errors[`site_dimensions.${index}.area_name`] =
+            "Item name is required";
+        }
 
-      // Dimensions/Units are required
-      if (!dimensions) {
-        errors[`site_dimensions.${index}.dimensionsunits`] = "Dimensions/Units are required";
-      }
+        // Dimensions/Units are required
+        if (!dimensions) {
+          errors[`site_dimensions.${index}.dimensionsunits`] =
+            "Dimensions/Units are required";
+        }
 
-      // At least one media file required
-      if (!hasImages) {
-        errors[`site_dimensions.${index}.images`] = "At least one media file is required";
-      }
-    });
-  }
-
-  return errors;
-};
-
-
-const getMissingItemsText = (errors: Record<string, string>) => {
-  const missingItems: string[] = [];
-  
-  Object.entries(errors).forEach(([field]) => {
-    if (field.includes('area_name')) {
-      const index = field.split('.')[1];
-      missingItems.push(`Area ${parseInt(index) + 1}: Item name`);
-    } else if (field.includes('dimensionsunits')) {
-      const index = field.split('.')[1];
-      missingItems.push(`Area ${parseInt(index) + 1}: Dimensions/Units`);
-    } else if (field.includes('images')) {
-      const index = field.split('.')[1];
-      missingItems.push(`Area ${parseInt(index) + 1}: Photos/Videos`);
-    } else if (field === 'site_dimensions') {
-      missingItems.push('Site dimensions');
+        // At least one media file required
+        if (!hasImages) {
+          errors[`site_dimensions.${index}.images`] =
+            "At least one media file is required";
+        }
+      });
     }
-  });
-  
-  if (missingItems.length > 0) {
-    return missingItems.length === 1 
-      ? `Missing: ${missingItems[0]}` 
-      : `Missing: ${missingItems.slice(0, 3).join(', ')}${missingItems.length > 3 ? ` and ${missingItems.length - 3} more` : ''}`;
-  }
-  
-  return "Please fix the validation errors before submitting";
-};
 
-// Then in your onSubmit function:
-const onSubmit = (values: z.infer<typeof formSchema>) => {
-  const errors = validateInspectionForm(values);
-  
-  if (Object.keys(errors).length > 0) {
-  // Set errors in the form
-  Object.entries(errors).forEach(([field, message]) => {
-    form.setError(field as any, {
-      type: 'manual',
-      message,
+    return errors;
+  };
+
+  const getMissingItemsText = (errors: Record<string, string>) => {
+    const missingItems: string[] = [];
+
+    Object.entries(errors).forEach(([field]) => {
+      if (field.includes("area_name")) {
+        const index = field.split(".")[1];
+        missingItems.push(`Area ${parseInt(index) + 1}: Item name`);
+      } else if (field.includes("dimensionsunits")) {
+        const index = field.split(".")[1];
+        missingItems.push(`Area ${parseInt(index) + 1}: Dimensions/Units`);
+      } else if (field.includes("images")) {
+        const index = field.split(".")[1];
+        missingItems.push(`Area ${parseInt(index) + 1}: Photos/Videos`);
+      } else if (field === "site_dimensions") {
+        missingItems.push("Site dimensions");
+      }
     });
-  });
-  
-  // Show detailed toast notification
-  const missingText = getMissingItemsText(errors);
-  showToast.error(missingText);
-  return;
-}
-  
-  // Only call handleSubmit if there are no validation errors
-  handleSubmit(values);
-};
 
+    if (missingItems.length > 0) {
+      return missingItems.length === 1
+        ? `Missing: ${missingItems[0]}`
+        : `Missing: ${missingItems.slice(0, 3).join(", ")}${
+            missingItems.length > 3
+              ? ` and ${missingItems.length - 3} more`
+              : ""
+          }`;
+    }
+
+    return "Please fix the validation errors before submitting";
+  };
+
+  // Then in your onSubmit function:
+  const onSubmit = (values: z.infer<typeof formSchema>) => {
+    const errors = validateInspectionForm(values);
+
+    if (Object.keys(errors).length > 0) {
+      // Set errors in the form
+      Object.entries(errors).forEach(([field, message]) => {
+        form.setError(field as any, {
+          type: "manual",
+          message,
+        });
+      });
+
+      // Show detailed toast notification
+      const missingText = getMissingItemsText(errors);
+      showToast.error(missingText);
+      return;
+    }
+
+    // Only call handleSubmit if there are no validation errors
+    handleSubmit(values);
+  };
 
   // Memoize handleSubmit to prevent recreation
   const handleSubmit = useCallback(
-
-    
     async (values: z.infer<typeof formSchema>) => {
-
       // const customErrors = validateInspectionForm(values);
       // if (Object.keys(customErrors).length > 0) {
       //   // Set errors in the form
@@ -604,7 +605,7 @@ const onSubmit = (values: z.infer<typeof formSchema>) => {
         setLoading(false);
       }
     },
-     [
+    [
       isUpdateMode,
       todo?.reference_name,
       todo?.name,
@@ -641,7 +642,6 @@ const onSubmit = (values: z.infer<typeof formSchema>) => {
     UpdateLeadStatus,
     navigate,
   ]);
-  
 
   // Memoize getDisplayData to prevent recreation
   const displayData = useMemo(() => {
@@ -707,7 +707,7 @@ const onSubmit = (values: z.infer<typeof formSchema>) => {
   if (!dataLoaded) {
     return (
       <div className="flex justify-center items-center h-screen">
-        <PasswordResetLoader />
+        <Loader />
       </div>
     );
   }

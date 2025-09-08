@@ -2,28 +2,28 @@
 
 import { ChevronDown, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { Button } from "../components/ui/button";
-import { Popover, PopoverContent, PopoverTrigger } from "../components/ui/popover";
-import { useAuth } from "../context/AuthContext";
+import { Button } from "../ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
+import { useAuth } from "../../context/AuthContext";
 
 interface RoleSwitcherProps {
   className?: string;
   variant?: "default" | "minimal" | "compact";
 }
 
-export const RoleSwitcher = ({ 
-  className = "", 
-  variant = "default" 
+export const RoleSwitcher = ({
+  className = "",
+  variant = "default",
 }: RoleSwitcherProps) => {
-  const { 
-    currentRole, 
-    availableRoles, 
-    switchRole, 
-    getDisplayRoleName, 
+  const {
+    currentRole,
+    availableRoles,
+    switchRole,
+    getDisplayRoleName,
     isMultiRole,
     // refreshAuth,
     user,
-    isAuthenticated 
+    isAuthenticated,
   } = useAuth();
   const navigate = useNavigate();
 
@@ -34,48 +34,47 @@ export const RoleSwitcher = ({
 
   const handleRoleSwitch = async (role: string) => {
     if (role === currentRole) return;
-    
+
     try {
-      console.log('Starting role switch to:', role);
-      
+      console.log("Starting role switch to:", role);
+
       // Validate user is properly authenticated
       if (!isAuthenticated || !user || user.requiresPasswordReset) {
-        console.error('User not properly authenticated for role switch');
+        console.error("User not properly authenticated for role switch");
         return;
       }
-      
+
       // Set flag to indicate role switching is in progress
       localStorage.setItem("isRoleSwitching", "true");
-      
+
       // Switch the role first
       const success = await switchRole(role);
-      
+
       if (success) {
-        console.log('Role switch successful, navigating...');
-        
+        console.log("Role switch successful, navigating...");
+
         // Define the role routes
         const roleRoutes: Record<string, string> = {
-          'EITS_Sale_Representative': '/sales',
-          'EITS_Site_Inspector': '/inspector',
-          'EITS_Project_Manager': '/project_manager',
-          'accountUser': '/accountUser'
+          EITS_Sale_Representative: "/sales",
+          EITS_Site_Inspector: "/inspector",
+          EITS_Project_Manager: "/project_manager",
+          accountUser: "/accountUser",
         };
-        
+
         const targetRoute = roleRoutes[role];
         if (targetRoute) {
-          console.log('Navigating to:', targetRoute);
+          console.log("Navigating to:", targetRoute);
           // Use React Router navigation with a small delay to ensure state is updated
           setTimeout(() => {
             navigate(targetRoute, { replace: true });
           }, 150);
         }
-        
-        console.log('Role switch completed successfully');
+
+        console.log("Role switch completed successfully");
       } else {
-        console.error('Role switch failed');
+        console.error("Role switch failed");
         localStorage.removeItem("isRoleSwitching");
       }
-      
     } catch (error) {
       console.error("Failed to switch role:", error);
       localStorage.removeItem("isRoleSwitching");
@@ -93,7 +92,7 @@ export const RoleSwitcher = ({
         >
           <User className="h-3 w-3" />
           <span className="hidden sm:inline">
-            {getDisplayRoleName(currentRole || '')}
+            {getDisplayRoleName(currentRole || "")}
           </span>
           <ChevronDown className="h-3 w-3" />
         </Button>
@@ -109,9 +108,9 @@ export const RoleSwitcher = ({
             size="sm"
             onClick={() => handleRoleSwitch(role)}
             className={`w-full justify-start text-xs h-8 ${
-              role === currentRole 
-                ? 'bg-blue-50 text-blue-700 font-medium' 
-                : 'text-gray-700 hover:bg-gray-50'
+              role === currentRole
+                ? "bg-blue-50 text-blue-700 font-medium"
+                : "text-gray-700 hover:bg-gray-50"
             }`}
             disabled={!isAuthenticated || user?.requiresPasswordReset}
           >
@@ -136,7 +135,7 @@ export const RoleSwitcher = ({
         >
           <User className="h-4 w-4" />
           <span className="font-medium">
-            {getDisplayRoleName(currentRole || '')}
+            {getDisplayRoleName(currentRole || "")}
           </span>
           <ChevronDown className="h-4 w-4" />
         </Button>
@@ -152,9 +151,9 @@ export const RoleSwitcher = ({
               variant="ghost"
               onClick={() => handleRoleSwitch(role)}
               className={`w-full justify-start ${
-                role === currentRole 
-                  ? 'bg-blue-50 text-blue-700 font-medium border border-blue-200' 
-                  : 'text-gray-700 hover:bg-gray-50'
+                role === currentRole
+                  ? "bg-blue-50 text-blue-700 font-medium border border-blue-200"
+                  : "text-gray-700 hover:bg-gray-50"
               }`}
               disabled={!isAuthenticated || user?.requiresPasswordReset}
             >
@@ -186,7 +185,7 @@ export const RoleSwitcher = ({
           >
             <div className="flex items-center gap-2">
               <User className="h-4 w-4" />
-              <span>{getDisplayRoleName(currentRole || '')}</span>
+              <span>{getDisplayRoleName(currentRole || "")}</span>
             </div>
             <ChevronDown className="h-4 w-4" />
           </Button>
@@ -197,7 +196,8 @@ export const RoleSwitcher = ({
               Switch Dashboard Role
             </div>
             <div className="text-xs text-gray-500">
-              You have access to multiple roles. Switch to view different dashboards.
+              You have access to multiple roles. Switch to view different
+              dashboards.
             </div>
             <div className="space-y-1 pt-2">
               {availableRoles.map((role) => (
@@ -206,16 +206,18 @@ export const RoleSwitcher = ({
                   variant="ghost"
                   onClick={() => handleRoleSwitch(role)}
                   className={`w-full justify-start ${
-                    role === currentRole 
-                      ? 'bg-emerald-50 text-emerald-700 font-medium border border-emerald-200' 
-                      : 'text-gray-700 hover:bg-gray-50'
+                    role === currentRole
+                      ? "bg-emerald-50 text-emerald-700 font-medium border border-emerald-200"
+                      : "text-gray-700 hover:bg-gray-50"
                   }`}
                   disabled={!isAuthenticated || user?.requiresPasswordReset}
                 >
                   <div className="flex items-center gap-3 w-full">
-                    <div className={`w-3 h-3 rounded-full ${
-                      role === currentRole ? 'bg-emerald-500' : 'bg-gray-300'
-                    }`} />
+                    <div
+                      className={`w-3 h-3 rounded-full ${
+                        role === currentRole ? "bg-emerald-500" : "bg-gray-300"
+                      }`}
+                    />
                     <span className="flex-1 text-left">
                       {getDisplayRoleName(role)}
                     </span>
@@ -245,10 +247,10 @@ export const RoleSwitcher = ({
   }
 };
 
-export const RoleSwitcherMinimal = (props: Omit<RoleSwitcherProps, 'variant'>) => (
-  <RoleSwitcher {...props} variant="minimal" />
-);
+export const RoleSwitcherMinimal = (
+  props: Omit<RoleSwitcherProps, "variant">
+) => <RoleSwitcher {...props} variant="minimal" />;
 
-export const RoleSwitcherCompact = (props: Omit<RoleSwitcherProps, 'variant'>) => (
-  <RoleSwitcher {...props} variant="compact" />
-);
+export const RoleSwitcherCompact = (
+  props: Omit<RoleSwitcherProps, "variant">
+) => <RoleSwitcher {...props} variant="compact" />;

@@ -1,14 +1,7 @@
-import {
-  Calendar,
-  Edit,
-  Filter,
-  Plus,
-  Search,
-  Trash2
-} from "lucide-react";
+import { Calendar, Edit, Filter, Plus, Search, Trash2 } from "lucide-react";
 import React, { useEffect, useMemo, useState } from "react";
-import DeleteConfirmation from "../../common/DeleteComfirmation";
-import { PasswordResetLoader } from "../../common/Loader";
+import DeleteConfirmation from "../common/DeleteComfirmation";
+import { Loader } from "../common/Loader";
 import { useJobCards, type JobCard } from "../../context/JobCardContext";
 import { Button } from "../ui/button";
 import { Dialog } from "../ui/dialog";
@@ -36,7 +29,6 @@ const JobCardList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [cardToDelete, setCardToDelete] = useState<string | null>(null);
-
 
   useEffect(() => {
     fetchJobCards();
@@ -83,109 +75,111 @@ const JobCardList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
     return total;
   };
 
-//   const normalizeDate = (dateString: string) => {
-//   if (!dateString) return null;
-//   const date = new Date(dateString);
-//   date.setHours(0, 0, 0, 0);
-//   return date;
-// }
-//   // Helper function to check if date is within range
-//   const isDateInRange = (
-//     cardStartDate: Date,
-//     cardFinishDate: Date,
-//     fromDate: Date,
-//     toDate: Date
-//   ) => {
-//     // Set all dates to start of day for accurate comparison
-//     const normalizeDate = (date: Date) => {
-//       const normalized = new Date(date);
-//       normalized.setHours(0, 0, 0, 0);
-//       return normalized;
-//     };
+  //   const normalizeDate = (dateString: string) => {
+  //   if (!dateString) return null;
+  //   const date = new Date(dateString);
+  //   date.setHours(0, 0, 0, 0);
+  //   return date;
+  // }
+  //   // Helper function to check if date is within range
+  //   const isDateInRange = (
+  //     cardStartDate: Date,
+  //     cardFinishDate: Date,
+  //     fromDate: Date,
+  //     toDate: Date
+  //   ) => {
+  //     // Set all dates to start of day for accurate comparison
+  //     const normalizeDate = (date: Date) => {
+  //       const normalized = new Date(date);
+  //       normalized.setHours(0, 0, 0, 0);
+  //       return normalized;
+  //     };
 
-//     const normalizedCardStart = normalizeDate(cardStartDate);
-//     const normalizedCardFinish = normalizeDate(cardFinishDate);
-//     const normalizedFrom = normalizeDate(fromDate);
-//     const normalizedTo = normalizeDate(toDate);
+  //     const normalizedCardStart = normalizeDate(cardStartDate);
+  //     const normalizedCardFinish = normalizeDate(cardFinishDate);
+  //     const normalizedFrom = normalizeDate(fromDate);
+  //     const normalizedTo = normalizeDate(toDate);
 
-//     // Check if card dates fall completely within the selected date range
-//     return (
-//       normalizedCardStart >= normalizedFrom &&
-//       normalizedCardFinish <= normalizedTo
-//     );
-//   };
+  //     // Check if card dates fall completely within the selected date range
+  //     return (
+  //       normalizedCardStart >= normalizedFrom &&
+  //       normalizedCardFinish <= normalizedTo
+  //     );
+  //   };
 
   // Filter job cards based on all criteria
-const filteredJobCards = useMemo(() => {
-  // Helper function to normalize dates (ignore time component)
-  const normalizeDate = (date: Date) => {
-    const normalized = new Date(date);
-    normalized.setHours(0, 0, 0, 0);
-    return normalized;
-  };
+  const filteredJobCards = useMemo(() => {
+    // Helper function to normalize dates (ignore time component)
+    const normalizeDate = (date: Date) => {
+      const normalized = new Date(date);
+      normalized.setHours(0, 0, 0, 0);
+      return normalized;
+    };
 
-  // Helper function to check if date is valid
-  const isValidDate = (date: Date) => !isNaN(date.getTime());
+    // Helper function to check if date is valid
+    const isValidDate = (date: Date) => !isNaN(date.getTime());
 
-  return jobCards.filter((card) => {
-    // Parse and validate dates
-    const cardStartDate = new Date(card.start_date || "");
-    const cardFinishDate = card.finish_date ? new Date(card.finish_date) : cardStartDate; // Fallback to start_date if empty
-    const filterFromDate = new Date(fromDate);
-    const filterToDate = new Date(toDate);
+    return jobCards.filter((card) => {
+      // Parse and validate dates
+      const cardStartDate = new Date(card.start_date || "");
+      const cardFinishDate = card.finish_date
+        ? new Date(card.finish_date)
+        : cardStartDate; // Fallback to start_date if empty
+      const filterFromDate = new Date(fromDate);
+      const filterToDate = new Date(toDate);
 
-    // Skip if invalid start date
-    if (!isValidDate(cardStartDate)) return false;
+      // Skip if invalid start date
+      if (!isValidDate(cardStartDate)) return false;
 
-    // Date filter logic
-    let isInDateRange = false;
+      // Date filter logic
+      let isInDateRange = false;
 
-    if (isDefaultFilter) {
-      // Default behavior: show only cards that start today
-      const today = normalizeDate(new Date());
-      const cardStart = normalizeDate(cardStartDate);
-      isInDateRange = cardStart.getTime() === today.getTime();
-    } else {
-      // Custom date range: show cards that overlap with the selected date range
-      const normalizedFrom = normalizeDate(filterFromDate);
-      const normalizedTo = normalizeDate(filterToDate);
-      const normalizedCardStart = normalizeDate(cardStartDate);
-      const normalizedCardFinish = normalizeDate(cardFinishDate);
+      if (isDefaultFilter) {
+        // Default behavior: show only cards that start today
+        const today = normalizeDate(new Date());
+        const cardStart = normalizeDate(cardStartDate);
+        isInDateRange = cardStart.getTime() === today.getTime();
+      } else {
+        // Custom date range: show cards that overlap with the selected date range
+        const normalizedFrom = normalizeDate(filterFromDate);
+        const normalizedTo = normalizeDate(filterToDate);
+        const normalizedCardStart = normalizeDate(cardStartDate);
+        const normalizedCardFinish = normalizeDate(cardFinishDate);
 
-      isInDateRange = 
-        normalizedCardStart <= normalizedTo && 
-        normalizedCardFinish >= normalizedFrom;
-    }
+        isInDateRange =
+          normalizedCardStart <= normalizedTo &&
+          normalizedCardFinish >= normalizedFrom;
+      }
 
-    // Search filter
-    const matchesSearch =
-      searchQuery === "" ||
-      card.party_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (card.pressing_charges || []).some((charge) =>
-        charge.work_type?.toLowerCase().includes(searchQuery.toLowerCase())
-      );
+      // Search filter
+      const matchesSearch =
+        searchQuery === "" ||
+        card.party_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (card.pressing_charges || []).some((charge) =>
+          charge.work_type?.toLowerCase().includes(searchQuery.toLowerCase())
+        );
 
-    // Purpose filter
-    const cardPurpose = getJobCardPurpose(card);
-    const matchesPurpose =
-      purposeFilter === "all" ||
-      (purposeFilter === "both" && cardPurpose === "both") ||
-      (purposeFilter === "pressing" && cardPurpose === "pressing") ||
-      (purposeFilter === "material" && cardPurpose === "material") ||
-      (purposeFilter === "submitted" && card.docstatus === 1);
+      // Purpose filter
+      const cardPurpose = getJobCardPurpose(card);
+      const matchesPurpose =
+        purposeFilter === "all" ||
+        (purposeFilter === "both" && cardPurpose === "both") ||
+        (purposeFilter === "pressing" && cardPurpose === "pressing") ||
+        (purposeFilter === "material" && cardPurpose === "material") ||
+        (purposeFilter === "submitted" && card.docstatus === 1);
 
-    // Debug logging (remove in production)
-    console.log('Card:', card.name, {
-      startDate: card.start_date,
-      finishDate: card.finish_date,
-      passesDate: isInDateRange,
-      passesSearch: matchesSearch,
-      passesPurpose: matchesPurpose
+      // Debug logging (remove in production)
+      console.log("Card:", card.name, {
+        startDate: card.start_date,
+        finishDate: card.finish_date,
+        passesDate: isInDateRange,
+        passesSearch: matchesSearch,
+        passesPurpose: matchesPurpose,
+      });
+
+      return isInDateRange && matchesSearch && matchesPurpose;
     });
-
-    return isInDateRange && matchesSearch && matchesPurpose;
-  });
-}, [jobCards, fromDate, toDate, searchQuery, purposeFilter, isDefaultFilter]);
+  }, [jobCards, fromDate, toDate, searchQuery, purposeFilter, isDefaultFilter]);
 
   const formatDate = (dateString: string) => {
     if (!dateString) return "N/A";
@@ -228,7 +222,12 @@ const filteredJobCards = useMemo(() => {
     }
     // Mark as custom filter
     const today = new Date().toISOString().split("T")[0];
-    setIsDefaultFilter(value === today && toDate === today && searchQuery === "" && purposeFilter === "all");
+    setIsDefaultFilter(
+      value === today &&
+        toDate === today &&
+        searchQuery === "" &&
+        purposeFilter === "all"
+    );
   };
 
   const handleToDateChange = (value: string) => {
@@ -239,7 +238,12 @@ const filteredJobCards = useMemo(() => {
     }
     // Mark as custom filter
     const today = new Date().toISOString().split("T")[0];
-    setIsDefaultFilter(fromDate === today && value === today && searchQuery === "" && purposeFilter === "all");
+    setIsDefaultFilter(
+      fromDate === today &&
+        value === today &&
+        searchQuery === "" &&
+        purposeFilter === "all"
+    );
   };
 
   const handleDeleteClick = (id: string, e: React.MouseEvent) => {
@@ -268,7 +272,7 @@ const filteredJobCards = useMemo(() => {
   };
 
   if (loading) {
-    return <PasswordResetLoader/>
+    return <Loader />;
   }
 
   return (
@@ -335,34 +339,47 @@ const filteredJobCards = useMemo(() => {
         {/* Quick Filter Buttons */}
         <div className="flex gap-2 mt-2">
           <Button
-            variant={purposeFilter === 'pressing' ? 'default' : 'outline'}
+            variant={purposeFilter === "pressing" ? "default" : "outline"}
             size="sm"
-            onClick={() => setPurposeFilter(purposeFilter === 'pressing' ? 'all' : 'pressing')}
+            onClick={() =>
+              setPurposeFilter(
+                purposeFilter === "pressing" ? "all" : "pressing"
+              )
+            }
             className="h-8 px-3 text-xs bg-amber-50 text-amber-700 *:hover:bg-amber-100 *:hover:text-amber-800"
           >
             P
           </Button>
           <Button
-            variant={purposeFilter === 'material' ? 'default' : 'outline'}
+            variant={purposeFilter === "material" ? "default" : "outline"}
             size="sm"
-            onClick={() => setPurposeFilter(purposeFilter === 'material' ? 'all' : 'material')}
+            onClick={() =>
+              setPurposeFilter(
+                purposeFilter === "material" ? "all" : "material"
+              )
+            }
             className="h-8 px-3 text-xs bg-purple-50 text-purple-700 hover:bg-purple-100 hover:text-purple-800"
           >
             M
           </Button>
           <Button
-            variant={purposeFilter === 'both' ? 'default' : 'outline'}
+            variant={purposeFilter === "both" ? "default" : "outline"}
             size="sm"
-            onClick={() => setPurposeFilter(purposeFilter === 'both' ? 'all' : 'both')}
+            onClick={() =>
+              setPurposeFilter(purposeFilter === "both" ? "all" : "both")
+            }
             className="h-8 px-3 text-xs bg-indigo-50 text-indigo-700  hover:bg-indigo-100 hover:text-indigo-800"
           >
             P M
-            
           </Button>
           <Button
-            variant={purposeFilter === 'submitted' ? 'default' : 'outline'}
+            variant={purposeFilter === "submitted" ? "default" : "outline"}
             size="sm"
-            onClick={() => setPurposeFilter(purposeFilter === 'submitted' ? 'all' : 'submitted')}
+            onClick={() =>
+              setPurposeFilter(
+                purposeFilter === "submitted" ? "all" : "submitted"
+              )
+            }
             className="h-8 px-3 text-xs bg-emerald-50 text-emerald-700 *:hover:bg-emerald-100 *:hover:text-emerald-800"
           >
             Paid
@@ -370,7 +387,7 @@ const filteredJobCards = useMemo(() => {
         </div>
 
         {/* Active filters indicator */}
-        {(purposeFilter !== 'all' || !isDefaultFilter) && (
+        {(purposeFilter !== "all" || !isDefaultFilter) && (
           <div className="text-xs text-gray-500 mt-2 flex items-center gap-2">
             <span>Filters:</span>
             {!isDefaultFilter && (
@@ -378,17 +395,25 @@ const filteredJobCards = useMemo(() => {
                 {formatDate(fromDate)} to {formatDate(toDate)}
               </span>
             )}
-            {purposeFilter === 'pressing' && (
-              <span className="bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded">P</span>
+            {purposeFilter === "pressing" && (
+              <span className="bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded">
+                P
+              </span>
             )}
-            {purposeFilter === 'material' && (
-              <span className="bg-purple-100 text-purple-800 px-1.5 py-0.5 rounded">M</span>
+            {purposeFilter === "material" && (
+              <span className="bg-purple-100 text-purple-800 px-1.5 py-0.5 rounded">
+                M
+              </span>
             )}
-            {purposeFilter === 'both' && (
-              <span className="bg-indigo-100 text-indigo-800 px-1.5 py-0.5 rounded">P M</span>
+            {purposeFilter === "both" && (
+              <span className="bg-indigo-100 text-indigo-800 px-1.5 py-0.5 rounded">
+                P M
+              </span>
             )}
-            {purposeFilter === 'submitted' && (
-              <span className="bg-green-100 text-green-800 px-1.5 py-0.5 rounded">Paid</span>
+            {purposeFilter === "submitted" && (
+              <span className="bg-green-100 text-green-800 px-1.5 py-0.5 rounded">
+                Paid
+              </span>
             )}
           </div>
         )}
@@ -577,7 +602,6 @@ const filteredJobCards = useMemo(() => {
             const purposeDisplay = getPurposeDisplay(purpose);
             const isReadOnly = card.docstatus === 1;
 
-
             return (
               <div
                 key={card.name}
@@ -608,9 +632,7 @@ const filteredJobCards = useMemo(() => {
 
                   {/* Address - More compact */}
                   <p className="text-xs text-gray-600 leading-tight line-clamp-2 capitalize">
-                    {[ card.area]
-                      .filter(Boolean)
-                      .join(", ") || "No Address"}
+                    {[card.area].filter(Boolean).join(", ") || "No Address"}
                   </p>
 
                   {/* Bottom Row - Purpose and Actions */}

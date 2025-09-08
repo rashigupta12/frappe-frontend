@@ -13,8 +13,8 @@ import {
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
-import FeedbackComponent from "../../common/FeedbackManagement";
-import { RoleSwitcherMinimal } from "../../common/RoleSwitcher";
+import FeedbackComponent from "../common/FeedbackManagement";
+import { RoleSwitcherMinimal } from "../common/RoleSwitcher";
 import { useAuth } from "../../context/AuthContext";
 
 import {

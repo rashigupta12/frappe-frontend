@@ -5,17 +5,17 @@ import {
   LogOut,
   Menu,
   MessageCircle,
-  X
+  X,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
-import FeedbackComponent from "../../common/FeedbackManagement";
-import { RoleSwitcherMinimal } from "../../common/RoleSwitcher";
 import { useAuth } from "../../context/AuthContext";
+import FeedbackComponent from "../common/FeedbackManagement";
+import { RoleSwitcherMinimal } from "../common/RoleSwitcher";
 import MobileSiteInspectionList from "../inspection/CompletedInspectionList";
-import MobileInspectionList from "../inspection/InspectionList";
 import CreateInspection from "../inspection/IspectionDetail";
+import TodosList from "../inspection/TodosList/TodosList";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -65,7 +65,8 @@ export default function InspectorDashboard() {
   const renderContent = () => {
     switch (activeTab) {
       case "todos":
-        return <MobileInspectionList userEmail={user?.username ?? ""} />;
+        // return <MobileInspectio userEmail={user?.username ?? ""} />;
+        return <TodosList userEmail={user?.username??""}/>
       case "inspections":
         return <MobileSiteInspectionList userEmail={user?.username ?? ""} />;
       case "details":
@@ -89,7 +90,6 @@ export default function InspectorDashboard() {
       {/* Top Navigation Bar - Fixed */}
       <nav className="bg-white shadow-lg border-b-2 border-emerald-200 px-3 sm:px-4 py-2 flex-shrink-0 z-50">
         <div className="flex items-center justify-between relative">
-          
           {/* Left Section - Mobile Menu Button */}
           <div className="flex items-center gap-2 sm:gap-3">
             <Button
@@ -216,7 +216,11 @@ export default function InspectorDashboard() {
             transform transition-all duration-300 ease-in-out lg:transform-none
             flex flex-col
             w-56 xs:w-64 sm:w-64 lg:w-64
-            ${sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
+            ${
+              sidebarOpen
+                ? "translate-x-0"
+                : "-translate-x-full lg:translate-x-0"
+            }
           `}
         >
           {/* Scrollable Navigation Area */}
@@ -234,7 +238,7 @@ export default function InspectorDashboard() {
                 <ListTodo className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
                 <span className="font-medium truncate">My Todos</span>
               </Button>
-              
+
               <Button
                 variant={activeTab === "inspections" ? "default" : "ghost"}
                 onClick={() => handleTabChange("inspections")}
@@ -249,11 +253,13 @@ export default function InspectorDashboard() {
               </Button>
             </nav>
           </div>
-          
+
           {/* User Info Section - Fixed at Bottom */}
           <div className="flex-shrink-0 p-2 scroll-pb-20 sm:p-3 border-t border-emerald-100 capitalize">
             <div className="bg-emerald-50 rounded-lg border border-emerald-100 p-2 sm:p-3">
-              <div className="min-w-0"> {/* min-w-0 allows flex children to shrink below content size */}
+              <div className="min-w-0">
+                {" "}
+                {/* min-w-0 allows flex children to shrink below content size */}
                 <div className="text-xs sm:text-sm font-medium text-emerald-800 truncate mb-0.5 capitalize">
                   {user?.full_name || user?.username || "User"}
                 </div>
@@ -290,11 +296,9 @@ export default function InspectorDashboard() {
                 to="/inspector?tab=todos"
                 className="flex-1 max-w-xs flex justify-center"
               >
-                <button 
+                <button
                   className={`flex flex-col items-center justify-center w-full py-1 group ${
-                    activeTab === "todos" 
-                      ? "bg-emerald-50" 
-                      : ""
+                    activeTab === "todos" ? "bg-emerald-50" : ""
                   }`}
                 >
                   <div className="w-10 h-6 flex items-center justify-center group-active:scale-95 transition-transform">
@@ -323,11 +327,9 @@ export default function InspectorDashboard() {
                 to="/inspector?tab=inspections"
                 className="flex-1 max-w-xs flex justify-center"
               >
-                <button 
+                <button
                   className={`flex flex-col items-center justify-center w-full py-1 group ${
-                    activeTab === "inspections" 
-                      ? "bg-emerald-50" 
-                      : ""
+                    activeTab === "inspections" ? "bg-emerald-50" : ""
                   }`}
                 >
                   <div className="w-10 h-6 flex items-center justify-center group-active:scale-95 transition-transform">
@@ -354,7 +356,7 @@ export default function InspectorDashboard() {
           </div>
         </div>
       </div>
-      
+
       <AlertDialog open={showLogoutConfirm} onOpenChange={setShowLogoutConfirm}>
         <AlertDialogContent className="bg-white">
           <AlertDialogHeader className="justify-center items-center">

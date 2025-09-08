@@ -24,7 +24,7 @@ import {
   type MaterialSold,
   type PressingCharges,
 } from "../../context/JobCardContext";
-import PropertyAddressSection from "../Inquiries/PropertyAddress";
+import PropertyAddressSection from "../common/PropertyAddress";
 import { Button } from "../ui/button";
 import {
   Dialog,

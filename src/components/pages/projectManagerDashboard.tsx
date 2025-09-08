@@ -6,13 +6,13 @@ import {
   Menu,
   MessageCircle,
   Wrench,
-  X
+  X,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
-import FeedbackComponent from "../../common/FeedbackManagement";
-import { RoleSwitcherMinimal } from "../../common/RoleSwitcher";
+import FeedbackComponent from "../common/FeedbackManagement";
+import { RoleSwitcherMinimal } from "../common/RoleSwitcher";
 import { useAuth } from "../../context/AuthContext";
 import JobCardForm from "../JobCard/JobCardForm";
 import JobCardList from "../JobCard/JobCardList";
@@ -30,7 +30,6 @@ import {
 } from "../ui/alert-dialog";
 import { Button } from "../ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
-
 
 export default function ProjectManagerDashboard() {
   const [isJobCardFormOpen, setIsJobCardFormOpen] = useState(false);
@@ -50,7 +49,8 @@ export default function ProjectManagerDashboard() {
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       e.preventDefault();
-      e.returnValue = "Are you sure you want to leave? Your changes may not be saved.";
+      e.returnValue =
+        "Are you sure you want to leave? Your changes may not be saved.";
       return e.returnValue;
     };
 
@@ -69,7 +69,7 @@ export default function ProjectManagerDashboard() {
     setSidebarOpen(false);
   };
 
-const handleLogout = async () => {
+  const handleLogout = async () => {
     await logout();
     navigate("/");
   };
@@ -140,9 +140,19 @@ const handleLogout = async () => {
 
     switch (activeTab) {
       case "veneer-pressing":
-        return <JobCardList onEdit={handleEditJobCard} onOpenForm={openJobCardForm} />;
+        return (
+          <JobCardList
+            onEdit={handleEditJobCard}
+            onOpenForm={openJobCardForm}
+          />
+        );
       case "other-services":
-        return <JobCardOtherList onEdit={handleEditJobCardOther} onOpenForm={openJobCardOtherForm} />;
+        return (
+          <JobCardOtherList
+            onEdit={handleEditJobCardOther}
+            onOpenForm={openJobCardOtherForm}
+          />
+        );
       default:
         return (
           <div className="bg-white rounded-xl shadow-sm p-6 border border-emerald-100">
@@ -162,7 +172,6 @@ const handleLogout = async () => {
       {/* Top Navigation Bar */}
       <nav className="bg-white shadow-lg border-b-2 border-emerald-200 px-3 sm:px-2 py-2 flex-shrink-0 z-50">
         <div className="flex items-center justify-between relative">
-
           {/* Left Section - Mobile Menu Button */}
           <div className="flex items-center gap-2 sm:gap-3">
             <Button
@@ -292,9 +301,10 @@ const handleLogout = async () => {
             transform transition-all duration-300 ease-in-out lg:transform-none
             flex flex-col
             w-56 xs:w-64 sm:w-64 lg:w-64
-            ${sidebarOpen
-              ? "translate-x-0"
-              : "-translate-x-full lg:translate-x-0"
+            ${
+              sidebarOpen
+                ? "translate-x-0"
+                : "-translate-x-full lg:translate-x-0"
             }
           `}
         >
@@ -328,11 +338,13 @@ const handleLogout = async () => {
               </Button>
             </nav>
           </div>
-          
+
           {/* User Info Section - Fixed at Bottom */}
           <div className="flex-shrink-0 p-2 pb-20 sm:p-3 border-t border-emerald-100 ">
             <div className="bg-emerald-50 rounded-lg border border-emerald-100 p-2 sm:p-3">
-              <div className="min-w-0"> {/* min-w-0 allows flex children to shrink below content size */}
+              <div className="min-w-0">
+                {" "}
+                {/* min-w-0 allows flex children to shrink below content size */}
                 <div className="text-xs sm:text-sm font-medium text-emerald-800 truncate mb-0.5 capitalize">
                   {user?.full_name || user?.username || "User"}
                 </div>
@@ -383,9 +395,7 @@ const handleLogout = async () => {
           {/* Main Content - Scrollable */}
           <main className="flex-1 overflow-y-auto">
             <div className="max-w-7xl mx-auto pb-4 pt-2 px-4">
-              <div className="pb-6">
-                {renderContent()}
-              </div>
+              <div className="pb-6">{renderContent()}</div>
             </div>
           </main>
         </div>
@@ -408,7 +418,7 @@ const handleLogout = async () => {
           jobCard={selectedJobCardOther}
         />
       )}
-      
+
       <AlertDialog open={showLogoutConfirm} onOpenChange={setShowLogoutConfirm}>
         <AlertDialogContent className="bg-white">
           <AlertDialogHeader className="justify-center items-center">
