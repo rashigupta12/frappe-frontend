@@ -1,0 +1,174 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// TodoTable.tsx
+import { ClipboardList, Edit } from "lucide-react";
+import { Badge } from "../../ui/badge";
+import { Button } from "../../ui/button";
+import { getPriorityColor, getStatusColor } from "../../../helpers/helper";
+import { format } from "date-fns";
+
+interface TodoTableProps {
+  todos: any[];
+  loading: boolean;
+  onEdit: (todo: any) => void;
+}
+
+const TodoTable: React.FC<TodoTableProps> = ({
+  todos,
+  loading,
+  onEdit,
+}) => {
+  if (loading) {
+    return (
+      <div className="flex justify-center py-12">
+        <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-emerald-500"></div>
+      </div>
+    );
+  }
+
+  if (todos.length === 0) {
+    return (
+      <div className="text-center py-12 px-4 text-gray-500">
+        <div className="inline-flex items-center justify-center bg-emerald-50/50 rounded-full p-4 mb-3">
+          <ClipboardList className="h-8 w-8 text-emerald-500" />
+        </div>
+        <h3 className="text-lg font-medium text-gray-700 mb-1">
+          No inspections found
+        </h3>
+        <p className="text-sm text-gray-500 mb-4">
+          Try adjusting your search or filters
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full overflow-x-auto rounded-2xl border border-gray-200 bg-white shadow-xl">
+      <table className="min-w-full text-sm">
+        <thead className="bg-gradient-to-r from-gray-50 to-gray-100 sticky top-0 z-10">
+          <tr>
+            <th className="py-4 px-4 text-left font-bold text-gray-800 border-b-2 border-gray-200">
+              Customer
+            </th>
+            <th className="py-4 px-4 text-left font-bold text-gray-800 border-b-2 border-gray-200">
+              Inspector
+            </th>
+            <th className="py-4 px-4 text-left font-bold text-gray-800 border-b-2 border-gray-200">
+              Date & Time
+            </th>
+            <th className="py-4 px-4 text-left font-bold text-gray-800 border-b-2 border-gray-200">
+              Priority
+            </th>
+            <th className="py-4 px-4 text-left font-bold text-gray-800 border-b-2 border-gray-200">
+              Status
+            </th>
+            <th className="py-4 px-4 text-left font-bold text-gray-800 border-b-2 border-gray-200">
+              Property Area
+            </th>
+            <th className="py-4 px-4 text-center font-bold text-gray-800 border-b-2 border-gray-200">
+              Actions
+            </th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-gray-100">
+          {todos.map((todo) => (
+            <tr
+              key={todo.name}
+              className="hover:bg-gradient-to-r hover:from-emerald-50/30 hover:to-teal-50/30 transition-all duration-200 group"
+            >
+              {/* Customer Name */}
+              <td className="py-4 px-4">
+                <div className="font-semibold text-emerald-700">
+                  {todo.inquiry_data?.lead_name?.charAt(0).toUpperCase() +
+                    todo.inquiry_data?.lead_name?.slice(1) || "N/A"}
+                </div>
+                {todo.description && (
+                  <div className="text-xs text-gray-500 mt-1 line-clamp-2">
+                    {todo.description}
+                  </div>
+                )}
+              </td>
+
+              {/* Inspector */}
+              <td className="py-4 px-4">
+                <div className="text-gray-700">
+                  {todo.allocated_to_name || "N/A"}
+                </div>
+              </td>
+
+              {/* Date & Time */}
+              <td className="py-4 px-4">
+                <div className="text-gray-700">
+                  <div>
+                    {todo.date
+                      ? format(new Date(todo.date), "dd/MM/yyyy")
+                      : "Not specified"}
+                  </div>
+                  {todo.custom_start_time && todo.custom_end_time && (
+                    <div className="text-xs text-gray-500">
+                      {format(new Date(todo.custom_start_time), "hh:mm a")} -{" "}
+                      {format(new Date(todo.custom_end_time), "hh:mm a")}
+                    </div>
+                  )}
+                </div>
+              </td>
+
+              {/* Priority */}
+              <td className="py-4 px-4">
+                <Badge
+                  style={{
+                    backgroundColor: getPriorityColor(todo.priority).bg,
+                    color: getPriorityColor(todo.priority).text,
+                    borderColor: getPriorityColor(todo.priority).border,
+                  }}
+                  className="text-xs whitespace-nowrap"
+                >
+                  {todo.priority}
+                </Badge>
+              </td>
+
+              {/* Status */}
+              <td className="py-4 px-4">
+                <Badge
+                  style={{
+                    backgroundColor: getStatusColor(todo.status).bg,
+                    color: getStatusColor(todo.status).text,
+                    borderColor: getStatusColor(todo.status).border,
+                  }}
+                  className="text-xs whitespace-nowrap"
+                >
+                  {todo.status}
+                </Badge>
+              </td>
+
+              {/* Property Area */}
+              <td className="py-4 px-4">
+                <div className="text-gray-700">
+                  {todo.inquiry_data?.custom_property_area || "-"}
+                </div>
+              </td>
+
+              {/* Actions */}
+              <td className="py-4 px-4">
+                <div className="flex justify-center">
+                  {todo.status !== "Closed" && (
+                    <Button
+                      onClick={() => onEdit(todo)}
+                      variant="outline"
+                      size="sm"
+                      className="h-8 flex items-center gap-1 text-xs border-emerald-200 text-emerald-700 hover:bg-emerald-50 hover:border-emerald-300 transition-all duration-200 hover:shadow-sm"
+                    >
+                      <Edit className="h-3 w-3" />
+                      Edit
+                    </Button>
+                  )}
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+};
+
+export default TodoTable;

@@ -16,7 +16,7 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import FeedbackComponent from "../../common/FeedbackManagement";
 import { RoleSwitcherMinimal } from "../../common/RoleSwitcher";
 import { useAuth } from "../../context/AuthContext";
-import TodoPage from "../Inquiry/Assign";
+
 
 import {
   AlertDialog,
@@ -32,6 +32,7 @@ import { Button } from "../ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import InquiryForm from "../Inquiries/Inquiry-Form/InquiryForm";
 import InquiryPage from "../Inquiries/InquiryListHome";
+import TodoPage from "../Inquiries/Todos/Todopage";
 
 export default function SalesDashboard() {
   const [isFormOpen, setIsFormOpen] = useState(false);
