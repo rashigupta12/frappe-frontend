@@ -5,11 +5,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLeads, type Lead } from "../../context/LeadContext";
 import { Alert, AlertDescription } from "../ui/alert";
-import InquiryForm from "./InquiryForm";
-import InspectionDialog from "./IspectionDialog";
+
 import InquiryHeader from "../Inquiries/InquiriesHeader";
 import InquiryList from "../Inquiries/InquiryList";
 import InquiryViewModal from "../Inquiries/InquiryViewModal";
+import InspectionDialog from "../Inquiry/IspectionDialog";
+import InquiryForm from "./Inquiry-Form/InquiryForm";
 
 const InquiryPage = () => {
   const {

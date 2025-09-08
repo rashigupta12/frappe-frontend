@@ -33,16 +33,17 @@ import { Button } from "../../ui/button";
 import { Label } from "../../ui/label";
 import { Textarea } from "../../ui/textarea";
 
-import { CustomerModal } from "./CustomerModal";
-import { CustomerSearchSection } from "./CustomerSearchSection";
-import { FormSectionHeader } from "./FormSectionHeader";
-import { InspectorAssignmentSection } from "./InspectorAssignmentSection";
-import { JobDetailsSection } from "./JobDetailsSection";
-import { PropertyDetailsSection } from "./PropertyDetailsSection";
-import { TimeWarningModal } from "./TimeWarningModal";
 import { timeToMinutes } from "../../../lib/timeUtils";
 import { showToast } from "../../../helpers/comman";
 import { ConfirmationModal } from "../../Inquiry/ConfirmationModal";
+
+import { CustomerSearchSection } from "./CustomerSearchSection";
+import { FormSectionHeader } from "./FormSectionHeader";
+import { PropertyDetailsSection } from "./PropertyDetailsSection";
+import { InspectorAssignmentSection } from "./InspectorAssignmentSection";
+import { CustomerModal } from "./CustomerModal";
+import { TimeWarningModal } from "./TimeWarningModal";
+import { JobDetailsSection } from "./JobDetailsSection";
 import { frappeAPI } from "../../../api/frappeClient";
 
 interface InquiryFormProps {
@@ -1083,7 +1084,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
             street_name: result.custom_street_name,
             property_number: result.custom_property_number,
             combined_address:
-              result.custom_combine_address ||
+              extractAddressFromSite(result.custom_combine_address) ||
               extractAddressFromSite(result.site_name),
             property_category: result.custom_property_category,
             property_type: result.custom_property_type,
@@ -1139,7 +1140,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     }));
 
     if (result.address_details) {
-      const address = extractAddressFromSite(result.address_details?.combined_address)
+      const address = extractAddressFromSite(result.address_details.combined_address)
       setFormData((prev) => ({
         ...prev,
         custom_property_category:
@@ -1353,6 +1354,17 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     }
   };
 
+  // Update dropdown position
+  useEffect(() => {
+    if (showDropdown && inputRef.current) {
+      const rect = inputRef.current.getBoundingClientRect();
+      setDropdownPosition({
+        top: rect.bottom + window.scrollY,
+        left: rect.left + window.scrollX,
+        width: rect.width,
+      });
+    }
+  }, [showDropdown]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -1444,23 +1456,23 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                   >
                     <div className="p-4 pt-2 space-y-4">
                       {section.id === "contact" && (
-                        <CustomerSearchSection
-                          selectedCustomer={selectedCustomer}
-                          searchQuery={searchQuery}
-                          searchResults={searchResults}
-                          isSearching={isSearching}
-                          showDropdown={showDropdown}
-                          dropdownPosition={dropdownPosition}
-                          onSearchChange={handleSearchChange}
-                          onCustomerSelect={handleCustomerSelect}
-                          onClearCustomer={handleClearCustomer}
-                          onOpenCreateModal={handleOpenCreateModal}
-                          onOpenEditModal={handleOpenEditModal}
-                          showReferenceInput={showReferenceInput}
-                          formData={formData}
-                          handleInputChange={handleInputChange}
-                          setDropdownPosition={setDropdownPosition} // Add this
-                        />
+                       <CustomerSearchSection
+  selectedCustomer={selectedCustomer}
+  searchQuery={searchQuery}
+  searchResults={searchResults}
+  isSearching={isSearching}
+  showDropdown={showDropdown}
+  dropdownPosition={dropdownPosition}
+  onSearchChange={handleSearchChange}
+  onCustomerSelect={handleCustomerSelect}
+  onClearCustomer={handleClearCustomer}
+  onOpenCreateModal={handleOpenCreateModal}
+  onOpenEditModal={handleOpenEditModal}
+  showReferenceInput={showReferenceInput}
+  formData={formData}
+  handleInputChange={handleInputChange}
+  setDropdownPosition={setDropdownPosition} // Add this
+/>
                       )}
 
                       {section.id === "job" && (

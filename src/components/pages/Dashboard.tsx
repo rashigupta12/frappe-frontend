@@ -17,8 +17,7 @@ import FeedbackComponent from "../../common/FeedbackManagement";
 import { RoleSwitcherMinimal } from "../../common/RoleSwitcher";
 import { useAuth } from "../../context/AuthContext";
 import TodoPage from "../Inquiry/Assign";
-import InquiryPage from "../Inquiry/InquiryListHome";
-import InquiryForm from "../Inquiry/InquiryForm";
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,6 +30,8 @@ import {
 } from "../ui/alert-dialog";
 import { Button } from "../ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
+import InquiryForm from "../Inquiries/Inquiry-Form/InquiryForm";
+import InquiryPage from "../Inquiries/InquiryListHome";
 
 export default function SalesDashboard() {
   const [isFormOpen, setIsFormOpen] = useState(false);
