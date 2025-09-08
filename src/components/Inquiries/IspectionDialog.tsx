@@ -22,7 +22,7 @@ import {
 import { Textarea } from "../ui/textarea";
 import UserAvailability from "../ui/UserAvailability";
 import type { Lead } from "../../context/LeadContext";
-import { RestrictedTimeClock } from "../Inquiries/ResticritedtimeSlot";
+import { RestrictedTimeClock } from "./ResticritedtimeSlot";
 import { showToast } from "../../helpers/comman";
 import type {
   AvailabilitySlot,

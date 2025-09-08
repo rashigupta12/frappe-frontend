@@ -1,9 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // TodoPage.tsx
-import {
-  ClipboardList,
-  Search
-} from "lucide-react";
+import { ClipboardList, Search } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useAuth } from "../../../context/AuthContext";
 import { useAssignStore } from "../../../store/assign";
@@ -11,8 +8,7 @@ import { Alert, AlertDescription } from "../../ui/alert";
 import { Input } from "../../ui/input";
 import TodoTable from "./TodoTable";
 import TodoCard from "./TodoCard";
-import InspectionDialog from "../../Inquiry/IspectionDialog";
-
+import InspectionDialog from "../IspectionDialog";
 
 export default function TodoPage() {
   const {
@@ -147,7 +143,7 @@ export default function TodoPage() {
       {/* Desktop Table View */}
       <div className="hidden md:block">
         <TodoTable
-          todos={sortedTodos} 
+          todos={sortedTodos}
           loading={todosLoading}
           onEdit={handleEditInspection}
         />
@@ -174,10 +170,10 @@ export default function TodoPage() {
         ) : (
           <div className="space-y-3 p-2">
             {sortedTodos.map((todo) => (
-              <TodoCard 
-                key={todo.name} 
-                todo={todo} 
-                onEdit={handleEditInspection} 
+              <TodoCard
+                key={todo.name}
+                todo={todo}
+                onEdit={handleEditInspection}
               />
             ))}
           </div>

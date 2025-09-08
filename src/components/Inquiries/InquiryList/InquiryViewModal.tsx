@@ -11,10 +11,10 @@ import {
   Phone,
   X,
 } from "lucide-react";
-import { type Lead } from "../../context/LeadContext";
-import { Button } from "../ui/button";
-import { Badge } from "../ui/badge";
-import { getJobTypeColor } from "../../helpers/helper";
+import { type Lead } from "../../../context/LeadContext";
+import { Button } from "../../ui/button";
+import { Badge } from "../../ui/badge";
+import { getJobTypeColor } from "../../../helpers/helper";
 
 interface InquiryViewModalProps {
   inquiry: Lead;

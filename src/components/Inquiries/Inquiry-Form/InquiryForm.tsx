@@ -35,7 +35,7 @@ import { Textarea } from "../../ui/textarea";
 
 import { timeToMinutes } from "../../../lib/timeUtils";
 import { showToast } from "../../../helpers/comman";
-import { ConfirmationModal } from "../../Inquiry/ConfirmationModal";
+import { ConfirmationModal } from "../ConfirmationModal";
 
 import { CustomerSearchSection } from "./CustomerSearchSection";
 import { FormSectionHeader } from "./FormSectionHeader";

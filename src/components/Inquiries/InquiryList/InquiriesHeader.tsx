@@ -1,8 +1,8 @@
 // src/components/InquiryHeader.tsx
 
 import { Plus, Search } from "lucide-react";
-import { Button } from "../ui/button";
-import { Input } from "../ui/input";
+import { Button } from "../../ui/button";
+import { Input } from "../../ui/input";
 import React from "react";
 
 interface InquiryHeaderProps {

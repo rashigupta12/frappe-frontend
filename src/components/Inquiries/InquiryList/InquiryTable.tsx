@@ -1,8 +1,8 @@
 import { ClipboardList, Pen } from "lucide-react";
 import React from "react";
-import { type Lead } from "../../context/LeadContext";
-import { Button } from "../ui/button";
-import { getBudgetColor, getJobTypeColor, getUrgencyColor } from "../../helpers/helper";
+import { type Lead } from "../../../context/LeadContext";
+import { Button } from "../../ui/button";
+import { getBudgetColor, getJobTypeColor, getUrgencyColor } from "../../../helpers/helper";
 
 interface InquiryTableProps {
   inquiries: Lead[];
@@ -11,12 +11,6 @@ interface InquiryTableProps {
   handleOpenDialog: (inquiry: Lead) => void;
   getJobTypesForInquiry: (inquiry: Lead) => string[];
 }
-
-
-
-
-
-
 const getUrgencyShortLabel = (urgency: string) => {
   const labels: Record<string, string> = {
     "1. Urgent": "Urgent",
@@ -134,9 +128,6 @@ const InquiryTable: React.FC<InquiryTableProps> = ({
                   )}
                 </div>
               </td>
-
-         
-
               {/* Urgency */}
               <td className="py-4 px-2">
                 {inquiry.custom_project_urgency ? (
@@ -176,7 +167,7 @@ const InquiryTable: React.FC<InquiryTableProps> = ({
               {/* Property Area */}
               <td className="py-4">
                 <div className="text-gray-700 font-medium w-52">
-                  {inquiry.custom_property_area || "-"}
+                  {inquiry.custom_property_area  }
                 </div>
                 <div className="text-xs text-gray-500 mt-1">
                   {inquiry.custom_property_category} , {inquiry.custom_property_type}

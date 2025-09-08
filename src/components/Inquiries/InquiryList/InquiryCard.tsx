@@ -3,15 +3,15 @@
 import { format } from "date-fns";
 import { Calendar, Edit, MapPin, Phone, User } from "lucide-react";
 import React, { useCallback } from "react";
-import { type Lead } from "../../context/LeadContext";
+import { type Lead } from "../../../context/LeadContext";
 import {
   getBudgetColor,
   getJobTypeColor,
   getUrgencyColor,
   getUrgencyShortLabel,
-} from "../../helpers/helper";
-import { Badge } from "../ui/badge";
-import { Button } from "../ui/button";
+} from "../../../helpers/helper";
+import { Badge } from "../../ui/badge";
+import { Button } from "../../ui/button";
 
 interface InquiryCardProps {
   inquiry: Lead;

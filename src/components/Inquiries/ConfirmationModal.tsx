@@ -5,11 +5,6 @@ import {
   AlertTriangle
 } from "lucide-react";
 import { Button } from "../ui/button";
-
-
-
-
-
 // Confirmation Modal Component
 export const ConfirmationModal = ({
   isOpen,

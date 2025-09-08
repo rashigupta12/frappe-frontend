@@ -1,6 +1,5 @@
-import PropertyAddressSection from "../../Inquiry/PropertyAddress";
+import PropertyAddressSection from "../PropertyAddress";
 import type { LeadFormData } from "../../../context/LeadContext";
-
 
 interface PropertyDetailsSectionProps {
   formData: LeadFormData;

@@ -17,7 +17,6 @@ import FeedbackComponent from "../../common/FeedbackManagement";
 import { RoleSwitcherMinimal } from "../../common/RoleSwitcher";
 import { useAuth } from "../../context/AuthContext";
 
-
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,7 +30,7 @@ import {
 import { Button } from "../ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import InquiryForm from "../Inquiries/Inquiry-Form/InquiryForm";
-import InquiryPage from "../Inquiries/InquiryListHome";
+import InquiryPage from "../Inquiries/InquiryList/InquiryListHome";
 import TodoPage from "../Inquiries/Todos/Todopage";
 
 export default function SalesDashboard() {
@@ -162,8 +161,6 @@ export default function SalesDashboard() {
 
           {/* Right Section - Title / Role Switcher / User Menu */}
           <div className="flex items-center gap-2">
-            
-
             {/* User Menu */}
             <div className="flex items-center gap-1 sm:gap-2">
               {/* Mobile Role Switcher */}
@@ -290,7 +287,7 @@ export default function SalesDashboard() {
                 <HomeIcon className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
                 <span className="font-medium truncate">Inquiries</span>
               </Button>
-              
+
               <Button
                 variant="ghost"
                 onClick={openInquiryForm}
@@ -299,7 +296,7 @@ export default function SalesDashboard() {
                 <Plus className="h-4 w-4 flex-shrink-0" />
                 <span className="truncate">Add Inquiry</span>
               </Button>
-              
+
               <Button
                 variant={activeTab === "assign" ? "default" : "ghost"}
                 onClick={() => handleTabChange("assign")}
@@ -314,11 +311,13 @@ export default function SalesDashboard() {
               </Button>
             </nav>
           </div>
-          
+
           {/* User Info Section - Fixed at Bottom */}
           <div className="flex-shrink-0 p-2 sm:p-3 pb-20 px-2 border-t border-emerald-100 ">
             <div className="bg-emerald-50 rounded-lg border border-emerald-100 p-2 sm:p-3 ">
-              <div className="min-w-0"> {/* min-w-0 allows flex children to shrink below content size */}
+              <div className="min-w-0">
+                {" "}
+                {/* min-w-0 allows flex children to shrink below content size */}
                 <div className="text-xs sm:text-sm font-medium text-black truncate mb-1 capitalize">
                   {user?.full_name || user?.username || "User"}
                 </div>
@@ -444,8 +443,6 @@ export default function SalesDashboard() {
             </div>
           </div>
         </div>
-
-        
       </div>
       <AlertDialog open={showLogoutConfirm} onOpenChange={setShowLogoutConfirm}>
         <AlertDialogContent className="bg-white">

@@ -24,7 +24,7 @@ import {
   type MaterialSold,
   type PressingCharges,
 } from "../../context/JobCardContext";
-import PropertyAddressSection from "../Inquiry/PropertyAddress";
+import PropertyAddressSection from "../Inquiries/PropertyAddress";
 import { Button } from "../ui/button";
 import {
   Dialog,
@@ -461,7 +461,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
         // Handle existing customer/lead
 
         // const customerName = extractCustomerNameFromSite(customer.site_name);
-      const address = extractAddressFromSite(customer.site_name);
+        const address = extractAddressFromSite(customer.site_name);
         const customerData = {
           party_name:
             customer.customer_name || customer.lead_details?.lead_name || "",
@@ -883,7 +883,9 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
         : true;
 
     if (!hasValidPressingCharges && pressingCharges.length > 0) {
-      showToast.error("All pressing charges must have a work type and valid price");
+      showToast.error(
+        "All pressing charges must have a work type and valid price"
+      );
       return false;
     }
 
@@ -893,7 +895,9 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
         : true;
 
     if (!hasValidMaterialsSold && materialsSold.length > 0) {
-      showToast.error("All materials sold must have a work type and valid price");
+      showToast.error(
+        "All materials sold must have a work type and valid price"
+      );
       return false;
     }
 
@@ -1304,7 +1308,9 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
 
                               // Allow today's date - only prevent past dates
                               if (new Date(selectedDate) < new Date(today)) {
-                                showToast.error("Start date cannot be in the past");
+                                showToast.error(
+                                  "Start date cannot be in the past"
+                                );
                                 return;
                               }
 
