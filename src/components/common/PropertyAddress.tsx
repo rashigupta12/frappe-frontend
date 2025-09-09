@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Edit, Home, Loader2, Plus, Search, X } from "lucide-react";
+import { Edit, Home, Loader2, MapPin, Plus, X } from "lucide-react";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 // import { showToast } from "react-hot-showToast";
 import { createPortal } from "react-dom";
@@ -977,7 +977,7 @@ const handleAddNewCommunity = async (communityName?: string) => {
         </label> */}
         <div className="relative">
           <div className="flex items-center">
-            <Search className="absolute left-3 h-4 w-4 text-gray-400" />
+            <MapPin className="absolute left-3 h-4 w-4 text-gray-400" />
             <Input
               ref={inputRef}
               type="text"

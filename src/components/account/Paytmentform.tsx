@@ -805,7 +805,7 @@ const PaymentForm = () => {
                   value={searchQuery}
                   onChange={handleSearchChange}
                   onKeyDown={handleKeyDown}
-                  placeholder="Search by name, phone, or email"
+                  placeholder="Search by Supplier name, phone, or email"
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none pr-10"
                 />
                 {searchQuery && (
@@ -940,9 +940,9 @@ const PaymentForm = () => {
               </div>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {/* <label className="block text-sm font-medium text-gray-700 mb-1">
                     Supplier Name <span className="text-red-500">*</span>
-                  </label>
+                  </label> */}
                   <input
                     type="text"
                     name="supplier_name"
@@ -966,9 +966,9 @@ const PaymentForm = () => {
                   />
                 </div> */}
                 <div className="space-y-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {/* <label className="block text-sm font-medium text-gray-700 mb-1">
                     Phone Number <span className="text-red-500">*</span>
-                  </label>
+                  </label> */}
                   <input
                     type="tel"
                     name="mobile_no"
@@ -996,18 +996,18 @@ const PaymentForm = () => {
                 </div> */}
 
                 <div>
-                  <label
+                  {/* <label
                     htmlFor="email_id"
                     className="block text-sm font-medium text-gray-700 mb-1"
                   >
                     Email
-                  </label>
+                  </label> */}
                   <input
                     type="email"
                     name="email_id"
                     value={newSupplierData.email_id || ""}
                     onChange={handleNewSupplierInputChange}
-                    placeholder="Enter email"
+                    placeholder="Enter Supplier Email"
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                   />
                   {/* Error message */}

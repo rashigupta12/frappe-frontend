@@ -1,3 +1,4 @@
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import {
@@ -10,6 +11,7 @@ import {
   Phone,
   Plus,
   Save,
+  Search,
   Trash2,
   User,
   X,
@@ -126,6 +128,9 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
     setFormData((prev) => ({ ...prev, [name]: value }));
   }, []);
 
+  console.log(fetchingCustomerDetails)
+
+  console.log(fetchingLeadDetails)
   // Generate combined address when address components change
   useEffect(() => {
     const combinedAddress = [
@@ -1107,7 +1112,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                 >
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 py-4">
                     <div className="relative col-span-1 md:col-span-2 lg:col-span-1">
-                      <label className="flex items-center space-x-2 text-sm md:text-base font-medium text-gray-700 mb-2">
+                      {/* <label className="flex items-center space-x-2 text-sm md:text-base font-medium text-gray-700 mb-2">
                         <User className="h-4 w-4 text-black" />
                         <span className="text-black">
                           Customer{" "}
@@ -1119,17 +1124,18 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                         {(fetchingCustomerDetails || fetchingLeadDetails) && (
                           <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
                         )}
-                      </label>
+                      </label> */}
                       <div className="relative capitalize">
+                        <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400  " />
                         <Input
                           id="party_name"
                           name="party_name"
                           value={searchQuery}
                           onChange={handleSearchChange}
-                          placeholder="Search by name, phone, email or address"
+                          placeholder="Search by Customer Name, Phone, Email or Address"
                           disabled={isReadOnly}
                           required
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none  capitalize"
+                          className="w-full pl-9 pr-10 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none  capitalize"
                         />
                         {isSearching && (
                           <Loader2 className="absolute right-3 top-3 h-4 w-4 animate-spin text-gray-500" />
@@ -1283,7 +1289,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                     </div>
 
                     {/* Date inputs */}
-                    <div className="grid grid-cols-2 sm:grid-cols-2 gap-4 col-span-1 md:col-span-2 lg:col-span-3">
+                    <div className="grid grid-cols-2 sm:grid-cols-2 gap-4 col-span-1 md:col-span-2 lg:col-span-3 py-2">
                       <div className="space-y-2">
                         <Label
                           htmlFor="start_date"
@@ -1440,9 +1446,9 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                           >
                             <div className="grid grid-cols-1 gap-2">
                               <div className="space-y-2">
-                                <Label className="text-xs font-medium text-gray-600">
+                                {/* <Label className="text-xs font-medium text-gray-600">
                                   Work Type
-                                </Label>
+                                </Label> */}
                                 {loadingPressingItems ? (
                                   <div className="flex items-center gap-2">
                                     <Loader2 className="animate-spin h-4 w-4" />
@@ -1483,10 +1489,10 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                               </div>
 
                               <div className="flex gap-2">
-                                <div className="w-[40%] space-y-2">
-                                  <Label className="text-xs font-medium text-gray-600">
+                                <div className="w-[30%] space-y-2">
+                                  {/* <Label className="text-xs font-medium text-gray-600">
                                     Size
-                                  </Label>
+                                  </Label> */}
                                   <Input
                                     placeholder="Size"
                                     value={charge.size}
@@ -1502,10 +1508,10 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                                   />
                                 </div>
 
-                                <div className="w-[30%] space-y-2">
-                                  <Label className="text-xs text-gray-600">
+                                <div className="w-[40%] space-y-2">
+                                  {/* <Label className="text-xs text-gray-600">
                                     Thickness
-                                  </Label>
+                                  </Label> */}
                                   <div className="flex w-full items-center">
                                     <Input
                                       type="number"
@@ -1519,6 +1525,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                                       }
                                       disabled={isReadOnly}
                                       className="h-9 text-sm w-[70%] rounded-r-none"
+                                      placeholder="Thickness"
                                     />
                                     <span className="flex items-center justify-center w-[30%] h-9 text-xs text-gray-800 border border-l-0 rounded-r-md bg-white">
                                       mm
@@ -1527,9 +1534,9 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                                 </div>
 
                                 <div className="w-[30%] space-y-2">
-                                  <Label className="text-xs font-medium text-gray-600">
+                                  {/* <Label className="text-xs font-medium text-gray-600">
                                     Sides
-                                  </Label>
+                                  </Label> */}
                                   <Input
                                     placeholder="Sides"
                                     type="number"
@@ -1548,10 +1555,10 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                                 </div>
                               </div>
 
-                              <div className="space-y-2">
-                                <Label className="text-xs font-medium text-gray-600">
+                              <div className="space-y-2 pt-3">
+                                {/* <Label className="text-xs font-medium text-gray-600">
                                   Remarks
-                                </Label>
+                                </Label> */}
                                 <textarea
                                   placeholder="Enter remarks"
                                   value={charge.remarks}
@@ -1568,7 +1575,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                                 />
                               </div>
 
-                              <div className="flex justify-end items-end pt-1">
+                              <div className="flex justify-end items-end ">
                                 {!isReadOnly && (
                                   <Button
                                     type="button"
@@ -1651,9 +1658,9 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                           >
                             <div className="grid grid-cols-1 gap-4">
                               <div className="space-y-2">
-                                <Label className="text-xs font-medium text-gray-600">
+                                {/* <Label className="text-xs font-medium text-gray-600">
                                   Work Type
-                                </Label>
+                                </Label> */}
                                 {loadingMaterialSoldItems ? (
                                   <div className="flex items-center gap-2">
                                     <Loader2 className="animate-spin h-4 w-4" />
@@ -1695,9 +1702,9 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
 
                               <div className="grid grid-cols-2 gap-3">
                                 <div className="space-y-2">
-                                  <Label className="text-xs font-medium text-gray-600">
+                                  {/* <Label className="text-xs font-medium text-gray-600">
                                     Size
-                                  </Label>
+                                  </Label> */}
                                   <Input
                                     placeholder="Size"
                                     value={material.size}
@@ -1714,9 +1721,9 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                                 </div>
 
                                 <div className="space-y-2">
-                                  <Label className="text-xs font-medium text-gray-600">
+                                  {/* <Label className="text-xs font-medium text-gray-600">
                                     Qty
-                                  </Label>
+                                  </Label> */}
                                   <Input
                                     placeholder="Qty"
                                     type="number"
@@ -1760,7 +1767,7 @@ const JobCardForm: React.FC<JobCardFormProps> = ({
                                 </div>
                               </div> */}
 
-                              <div className="flex justify-end items-center pt-2">
+                              <div className="flex justify-end items-center">
                                 {/* <Label className="text-xs font-medium text-gray-600">
                                   Total Amount: {material.amount || 0} AED
                                 </Label> */}

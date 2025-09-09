@@ -1,3 +1,4 @@
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
@@ -10,6 +11,7 @@ import {
   Phone,
   Plus,
   Save,
+  Search,
   Trash2,
   User,
   Wrench,
@@ -171,6 +173,10 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
 
     return checkDate >= jobStart && checkDate <= jobFinish;
   };
+
+    console.log(fetchingCustomerDetails)
+
+  console.log(fetchingLeadDetails)
 
   // Fetch employees when component mounts
   useEffect(() => {
@@ -874,7 +880,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {/* Customer Search - Full width on mobile, spans 2 cols on md, 1 col on lg */}
                     <div className="relative col-span-1 md:col-span-2 lg:col-span-1">
-                      <label className="flex items-center space-x-2 text-sm md:text-base font-medium text-black mb-2">
+                      {/* <label className="flex items-center space-x-2 text-sm md:text-base font-medium text-black mb-2">
                         <User className="h-4 w-4 text-black" />
                         <span>
                           Customer{" "}
@@ -886,16 +892,17 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                         {(fetchingCustomerDetails || fetchingLeadDetails) && (
                           <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
                         )}
-                      </label>
-                      <div className="relative">
+                      </label> */}
+                     <div className="relative ">
+                        <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400  " />
                         <Input
                           id="party_name"
                           name="party_name"
                           value={searchQuery}
                           onChange={handleSearchChange}
-                          placeholder="Search by name, phone, or email"
+                          placeholder="Search by Customer Name, phone, or email"
                           required
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none pr-10 capitalize"
+                          className="w-full pl-9 pr-10 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none  capitalize"
                         />
                         {isSearching && (
                           <Loader2 className="absolute right-3 top-3 h-4 w-4 animate-spin text-gray-500" />
@@ -1153,9 +1160,9 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                         <div className="grid grid-cols-1 gap-4">
                           {/* Work Type - Full width */}
                           <div className="space-y-1">
-                            <Label className="text-xs font-medium text-gray-600">
+                            {/* <Label className="text-xs font-medium text-gray-600">
                               Work Type
-                            </Label>
+                            </Label> */}
                             {loadingJobTypes ? (
                               <div className="flex items-center gap-2">
                                 <Loader2 className="animate-spin h-4 w-4" />
@@ -1304,10 +1311,10 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                           </div> */}
 
                           {/* Work Description - Full width */}
-                          <div className="space-y-1">
-                            <Label className="text-sm font-medium text-gray-600">
+                          <div className="space-y-2">
+                            {/* <Label className="text-sm font-medium text-gray-600">
                               Work Description
-                            </Label>
+                            </Label> */}
                             <Textarea
                               placeholder="Enter detailed work description"
                               value={service.work_description}
