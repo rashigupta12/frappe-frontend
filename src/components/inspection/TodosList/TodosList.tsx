@@ -4,9 +4,9 @@ import { useNavigate } from "react-router-dom";
 import { Loader } from "../../common/Loader";
 
 import { priorityFilters, type Todo } from "./type";
-import MobileInspectionCard from "./MobileInspectionCard";
-import InspectionHeader from "./InpsectionHeader";
-import InspectionTable from "./InspectionTable";
+import MobileInspectionCard from "./TodoCard";
+import InspectionHeader from "./TodoHeader";
+import InspectionTable from "./TodoTable";
 
 
 interface InspectionListProps {

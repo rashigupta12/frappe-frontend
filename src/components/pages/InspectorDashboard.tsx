@@ -13,8 +13,9 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import FeedbackComponent from "../common/FeedbackManagement";
 import { RoleSwitcherMinimal } from "../common/RoleSwitcher";
-import MobileSiteInspectionList from "../inspection/CompletedInspectionList";
-import CreateInspection from "../inspection/IspectionDetail";
+
+import InspectionList from "../inspection/Inspection LIst/InspectionList";
+// import CreateInspection from "../inspection/IspectionDetail";
 import TodosList from "../inspection/TodosList/TodosList";
 import {
   AlertDialog,
@@ -28,6 +29,7 @@ import {
 } from "../ui/alert-dialog";
 import { Button } from "../ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
+import CreateInspection from "../inspection/Inspection Detail/CreateEditInspection";
 
 export default function InspectorDashboard() {
   const navigate = useNavigate();
@@ -68,7 +70,7 @@ export default function InspectorDashboard() {
         // return <MobileInspectio userEmail={user?.username ?? ""} />;
         return <TodosList userEmail={user?.username??""}/>
       case "inspections":
-        return <MobileSiteInspectionList userEmail={user?.username ?? ""} />;
+        return <InspectionList userEmail={user?.username ?? ""} />;
       case "details":
         return <CreateInspection />;
       default:

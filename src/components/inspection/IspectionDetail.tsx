@@ -47,7 +47,7 @@ import {
 import { Input } from "../ui/input";
 import { Popover, PopoverTrigger } from "../ui/popover";
 import { Textarea } from "../ui/textarea";
-import InspectionHeader from "./components/InspectionHeader";
+import InspectionHeader from "./Inspection Detail/InspectionHeader";
 import MediaUpload from "./components/MediaUpload/MediaUpload";
 
 // Helper function to get current date and time - memoized
