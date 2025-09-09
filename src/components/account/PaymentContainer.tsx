@@ -1,9 +1,10 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 // src/components/account/PaymentContainer.tsx or similar parent component
 import React, { useState, useEffect, useCallback } from 'react';
-import PaymentSummary, { type Payment } from './PaymentSummary';
+import PaymentSummary from './PaymentSummary';
 import { useAuth } from '../../context/AuthContext';
 import { frappeAPI } from '../../api/frappeClient';
+import type { Payment } from './type';
 
 // Import your API service
 // import { paymentAPI } from '../../services/paymentAPI';

@@ -3,7 +3,8 @@ import { Building, CreditCard, FileText, X, Eye } from "lucide-react";
 import React, { useState } from "react";
 import { Button } from "../ui/button";
 import { DialogContent, DialogFooter, DialogTitle } from "../ui/dialog";
-import type { Payment } from "./PaymentSummary";
+import type { Payment } from "./type";
+
 
 interface Props {
   payment: Payment;
