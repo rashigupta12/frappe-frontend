@@ -1,3 +1,5 @@
+// src/components/JobDetailsSection.tsx
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { LeadFormData } from "../../../context/LeadContext";
 import { budgetRanges } from "../../../helpers/helper";
@@ -5,7 +7,7 @@ import { MultiSelectJobTypes } from "./MultiselectJobtypes";
 import { Input } from "../../ui/input";
 import { Label } from "../../ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../ui/select";
-
+import React from "react";
 
 interface JobDetailsSectionProps {
   formData: LeadFormData;
@@ -29,9 +31,10 @@ export const JobDetailsSection: React.FC<JobDetailsSectionProps> = ({
   handleInputChange,
 }) => {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {/* Job Types */}
       <div className="space-y-2">
-        <Label className="text-md font-medium text-gray-700 mb-1">
+        <Label className="text-sm font-semibold text-gray-800">
           Job Types <span className="text-red-500">*</span>
         </Label>
         <MultiSelectJobTypes
@@ -42,18 +45,19 @@ export const JobDetailsSection: React.FC<JobDetailsSectionProps> = ({
         />
       </div>
 
-      <div>
+      {/* Budget Range */}
+      <div className="space-y-2">
         <Label
           htmlFor="custom_budget_range"
-          className="text-md font-medium text-gray-700 mb-1"
+          className="text-sm font-semibold text-gray-800"
         >
-          Budget Range{" "}
+          Budget Range
         </Label>
         <Select
           value={formData.custom_budget_range || ""}
           onValueChange={(value) => onSelectChange("custom_budget_range", value)}
         >
-          <SelectTrigger className="w-full text-md">
+          <SelectTrigger className="w-full text-sm rounded-md shadow-sm border-gray-300 focus:border-emerald-500 focus:ring-emerald-200">
             <SelectValue placeholder="Select budget range" />
           </SelectTrigger>
           <SelectContent className="bg-white">
@@ -66,15 +70,16 @@ export const JobDetailsSection: React.FC<JobDetailsSectionProps> = ({
         </Select>
       </div>
 
-      <div>
-        <Label className="text-md font-medium text-gray-700 mb-1">
-          Project Urgency{" "}
+      {/* Project Urgency */}
+      <div className="space-y-2">
+        <Label className="text-sm font-semibold text-gray-800">
+          Project Urgency
         </Label>
         <Select
           value={formData.custom_project_urgency || ""}
           onValueChange={(value) => onSelectChange("custom_project_urgency", value)}
         >
-          <SelectTrigger className="w-full text-md ">
+          <SelectTrigger className="w-full text-sm rounded-md shadow-sm border-gray-300 focus:border-emerald-500 focus:ring-emerald-200">
             <SelectValue placeholder="Select urgency" />
           </SelectTrigger>
           <SelectContent className="bg-white">
@@ -87,18 +92,19 @@ export const JobDetailsSection: React.FC<JobDetailsSectionProps> = ({
         </Select>
       </div>
 
-      <div className="col-span-1 md:col-span-2">
+      {/* Source of Inquiry & Reference */}
+      <div className="space-y-2">
         <Label
           htmlFor="source"
-          className="text-md font-medium text-gray-700 mb-1"
+          className="text-sm font-semibold text-gray-800"
         >
-          Source Of Inquiry{" "}
+          Source Of Inquiry
         </Label>
         <Select
           value={formData.source || ""}
           onValueChange={(value) => onSelectChange("source", value)}
         >
-          <SelectTrigger className="w-full text-md">
+          <SelectTrigger className="w-full text-sm rounded-md shadow-sm border-gray-300 focus:border-emerald-500 focus:ring-emerald-200">
             <SelectValue placeholder="Select source" />
           </SelectTrigger>
           <SelectContent className="bg-white">
@@ -116,7 +122,7 @@ export const JobDetailsSection: React.FC<JobDetailsSectionProps> = ({
           <div className="mt-4">
             <Label
               htmlFor="custom_reference_name"
-              className="text-md font-medium text-gray-700"
+              className="text-sm font-semibold text-gray-800"
             >
               Reference Name <span className="text-red-500">*</span>
             </Label>
@@ -128,6 +134,7 @@ export const JobDetailsSection: React.FC<JobDetailsSectionProps> = ({
               onChange={handleInputChange}
               required
               placeholder="Enter reference name"
+              className="w-full rounded-md shadow-sm border-gray-300 focus:border-emerald-500 focus:ring-emerald-200"
             />
           </div>
         )}

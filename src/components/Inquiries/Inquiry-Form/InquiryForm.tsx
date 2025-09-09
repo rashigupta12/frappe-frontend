@@ -1402,221 +1402,223 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
   };
 
   return (
-    <>
-      <div
-        className="fixed inset-0 bg-black/30 backdrop-blur-sm bg-opacity-50 z-40 transition-opacity duration-300"
-        onClick={() => {
-          if (!showCustomerModal) {
-            handleClose();
-          }
-        }}
-      />
 
-      <div
-        className="fixed inset-y-0 right-0 w-full max-w-2xl bg-white shadow-xl border-l border-gray-200 transform transition-transform duration-300 ease-in-out z-50"
-        style={{ transform: isOpen ? "translateX(0)" : "translateX(100%)" }}
-      >
-        <div className="flex flex-col h-full">
-          <div className="bg-emerald-600 p-4 text-white">
-            <div className="flex justify-between items-center">
-              <h3 className="text-xl font-semibold">
-                {inquiry ? "Edit Inquiry" : "New Inquiry"}
-              </h3>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="h-8 w-8 p-0 rounded-full text-white hover:bg-white/10"
-                onClick={handleClose}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
 
-          <div className="p-4 flex-1 overflow-y-auto">
-            <form className="space-y-4" onSubmit={handleSubmit}>
-              {updatedSections.map((section) => (
-                <div
-                  key={section.id}
-                  className="border border-gray-200 rounded-lg overflow-hidden"
-                >
-                  <FormSectionHeader
-                    section={section}
-                    activeSection={activeSection}
-                    onToggle={toggleSection}
-                  />
+<>
+  {/* Backdrop with enhanced blur and opacity */}
+  <div
+    className="fixed inset-0 bg-gray-900/40 backdrop-blur-sm z-40 transition-opacity duration-500"
+    onClick={() => {
+      if (!showCustomerModal) {
+        handleClose();
+      }
+    }}
+  />
 
-                  <div
-                    className={`transition-all duration-300 overflow-hidden ${
-                      activeSection === section.id
-                        ? "max-h-[1000px] opacity-100"
-                        : "max-h-0 opacity-0"
-                    }`}
-                  >
-                    <div className="p-4 pt-2 space-y-4">
-                      {section.id === "contact" && (
-                       <CustomerSearchSection
-  selectedCustomer={selectedCustomer}
-  searchQuery={searchQuery}
-  searchResults={searchResults}
-  isSearching={isSearching}
-  showDropdown={showDropdown}
-  dropdownPosition={dropdownPosition}
-  onSearchChange={handleSearchChange}
-  onCustomerSelect={handleCustomerSelect}
-  onClearCustomer={handleClearCustomer}
-  onOpenCreateModal={handleOpenCreateModal}
-  onOpenEditModal={handleOpenEditModal}
-  showReferenceInput={showReferenceInput}
-  formData={formData}
-  handleInputChange={handleInputChange}
-  setDropdownPosition={setDropdownPosition} // Add this
-/>
-                      )}
-
-                      {section.id === "job" && (
-                        <JobDetailsSection
-                          formData={formData}
-                          jobTypes={jobTypes}
-                          projectUrgency={projectUrgency}
-                          utmSource={utmSource}
-                          showReferenceInput={showReferenceInput}
-                          onSelectChange={handleSelectChange}
-                          onJobTypesChange={(selected) => {
-                            setFormData((prev) => ({
-                              ...prev,
-                              custom_jobtype: selected,
-                            }));
-                          }}
-                          handleInputChange={handleInputChange}
-                        />
-                      )}
-
-                      {section.id === "property" && (
-                        <PropertyDetailsSection
-                          formData={formData}
-                          handleSelectChange={handleSelectChange}
-                        />
-                      )}
-
-                      {section.id === "inspector" && (
-                        <InspectorAssignmentSection
-                          date={date}
-                          selectedInspector={selectedInspector}
-                          selectedSlot={selectedSlot}
-                          requestedTime={requestedTime}
-                          endTime={endTime}
-                          priority={priority}
-                          validationErrors={validationErrors}
-                          createTodoLoading={createTodoLoading}
-                          loading={loading}
-                          showAvailabilityModal={showAvailabilityModal}
-                          onDateSelect={handleDateSelect}
-                          onSlotSelect={handleSlotSelect}
-                          onStartTimeChange={handleStartTimeChange}
-                          onEndTimeChange={handleEndTimeChange}
-                          onPriorityChange={(value) =>
-                            setPriority(value as PriorityLevel)
-                          }
-                          onShowAvailabilityModal={() =>
-                            setShowAvailabilityModal(true)
-                          }
-                          onHideAvailabilityModal={() =>
-                            setShowAvailabilityModal(false)
-                          }
-                          onInspectorSelect={handleInspectorSelect}
-                          onAssignAndSave={handleAssignAndSave}
-                          calculateDuration={calculateDuration}
-                          getDefaultStartTime={getDefaultStartTime}
-                          getEndTimeConstraints={getEndTimeConstraints}
-                        />
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
-
-              <div>
-                <div className="px-2">
-                  <Label
-                    htmlFor="custom_special_requirements"
-                    className="text-md mb-1 font-medium text-gray-700"
-                  >
-                    Special Requirements
-                  </Label>
-                  <Textarea
-                    id="custom_special_requirements"
-                    name="custom_special_requirements"
-                    value={formData.custom_special_requirements || ""}
-                    onChange={handleInputChange}
-                    placeholder="Enter any special requirements or notes"
-                    rows={3}
-                  />
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-3 pt-6">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleClose}
-                  className="px-6"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={loading}
-                  className="px-6 bg-emerald-600 hover:bg-emerald-700"
-                >
-                  {loading ? (
-                    <div className="flex items-center gap-2">
-                      <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white"></div>
-                      Saving...
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2 text-white">
-                      <Save className="h-4 w-4" />
-                      {inquiry ? "Update" : "Create"} Inquiry
-                    </div>
-                  )}
-                </Button>
-              </div>
-            </form>
-          </div>
+  {/* Slide-out Panel with modern styling */}
+  <div
+    className="fixed inset-y-0 right-0 w-full max-w-2xl bg-white rounded-l-2xl shadow-2xl border-l border-gray-100 transform transition-transform duration-500 ease-in-out z-50"
+    style={{ transform: isOpen ? "translateX(0)" : "translateX(100%)" }}
+  >
+    <div className="flex flex-col h-full">
+      {/* Header with gradient and improved button */}
+      <div className="bg-gradient-to-r from-emerald-500 to-teal-500 p-5 text-white shadow-md">
+        <div className="flex justify-between items-center">
+          <h3 className="text-xl font-bold">
+            {inquiry ? "Edit Inquiry" : "New Inquiry"}
+          </h3>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-9 w-9 p-0 rounded-full text-white hover:bg-white/20 transition-colors"
+            onClick={handleClose}
+          >
+            <X className="h-5 w-5" />
+          </Button>
         </div>
       </div>
 
-      <CustomerModal
-        isOpen={showCustomerModal}
-        mode={modalMode}
-        customerForm={customerForm}
-        isCreatingCustomer={isCreatingCustomer}
-        onClose={() => setShowCustomerModal(false)}
-        onSave={handleSaveCustomer}
-        onCancel={handleCancelSaveCustomer}
-        onFormChange={setCustomerForm}
-        onPhoneChange={handlePhoneChange}
-      />
+      {/* Main content area */}
+      <div className="p-4 flex-1 overflow-y-auto">
+        <form className="space-y-6" onSubmit={handleSubmit}>
+          {updatedSections.map((section) => (
+            <div
+              key={section.id}
+              className="bg-gray-50 border border-gray-200 rounded-lg overflow-hidden shadow-sm"
+            >
+              <FormSectionHeader
+                section={section}
+                activeSection={activeSection}
+                onToggle={toggleSection}
+              />
 
-      <TimeWarningModal
-        isOpen={showEndTimeWarning}
-        onClose={() => setShowEndTimeWarning(false)}
-      />
+              <div
+                className={`transition-all duration-500 ease-in-out overflow-hidden ${
+                  activeSection === section.id
+                    ? "max-h-screen opacity-100"
+                    : "max-h-0 opacity-0"
+                }`}
+              >
+                <div className="p-5 pt-3 space-y-5">
+                  {section.id === "contact" && (
+                    <CustomerSearchSection
+                      selectedCustomer={selectedCustomer}
+                      searchQuery={searchQuery}
+                      searchResults={searchResults}
+                      isSearching={isSearching}
+                      showDropdown={showDropdown}
+                      dropdownPosition={dropdownPosition}
+                      onSearchChange={handleSearchChange}
+                      onCustomerSelect={handleCustomerSelect}
+                      onClearCustomer={handleClearCustomer}
+                      onOpenCreateModal={handleOpenCreateModal}
+                      onOpenEditModal={handleOpenEditModal}
+                      showReferenceInput={showReferenceInput}
+                      formData={formData}
+                      handleInputChange={handleInputChange}
+                      setDropdownPosition={setDropdownPosition}
+                    />
+                  )}
 
-      <ConfirmationModal
-        isOpen={showConfirmModal}
-        onConfirm={confirmAssignment}
-        onCancel={() => setShowConfirmModal(false)}
-        title="Confirm Inspector Assignment"
-        message={`Are you sure to assign ${
-          selectedInspector?.user_name
-        } for the inspection on ${
-          date ? format(date, "MMM dd, yyyy") : ""
-        } at ${requestedTime}? Once assigned, customer details cannot be modified for this inquiry.`}
-      />
-    </>
+                  {section.id === "job" && (
+                    <JobDetailsSection
+                      formData={formData}
+                      jobTypes={jobTypes}
+                      projectUrgency={projectUrgency}
+                      utmSource={utmSource}
+                      showReferenceInput={showReferenceInput}
+                      onSelectChange={handleSelectChange}
+                      onJobTypesChange={(selected) => {
+                        setFormData((prev) => ({
+                          ...prev,
+                          custom_jobtype: selected,
+                        }));
+                      }}
+                      handleInputChange={handleInputChange}
+                    />
+                  )}
+
+                  {section.id === "property" && (
+                    <PropertyDetailsSection
+                      formData={formData}
+                      handleSelectChange={handleSelectChange}
+                    />
+                  )}
+
+                  {section.id === "inspector" && (
+                    <InspectorAssignmentSection
+                      date={date}
+                      selectedInspector={selectedInspector}
+                      selectedSlot={selectedSlot}
+                      requestedTime={requestedTime}
+                      endTime={endTime}
+                      priority={priority}
+                      validationErrors={validationErrors}
+                      createTodoLoading={createTodoLoading}
+                      loading={loading}
+                      showAvailabilityModal={showAvailabilityModal}
+                      onDateSelect={handleDateSelect}
+                      onSlotSelect={handleSlotSelect}
+                      onStartTimeChange={handleStartTimeChange}
+                      onEndTimeChange={handleEndTimeChange}
+                      onPriorityChange={(value) =>
+                        setPriority(value as PriorityLevel)
+                      }
+                      onShowAvailabilityModal={() =>
+                        setShowAvailabilityModal(true)
+                      }
+                      onHideAvailabilityModal={() =>
+                        setShowAvailabilityModal(false)
+                      }
+                      onInspectorSelect={handleInspectorSelect}
+                      onAssignAndSave={handleAssignAndSave}
+                      calculateDuration={calculateDuration}
+                      getDefaultStartTime={getDefaultStartTime}
+                      getEndTimeConstraints={getEndTimeConstraints}
+                    />
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+
+          {/* Special Requirements Textarea */}
+          <div className="p-4 rounded-lg bg-gray-50 border border-gray-200">
+            <Label
+              htmlFor="custom_special_requirements"
+              className="text-sm mb-1 font-medium text-gray-700 block"
+            >
+              Special Requirements
+            </Label>
+            <Textarea
+              id="custom_special_requirements"
+              name="custom_special_requirements"
+              value={formData.custom_special_requirements || ""}
+              onChange={handleInputChange}
+              placeholder="Enter any special requirements or notes"
+              rows={3}
+              className="mt-1"
+            />
+          </div>
+
+          {/* Form Action Buttons */}
+          <div className="flex justify-end gap-4 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleClose}
+              className="px-6 rounded-full border-gray-300 text-gray-600 hover:bg-gray-100"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              disabled={loading}
+              className="px-6 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-semibold transition-all duration-300 disabled:opacity-50"
+            >
+              {loading ? (
+                <div className="flex items-center gap-2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white"></div>
+                  Saving...
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 text-white">
+                  <Save className="h-4 w-4" />
+                  {inquiry ? "Update" : "Create"} Inquiry
+                </div>
+              )}
+            </Button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  {/* Other modals (unchanged for this task) */}
+  <CustomerModal
+    isOpen={showCustomerModal}
+    mode={modalMode}
+    customerForm={customerForm}
+    isCreatingCustomer={isCreatingCustomer}
+    onClose={() => setShowCustomerModal(false)}
+    onSave={handleSaveCustomer}
+    onCancel={handleCancelSaveCustomer}
+    onFormChange={setCustomerForm}
+    onPhoneChange={handlePhoneChange}
+  />
+  <TimeWarningModal
+    isOpen={showEndTimeWarning}
+    onClose={() => setShowEndTimeWarning(false)}
+  />
+  <ConfirmationModal
+    isOpen={showConfirmModal}
+    onConfirm={confirmAssignment}
+    onCancel={() => setShowConfirmModal(false)}
+    title="Confirm Inspector Assignment"
+    message={`Are you sure to assign ${selectedInspector?.user_name} for the inspection on ${date ? format(date, "MMM dd, yyyy") : ""} at ${requestedTime}? Once assigned, customer details cannot be modified for this inquiry.`}
+  />
+</>
   );
 };
 

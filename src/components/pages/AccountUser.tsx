@@ -40,7 +40,7 @@ export default function AccountDashboard() {
   // Default to summary, with payment-summary as the default toggle
   const initialTab = searchParams.get("tab") || "payment-summary";
   const [activeTab, setActiveTab] = useState(initialTab);
-  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     const tabFromUrl = searchParams.get("tab") || "payment-summary";
@@ -50,7 +50,7 @@ export default function AccountDashboard() {
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
     navigate(`/accountUser?tab=${tab}`, { replace: true });
-    setMobileSidebarOpen(false); // Close mobile sidebar after navigation
+    setSidebarOpen(false); // Close mobile sidebar after navigation
   };
 
   const handleLogout = async () => {
@@ -64,10 +64,6 @@ export default function AccountDashboard() {
 
   const cancelLogout = () => {
     setShowLogoutConfirm(false);
-  };
-
-  const toggleMobileSidebar = () => {
-    setMobileSidebarOpen(!mobileSidebarOpen);
   };
 
   const renderContent = () => {
@@ -86,12 +82,12 @@ export default function AccountDashboard() {
 
       default:
         return (
-          <div className="bg-white rounded-xl shadow-sm p-6 border border-emerald-100">
-            <h2 className="text-2xl font-bold text-emerald-800 mb-4">
-              Summary Dashboard
+          <div className="bg-white rounded-xl shadow-lg p-8 border border-gray-200">
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">
+              Dashboard Overview
             </h2>
-            <p className="text-emerald-600">
-              Welcome to your summary dashboard.
+            <p className="text-gray-600 text-lg">
+              Welcome to your account dashboard.
             </p>
           </div>
         );
@@ -104,169 +100,91 @@ export default function AccountDashboard() {
     activeTab === "payment-summary" || activeTab === "receipt-summary";
 
   return (
-    <div className="h-screen flex overflow-hidden bg-gray-50">
-      {/* Mobile sidebar backdrop */}
-      {mobileSidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
-          onClick={toggleMobileSidebar}
-        ></div>
-      )}
-
-      {/* Sidebar */}
-      <div
-        className={`fixed inset-y-0 left-0 transform ${
-          mobileSidebarOpen ? "translate-x-0" : "-translate-x-full"
-        } md:relative md:translate-x-0 transition-transform duration-200 ease-in-out z-50 md:z-auto flex flex-col w-64 border-r border-gray-200 bg-white`}
-      >
-        <div className="flex-1 flex flex-col pt-5 pb-4 overflow-y-auto">
-          {/* Sidebar header */}
-          {/* Left Section - Mobile Menu Toggle */}
-          <div className="flex items-center gap-2 sm:gap-3">
-            <button
-              onClick={toggleMobileSidebar}
-              className="md:hidden p-1.5 rounded-lg hover:bg-gray-100"
+    <div className="h-screen flex flex-col bg-gray-100 font-sans antialiased">
+      {/* Top Navigation Bar - Clean & Soft */}
+      <nav className="bg-white shadow-md border-b border-emerald-100 px-4 py-3 flex-shrink-0 z-50">
+        <div className="flex items-center justify-between relative max-w-7xl mx-auto">
+          {/* Left Section - Mobile Menu Button */}
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="lg:hidden p-2 rounded-lg text-emerald-500 hover:bg-emerald-50 transition-colors"
             >
-              {mobileSidebarOpen ? (
-                <X className="h-5 w-5 text-gray-600" />
+              {sidebarOpen ? (
+                <X className="h-5 w-5" />
               ) : (
-                <Menu className="h-5 w-5 text-gray-600" />
+                <Menu className="h-5 w-5" />
               )}
-            </button>
+            </Button>
           </div>
 
-          {/* Sidebar navigation */}
-          <nav className="flex-1 px-2 space-y-1">
-            <button
-              onClick={() => handleTabChange("payment-summary")}
-              className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg ${
-                activeTab === "payment-summary" || activeTab === "payment-form"
-                  ? "bg-emerald-50 text-emerald-800"
-                  : "text-gray-700 hover:bg-gray-100 hover:text-gray-900"
-              }`}
-            >
-              <CreditCard className="mr-3 h-5 w-5" />
-              Payments
-            </button>
-            <button
-              onClick={() => handleTabChange("receipt-summary")}
-              className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg ${
-                activeTab === "receipt-summary" || activeTab === "receipt-form"
-                  ? "bg-emerald-50 text-emerald-800"
-                  : "text-gray-700 hover:bg-gray-100 hover:text-gray-900"
-              }`}
-            >
-              <FileText className="mr-3 h-5 w-5" />
-              Receipts
-            </button>
-          </nav>
-          <div className="flex-shrink-0 p-2 sm:p-3   border-t border-emerald-100  ">
-            <div className="bg-emerald-50 rounded-lg border border-emerald-100 p-2 sm:p-3 ">
-              <div className="min-w-0">
-                {" "}
-                {/* min-w-0 allows flex children to shrink below content size */}
-                <div className="text-xs sm:text-sm font-medium text-black truncate mb-1 capitalize">
-                  {user?.full_name || user?.username || "User"}
-                </div>
-                {user?.email && (
-                  <div className="text-xs text-emerald-600 truncate opacity-90 mb-1">
-                    {user.email}
-                  </div>
-                )}
-                {/* Role badge for mobile if multi-role */}
-                {isMultiRole && (
-                  <div className="text-xs text-emerald-900 bg-emerald-100 px-2 py-1 rounded mt-1 truncate lg:hidden capitalize">
-                    Role: <span className="font-medium">Account</span>
-                  </div>
-                )}
+          {/* Center Section - Logo */}
+          <Link to="/" className="absolute left-1/2 transform -translate-x-1/2 flex items-center gap-2">
+            <div className="rounded-full p-1 flex items-center justify-center">
+              <img src="/logo.jpg" alt="Logo" className="w-8 h-8 object-contain rounded-full" />
+            </div>
+            {/* <span className="hidden sm:block text-emerald-700 font-semibold text-xl">Account</span> */}
+          </Link>
+
+          {/* Right Section - User Menu */}
+          <div className="flex items-center gap-2">
+            {/* Mobile Role Switcher */}
+            {isMultiRole && (
+              <div className="lg:hidden">
+                <RoleSwitcherMinimal className="text-emerald-600" />
               </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Main content area */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Top Navigation Bar */}
-        <nav className="bg-white shadow-lg border-b-2 border-emerald-200 px-3 sm:px-4 py-2 flex-shrink-0 z-40">
-          <div className="flex items-center justify-between relative">
-            {/* Left Section - Mobile Menu Button */}
-            <div className="flex items-center gap-2 sm:gap-3">
-              <button
-                onClick={toggleMobileSidebar}
-                className="md:hidden p-1.5 rounded-lg hover:bg-gray-100"
-              >
-                <Menu className="h-5 w-5 text-gray-600" />
-              </button>
-            </div>
-
-            {/* Center Section - Logo */}
-            <Link
-              to="/"
-              className="absolute left-1/2 transform -translate-x-1/2"
-            >
-              <img
-                src="/logo.jpg"
-                alt="Logo"
-                className="w-8 h-8 sm:w-10 sm:h-10 object-contain"
-              />
-            </Link>
-
-            {/* Right Section - User Menu & Buttons */}
-            <div className="flex items-center gap-1 sm:gap-2">
-              {isMultiRole && (
-                <div className="lg:hidden">
-                  <RoleSwitcherMinimal />
-                </div>
-              )}
-
-              <FeedbackComponent className="lg:hidden">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="p-1.5 rounded-lg hover:bg-blue-50 text-white bg-emerald-700 hover:text-blue-700 transition-colors"
-                >
-                  <MessageCircle className="h-4 w-4" />
-                  <span className="sr-only">Feedback</span>
-                </Button>
-              </FeedbackComponent>
-
+            )}
+            
+            {/* Mobile Feedback Button */}
+            <FeedbackComponent className="lg:hidden">
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={confirmLogout}
-                className="lg:hidden p-1.5 rounded-lg hover:bg-red-50 text-red-600 hover:text-red-700 transition-colors"
+                className="p-2 rounded-lg hover:bg-emerald-50 text-blue-500 hover:text-blue-600 transition-colors"
               >
-                <LogOut className="h-4 w-4" />
-                <span className="sr-only">Logout</span>
+                <MessageCircle className="h-4 w-4" />
+                <span className="sr-only">Feedback</span>
               </Button>
+            </FeedbackComponent>
 
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="hidden lg:flex items-center gap-1 hover:bg-emerald-50 rounded-lg px-2 py-1.5 transition-colors"
-                  >
-                    <span className="text-sm text-emerald-700 font-medium">
-                      {user?.full_name || user?.username || "User"}
-                    </span>
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent
-                  className="w-48 border border-emerald-200 bg-white shadow-md"
-                  align="end"
+            {/* Mobile Logout Button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={confirmLogout}
+              className="lg:hidden p-2 rounded-lg hover:bg-red-50 text-red-500 hover:text-red-600 transition-colors"
+            >
+              <LogOut className="h-4 w-4" />
+              <span className="sr-only">Logout</span>
+            </Button>
+
+            {/* Desktop User Menu */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="hidden lg:flex items-center gap-2 hover:bg-emerald-50 rounded-lg px-3 py-2 transition-colors"
                 >
-                  {isMultiRole && (
-                    <div className="px-3 border-b border-gray-100">
-                      <RoleSwitcherMinimal className="w-full" />
-                    </div>
-                  )}
+                  <span className="text-emerald-700 font-medium">
+                    {user?.full_name || user?.username || "User"}
+                  </span>
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-56 border border-gray-200 bg-white shadow-xl" align="end">
+                {isMultiRole && (
+                  <div className="px-3 py-2 border-b border-gray-100">
+                    <RoleSwitcherMinimal className="w-full" />
+                  </div>
+                )}
+                <div className="space-y-1 py-2">
                   <FeedbackComponent>
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="w-full justify-start gap-2 text-blue-600 hover:bg-blue-100 hover:text-blue-700 transition-colors"
+                      className="w-full justify-start gap-2 text-blue-500 hover:bg-blue-50 transition-colors"
                     >
                       <MessageCircle className="h-4 w-4" />
                       Feedback
@@ -276,93 +194,202 @@ export default function AccountDashboard() {
                     variant="ghost"
                     size="sm"
                     onClick={confirmLogout}
-                    className="w-full justify-start gap-2 text-red-600 hover:bg-red-100 hover:text-red-700 transition-colors"
+                    className="w-full justify-start gap-2 text-red-500 hover:bg-red-50 transition-colors"
                   >
                     <LogOut className="h-4 w-4" />
                     Logout
                   </Button>
-                </PopoverContent>
-              </Popover>
-            </div>
-          </div>
-        </nav>
-
-        {/* Summary Toggle - Only show for summary views */}
-        {isSummaryView && (
-          <div className="bg-white border-b border-gray-200 px-4 py-3 lg:hidden">
-            <div className="flex bg-gray-100 rounded-full p-1 max-w-md mx-auto">
-              <button
-                onClick={() => handleTabChange("payment-summary")}
-                className={`flex-1 py-2.5 px-4 rounded-full text-sm font-medium transition-all duration-200 ${
-                  activeTab === "payment-summary"
-                    ? "bg-emerald-500 text-white shadow-md"
-                    : "text-gray-600 hover:text-gray-800"
-                }`}
-              >
-                Payment
-              </button>
-              <button
-                onClick={() => handleTabChange("receipt-summary")}
-                className={`flex-1 py-2.5 px-4 rounded-full text-sm font-medium transition-all duration-200 ${
-                  activeTab === "receipt-summary"
-                    ? "bg-emerald-500 text-white shadow-md"
-                    : "text-gray-600 hover:text-gray-800"
-                }`}
-              >
-                Receipt
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Main Content Area */}
-        <div className="flex-1 overflow-hidden">
-          <div className="flex-1 flex flex-col overflow-hidden h-full">
-            {/* Back button for form views */}
-            {isFormView && (
-              <div className="bg-white border-b border-gray-200 px-4 py-2">
-                <Button
-                  variant="ghost"
-                  onClick={() => {
-                    if (activeTab === "payment-form") {
-                      handleTabChange("payment-summary");
-                    } else if (activeTab === "receipt-form") {
-                      handleTabChange("receipt-summary");
-                    }
-                  }}
-                  className="flex items-center gap-2 text-emerald-600 hover:text-emerald-700"
-                >
-                  <X className="h-4 w-4" />
-                  Back to Summary
-                </Button>
-              </div>
-            )}
-
-            <main className="flex-1 overflow-y-auto">
-              <div className="w-full mx-auto">
-                <div className="py-2">{renderContent()}</div>
-              </div>
-            </main>
+                </div>
+              </PopoverContent>
+            </Popover>
           </div>
         </div>
+      </nav>
+
+      {/* Main Content Area with Sidebar */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Mobile Sidebar Overlay */}
+        {sidebarOpen && (
+          <div
+            className="fixed inset-0 bg-white/10 backdrop-blur-sm z-40 lg:hidden"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+
+        {/* Responsive Sidebar */}
+        <aside
+          className={`
+            fixed lg:relative z-40 bg-white border-r border-emerald-100 
+            h-full shadow-lg lg:shadow-none overflow-hidden flex-shrink-0
+            transform transition-transform duration-300 ease-in-out lg:transform-none
+            flex flex-col
+            w-64
+            ${sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
+          `}
+        >
+          {/* Sidebar Nav */}
+          <div className="flex-1 overflow-y-auto p-4">
+            <nav className="space-y-2">
+              <Button
+                variant={activeTab === "payment-summary" || activeTab === "payment-form" ? "default" : "ghost"}
+                onClick={() => handleTabChange("payment-summary")}
+                className={`w-full justify-start gap-3 rounded-lg p-3 text-left transition-all duration-200 text-base font-semibold ${
+                  activeTab === "payment-summary" || activeTab === "payment-form"
+                    ? "bg-emerald-500 text-white shadow-lg scale-100 hover:bg-emerald-600"
+                    : "text-emerald-500 hover:bg-emerald-50"
+                }`}
+              >
+                <CreditCard className="h-5 w-5 flex-shrink-0" />
+                <span className="truncate">Payments</span>
+              </Button>
+
+              <Button
+                variant={activeTab === "receipt-summary" || activeTab === "receipt-form" ? "default" : "ghost"}
+                onClick={() => handleTabChange("receipt-summary")}
+                className={`w-full justify-start gap-3 rounded-lg p-3 text-left transition-all duration-200 text-base font-semibold ${
+                  activeTab === "receipt-summary" || activeTab === "receipt-form"
+                    ? "bg-emerald-500 text-white shadow-lg scale-100 hover:bg-emerald-600"
+                    : "text-emerald-500 hover:bg-emerald-50"
+                }`}
+              >
+                <FileText className="h-5 w-5 flex-shrink-0" />
+                <span className="truncate">Receipts</span>
+              </Button>
+            </nav>
+          </div>
+
+          {/* User Info Section */}
+          <div className="flex-shrink-0 p-4 border-t border-gray-200">
+            <div className="bg-emerald-50 rounded-lg p-3">
+              <div className="min-w-0">
+                <div className="text-sm font-semibold text-emerald-800 truncate mb-1 capitalize">
+                  {user?.full_name || user?.username || "User"}
+                </div>
+                {user?.email && (
+                  <div className="text-xs text-emerald-600 truncate opacity-90 mb-1">
+                    {user.email}
+                  </div>
+                )}
+                {isMultiRole && (
+                  <div className="text-xs text-emerald-900 bg-emerald-100 px-2 py-1 rounded mt-1 truncate lg:hidden capitalize">
+                    Role: <span className="font-medium">Account</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        {/* Main Content Container */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {/* Summary Toggle - Only show for summary views */}
+          {isSummaryView && (
+            <div className="bg-white border-b border-gray-200 px-4 py-3 lg:hidden">
+              <div className="flex bg-gray-100 rounded-full p-1 max-w-md mx-auto">
+                <button
+                  onClick={() => handleTabChange("payment-summary")}
+                  className={`flex-1 py-2 px-3 rounded-full text-sm font-medium transition-all duration-200 ${
+                    activeTab === "payment-summary"
+                      ? "bg-emerald-500 text-white shadow-md"
+                      : "text-gray-500 hover:text-gray-700"
+                  }`}
+                >
+                  Payment
+                </button>
+                <button
+                  onClick={() => handleTabChange("receipt-summary")}
+                  className={`flex-1 py-2 px-3 rounded-full text-sm font-medium transition-all duration-200 ${
+                    activeTab === "receipt-summary"
+                      ? "bg-emerald-500 text-white shadow-md"
+                      : "text-gray-500 hover:text-gray-700"
+                  }`}
+                >
+                  Receipt
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Back button for form views */}
+          {isFormView && (
+            <div className="bg-white border-b border-gray-200 px-4 py-2">
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  if (activeTab === "payment-form") {
+                    handleTabChange("payment-summary");
+                  } else if (activeTab === "receipt-form") {
+                    handleTabChange("receipt-summary");
+                  }
+                }}
+                className="flex items-center gap-2 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 transition-colors"
+              >
+                <X className="h-4 w-4" />
+                Back to Summary
+              </Button>
+            </div>
+          )}
+
+          <main className="flex-1 overflow-y-auto">
+            <div className="p-2">{renderContent()}</div>
+          </main>
+        </div>
       </div>
+
+      {/* Mobile Footer Navigation - Modern & Centered */}
+      {/* <div className="fixed bottom-0 left-0 right-0 bg-white shadow-lg z-30 lg:hidden">
+        <div className="flex items-stretch justify-around px-2 py-1.5">
+          <Link to="/accountUser?tab=payment-summary" className="flex-1 flex justify-center">
+            <button
+              onClick={() => handleTabChange("payment-summary")}
+              className={`flex flex-col items-center justify-center w-full py-2 group transition-colors ${
+                activeTab === "payment-summary" || activeTab === "payment-form"
+                  ? "text-emerald-600"
+                  : "text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              <CreditCard className={`h-6 w-6 transition-all ${
+                activeTab === "payment-summary" || activeTab === "payment-form" ? "scale-110" : ""
+              }`} />
+              <span className="text-xs font-medium mt-1">Payments</span>
+            </button>
+          </Link>
+
+          <Link to="/accountUser?tab=receipt-summary" className="flex-1 flex justify-center">
+            <button
+              onClick={() => handleTabChange("receipt-summary")}
+              className={`flex flex-col items-center justify-center w-full py-2 group transition-colors ${
+                activeTab === "receipt-summary" || activeTab === "receipt-form"
+                  ? "text-emerald-600"
+                  : "text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              <FileText className={`h-6 w-6 transition-all ${
+                activeTab === "receipt-summary" || activeTab === "receipt-form" ? "scale-110" : ""
+              }`} />
+              <span className="text-xs font-medium mt-1">Receipts</span>
+            </button>
+          </Link>
+        </div>
+      </div> */}
+
       <AlertDialog open={showLogoutConfirm} onOpenChange={setShowLogoutConfirm}>
-        <AlertDialogContent className="bg-white">
+        <AlertDialogContent className="bg-white rounded-lg p-6">
           <AlertDialogHeader className="justify-center items-center">
-            <AlertDialogTitle>
-              <AlertCircle className="h-10 w-10 text-red-600" />
+            <AlertDialogTitle className="text-center">
+              <AlertCircle className="h-12 w-12 text-red-600 mb-2" />
             </AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogDescription className="text-center text-gray-600">
               Are you sure you want to exit the app?
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="flex flex-row justify-center space-x-2">
-            <AlertDialogCancel onClick={cancelLogout} className="mt-0">
+          <AlertDialogFooter className="flex flex-row justify-center space-x-4 mt-4">
+            <AlertDialogCancel onClick={cancelLogout} className="mt-0 border-gray-300 text-gray-700 hover:bg-gray-100">
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleLogout}
-              className="bg-red-600 hover:bg-red-700 text-white"
+              className="bg-red-600 hover:bg-red-700 text-white font-semibold"
             >
               Logout
             </AlertDialogAction>

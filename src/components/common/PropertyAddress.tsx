@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Loader2, Plus, Search, Home, Edit, MapPin } from "lucide-react";
+import { Loader2, Plus, Search, Home, Edit, MapPin, X } from "lucide-react";
 import React, { useEffect, useState, useCallback, useRef } from "react";
 // import { showToast } from "react-hot-showToast";
 import { createPortal } from "react-dom";
@@ -968,23 +968,23 @@ const handleAddNewCommunity = async (communityName?: string) => {
   );
 
   return (
-    <div className="space-y-4">
+   <div className="space-y-4">
       {/* Address Search - Single Field */}
       <div className="w-full">
-        <label className="block text-sm font-medium text-black mb-1">
-          <MapPin className="inline-block mr-1 pb-1 h-4 w-4 text-black" />
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          <MapPin className="inline-block mr-1 pb-1 h-4 w-4 text-emerald-600" />
           Site Address
         </label>
         <div className="relative">
           <div className="flex items-center">
-            <Search className="absolute left-3 h-4 w-4 text-gray-400 " />
+            <Search className="absolute left-3 h-4 w-4 text-gray-400" />
             <Input
               ref={inputRef}
               type="text"
               placeholder="Search by emirate, area, community, street name, or property number..."
               value={addressSearchQuery}
               onChange={handleAddressSearchChange}
-              className="w-full pl-9 pr-20 capitalize"
+              className="w-full pl-9 pr-20 capitalize border-gray-300 focus:border-emerald-500 focus:ring-emerald-500 rounded-md shadow-sm transition-colors"
               onFocus={() => {
                 if (addressSearchQuery && !showAddressDropdown) {
                   searchAddresses(addressSearchQuery);
@@ -993,7 +993,7 @@ const handleAddNewCommunity = async (communityName?: string) => {
             />
 
             {/* Action buttons container */}
-            <div className="absolute right-3 flex items-center space-x-1 z-10">
+            <div className="absolute right-2 flex items-center space-x-1 z-10">
               {isAddressSearching && (
                 <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
               )}
@@ -1005,18 +1005,18 @@ const handleAddNewCommunity = async (communityName?: string) => {
                     <button
                       type="button"
                       onClick={handleEditAddress}
-                      className="text-black hover:text-blue-500  p-1 flex-shrink-0"
+                      className="p-1 rounded-full text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition-colors flex-shrink-0"
                       title="Edit address"
                     >
-                      <Edit className="h-4 w-4 " />
+                      <Edit className="h-4 w-4" />
                     </button>
                     <button
                       type="button"
                       onClick={handleClearAddress}
-                      className="text-black hover:text-gray-600 p-1 flex-shrink-0"
+                      className="p-1 rounded-full text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition-colors flex-shrink-0"
                       title="Clear address"
                     >
-                      <span className="text-lg leading-none">×</span>
+                      <X className="h-4 w-4" />
                     </button>
                   </>
                 )}
@@ -1032,26 +1032,26 @@ const handleAddNewCommunity = async (communityName?: string) => {
 
       {/* Address Dialog */}
       <Dialog open={showAddressDialog} onOpenChange={setShowAddressDialog}>
-        <DialogContent className="sm:max-w-[600px] bg-[#eef0f2]">
-          <DialogHeader>
-            <DialogTitle>
+        <DialogContent className="sm:max-w-[600px] bg-white rounded-xl shadow-lg border border-gray-200 p-6">
+          <DialogHeader className="">
+            <DialogTitle className="text-xl font-semibold text-gray-800">
               {addressSearchQuery ? "Add New Address" : "Edit Address"}
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-sm text-gray-500">
               {addressSearchQuery
                 ? "Fill in the details to add a new address"
                 : "Update the address details below"}
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4 max-h-[70vh] overflow-y-auto">
+          <div className="grid gap-6 py-4 max-h-[70vh] overflow-y-auto">
             {/* Property Category */}
             <div className="space-y-2">
-              <Label>Property Category</Label>
+              <Label className="text-gray-700">Property Category</Label>
               <Select
                 value={addressForm.custom_property_category || ""}
                 onValueChange={handleCategoryChange}
               >
-                <SelectTrigger className="w-full">
+                <SelectTrigger className="w-full border-gray-300">
                   <SelectValue placeholder="Select property category" />
                 </SelectTrigger>
                 <SelectContent className="bg-white">
@@ -1108,25 +1108,26 @@ const handleAddNewCommunity = async (communityName?: string) => {
 
             {/* Property Type */}
             <div className="space-y-2">
-              <Label>Property Type</Label>
+              <Label className="text-gray-700">Property Type</Label>
               <Select
                 value={addressForm.custom_property_type || ""}
                 onValueChange={(value) => {
                   if (value === "Other") {
                     setShowAddType(true);
                   } else {
-                    setAddressForm((prev) => ({
-                      ...prev,
-                      custom_property_type: value,
-                    }));
                     setShowAddType(false);
+                    // Update the form state after setting other state
+                    setTimeout(() => {
+                      setAddressForm((prev) => ({
+                        ...prev,
+                        custom_property_type: value,
+                      }));
+                    }, 0);
                   }
                 }}
-                disabled={
-                  !addressForm.custom_property_category || isLoadingTypes
-                }
+                disabled={!addressForm.custom_property_category || isLoadingTypes}
               >
-                <SelectTrigger className="w-full">
+                <SelectTrigger className="w-full border-gray-300">
                   <SelectValue
                     placeholder={
                       !addressForm.custom_property_category
@@ -1205,7 +1206,7 @@ const handleAddNewCommunity = async (communityName?: string) => {
 
             {/* Emirate */}
             <div className="space-y-2">
-              <Label>Emirate</Label>
+              <Label className="text-gray-700">Emirate</Label>
               <Select
                 value={addressForm.custom_emirate || ""}
                 onValueChange={(value) => {
@@ -1217,10 +1218,10 @@ const handleAddNewCommunity = async (communityName?: string) => {
                   }));
                 }}
               >
-                <SelectTrigger className="w-full ">
+                <SelectTrigger className="w-full border-gray-300">
                   <SelectValue placeholder="Select emirate" />
                 </SelectTrigger>
-                <SelectContent className="bg-white ">
+                <SelectContent className="bg-white">
                   {emirates.map((emirate) => (
                     <SelectItem key={emirate.name} value={emirate.name}>
                       {emirate.name}
@@ -1232,7 +1233,7 @@ const handleAddNewCommunity = async (communityName?: string) => {
 
             {/* Area with Add New functionality */}
             <div className="space-y-2">
-              <Label>Area</Label>
+              <Label className="text-gray-700">Area</Label>
               <div className="flex gap-2">
                 <div className="flex-1 relative">
                   <Input
@@ -1247,7 +1248,7 @@ const handleAddNewCommunity = async (communityName?: string) => {
                       const value = capitalizeFirstLetter(e.target.value);
                       handleAreaInputChange(value);
                     }}
-                    className="w-full text-sm"
+                    className="w-full text-sm border-gray-300"
                     disabled={!addressForm.custom_emirate}
                   />
                   {isAreaSearching && (
@@ -1284,21 +1285,20 @@ const handleAddNewCommunity = async (communityName?: string) => {
 
               {/* Area Results Dropdown */}
               {areaResults.length > 0 && (
-                <div className="mt-1 border border-gray-200 rounded-md max-h-40 overflow-y-auto">
+                <div className="mt-1 border border-gray-200 rounded-md bg-white max-h-40 overflow-y-auto">
                   {areaResults.map((area) => (
                     <div
                       key={area.name}
                       className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
-                      // In the area results dropdown click handler:
-onClick={() => {
-  setAddressForm((prev) => ({
-    ...prev,
-    custom_area: area.area_name || area.name,
-    custom_community: "",
-  }));
-  setAreaResults([]);
-  setHasSearchedArea(false); // Reset search state after selection
-}}
+                      onClick={() => {
+                        setAddressForm((prev) => ({
+                          ...prev,
+                          custom_area: area.area_name || area.name,
+                          custom_community: "",
+                        }));
+                        setAreaResults([]);
+                        setHasSearchedArea(false); // Reset search state after selection
+                      }}
                     >
                       {area.area_name || area.name}
                     </div>
@@ -1309,9 +1309,9 @@ onClick={() => {
 
             {/* Community with Add New functionality */}
             <div className="space-y-2">
-              <Label>Community</Label>
+              <Label className="text-gray-700">Community</Label>
               <div className="flex gap-2">
-                <div className="flex-1 relative text-sm">
+                <div className="flex-1 relative">
                   <Input
                     type="text"
                     placeholder={
@@ -1321,10 +1321,10 @@ onClick={() => {
                     }
                     value={addressForm.custom_community || ""}
                     onChange={(e) => {
-                      const value = e.target.value;
+                      const value = capitalizeFirstLetter(e.target.value);
                       handleCommunityInputChange(value);
                     }}
-                    className="w-full text-sm"
+                    className="w-full text-sm border-gray-300"
                     disabled={!addressForm.custom_area}
                   />
                   {isCommunitySearching && (
@@ -1352,7 +1352,7 @@ onClick={() => {
                       ) : (
                         <>
                           <Plus className="h-4 w-4 mr-2" />
-                          Add 
+                          Add
                         </>
                       )}
                     </Button>
@@ -1361,20 +1361,19 @@ onClick={() => {
 
               {/* Community Results Dropdown */}
               {communityResults.length > 0 && (
-                <div className="mt-1 border border-gray-200 rounded-md max-h-40 overflow-y-auto capitalize">
+                <div className="mt-1 border border-gray-200 rounded-md bg-white max-h-40 overflow-y-auto capitalize">
                   {communityResults.map((community) => (
                     <div
                       key={community.name}
                       className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
-                      // In the community results dropdown click handler:
-onClick={() => {
-  setAddressForm((prev) => ({
-    ...prev,
-    custom_community: community.community_name,
-  }));
-  setCommunityResults([]);
-  setHasSearchedCommunity(false); // Reset search state after selection
-}}
+                      onClick={() => {
+                        setAddressForm((prev) => ({
+                          ...prev,
+                          custom_community: community.community_name,
+                        }));
+                        setCommunityResults([]);
+                        setHasSearchedCommunity(false); // Reset search state after selection
+                      }}
                     >
                       {community.community_name}
                     </div>
@@ -1385,7 +1384,7 @@ onClick={() => {
 
             {/* Street Name */}
             <div className="space-y-2">
-              <Label>Street Name</Label>
+              <Label className="text-gray-700">Street Name</Label>
               <Input
                 type="text"
                 value={addressForm.custom_street_name || ""}
@@ -1400,13 +1399,13 @@ onClick={() => {
                   }
                 }}
                 placeholder="Enter street name"
-                className="text-sm capitalize"
+                className="text-sm capitalize border-gray-300"
               />
             </div>
 
             {/* Property Number */}
             <div className="space-y-2">
-              <Label>Property Number</Label>
+              <Label className="text-gray-700">Property Number</Label>
               <Input
                 type="text"
                 value={addressForm.custom_property_number || ""}
@@ -1421,22 +1420,21 @@ onClick={() => {
                   }
                 }}
                 placeholder="Enter property number"
-                className="text-sm capitalize"
+                className="text-sm capitalize border-gray-300"
               />
             </div>
           </div>
-          <DialogFooter className="flex flex-row">
+          <DialogFooter className="flex flex-row gap-2 mt-2">
             <Button
               variant="outline"
-              className="w-[50%]"
+              className="w-1/2 text-gray-700 border-gray-300 hover:bg-gray-100 transition-colors"
               onClick={() => setShowAddressDialog(false)}
             >
               Cancel
             </Button>
             <Button
               onClick={handleSaveAddress}
-              variant="outline"
-              className="bg-green-700 text-white w-[50%]"
+              className="bg-emerald-600 text-white w-1/2 hover:bg-emerald-700 transition-colors"
             >
               Save Address
             </Button>

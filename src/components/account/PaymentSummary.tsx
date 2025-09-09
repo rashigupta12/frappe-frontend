@@ -191,14 +191,14 @@ const PaymentSummary: React.FC<Props> = ({
     : `Custom: ${formatDate(fromDate)}–${formatDate(toDate)}`;
 
   return (
-    <div className="px-4 max-w-7xl mx-auto">
-      <PageHeader
+    <div className=" max-w-7xl mx-auto ">
+      <div className="bg-white rounded-md  mb-3">
+        <PageHeader
         title="My Payments"
         count={filteredPayments.length}
         addButtonText="Add Payment"
         addButtonLink="/accountUser?tab=payment-form"
       />
-
       <SearchAndFilter
         searchQuery={searchQuery}
         onSearchChange={handleSearchChange}
@@ -215,6 +215,11 @@ const PaymentSummary: React.FC<Props> = ({
         onResetFilters={handleResetFilters}
         filterStatusText={filterStatusText}
       />
+
+      </div>
+      
+
+      
 
       {filteredPayments.length === 0 ? (
         <EmptyState

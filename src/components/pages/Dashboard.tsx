@@ -1,7 +1,8 @@
+// A modern, soft emerald-themed redesign of the Sales Dashboard
+
 import {
   AlertCircle,
   Home,
-  HomeIcon,
   LogOut,
   Menu,
   MessageCircle,
@@ -36,7 +37,6 @@ import TodoPage from "../Inquiries/Todos/Todopage";
 export default function SalesDashboard() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedInquiry, setSelectedInquiry] = useState(null);
-
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   const openInquiryForm = () => {
@@ -60,8 +60,7 @@ export default function SalesDashboard() {
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       e.preventDefault();
-      e.returnValue =
-        "Are you sure you want to leave? Your changes may not be saved.";
+      e.returnValue = "Changes may not be saved.";
       return e.returnValue;
     };
 
@@ -96,13 +95,7 @@ export default function SalesDashboard() {
 
   const renderContent = () => {
     if (isFormOpen) {
-      return (
-        <InquiryForm
-          isOpen={isFormOpen}
-          onClose={closeInquiryForm}
-          inquiry={selectedInquiry}
-        />
-      );
+      return <InquiryForm isOpen={isFormOpen} onClose={closeInquiryForm} inquiry={selectedInquiry} />;
     }
 
     switch (activeTab) {
@@ -112,12 +105,10 @@ export default function SalesDashboard() {
         return <TodoPage />;
       default:
         return (
-          <div className="bg-white rounded-xl shadow-sm p-6 border border-emerald-100">
-            <h2 className="text-2xl font-bold text-emerald-800 mb-4">
-              Dashboard
-            </h2>
-            <p className="text-emerald-600">
-              Welcome to your Sales Representative dashboard.
+          <div className="bg-white rounded-xl shadow-lg p-8 border border-gray-200">
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">Dashboard Overview</h2>
+            <p className="text-gray-600 text-lg">
+              Welcome to your sales representative dashboard.
             </p>
           </div>
         );
@@ -125,17 +116,17 @@ export default function SalesDashboard() {
   };
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden">
-      {/* Top Navigation Bar - Fixed */}
-      <nav className="bg-white shadow-lg border-b-2 border-emerald-200 px-3 sm:px-2 py-2 flex-shrink-0 z-50">
-        <div className="flex items-center justify-between relative">
+    <div className="h-screen flex flex-col bg-gray-100 font-sans antialiased">
+      {/* Top Navigation Bar - Clean & Soft */}
+      <nav className="bg-white shadow-md border-b border-emerald-100 px-4 py-3 flex-shrink-0 z-50">
+        <div className="flex items-center justify-between relative max-w-7xl mx-auto">
           {/* Left Section - Mobile Menu Button */}
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-2">
             <Button
               variant="ghost"
               size="icon"
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="lg:hidden p-1.5 rounded-lg hover:bg-emerald-50 text-emerald-700 transition-colors"
+              className="lg:hidden p-2 rounded-lg text-emerald-600 hover:bg-emerald-50 transition-colors"
             >
               {sidebarOpen ? (
                 <X className="h-5 w-5" />
@@ -146,113 +137,97 @@ export default function SalesDashboard() {
           </div>
 
           {/* Center Section - Logo */}
-          <Link
-            to="/"
-            className="absolute left-1/2 transform -translate-x-1/2 flex items-center gap-1.5"
-          >
-            <div className="rounded-lg p-1 flex items-center justify-center">
-              <img
-                src="/logo.jpg"
-                alt="Logo"
-                className="w-8 h-8 sm:w-10 sm:h-10 object-contain"
-              />
+          <Link to="/" className="absolute left-1/2 transform -translate-x-1/2 flex items-center gap-2">
+            <div className="rounded-full p-1 flex items-center justify-center">
+              <img src="/logo.jpg" alt="Logo" className="w-8 h-8 object-contain rounded-full" />
             </div>
+            <span className="hidden sm:block text-emerald-800 font-semibold text-xl">Sales</span>
           </Link>
 
-          {/* Right Section - Title / Role Switcher / User Menu */}
+          {/* Right Section - User Menu */}
           <div className="flex items-center gap-2">
-            {/* User Menu */}
-            <div className="flex items-center gap-1 sm:gap-2">
-              {/* Mobile Role Switcher */}
-              {isMultiRole && (
-                <div className="lg:hidden">
-                  <RoleSwitcherMinimal />
-                </div>
-              )}
-
-              {/* Mobile Feedback Button */}
-              <FeedbackComponent className="lg:hidden">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="p-1.5 rounded-lg hover:bg-blue-50 text-white bg-emerald-700 hover:text-blue-700 transition-colors"
-                >
-                  <MessageCircle className="h-4 w-4" />
-                  <span className="sr-only">Feedback</span>
-                </Button>
-              </FeedbackComponent>
-
-              {/* Mobile Logout Button */}
+            {/* Mobile Role Switcher */}
+            {isMultiRole && (
+              <div className="lg:hidden">
+                <RoleSwitcherMinimal className="text-emerald-600" />
+              </div>
+            )}
+            
+            {/* Mobile Feedback Button */}
+            <FeedbackComponent className="lg:hidden">
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={confirmLogout}
-                className="lg:hidden p-1.5 rounded-lg hover:bg-red-50 text-red-600 hover:text-red-700 transition-colors"
+                className="p-2 rounded-lg hover:bg-emerald-50 text-blue-500 hover:text-blue-600 transition-colors"
               >
-                <LogOut className="h-4 w-4" />
-                <span className="sr-only">Logout</span>
+                <MessageCircle className="h-4 w-4" />
+                <span className="sr-only">Feedback</span>
               </Button>
+            </FeedbackComponent>
 
-              {/* Desktop User Menu */}
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="hidden lg:flex items-center gap-1 hover:bg-emerald-50 rounded-lg px-2 py-1.5 transition-colors"
-                  >
-                    <span className="text-sm text-emerald-700 font-medium">
-                      {user?.full_name || user?.username || "User"}
-                    </span>
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent
-                  className="w-48 border border-emerald-200 bg-white shadow-md"
-                  align="end"
+            {/* Mobile Logout Button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={confirmLogout}
+              className="lg:hidden p-2 rounded-lg hover:bg-red-50 text-red-500 hover:text-red-600 transition-colors"
+            >
+              <LogOut className="h-4 w-4" />
+              <span className="sr-only">Logout</span>
+            </Button>
+
+            {/* Desktop User Menu */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="hidden lg:flex items-center gap-2 hover:bg-emerald-50 rounded-lg px-3 py-2 transition-colors"
                 >
-                  {/* Role information in desktop menu */}
-                  {isMultiRole && (
-                    <div className="px-3 py-2 border-b border-gray-100">
-                      <RoleSwitcherMinimal className="w-full" />
-                    </div>
-                  )}
-                  <div className="space-y-1">
-                    {/* Desktop Feedback Button */}
-                    <FeedbackComponent>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="w-full justify-start gap-2 text-blue-600 hover:bg-blue-100 hover:text-blue-700 transition-colors"
-                      >
-                        <MessageCircle className="h-4 w-4" />
-                        Feedback
-                      </Button>
-                    </FeedbackComponent>
-
-                    {/* Logout Button */}
+                  <span className="text-emerald-700 font-medium">
+                    {user?.full_name || user?.username || "User"}
+                  </span>
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-56 border border-gray-200 bg-white shadow-xl" align="end">
+                {isMultiRole && (
+                  <div className="px-3 py-2 border-b border-gray-100">
+                    <RoleSwitcherMinimal className="w-full" />
+                  </div>
+                )}
+                <div className="space-y-1 py-2">
+                  <FeedbackComponent>
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={confirmLogout}
-                      className="w-full justify-start gap-2 text-red-600 hover:bg-red-100 hover:text-red-700 transition-colors"
+                      className="w-full justify-start gap-2 text-blue-500 hover:bg-blue-50 transition-colors"
                     >
-                      <LogOut className="h-4 w-4" />
-                      Logout
+                      <MessageCircle className="h-4 w-4" />
+                      Feedback
                     </Button>
-                  </div>
-                </PopoverContent>
-              </Popover>
-            </div>
+                  </FeedbackComponent>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={confirmLogout}
+                    className="w-full justify-start gap-2 text-red-500 hover:bg-red-50 transition-colors"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    Logout
+                  </Button>
+                </div>
+              </PopoverContent>
+            </Popover>
           </div>
         </div>
       </nav>
 
       {/* Main Content Area with Sidebar */}
-      <div className="flex flex-1 overflow-hidden ">
+      <div className="flex flex-1 overflow-hidden">
         {/* Mobile Sidebar Overlay */}
         {sidebarOpen && (
           <div
-            className="fixed inset-0 bg-white/30 backdrop-blur-sm z-40 lg:hidden"
+            className="fixed inset-0 bg-white/10 backdrop-blur-sm z-40 lg:hidden"
             onClick={() => setSidebarOpen(false)}
           />
         )}
@@ -260,65 +235,59 @@ export default function SalesDashboard() {
         {/* Responsive Sidebar */}
         <aside
           className={`
-            fixed lg:relative z-40 bg-white border-r-2 border-emerald-200 
+            fixed lg:relative z-40 bg-white border-r border-emerald-100 
             h-full shadow-lg lg:shadow-none overflow-hidden flex-shrink-0
-            transform transition-all duration-300 ease-in-out lg:transform-none
+            transform transition-transform duration-300 ease-in-out lg:transform-none
             flex flex-col
-            w-56 xs:w-64 sm:w-64 lg:w-64
-            ${
-              sidebarOpen
-                ? "translate-x-0"
-                : "-translate-x-full lg:translate-x-0"
-            }
+            w-64
+            ${sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
           `}
         >
-          {/* Scrollable Navigation Area */}
-          <div className="flex-1 overflow-y-auto p-3 sm:p-4">
+          {/* Sidebar Nav */}
+          <div className="flex-1 overflow-y-auto p-4">
             <nav className="space-y-2">
               <Button
                 variant={activeTab === "inquiry-form" ? "default" : "ghost"}
                 onClick={() => handleTabChange("inquiry-form")}
-                className={`w-full justify-start gap-2 sm:gap-3 rounded-xl p-2 sm:p-3 text-left transition-all duration-200 text-sm sm:text-base ${
+                className={`w-full justify-start gap-3 rounded-lg p-3 text-left transition-all duration-200 text-base font-semibold ${
                   activeTab === "inquiry-form"
-                    ? "bg-emerald-500 text-white shadow-lg transform scale-105 hover:emerald-900 border border-emerald-600"
-                    : "text-emerald-700 hover:bg-emerald-50 hover:shadow-md"
+                    ? "bg-emerald-600 text-white shadow-lg scale-100 hover:bg-emerald-700"
+                    : "text-emerald-700 hover:bg-emerald-50"
                 }`}
               >
-                <HomeIcon className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
-                <span className="font-medium truncate">Inquiries</span>
+                <Home className="h-5 w-5 flex-shrink-0" />
+                <span className="truncate">Inquiries</span>
               </Button>
 
               <Button
                 variant="ghost"
                 onClick={openInquiryForm}
-                className="w-full justify-start gap-2 sm:gap-3 rounded-xl p-2 sm:p-3 text-left transition-all duration-200 text-emerald-700 hover:bg-emerald-50 hover:shadow-md text-sm sm:text-base"
+                className="w-full justify-start gap-3 rounded-lg p-3 text-left transition-all duration-200 text-emerald-700 hover:bg-emerald-50 text-base"
               >
-                <Plus className="h-4 w-4 flex-shrink-0" />
+                <Plus className="h-5 w-5 flex-shrink-0" />
                 <span className="truncate">Add Inquiry</span>
               </Button>
 
               <Button
                 variant={activeTab === "assign" ? "default" : "ghost"}
                 onClick={() => handleTabChange("assign")}
-                className={`w-full justify-start gap-2 sm:gap-3 rounded-xl p-2 sm:p-3 text-left transition-all duration-200 text-sm sm:text-base ${
+                className={`w-full justify-start gap-3 rounded-lg p-3 text-left transition-all duration-200 text-base font-semibold ${
                   activeTab === "assign"
-                    ? "bg-emerald-500 text-white shadow-lg transform scale-105 hover:emerald-600"
-                    : "text-emerald-700 hover:bg-emerald-50 hover:shadow-md"
+                    ? "bg-emerald-600 text-white shadow-lg scale-100 hover:bg-emerald-700"
+                    : "text-emerald-700 hover:bg-emerald-50"
                 }`}
               >
-                <Users className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
-                <span className="font-medium truncate">Assigned Inquires</span>
+                <Users className="h-5 w-5 flex-shrink-0" />
+                <span className="truncate">Assigned Inquiries</span>
               </Button>
             </nav>
           </div>
 
-          {/* User Info Section - Fixed at Bottom */}
-          <div className="flex-shrink-0 p-2 sm:p-3 pb-20 px-2 border-t border-emerald-100 ">
-            <div className="bg-emerald-50 rounded-lg border border-emerald-100 p-2 sm:p-3 ">
+          {/* User Info Section */}
+          <div className="flex-shrink-0 p-4 border-t border-gray-200">
+            <div className="bg-emerald-50 rounded-lg p-3">
               <div className="min-w-0">
-                {" "}
-                {/* min-w-0 allows flex children to shrink below content size */}
-                <div className="text-xs sm:text-sm font-medium text-black truncate mb-1 capitalize">
+                <div className="text-sm font-semibold text-emerald-800 truncate mb-1 capitalize">
                   {user?.full_name || user?.username || "User"}
                 </div>
                 {user?.email && (
@@ -326,7 +295,6 @@ export default function SalesDashboard() {
                     {user.email}
                   </div>
                 )}
-                {/* Role badge for mobile if multi-role */}
                 {isMultiRole && (
                   <div className="text-xs text-emerald-900 bg-emerald-100 px-2 py-1 rounded mt-1 truncate lg:hidden capitalize">
                     Role: <span className="font-medium">Sales</span>
@@ -338,129 +306,79 @@ export default function SalesDashboard() {
         </aside>
 
         {/* Main Content Container */}
-        <div className="flex-1 flex flex-col overflow-hidden">
-          {/* Main Content - Scrollable */}
+        <div className="flex-1 flex flex-col overflow-hidden  ">
           <main className="flex-1 overflow-y-auto">
-            <div className="max-w-7xl mx-auto">
-              <div className="pb-6">{renderContent()}</div>
-            </div>
+            <div className=" p-2">{renderContent()}</div>
           </main>
-
-          {/* Footer - Sticky at bottom */}
-          <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-30 safe-area-pb lg:hidden">
-            <div className="flex items-center justify-center">
-              {/* Home Button */}
-              <Link
-                to="/sales?tab=inquiry-form"
-                className="flex-1 max-w-xs flex justify-center"
-              >
-                <button
-                  className={`flex flex-col items-center justify-center w-full py-1 group ${
-                    activeTab === "inquiry-form"
-                      ? "border-emerald-600 bg-emerald-50"
-                      : "border-transparent"
-                  }`}
-                >
-                  <div className="w-10 h-6 flex items-center justify-center group-active:scale-95 transition-transform">
-                    <Home
-                      className={`h-5 w-5 ${
-                        activeTab === "inquiry-form"
-                          ? "text-emerald-600"
-                          : "text-gray-500"
-                      }`}
-                    />
-                  </div>
-                  <span
-                    className={`text-xs font-medium mt-1 ${
-                      activeTab === "inquiry-form"
-                        ? "text-emerald-600"
-                        : "text-gray-600"
-                    }`}
-                  >
-                    Home
-                  </span>
-                </button>
-              </Link>
-
-              <div className="flex-1 max-w-xs flex justify-center">
-                <button
-                  onClick={openInquiryForm}
-                  className={`flex flex-col items-center justify-center w-full py-1 group border-b-4 ${
-                    isFormOpen
-                      ? "border-emerald-600 bg-emerald-50"
-                      : "border-transparent"
-                  }`}
-                >
-                  <div className="w-10 h-6 flex items-center justify-center group-active:scale-95 transition-transform">
-                    <Plus
-                      className={`h-5 w-5 ${
-                        isFormOpen ? "text-emerald-600" : "text-gray-500"
-                      }`}
-                    />
-                  </div>
-                  <span
-                    className={`text-xs font-medium mt-1 ${
-                      isFormOpen ? "text-emerald-600" : "text-gray-600"
-                    }`}
-                  >
-                    Add
-                  </span>
-                </button>
-              </div>
-
-              {/* Assign Button */}
-              <Link
-                to="/sales?tab=assign"
-                className="flex-1 max-w-xs flex justify-center"
-              >
-                <button
-                  className={`flex flex-col items-center justify-center w-full py-1 group ${
-                    activeTab === "assign"
-                      ? "border-emerald-600 bg-emerald-50"
-                      : "border-transparent"
-                  }`}
-                >
-                  <div className="w-10 h-6 flex items-center justify-center group-active:scale-95 transition-transform">
-                    <UserPlus
-                      className={`h-5 w-5 ${
-                        activeTab === "assign"
-                          ? "text-emerald-600"
-                          : "text-gray-500"
-                      }`}
-                    />
-                  </div>
-                  <span
-                    className={`text-xs font-medium mt-1 ${
-                      activeTab === "assign"
-                        ? "text-emerald-600"
-                        : "text-gray-600"
-                    }`}
-                  >
-                    Assigned
-                  </span>
-                </button>
-              </Link>
-            </div>
-          </div>
         </div>
       </div>
+
+      {/* Mobile Footer Navigation - Modern & Centered */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white shadow-lg z-30 lg:hidden">
+        <div className="flex items-stretch justify-around px-2 py-1.5">
+          <Link to="/sales?tab=inquiry-form" className="flex-1 flex justify-center">
+            <button
+              onClick={() => handleTabChange("inquiry-form")}
+              className={`flex flex-col items-center justify-center w-full py-2 group transition-colors ${
+                activeTab === "inquiry-form"
+                  ? "text-emerald-600"
+                  : "text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              <Home className={`h-6 w-6 transition-all ${
+                activeTab === "inquiry-form" ? "scale-110" : ""
+              }`} />
+              <span className="text-xs font-medium mt-1">Home</span>
+            </button>
+          </Link>
+
+          <div className="flex-1 flex justify-center">
+            <button
+              onClick={openInquiryForm}
+              className={`flex flex-col items-center justify-center w-full py-2 group transition-colors ${
+                isFormOpen ? "text-emerald-600" : "text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              <Plus className={`h-6 w-6 transition-all ${
+                isFormOpen ? "scale-110" : ""
+              }`} />
+              <span className="text-xs font-medium mt-1">Add</span>
+            </button>
+          </div>
+
+          <Link to="/sales?tab=assign" className="flex-1 flex justify-center">
+            <button
+              onClick={() => handleTabChange("assign")}
+              className={`flex flex-col items-center justify-center w-full py-2 group transition-colors ${
+                activeTab === "assign" ? "text-emerald-600" : "text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              <UserPlus className={`h-6 w-6 transition-all ${
+                activeTab === "assign" ? "scale-110" : ""
+              }`} />
+              <span className="text-xs font-medium mt-1">Assigned</span>
+            </button>
+          </Link>
+        </div>
+      </div>
+
       <AlertDialog open={showLogoutConfirm} onOpenChange={setShowLogoutConfirm}>
-        <AlertDialogContent className="bg-white">
+        <AlertDialogContent className="bg-white rounded-lg p-6">
           <AlertDialogHeader className="justify-center items-center">
-            <AlertDialogTitle>
-              <AlertCircle className="h-10 w-10 text-red-600" />
+            <AlertDialogTitle className="text-center">
+              <AlertCircle className="h-12 w-12 text-red-600 mb-2" />
             </AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogDescription className="text-center text-gray-600">
               Are you sure you want to exit the app?
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="flex flex-row justify-center space-x-2">
-            <AlertDialogCancel onClick={cancelLogout} className="mt-0">
+          <AlertDialogFooter className="flex flex-row justify-center space-x-4 mt-4">
+            <AlertDialogCancel onClick={cancelLogout} className="mt-0 border-gray-300 text-gray-700 hover:bg-gray-100">
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleLogout}
-              className="bg-red-600 hover:bg-red-700 text-white"
+              className="bg-red-600 hover:bg-red-700 text-white font-semibold"
             >
               Logout
             </AlertDialogAction>

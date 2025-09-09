@@ -71,7 +71,7 @@ export default function TodoPage() {
         ?.toLowerCase()
         .includes(searchTerm.toLowerCase()) ||
       todo.reference_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      todo.allocated_to?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      todo.allocated_to_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       todo.status?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       todo.priority?.toLowerCase().includes(searchTerm.toLowerCase());
 
@@ -86,57 +86,35 @@ export default function TodoPage() {
   });
 
   return (
-    <div className="w-full pb-20 p-2">
+    <div className="w-full pb-20  ">
       {error && (
-        <Alert variant="destructive" className="mb-4">
+        <Alert variant="destructive" className="mb-4 rounded-xl">
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
 
       {success && (
-        <Alert className="mb-4">
+        <Alert className="mb-4 rounded-xl border-emerald-300">
           <AlertDescription>Inspector assigned successfully!</AlertDescription>
         </Alert>
       )}
 
-      {/* Header */}
-      <div className="bg-white rounded-xl shadow-sm p-4 mb-4 border border-emerald-100">
-        <div className="flex flex-col gap-3">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl md:text-2xl font-bold text-emerald-800">
-              Assigned Inspections
-            </h2>
-          </div>
+      {/* Header & Search */}
+      <div className="bg-white rounded-xl shadow-md py-3 px-6 mb-2 border border-gray-100">
+        <h2 className="text-xl lg:text-2xl font-bold text-emerald-800 mb-4">
+          Assigned Inspections
+        </h2>
 
-          {/* Search and Filter */}
-          <div className="bg-white rounded-md">
-            <div className="hidden md:flex items-center gap-4 w-full">
-              <div className="relative flex-[4]">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input
-                  type="text"
-                  placeholder="Search by customer name, inspector, status..."
-                  className="pl-10 w-full bg-white border border-gray-300"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-            </div>
-
-            {/* Mobile View */}
-            <div className="md:hidden space-y-2">
-              <div className="relative w-full">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input
-                  type="text"
-                  placeholder="Search by customer name, inspector, status..."
-                  className="pl-10 w-full bg-white border border-gray-300"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-            </div>
-          </div>
+        {/* Search Input */}
+        <div className="relative">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+          <Input
+            type="text"
+            placeholder="Search by customer, inspector, status..."
+            className="pl-12 w-full bg-gray-50 border border-gray-200 rounded-lg h-12 text-base focus:border-emerald-400"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
         </div>
       </div>
 
@@ -153,22 +131,22 @@ export default function TodoPage() {
       <div className="md:hidden">
         {todosLoading ? (
           <div className="flex justify-center py-12">
-            <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-emerald-500"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-emerald-600"></div>
           </div>
         ) : sortedTodos.length === 0 ? (
-          <div className="text-center py-8 md:py-12 px-4 text-gray-500">
-            <div className="inline-flex items-center justify-center bg-emerald-50/50 rounded-full p-3 md:p-4 mb-2 md:mb-3">
-              <ClipboardList className="h-6 w-6 md:h-8 md:w-8 text-emerald-500" />
+          <div className="text-center py-12 px-4 text-gray-500 bg-white rounded-xl shadow-sm border border-gray-200">
+            <div className="inline-flex items-center justify-center bg-emerald-50 rounded-full p-4 mb-4">
+              <ClipboardList className="h-8 w-8 text-emerald-500" />
             </div>
-            <h3 className="text-base md:text-lg font-medium text-gray-700 mb-1">
+            <h3 className="text-lg font-semibold text-gray-700 mb-2">
               No inspections found
             </h3>
-            <p className="text-xs md:text-sm text-gray-500 mb-3 md:mb-4">
-              Try adjusting your search or filters
+            <p className="text-sm text-gray-500">
+              Try adjusting your search or filters.
             </p>
           </div>
         ) : (
-          <div className="space-y-3 p-2">
+          <div className="space-y-4">
             {sortedTodos.map((todo) => (
               <TodoCard
                 key={todo.name}

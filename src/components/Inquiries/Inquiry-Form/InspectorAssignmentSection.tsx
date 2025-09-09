@@ -1,3 +1,8 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import type {
+  InspectorAvailability,
+  PriorityLevel,
+} from "../../../types/inspectionType";
 import { format } from "date-fns";
 import {
   Calendar as CalendarIcon,
@@ -5,7 +10,7 @@ import {
   UserPen,
   UserPlus,
 } from "lucide-react";
-
+import React, { useState } from "react";
 import { Button } from "../../ui/button";
 import { Input } from "../../ui/input";
 import { Label } from "../../ui/label";
@@ -16,12 +21,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../../ui/select";
-import type {
-  InspectorAvailability,
-  PriorityLevel,
-} from "../../../types/inspectionType";
 import { RestrictedTimeClock } from "../ResticritedtimeSlot";
 import UserAvailability from "../../ui/UserAvailability";
+import { TimeWarningModal } from "./TimeWarningModal";
 
 interface InspectorAssignmentSectionProps {
   date: Date | undefined;
@@ -78,14 +80,25 @@ export const InspectorAssignmentSection: React.FC<
   getDefaultStartTime,
   getEndTimeConstraints,
 }) => {
+  const [showTimeWarningModal, setShowTimeWarningModal] = useState(false);
+
+  const handleAssignAndSave = () => {
+    if (timeToMinutes(endTime) > timeToMinutes("18:00")) {
+      setShowTimeWarningModal(true);
+      return;
+    }
+    onAssignAndSave();
+  };
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
+      {/* Inspection Date Selection */}
       <div className="space-y-2">
-        <Label className="text-gray-700 text-md font-medium mb-1">
+        <Label className="text-sm font-semibold text-gray-800">
           Select Inspection Date <span className="text-red-500">*</span>
         </Label>
         <div className="relative">
-          <input
+          <Input
             type="date"
             min={new Date().toISOString().split("T")[0]}
             value={date ? format(date, "yyyy-MM-dd") : ""}
@@ -95,19 +108,20 @@ export const InspectorAssignmentSection: React.FC<
                 : undefined;
               onDateSelect(selectedDate);
             }}
-            className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 pr-10 text-sm appearance-none"
+            className="w-full text-sm rounded-md shadow-sm pr-10 border-gray-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
           />
-          <CalendarIcon className="absolute right-3 top-2.5 h-4 w-4 text-gray-400 pointer-events-none" />
+          <CalendarIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
         </div>
       </div>
 
       {date && (
         <div className="space-y-2">
+          {/* Inspector Details & Selection Button */}
           <div className="flex items-center justify-between">
             {selectedInspector ? (
               <div className="flex items-center gap-2">
                 <div>
-                  <div className="font-medium text-sm">
+                  <div className="font-medium text-sm text-gray-800">
                     {selectedInspector.user_name}
                   </div>
                   <div className="text-xs text-gray-500">
@@ -116,7 +130,7 @@ export const InspectorAssignmentSection: React.FC<
                 </div>
               </div>
             ) : (
-              <div className="text-md font-medium text-black">
+              <div className="text-sm font-semibold text-gray-800">
                 Select inspector
               </div>
             )}
@@ -125,21 +139,23 @@ export const InspectorAssignmentSection: React.FC<
               size="sm"
               variant="outline"
               onClick={onShowAvailabilityModal}
+              className="rounded-full h-8 w-8 p-0 border-gray-300 hover:bg-emerald-50"
             >
               {selectedInspector ? (
-                <UserPen className="w-4 h-4 text-black" />
+                <UserPen className="w-4 h-4 text-emerald-600" />
               ) : (
-                <UserPlus className="w-3 h-3 text-black" />
+                <UserPlus className="w-4 h-4 text-emerald-600" />
               )}
             </Button>
           </div>
         </div>
       )}
 
+      {/* Available Time Slots */}
       {selectedInspector &&
         selectedInspector.availability.free_slots.length > 0 && (
-          <div className="space-y-2 px-5 py-2 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <Label className="text-gray-700 text-md font-medium mb-1">
+          <div className="space-y-2 p-4 bg-emerald-50 border border-emerald-200 rounded-lg shadow-inner">
+            <Label className="text-sm font-semibold text-gray-800">
               Available Time Slots
             </Label>
             <div className="grid grid-cols-2 gap-2">
@@ -150,10 +166,10 @@ export const InspectorAssignmentSection: React.FC<
                   variant={
                     selectedSlot?.start === slot.start &&
                     selectedSlot?.end === slot.end
-                      ? "outline"
-                      : "default"
+                      ? "default"
+                      : "outline"
                   }
-                  className="justify-center h-auto py-1.5 px-2 text-xs"
+                  className="justify-center h-auto py-2 px-3 text-xs rounded-md"
                   onClick={() =>
                     onSlotSelect({
                       start: slot.start,
@@ -168,13 +184,14 @@ export const InspectorAssignmentSection: React.FC<
           </div>
         )}
 
+      {/* Finalize Time & Duration */}
       {selectedSlot && (
-        <div className="space-y-3 p-3 ">
-          <Label className="text-gray-700 text-md font-medium mb-1">
+        <div className="space-y-3">
+          <Label className="text-sm font-semibold text-gray-800">
             Finalize Time & Duration
           </Label>
           <div className="grid grid-cols-3 gap-3">
-            <div className="space-y-1 time-picker-container">
+            <div className="space-y-1">
               <Label className="text-xs text-gray-600">Start Time *</Label>
               <RestrictedTimeClock
                 value={requestedTime}
@@ -192,21 +209,21 @@ export const InspectorAssignmentSection: React.FC<
                     : getDefaultStartTime()
                 }
                 maxTime={selectedSlot.end}
-                className={`text-sm h-8 ${
+                className={`text-sm h-8 rounded-md shadow-sm border-gray-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 ${
                   validationErrors.startTime ? "border-red-500" : ""
                 }`}
                 selectedDate={date}
               />
             </div>
 
-            <div className="space-y-1 time-picker-container">
+            <div className="space-y-1">
               <Label className="text-xs text-gray-600">End Time *</Label>
               <RestrictedTimeClock
                 value={endTime}
                 onChange={onEndTimeChange}
                 minTime={getEndTimeConstraints().minTime}
                 maxTime={getEndTimeConstraints().maxTime}
-                className={`text-sm h-8 p-0 ${
+                className={`text-sm h-8 rounded-md shadow-sm border-gray-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 ${
                   validationErrors.endTime ? "border-red-500" : ""
                 }`}
                 selectedDate={date}
@@ -222,7 +239,7 @@ export const InspectorAssignmentSection: React.FC<
                     ? `${calculateDuration().toFixed(1)} hrs`
                     : ""
                 }
-                className="text-sm h-8 bg-gray-100"
+                className="text-sm h-8 bg-gray-100 border-gray-300 rounded-md"
                 disabled
                 readOnly
               />
@@ -231,12 +248,11 @@ export const InspectorAssignmentSection: React.FC<
         </div>
       )}
 
+      {/* Priority Selection */}
       <div className="space-y-2">
-        <Label className="text-gray-700 text-md font-medium mb-1">
-          Priority
-        </Label>
+        <Label className="text-sm font-semibold text-gray-800">Priority</Label>
         <Select value={priority} onValueChange={onPriorityChange}>
-          <SelectTrigger className="w-full bg-white border border-gray-300">
+          <SelectTrigger className="w-full bg-white border border-gray-300 rounded-md shadow-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200">
             <SelectValue placeholder="Priority" />
           </SelectTrigger>
           <SelectContent className="bg-white border border-gray-300">
@@ -262,11 +278,13 @@ export const InspectorAssignmentSection: React.FC<
         </Select>
       </div>
 
-      <div className="flex justify-end">
+      {/* Save Button */}
+      <div className="flex justify-end pt-2">
         <Button
           type="button"
-          onClick={onAssignAndSave}
-          className="bg-gradient-to-r from-emerald-400 to-teal-500 hover:from-emerald-700 hover:to-teal-600 text-white"
+          onClick={handleAssignAndSave}
+          className="bg-gradient-to-r from-emerald-400 to-teal-500 hover:from-emerald-700 hover:to-teal-600 text-white rounded-md shadow-md transition-all duration-300"
+          disabled={loading || createTodoLoading}
         >
           {createTodoLoading || loading ? (
             <>
@@ -279,6 +297,7 @@ export const InspectorAssignmentSection: React.FC<
         </Button>
       </div>
 
+      {/* Availability Modal */}
       {showAvailabilityModal && (
         <UserAvailability
           date={date || new Date()}
@@ -286,6 +305,12 @@ export const InspectorAssignmentSection: React.FC<
           onSelectInspector={onInspectorSelect}
         />
       )}
+
+      {/* Time Warning Modal */}
+      <TimeWarningModal
+        isOpen={showTimeWarningModal}
+        onClose={() => setShowTimeWarningModal(false)}
+      />
     </div>
   );
 };

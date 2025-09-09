@@ -1,3 +1,5 @@
+// src/components/CustomerModal.tsx
+
 import { Loader2 } from "lucide-react";
 import { forwardRef } from "react";
 import type { NewCustomerFormData } from "../../../types/inquiryFormdata";
@@ -48,25 +50,25 @@ export const CustomerModal = forwardRef<HTMLDivElement, CustomerModalProps>(
     return (
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent
-          className="sm:max-w-[500px] max-h-[85vh] overflow-y-auto bg-white p-4 md:p-6"
+          className="sm:max-w-[500px] max-h-[85vh] overflow-y-auto bg-white p-6 rounded-lg shadow-xl"
           ref={ref}
           onInteractOutside={(e) => {
             // Prevent closing when clicking outside
             e.preventDefault();
           }}
         >
-          <DialogHeader className="mb-4">
-            <DialogTitle className="text-xl">
+          <DialogHeader className=" border-b border-gray-200 ">
+            <DialogTitle className="text-2xl font-bold text-gray-800">
               {mode === "create" ? "Add New Lead" : "Edit Lead"}
             </DialogTitle>
-            <DialogDescription className="text-sm">
+            <DialogDescription className="text-sm text-gray-500">
               {mode === "create"
-                ? "Fill in the details to add a new lead"
-                : "Update the lead details below"}
+                ? "Fill in the details to add a new lead."
+                : "Update the lead details below."}
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 py-2">
+          <div className="space-y-2 py-2">
             <div>
               <Label className="block text-sm font-medium text-gray-700 mb-1">
                 Full Name <span className="text-red-500">*</span>
@@ -79,7 +81,7 @@ export const CustomerModal = forwardRef<HTMLDivElement, CustomerModalProps>(
                 placeholder="Enter customer name"
                 required
                 disabled={isCreatingCustomer}
-                className="w-full"
+                className="w-full rounded-md border-gray-300 focus:border-emerald-500 focus-visible:ring-emerald-200"
               />
             </div>
 
@@ -96,7 +98,7 @@ export const CustomerModal = forwardRef<HTMLDivElement, CustomerModalProps>(
                 maxLength={17}
                 required
                 disabled={isCreatingCustomer}
-                className="w-full"
+                className="w-full rounded-md border-gray-300 focus:border-emerald-500 focus-visible:ring-emerald-200"
               />
             </div>
 
@@ -111,9 +113,8 @@ export const CustomerModal = forwardRef<HTMLDivElement, CustomerModalProps>(
                 onChange={(e) => handleInputChange('email', e.target.value)}
                 placeholder="Enter email"
                 disabled={isCreatingCustomer}
-                className="w-full"
+                className="w-full rounded-md border-gray-300 focus:border-emerald-500 focus-visible:ring-emerald-200"
               />
-              {/* Error message */}
               {customerForm.email && (
                 <>
                   {!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerForm.email) && (
@@ -126,24 +127,24 @@ export const CustomerModal = forwardRef<HTMLDivElement, CustomerModalProps>(
             </div>
           </div>
 
-          <DialogFooter className="mt-6 flex flex-col sm:flex-row gap-2">
+          <DialogFooter className="mt-8 flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
             <Button
               variant="outline"
               onClick={onCancel}
               disabled={isCreatingCustomer}
-              className="w-full sm:w-auto"
+              className="w-full sm:w-auto px-6 py-2 rounded-lg"
             >
               Cancel
             </Button>
             <Button
               onClick={onSave}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white w-full sm:w-auto"
+              className="bg-emerald-600 hover:bg-emerald-700 text-white w-full sm:w-auto px-6 py-2 rounded-lg transition-colors"
               disabled={isCreatingCustomer}
             >
               {isCreatingCustomer ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {mode === "create" ? "Creating..." : "Updating..."}
+                  {mode === "create" ? "Saving..." : "Updating..."}
                 </>
               ) : mode === "create" ? (
                 "Save"

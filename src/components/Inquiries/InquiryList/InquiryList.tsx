@@ -30,7 +30,7 @@ const InquiryList: React.FC<InquiryListProps> = ({
   getJobTypesForInquiry,
 }) => {
   const cardView = (
-    <div className="space-y-3 p-2 block lg:hidden">
+    <div className="space-y-3  block lg:hidden">
       {isLoading ? (
         Array.from({ length: 6 }).map((_, index) => (
           <SkeletonCard key={index} />

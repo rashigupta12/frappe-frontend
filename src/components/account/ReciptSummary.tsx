@@ -191,7 +191,9 @@ const ReceiptSummary: React.FC<Props> = ({
     : `Custom: ${formatDate(fromDate)}–${formatDate(toDate)}`;
 
   return (
-    <div className="px-4 max-w-7xl mx-auto">
+    <div className="max-w-7xl mx-auto">
+
+      <div className="bg-white rounded-md  mb-3">
       <PageHeader
         title="My Receipts"
         count={filteredReceipts.length}
@@ -215,6 +217,7 @@ const ReceiptSummary: React.FC<Props> = ({
         onResetFilters={handleResetFilters}
         filterStatusText={filterStatusText}
       />
+      </div>
 
       {filteredReceipts.length === 0 ? (
         <EmptyState

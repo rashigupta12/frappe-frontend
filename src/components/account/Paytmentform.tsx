@@ -131,96 +131,103 @@ const PaymentForm = () => {
   }, [custom_attachments]);
 
   const handleSupplierSearch = useCallback(async (query: string) => {
-  if (!query.trim()) {
-    setSearchResults([]);
-    setShowDropdown(false);
-    return;
-  }
+    if (!query.trim()) {
+      setSearchResults([]);
+      setShowDropdown(false);
+      return;
+    }
 
-  setIsSearching(true);
+    setIsSearching(true);
 
-  try {
-    const endpoint = "/api/method/eits_app.supplier_search.search_suppliers";
-    const params = new URLSearchParams();
+    try {
+      const endpoint = "/api/method/eits_app.supplier_search.search_suppliers";
+      const params = new URLSearchParams();
 
-    if (/^\d+$/.test(query)) {
-      // Search by phone number (only digits)
-      params.append("mobile_no", query);
-    } else if (query.includes("@")) {
-      // Search by email (partial match)
-      params.append("email_id", query);
-      
-      const emailResponse = await frappeAPI.makeAuthenticatedRequest(
+      if (/^\d+$/.test(query)) {
+        // Search by phone number (only digits)
+        params.append("mobile_no", query);
+      } else if (query.includes("@")) {
+        // Search by email (partial match)
+        params.append("email_id", query);
+
+        const emailResponse = await frappeAPI.makeAuthenticatedRequest(
+          "GET",
+          `${endpoint}?${params.toString()}`
+        );
+
+        // If no email results, try name search
+        if (!emailResponse.message.data?.length) {
+          params.delete("email_id");
+          params.append("supplier_name", query);
+        }
+      } else {
+        // Search by name
+        params.append("supplier_name", query);
+      }
+
+      const response = await frappeAPI.makeAuthenticatedRequest(
         "GET",
         `${endpoint}?${params.toString()}`
       );
 
-      // If no email results, try name search
-      if (!emailResponse.message.data?.length) {
-        params.delete("email_id");
-        params.append("supplier_name", query);
+      if (!response.message || !Array.isArray(response.message.data)) {
+        throw new Error("Invalid response format");
       }
-    } else {
-      // Search by name
-      params.append("supplier_name", query);
-    }
 
-    const response = await frappeAPI.makeAuthenticatedRequest(
-      "GET",
-      `${endpoint}?${params.toString()}`
-    );
+      const suppliers = response.message.data;
+      setShowDropdown(true);
 
-    if (!response.message || !Array.isArray(response.message.data)) {
-      throw new Error("Invalid response format");
-    }
-
-    const suppliers = response.message.data;
-    setShowDropdown(true);
-
-    if (suppliers.length === 0) {
-      setSearchResults([]);
-      return;
-    }
-
-    // Filter results to match the query more precisely
-    const filteredSuppliers = suppliers.filter((supplier: { email_id: string; }) => {
-      // For email searches, check if the email contains the query
-      if (query.includes("@") && supplier.email_id) {
-        return supplier.email_id.toLowerCase().includes(query.toLowerCase());
+      if (suppliers.length === 0) {
+        setSearchResults([]);
+        return;
       }
-      return true;
-    });
 
-    // If we have filtered results, use them instead
-    const suppliersToUse = filteredSuppliers.length > 0 ? filteredSuppliers : suppliers;
-
-    const detailedSuppliers = await Promise.all(
-      suppliersToUse.map(async (supplier: { name: string }) => {
-        try {
-          const supplierDetails = await frappeAPI.getSupplierById(supplier.name);
-          return supplierDetails.data;
-        } catch (error) {
-          console.error(
-            `Failed to fetch details for supplier ${supplier.name}:`,
-            error
-          );
-          return null;
+      // Filter results to match the query more precisely
+      const filteredSuppliers = suppliers.filter(
+        (supplier: { email_id: string }) => {
+          // For email searches, check if the email contains the query
+          if (query.includes("@") && supplier.email_id) {
+            return supplier.email_id
+              .toLowerCase()
+              .includes(query.toLowerCase());
+          }
+          return true;
         }
-      })
-    );
+      );
 
-    const validSuppliers = detailedSuppliers.filter(
-      (supplier) => supplier !== null
-    );
-    setSearchResults(validSuppliers);
-  } catch (error) {
-    console.error("Search error:", error);
-    setSearchResults([]);
-    setShowDropdown(true);
-  } finally {
-    setIsSearching(false);
-  }
-}, []);
+      // If we have filtered results, use them instead
+      const suppliersToUse =
+        filteredSuppliers.length > 0 ? filteredSuppliers : suppliers;
+
+      const detailedSuppliers = await Promise.all(
+        suppliersToUse.map(async (supplier: { name: string }) => {
+          try {
+            const supplierDetails = await frappeAPI.getSupplierById(
+              supplier.name
+            );
+            return supplierDetails.data;
+          } catch (error) {
+            console.error(
+              `Failed to fetch details for supplier ${supplier.name}:`,
+              error
+            );
+            return null;
+          }
+        })
+      );
+
+      const validSuppliers = detailedSuppliers.filter(
+        (supplier) => supplier !== null
+      );
+      setSearchResults(validSuppliers);
+    } catch (error) {
+      console.error("Search error:", error);
+      setSearchResults([]);
+      setShowDropdown(true);
+    } finally {
+      setIsSearching(false);
+    }
+  }, []);
 
   // Update the handleSearchChange function to reset paid_to when clearing search
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -548,48 +555,48 @@ const PaymentForm = () => {
     }
   };
 
-    const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-  const input = e.target.value;
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const input = e.target.value;
 
-  if (!input.startsWith("+971 ")) {
-    setNewSupplierData((prev) => ({ ...prev, mobile_no: "+971 " }));
-    return;
-  }
+    if (!input.startsWith("+971 ")) {
+      setNewSupplierData((prev) => ({ ...prev, mobile_no: "+971 " }));
+      return;
+    }
 
-  const digits = input.replace(/\D/g, "").substring(3);
-  const limitedDigits = digits.substring(0, 9);
+    const digits = input.replace(/\D/g, "").substring(3);
+    const limitedDigits = digits.substring(0, 9);
 
-  let formattedNumber = "+971 ";
+    let formattedNumber = "+971 ";
 
-  if (limitedDigits.length > 0) {
-    const isMobile = limitedDigits.startsWith("5");
+    if (limitedDigits.length > 0) {
+      const isMobile = limitedDigits.startsWith("5");
 
-    if (isMobile) {
-      formattedNumber += limitedDigits.substring(0, 3);
-      if (limitedDigits.length > 3) {
-        formattedNumber += " " + limitedDigits.substring(3, 6);
-        if (limitedDigits.length > 6) {
-          formattedNumber += " " + limitedDigits.substring(6, 9);
+      if (isMobile) {
+        formattedNumber += limitedDigits.substring(0, 3);
+        if (limitedDigits.length > 3) {
+          formattedNumber += " " + limitedDigits.substring(3, 6);
+          if (limitedDigits.length > 6) {
+            formattedNumber += " " + limitedDigits.substring(6, 9);
+          }
         }
-      }
-    } else {
-      formattedNumber += limitedDigits.substring(0, 2);
-      if (limitedDigits.length > 2) {
-        formattedNumber += " " + limitedDigits.substring(2, 5);
-        if (limitedDigits.length > 5) {
-          formattedNumber += " " + limitedDigits.substring(5, 9);
+      } else {
+        formattedNumber += limitedDigits.substring(0, 2);
+        if (limitedDigits.length > 2) {
+          formattedNumber += " " + limitedDigits.substring(2, 5);
+          if (limitedDigits.length > 5) {
+            formattedNumber += " " + limitedDigits.substring(5, 9);
+          }
         }
       }
     }
-  }
 
-  setNewSupplierData((prev) => ({ ...prev, mobile_no: formattedNumber }));
-};
+    setNewSupplierData((prev) => ({ ...prev, mobile_no: formattedNumber }));
+  };
 
   return (
     <div className="w-full mx-auto bg-white shadow-lg rounded-lg overflow-hidden lg:p-3">
       {/* Header */}
-      <div className="bg-emerald-500  px-6 py-4 text-white">
+      <div className="bg-emerald-400  px-6 py-4 text-white">
         <h1 className="text-xl md:text-2xl font-semibold">Payment Entry</h1>
         <p className="text-blue-100 text-sm md:text-base">
           Enter payment details
@@ -959,23 +966,21 @@ const PaymentForm = () => {
                   />
                 </div> */}
                 <div className="space-y-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Phone Number <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                          type="tel"
-                          name="mobile_no"
-                          value={newSupplierData.mobile_no}
-                          onChange={handlePhoneChange}
-                          onKeyDown={handleKeyDown}
-                          placeholder="+971 XX XXX XXXX"
-                          maxLength={17}
-                          required
-                          
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                    
-                        />
-                      </div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Phone Number <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="tel"
+                    name="mobile_no"
+                    value={newSupplierData.mobile_no}
+                    onChange={handlePhoneChange}
+                    onKeyDown={handleKeyDown}
+                    placeholder="+971 XX XXX XXXX"
+                    maxLength={17}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  />
+                </div>
                 {/* <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Email (Optional)
@@ -990,31 +995,35 @@ const PaymentForm = () => {
                   />
                 </div> */}
 
-
                 <div>
-                            <label htmlFor="email_id" className="block text-sm font-medium text-gray-700 mb-1">
-                              Email
-                            </label>
-                            <input
-                              type="email"
-                              name="email_id"
-                              value={newSupplierData.email_id || ""}
-                              onChange={handleNewSupplierInputChange}
-                              placeholder="Enter email"
-                            
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                            />
-                            {/* Error message */}
-                            {newSupplierData.email_id && (
-                              <>
-                                {!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newSupplierData.email_id) && (
-                                  <p className="text-sm text-red-500 mt-1">
-                                    Must be a valid email format (example: user@example.com)
-                                  </p>
-                                )}
-                              </>
-                            )}
-                          </div>
+                  <label
+                    htmlFor="email_id"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    name="email_id"
+                    value={newSupplierData.email_id || ""}
+                    onChange={handleNewSupplierInputChange}
+                    placeholder="Enter email"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  />
+                  {/* Error message */}
+                  {newSupplierData.email_id && (
+                    <>
+                      {!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
+                        newSupplierData.email_id
+                      ) && (
+                        <p className="text-sm text-red-500 mt-1">
+                          Must be a valid email format (example:
+                          user@example.com)
+                        </p>
+                      )}
+                    </>
+                  )}
+                </div>
               </div>
               <div className="mt-6 flex justify-end space-x-3">
                 <button
