@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, ChevronDown, X } from "lucide-react";
+import { Briefcase, Check, ChevronDown, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 // Multi-Select Dropdown Component for Job Types with Chips Display
@@ -110,7 +110,7 @@ export const MultiSelectJobTypes = ({
   return (
     <div className="relative" ref={dropdownRef}>
       <div
-        className="flex flex-wrap gap-2 min-h-10 w-full items-center rounded-md border border-gray-800 bg-white px-3 py-2 text-md cursor-text hover:bg-gray-50 "
+        className="flex flex-wrap gap-2 min-h-10 w-full items-center rounded-md border border-gray-800 bg-white px-3 py-2 text-md cursor-text hover:bg-gray-50 text-black "
         onClick={handleInputClick}
       >
         {/* Selected job types as chips */}
@@ -128,14 +128,16 @@ export const MultiSelectJobTypes = ({
         ))}
 
         {/* Input field */}
+        <Briefcase className="h-4 w-4 text-gray-400" />
         <input
           ref={inputRef}
           type="text"
           value={inputValue}
           onChange={handleInputChange}
           onKeyDown={handleInputKeyDown}
-          className="flex-1 min-w-20 outline-none bg-transparent text-sm"
+          className="flex-1 min-w-20 outline-none bg-transparent text-sm text-black"
           placeholder={selectedJobTypes.length === 0 ? placeholder : ""}
+
         />
 
         {/* Dropdown indicator */}

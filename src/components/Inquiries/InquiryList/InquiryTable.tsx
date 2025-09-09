@@ -2,7 +2,11 @@ import { ClipboardList, Pen } from "lucide-react";
 import React from "react";
 import { type Lead } from "../../../context/LeadContext";
 import { Button } from "../../ui/button";
-import { getBudgetColor, getJobTypeColor, getUrgencyColor } from "../../../helpers/helper";
+import {
+  getBudgetColor,
+  getJobTypeColor,
+  getUrgencyColor,
+} from "../../../helpers/helper";
 
 interface InquiryTableProps {
   inquiries: Lead[];
@@ -19,9 +23,9 @@ const getUrgencyShortLabel = (urgency: string) => {
     "3. Relaxed : 4-7 days": "Relaxed (4-7d)",
     "4. Planned : 1 - 2 week": "Planned (1-2w)",
     "5. Planned : 1 month & above": "Planned (1m+)",
-    "High": "High",
-    "Medium": "Medium",
-    "Low": "Low"
+    High: "High",
+    Medium: "Medium",
+    Low: "Low",
   };
   return labels[urgency] || urgency;
 };
@@ -66,8 +70,12 @@ const InquiryTable: React.FC<InquiryTableProps> = ({
                   <div className="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center">
                     <ClipboardList className="w-8 h-8 text-emerald-500" />
                   </div>
-                  <p className="text-lg font-semibold text-gray-700">No inquiries found</p>
-                  <p className="text-sm text-gray-500">New inquiries will appear here</p>
+                  <p className="text-lg font-semibold text-gray-700">
+                    No inquiries found
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    New inquiries will appear here
+                  </p>
                 </div>
               </td>
             </tr>
@@ -75,11 +83,14 @@ const InquiryTable: React.FC<InquiryTableProps> = ({
             inquiries.map((inquiry, index) => (
               <tr
                 key={inquiry.name || index}
-                className="hover:bg-emerald-50/50 transition-colors duration-200"
+                className={`
+ ${index % 2 === 0 ? "bg-white" : "bg-gray-100"}
+ 
+ `}
               >
                 {/* Customer Name */}
                 <td className="py-4 px-6">
-                  <div 
+                  <div
                     className="cursor-pointer"
                     onClick={() => openViewModal(inquiry)}
                   >
@@ -98,23 +109,26 @@ const InquiryTable: React.FC<InquiryTableProps> = ({
                 {/* Job Types */}
                 <td className="py-4 px-6 align-top">
                   <div className="flex flex-wrap gap-1.5 max-w-48">
-                    {getJobTypesForInquiry(inquiry).slice(0, 2).map((type, idx) => {
-                      const colors = getJobTypeColor(type);
-                      return (
-                        <span 
-                          key={idx} 
-                          className="inline-block px-2 py-1 rounded-full text-xs font-medium border"
-                          style={{
-                           
-                            color: colors.text,
-                            borderColor: colors.border
-                          }}
-                        >
-                          {type.replace(/^\d+\.\s*/, "").substring(0, 15)}
-                          {type.replace(/^\d+\.\s*/, "").length > 15 ? "..." : ""}
-                        </span>
-                      );
-                    })}
+                    {getJobTypesForInquiry(inquiry)
+                      .slice(0, 2)
+                      .map((type, idx) => {
+                        const colors = getJobTypeColor(type);
+                        return (
+                          <span
+                            key={idx}
+                            className="inline-block px-2 py-1 rounded-full text-xs font-medium border"
+                            style={{
+                              color: colors.text,
+                              borderColor: colors.border,
+                            }}
+                          >
+                            {type.replace(/^\d+\.\s*/, "").substring(0, 15)}
+                            {type.replace(/^\d+\.\s*/, "").length > 15
+                              ? "..."
+                              : ""}
+                          </span>
+                        );
+                      })}
                     {getJobTypesForInquiry(inquiry).length > 2 && (
                       <span className="inline-block px-2 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-medium border border-gray-200">
                         +{getJobTypesForInquiry(inquiry).length - 2} more
@@ -126,12 +140,14 @@ const InquiryTable: React.FC<InquiryTableProps> = ({
                 {/* Urgency */}
                 <td className="py-4 px-2 align-top">
                   {inquiry.custom_project_urgency ? (
-                    <span 
+                    <span
                       className="inline-block px-3 py-1.5  text-xs font-semibold "
                       style={{
-                       
-                        color: getUrgencyColor(inquiry.custom_project_urgency).text,
-                        borderColor: getUrgencyColor(inquiry.custom_project_urgency).border
+                        color: getUrgencyColor(inquiry.custom_project_urgency)
+                          .text,
+                        borderColor: getUrgencyColor(
+                          inquiry.custom_project_urgency
+                        ).border,
                       }}
                     >
                       {getUrgencyShortLabel(inquiry.custom_project_urgency)}
@@ -144,12 +160,12 @@ const InquiryTable: React.FC<InquiryTableProps> = ({
                 {/* Budget */}
                 <td className="py-4 px-2 align-top">
                   {inquiry.custom_budget_range ? (
-                    <span 
+                    <span
                       className="inline-block px-2.5 py-1  text-xs font-semibold "
                       style={{
-                       
                         color: getBudgetColor(inquiry.custom_budget_range).text,
-                        borderColor: getBudgetColor(inquiry.custom_budget_range).border
+                        borderColor: getBudgetColor(inquiry.custom_budget_range)
+                          .border,
                       }}
                     >
                       {inquiry.custom_budget_range}
@@ -165,7 +181,8 @@ const InquiryTable: React.FC<InquiryTableProps> = ({
                     {inquiry.custom_property_area}
                   </div>
                   <div className="text-xs text-gray-500 mt-1">
-                    {inquiry.custom_property_category} , {inquiry.custom_property_type}
+                    {inquiry.custom_property_category} ,{" "}
+                    {inquiry.custom_property_type}
                   </div>
                 </td>
 

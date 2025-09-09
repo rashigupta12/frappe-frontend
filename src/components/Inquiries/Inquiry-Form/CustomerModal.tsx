@@ -14,7 +14,7 @@ import {
   DialogTitle,
 } from "../../ui/dialog";
 import { Input } from "../../ui/input";
-import { Label } from "../../ui/label";
+// import { Label } from "../../ui/label";
 
 interface CustomerModalProps {
   isOpen: boolean;
@@ -70,9 +70,9 @@ export const CustomerModal = forwardRef<HTMLDivElement, CustomerModalProps>(
 
           <div className="space-y-2 py-2">
             <div>
-              <Label className="block text-sm font-medium text-gray-700 mb-1">
+              {/* <Label className="block text-sm font-medium text-gray-700 mb-1">
                 Full Name <span className="text-red-500">*</span>
-              </Label>
+              </Label> */}
               <Input
                 type="text"
                 name="name"
@@ -86,9 +86,9 @@ export const CustomerModal = forwardRef<HTMLDivElement, CustomerModalProps>(
             </div>
 
             <div>
-              <Label className="block text-sm font-medium text-gray-700 mb-1">
+              {/* <Label className="block text-sm font-medium text-gray-700 mb-1">
                 Phone Number <span className="text-red-500">*</span>
-              </Label>
+              </Label> */}
               <Input
                 type="tel"
                 name="phone"
@@ -103,9 +103,9 @@ export const CustomerModal = forwardRef<HTMLDivElement, CustomerModalProps>(
             </div>
 
             <div>
-              <Label className="block text-sm font-medium text-gray-700 mb-1">
+              {/* <Label className="block text-sm font-medium text-gray-700 mb-1">
                 Email
-              </Label>
+              </Label> */}
               <Input
                 type="email"
                 name="email"

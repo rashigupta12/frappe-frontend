@@ -7,7 +7,7 @@ import {
   Mail,
   Phone,
   Search,
-  User,
+  // User,
   UserPen,
   X
 } from "lucide-react";
@@ -15,7 +15,7 @@ import type { LeadFormData } from "../../../context/LeadContext";
 import { capitalizeFirstLetter, extractAddressFromSite } from "../../../helpers/helper";
 import type { CustomerSearchResult } from "../../../types/inquiryFormdata";
 import { Input } from "../../ui/input";
-import { Label } from "../../ui/label";
+// import { Label } from "../../ui/label";
 
 interface CustomerSearchSectionProps {
   selectedCustomer: CustomerSearchResult | null;
@@ -175,7 +175,7 @@ export const CustomerSearchSection: React.FC<CustomerSearchSectionProps> = ({
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
       <div className="space-y-2 col-span-1 md:col-span-3 relative">
-        <Label htmlFor="customer_search" className="text-gray-700">
+        {/* <Label htmlFor="customer_search" className="text-gray-700">
           <div className="flex items-center gap-2 text-base font-medium">
             <User className="h-4 w-4 text-gray-500" />
             <span>
@@ -186,7 +186,7 @@ export const CustomerSearchSection: React.FC<CustomerSearchSectionProps> = ({
               <span className="text-red-500 ml-1">*</span>
             </span>
           </div>
-        </Label>
+        </Label> */}
 
         <div className="relative">
           {selectedCustomer ? (
@@ -236,7 +236,7 @@ export const CustomerSearchSection: React.FC<CustomerSearchSectionProps> = ({
                 name="customer_search"
                 value={searchQuery}
                 onChange={onSearchChange}
-                placeholder="Search by name, phone or email"
+                placeholder="Search by Customer Name, Phone or Email"
                 required
                 className="pl-9 pr-10"
               />

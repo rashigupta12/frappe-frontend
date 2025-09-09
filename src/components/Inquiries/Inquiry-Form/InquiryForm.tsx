@@ -1445,7 +1445,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
           {updatedSections.map((section) => (
             <div
               key={section.id}
-              className="bg-gray-50 border border-gray-200 rounded-lg overflow-hidden shadow-sm"
+              className="bg-gray-50 border border-green-200 rounded-lg overflow-hidden shadow-sm"
             >
               <FormSectionHeader
                 section={section}

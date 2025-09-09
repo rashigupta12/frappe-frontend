@@ -12,11 +12,7 @@ interface TodoTableProps {
   onEdit: (todo: any) => void;
 }
 
-const TodoTable: React.FC<TodoTableProps> = ({
-  todos,
-  loading,
-  onEdit,
-}) => {
+const TodoTable: React.FC<TodoTableProps> = ({ todos, loading, onEdit }) => {
   if (loading) {
     return (
       <div className="flex justify-center py-12">
@@ -45,17 +41,18 @@ const TodoTable: React.FC<TodoTableProps> = ({
     <div className="w-full overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg">
       <div className="overflow-x-auto">
         <table className="min-w-full text-sm">
-          <thead className="bg-gradient-to-r from-gray-50 to-gray-100 sticky top-0 z-10">
+          <thead className="bg-gradient-to-r from-gray-50 to-gray-200 sticky top-0 z-10">
             <tr>
+              <th className="py-4 px-6 text-left font-semibold text-gray-700 border-b border-gray-200">
+                Date & Time
+              </th>
               <th className="py-4 px-6 text-left font-semibold text-gray-700 border-b border-gray-200">
                 Customer
               </th>
               <th className="py-4 px-6 text-left font-semibold text-gray-700 border-b border-gray-200">
                 Inspector
               </th>
-              <th className="py-4 px-6 text-left font-semibold text-gray-700 border-b border-gray-200">
-                Date & Time
-              </th>
+
               <th className="py-4 px-6 text-left font-semibold text-gray-700 border-b border-gray-200">
                 Priority
               </th>
@@ -71,12 +68,31 @@ const TodoTable: React.FC<TodoTableProps> = ({
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {todos.map((todo) => (
+            {todos.map((todo, index) => (
               <tr
-                key={todo.name}
-                className="hover:bg-emerald-50/50 transition-colors duration-200"
+                key={todo.name || index}
+                className={`
+ ${index % 2 === 0 ? "bg-white" : "bg-gray-100"}
+ 
+ `}
               >
                 {/* Customer Name */}
+
+                <td className="py-4 px-6 align-top">
+                  <div className="text-gray-700">
+                    <div>
+                      {todo.date
+                        ? format(new Date(todo.date), "dd MMM yyyy")
+                        : "Not specified"}
+                    </div>
+                    {todo.custom_start_time && todo.custom_end_time && (
+                      <div className="text-xs text-gray-500">
+                        {format(new Date(todo.custom_start_time), "hh:mm a")} -{" "}
+                        {format(new Date(todo.custom_end_time), "hh:mm a")}
+                      </div>
+                    )}
+                  </div>
+                </td>
                 <td className="py-4 px-6 align-top">
                   <div className="font-semibold text-gray-800">
                     {todo.inquiry_data?.lead_name?.charAt(0).toUpperCase() +
@@ -97,21 +113,6 @@ const TodoTable: React.FC<TodoTableProps> = ({
                 </td>
 
                 {/* Date & Time */}
-                <td className="py-4 px-6 align-top">
-                  <div className="text-gray-700">
-                    <div>
-                      {todo.date
-                        ? format(new Date(todo.date), "dd MMM yyyy")
-                        : "Not specified"}
-                    </div>
-                    {todo.custom_start_time && todo.custom_end_time && (
-                      <div className="text-xs text-gray-500">
-                        {format(new Date(todo.custom_start_time), "hh:mm a")} -{" "}
-                        {format(new Date(todo.custom_end_time), "hh:mm a")}
-                      </div>
-                    )}
-                  </div>
-                </td>
 
                 {/* Priority */}
                 <td className="py-4 px-6 align-top">

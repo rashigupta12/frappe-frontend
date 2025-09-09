@@ -1,12 +1,23 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Loader2, Plus, Search, Home, Edit, MapPin, X } from "lucide-react";
-import React, { useEffect, useState, useCallback, useRef } from "react";
+import { Edit, Home, Loader2, Plus, Search, X } from "lucide-react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 // import { showToast } from "react-hot-showToast";
 import { createPortal } from "react-dom";
 import { frappeAPI } from "../../api/frappeClient";
 import { useLeads } from "../../context/LeadContext";
+import { showToast } from "../../helpers/comman";
+import { capitalizeFirstLetter } from "../../helpers/helper";
 import { Button } from "../ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "../ui/dialog";
 import { Input } from "../ui/input";
+import { Label } from "../ui/label";
 import {
   Select,
   SelectContent,
@@ -14,17 +25,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "../ui/dialog";
-import { Label } from "../ui/label";
-import { capitalizeFirstLetter } from "../../helpers/helper";
-import { showToast } from "../../helpers/comman";
 
 interface PropertyAddressSectionProps {
   formData: any;
@@ -971,10 +971,10 @@ const handleAddNewCommunity = async (communityName?: string) => {
    <div className="space-y-4">
       {/* Address Search - Single Field */}
       <div className="w-full">
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        {/* <label className="block text-sm font-medium text-gray-700 mb-1">
           <MapPin className="inline-block mr-1 pb-1 h-4 w-4 text-emerald-600" />
           Site Address
-        </label>
+        </label> */}
         <div className="relative">
           <div className="flex items-center">
             <Search className="absolute left-3 h-4 w-4 text-gray-400" />
