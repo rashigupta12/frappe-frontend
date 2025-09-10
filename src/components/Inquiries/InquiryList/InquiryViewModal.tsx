@@ -1,20 +1,19 @@
 // src/components/InquiryViewModal.tsx
 
 import React from "react";
-import { format } from "date-fns";
+// import { format } from "date-fns";
 import {
   Building,
-  Calendar,
   Edit,
   FileText,
   Home,
   Phone,
-  X,
+  X
 } from "lucide-react";
 import { type Lead } from "../../../context/LeadContext";
-import { Button } from "../../ui/button";
-import { Badge } from "../../ui/badge";
 import { getJobTypeColor } from "../../../helpers/helper";
+import { Badge } from "../../ui/badge";
+import { Button } from "../../ui/button";
 
 interface InquiryViewModalProps {
   inquiry: Lead;
@@ -143,7 +142,7 @@ const InquiryViewModal: React.FC<InquiryViewModalProps> = ({
             </div>
           </div>
 
-          <div className="bg-gray-50 p-4 py-2 rounded-lg">
+          {/* <div className="bg-gray-50 p-4 py-2 rounded-lg">
             <h3 className="font-medium text-gray-900 flex items-center gap-2">
               <Calendar className="h-5 w-5 text-emerald-600" />
               Inspection Schedule
@@ -170,7 +169,7 @@ const InquiryViewModal: React.FC<InquiryViewModalProps> = ({
                 <span className="text-gray-500">N/A</span>
               )}
             </div>
-          </div>
+          </div> */}
 
           {inquiry.custom_special_requirements && (
             <div className="bg-gray-50 p-4 py-2 rounded-lg">
