@@ -6,9 +6,9 @@ import { useAuth } from "../../../context/AuthContext";
 import { useAssignStore } from "../../../store/assign";
 import { Alert, AlertDescription } from "../../ui/alert";
 import { Input } from "../../ui/input";
-import TodoTable from "./TodoTable";
-import TodoCard from "./TodoCard";
 import InspectionDialog from "../IspectionDialog";
+import TodoCard from "./TodoCard";
+import TodoTable from "./TodoTable";
 
 export default function TodoPage() {
   const {
@@ -23,6 +23,7 @@ export default function TodoPage() {
   } = useAssignStore();
 
   const [searchTerm, setSearchTerm] = useState("");
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
   // State for inspection dialog
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -64,6 +65,11 @@ export default function TodoPage() {
     setSelectedTodo(null);
   };
 
+  // Handle sort order change
+  const handleSortChange = (order: 'asc' | 'desc') => {
+    setSortOrder(order);
+  };
+
   // Filter todos based on search
   const filteredTodos = todos.filter((todo) => {
     const matchesSearch =
@@ -78,11 +84,16 @@ export default function TodoPage() {
     return matchesSearch;
   });
 
-  // Sort todos by due date (ascending - earliest first)
+  // Sort todos by date based on sort order
   const sortedTodos = [...filteredTodos].sort((a, b) => {
     const dateA = a.date ? new Date(a.date).getTime() : Number.MIN_SAFE_INTEGER;
     const dateB = b.date ? new Date(b.date).getTime() : Number.MIN_SAFE_INTEGER;
-    return dateB - dateA; // Changed from dateA - dateB to dateB - dateA
+    
+    if (sortOrder === 'asc') {
+      return dateA - dateB; // Earliest first
+    } else {
+      return dateB - dateA; // Latest first
+    }
   });
 
   return (
@@ -101,20 +112,39 @@ export default function TodoPage() {
 
       {/* Header & Search */}
       <div className="bg-white rounded-xl shadow-md py-3 px-6 mb-2 border border-gray-100">
-        <h2 className="text-xl lg:text-2xl font-bold text-emerald-800 mb-4">
+        <h2 className="text-xl lg:text-2xl font-bold text-emerald-800 mb-2">
           Assigned Inspections
         </h2>
 
-        {/* Search Input */}
-        <div className="relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-          <Input
-            type="text"
-            placeholder="Search by customer, inspector, status..."
-            className="pl-12 w-full bg-gray-50 border border-gray-200 rounded-lg h-12 text-base focus:border-emerald-400"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+        {/* Search and Sort Controls */}
+        <div className="flex flex-col md:flex-row gap-3">
+          {/* Search Input */}
+          <div className="relative flex-1">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+            <Input
+              type="text"
+              placeholder="Search by customer, inspector, status..."
+              className="pl-12 w-full bg-gray-50 border border-gray-200 rounded-lg h-12 text-base focus:border-emerald-400"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+
+          {/* Sort Button - Only visible on mobile */}
+          {/* <div className="md:hidden">
+            <Button
+              onClick={() => handleSortChange(sortOrder === 'asc' ? 'desc' : 'asc')}
+              variant="outline"
+              className="h-12 px-4 border-gray-200 hover:bg-gray-50"
+            >
+              {sortOrder === 'asc' ? (
+                <SortAsc className="h-5 w-5 mr-2" />
+              ) : (
+                <SortDesc className="h-5 w-5 mr-2" />
+              )}
+              Sort by Date ({sortOrder === 'asc' ? 'Oldest First' : 'Newest First'})
+            </Button>
+          </div> */}
         </div>
       </div>
 
@@ -124,6 +154,8 @@ export default function TodoPage() {
           todos={sortedTodos}
           loading={todosLoading}
           onEdit={handleEditInspection}
+          sortOrder={sortOrder}
+          onSortChange={handleSortChange}
         />
       </div>
 

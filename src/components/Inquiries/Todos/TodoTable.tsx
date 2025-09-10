@@ -1,18 +1,26 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // TodoTable.tsx
-import { ClipboardList, Edit } from "lucide-react";
+import { format } from "date-fns";
+import { ArrowUpDown, ClipboardList, Edit } from "lucide-react";
+import { getPriorityColor, getStatusColor } from "../../../helpers/helper";
 import { Badge } from "../../ui/badge";
 import { Button } from "../../ui/button";
-import { getPriorityColor, getStatusColor } from "../../../helpers/helper";
-import { format } from "date-fns";
 
 interface TodoTableProps {
   todos: any[];
   loading: boolean;
   onEdit: (todo: any) => void;
+  sortOrder: 'asc' | 'desc';
+  onSortChange: (order: 'asc' | 'desc') => void;
 }
 
-const TodoTable: React.FC<TodoTableProps> = ({ todos, loading, onEdit }) => {
+const TodoTable: React.FC<TodoTableProps> = ({ 
+  todos, 
+  loading, 
+  onEdit, 
+  sortOrder, 
+  onSortChange 
+}) => {
   if (loading) {
     return (
       <div className="flex justify-center py-12">
@@ -37,6 +45,10 @@ const TodoTable: React.FC<TodoTableProps> = ({ todos, loading, onEdit }) => {
     );
   }
 
+  const handleSortToggle = () => {
+    onSortChange(sortOrder === 'asc' ? 'desc' : 'asc');
+  };
+
   return (
     <div className="w-full overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg">
       <div className="overflow-x-auto">
@@ -44,7 +56,17 @@ const TodoTable: React.FC<TodoTableProps> = ({ todos, loading, onEdit }) => {
           <thead className="bg-gradient-to-r from-gray-50 to-gray-200 sticky top-0 z-10">
             <tr>
               <th className="py-4 px-6 text-left font-semibold text-gray-700 border-b border-gray-200">
-                Date & Time
+                <button
+                  onClick={handleSortToggle}
+                  className="flex items-center  hover:text-emerald-600 transition-colors"
+                >
+                  Date & Time
+                  {sortOrder === 'asc' ? (
+                    <ArrowUpDown className="h-4 w-4" />
+                  ) : (
+                    <ArrowUpDown className="h-4 w-4" />
+                  )}
+                </button>
               </th>
               <th className="py-4 px-6 text-left font-semibold text-gray-700 border-b border-gray-200">
                 Customer
@@ -52,7 +74,6 @@ const TodoTable: React.FC<TodoTableProps> = ({ todos, loading, onEdit }) => {
               <th className="py-4 px-6 text-left font-semibold text-gray-700 border-b border-gray-200">
                 Inspector
               </th>
-
               <th className="py-4 px-6 text-left font-semibold text-gray-700 border-b border-gray-200">
                 Priority
               </th>
@@ -76,8 +97,7 @@ const TodoTable: React.FC<TodoTableProps> = ({ todos, loading, onEdit }) => {
  
  `}
               >
-                {/* Customer Name */}
-
+                {/* Date & Time */}
                 <td className="py-4 px-6 align-top">
                   <div className="text-gray-700">
                     <div>
@@ -93,6 +113,8 @@ const TodoTable: React.FC<TodoTableProps> = ({ todos, loading, onEdit }) => {
                     )}
                   </div>
                 </td>
+
+                {/* Customer Name */}
                 <td className="py-4 px-6 align-top">
                   <div className="font-semibold text-gray-800">
                     {todo.inquiry_data?.lead_name?.charAt(0).toUpperCase() +
@@ -111,8 +133,6 @@ const TodoTable: React.FC<TodoTableProps> = ({ todos, loading, onEdit }) => {
                     {todo.allocated_to_name || "N/A"}
                   </div>
                 </td>
-
-                {/* Date & Time */}
 
                 {/* Priority */}
                 <td className="py-4 px-6 align-top">

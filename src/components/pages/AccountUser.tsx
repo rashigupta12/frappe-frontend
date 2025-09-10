@@ -129,7 +129,7 @@ export default function AccountDashboard() {
           </Link>
 
           {/* Right Section - User Menu */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center ">
             {/* Mobile Role Switcher */}
             {isMultiRole && (
               <div className="lg:hidden">

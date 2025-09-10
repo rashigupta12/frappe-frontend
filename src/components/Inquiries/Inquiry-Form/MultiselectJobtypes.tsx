@@ -110,7 +110,7 @@ export const MultiSelectJobTypes = ({
   return (
     <div className="relative" ref={dropdownRef}>
       <div
-        className="flex flex-wrap gap-2 min-h-10 w-full items-center rounded-md border border-gray-800 bg-white px-3 py-2 text-md cursor-text hover:bg-gray-50 text-black "
+        className="flex flex-wrap gap-2 min-h-10 w-full items-center rounded-md border border-gray-800 bg-white px-3 py-2 text-md cursor-text hover:bg-gray-50 text-black"
         onClick={handleInputClick}
       >
         {/* Selected job types as chips */}
@@ -135,9 +135,8 @@ export const MultiSelectJobTypes = ({
           value={inputValue}
           onChange={handleInputChange}
           onKeyDown={handleInputKeyDown}
-          className="flex-1 min-w-20 outline-none bg-transparent text-sm text-black"
+          className="flex-1 min-w-20 outline-none bg-transparent text-sm text-black placeholder:text-black"
           placeholder={selectedJobTypes.length === 0 ? placeholder : ""}
-
         />
 
         {/* Dropdown indicator */}
@@ -177,7 +176,7 @@ export const MultiSelectJobTypes = ({
                     <Check className="h-3 w-3 text-emerald-600" />
                   )}
                 </div>
-                <span className="text-sm">{jobType.name}</span>
+                <span className="text-sm text-black">{jobType.name}</span>
               </div>
             ))
           )}
