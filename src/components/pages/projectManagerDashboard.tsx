@@ -206,7 +206,7 @@ export default function ProjectManagerDashboard() {
           </div>
 
           {/* Right Section - User Menu */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center ">
             {isMultiRole && (
               <div className="sm:hidden">
                 <RoleSwitcherMinimal className="text-emerald-600" />
