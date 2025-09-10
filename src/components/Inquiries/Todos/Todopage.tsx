@@ -1,15 +1,14 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // TodoPage.tsx
-import { ClipboardList, Search, SortAsc, SortDesc } from "lucide-react";
+import { ClipboardList, Search } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useAuth } from "../../../context/AuthContext";
 import { useAssignStore } from "../../../store/assign";
 import { Alert, AlertDescription } from "../../ui/alert";
 import { Input } from "../../ui/input";
-import { Button } from "../../ui/button";
-import TodoTable from "./TodoTable";
-import TodoCard from "./TodoCard";
 import InspectionDialog from "../IspectionDialog";
+import TodoCard from "./TodoCard";
+import TodoTable from "./TodoTable";
 
 export default function TodoPage() {
   const {
@@ -132,7 +131,7 @@ export default function TodoPage() {
           </div>
 
           {/* Sort Button - Only visible on mobile */}
-          <div className="md:hidden">
+          {/* <div className="md:hidden">
             <Button
               onClick={() => handleSortChange(sortOrder === 'asc' ? 'desc' : 'asc')}
               variant="outline"
@@ -145,7 +144,7 @@ export default function TodoPage() {
               )}
               Sort by Date ({sortOrder === 'asc' ? 'Oldest First' : 'Newest First'})
             </Button>
-          </div>
+          </div> */}
         </div>
       </div>
 
