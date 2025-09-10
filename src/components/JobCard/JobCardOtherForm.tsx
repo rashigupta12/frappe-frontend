@@ -894,7 +894,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                         )}
                       </label> */}
                      <div className="relative ">
-                        <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400  " />
+                        <Search className="absolute left-3 top-2 h-4 w-4 text-gray-400  " />
                         <Input
                           id="party_name"
                           name="party_name"
@@ -902,7 +902,7 @@ const JobCardOtherForm: React.FC<JobCardOtherFormProps> = ({
                           onChange={handleSearchChange}
                           placeholder="Search by Customer Name, phone, or email"
                           required
-                          className="w-full pl-9 pr-10 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none  capitalize"
+                          className="w-full pl-9 pr-5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none  capitalize"
                         />
                         {isSearching && (
                           <Loader2 className="absolute right-3 top-3 h-4 w-4 animate-spin text-gray-500" />
