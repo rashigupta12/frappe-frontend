@@ -110,41 +110,47 @@ const InquiryCard: React.FC<InquiryCardProps> = ({
       onClick={() => openViewModal(inquiry)}
       className="bg-white rounded-xl p-4 border border-gray-200 shadow-md transition-all duration-300 cursor-pointer hover:shadow-lg hover:border-emerald-300"
     >
-      {/* Header */}
-      <div className="flex justify-between items-center gap-2">
-        <div className="flex items-start gap-3 min-w-0 flex-1">
-          <div className="bg-emerald-100 text-emerald-600 rounded-lg p-2 flex-shrink-0">
-            <User className="h-5 w-5" />
+      {/* Header - Restructured for proper alignment */}
+      <div className="flex justify-between items-start gap-2">
+        <div className="min-w-0 flex-1">
+           
+          <div className="flex justify-between items-start gap-2">
+            {/* Lead name and action buttons now in the same flex container */}
+          
+            <h3 className="flex font-semibold text-base text-gray-800 truncate group-hover:text-emerald-700 transition-colors gap-1">
+                <div className="bg-emerald-100 text-emerald-600 rounded-lg p-2 flex-shrink-0">
+            <User className="h-2 w-2" />
           </div>
-          <div className="min-w-0 flex-1">
-            <h4 className="font-semibold text-base text-gray-800 truncate group-hover:text-emerald-700 transition-colors">
               {inquiry.lead_name.charAt(0).toUpperCase() + inquiry.lead_name.slice(1)}
-            </h4>
-            <div className="mt-1 flex flex-wrap gap-1">
-              <JobTypeBadges maxVisible={3} />
+            </h3>
+            
+            <div className="flex items-center gap-1.5 flex-shrink-0">
+              <a
+                href={`tel:${inquiry.mobile_no}`}
+                className="flex items-center justify-center h-8 w-8 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"
+                onClick={(e) => e.stopPropagation()}
+                title={`Call ${inquiry.mobile_no}`}
+              >
+                <Phone className="h-4 w-4" />
+              </a>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 w-8 p-0 bg-white text-emerald-600 border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 transition-colors"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openEditInquiryForm(inquiry);
+                }}
+              >
+                <Edit className="h-4 w-4" />
+              </Button>
             </div>
           </div>
-        </div>
-        <div className="flex items-center gap-1.5 flex-shrink-0">
-          <a
-            href={`tel:${inquiry.mobile_no}`}
-            className="flex items-center justify-center h-8 w-8 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"
-            onClick={(e) => e.stopPropagation()}
-            title={`Call ${inquiry.mobile_no}`}
-          >
-            <Phone className="h-4 w-4" />
-          </a>
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-8 w-8 p-0 bg-white text-emerald-600 border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 transition-colors"
-            onClick={(e) => {
-              e.stopPropagation();
-              openEditInquiryForm(inquiry);
-            }}
-          >
-            <Edit className="h-4 w-4" />
-          </Button>
+          
+          {/* Job types badges - positioned below the lead name and buttons */}
+          <div className="mt-1">
+            <JobTypeBadges maxVisible={3} />
+          </div>
         </div>
       </div>
       
