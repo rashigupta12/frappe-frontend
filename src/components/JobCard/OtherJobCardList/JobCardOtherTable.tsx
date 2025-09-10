@@ -67,15 +67,15 @@ const JobCardOtherTable: React.FC<Props> = ({
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {jobCards.map((card) => {
+            {jobCards.map((card,index) => {
               // const totalAmount = calculateTotalAmount(card);
               const servicesSummary = getServicesSummary(card);
               const isReadOnly = card.docstatus === 1;
 
               return (
                 <tr
-                  key={card.name}
-                  className="hover:bg-gray-50 transition-colors cursor-pointer"
+                  key={card.name || index}
+                   className= {`hover:bg-gray-100 transition-colors cursor-pointer  ${index % 2 === 0 ? "bg-white" : "bg-gray-100"}`}
                   onClick={() => onViewDetails(card)}
                 >
                   <td className="py-3 px-4">

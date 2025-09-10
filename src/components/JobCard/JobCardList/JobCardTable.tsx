@@ -66,8 +66,9 @@ const JobCardTable: React.FC<Props> = ({ jobCards, onEdit, onDelete, onViewDetai
         <table className="w-full">
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
-              <th className="text-left py-3 px-4 font-medium text-gray-900 text-sm">Customer</th>
               <th className="text-left py-3 px-4 font-medium text-gray-900 text-sm">Dates</th>
+              <th className="text-left py-3 px-4 font-medium text-gray-900 text-sm">Customer</th>
+              
               <th className="text-left py-3 px-4 font-medium text-gray-900 text-sm">Area</th>
               <th className="text-left py-3 px-4 font-medium text-gray-900 text-sm">Type</th>
               <th className="text-left py-3 px-4 font-medium text-gray-900 text-sm">Amount</th>
@@ -76,7 +77,7 @@ const JobCardTable: React.FC<Props> = ({ jobCards, onEdit, onDelete, onViewDetai
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {jobCards.map((card) => {
+            {jobCards.map((card ,index) => {
               const purpose = getJobCardPurpose(card);
               const totalAmount = calculateTotalAmount(card);
               const purposeDisplay = getPurposeDisplay(purpose);
@@ -84,10 +85,17 @@ const JobCardTable: React.FC<Props> = ({ jobCards, onEdit, onDelete, onViewDetai
 
               return (
                 <tr
-                  key={card.name}
-                  className="hover:bg-gray-50 transition-colors cursor-pointer"
+                  key={card.name ||index}
+                  className= {`hover:bg-gray-100 transition-colors cursor-pointer  ${index % 2 === 0 ? "bg-white" : "bg-gray-100"}`}
                   onClick={() => onViewDetails(card)}
                 >
+
+                  <td className="py-3 px-4">
+                    <div className="flex items-center gap-1 text-sm text-gray-600">
+                      <Calendar className="h-3 w-3 flex-shrink-0" />
+                      <span>{formatDate(card.start_date)} - {formatDate(card.finish_date)}</span>
+                    </div>
+                  </td>
                   <td className="py-3 px-4">
                     <div>
                       <p className="font-medium text-gray-900 capitalize">
@@ -95,12 +103,7 @@ const JobCardTable: React.FC<Props> = ({ jobCards, onEdit, onDelete, onViewDetai
                       </p>
                     </div>
                   </td>
-                  <td className="py-3 px-4">
-                    <div className="flex items-center gap-1 text-sm text-gray-600">
-                      <Calendar className="h-3 w-3 flex-shrink-0" />
-                      <span>{formatDate(card.start_date)} - {formatDate(card.finish_date)}</span>
-                    </div>
-                  </td>
+                  
                   <td className="py-3 px-4">
                     <p className="text-sm text-gray-600 capitalize">
                       {card.area || "No Area"}
