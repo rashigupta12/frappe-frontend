@@ -72,9 +72,9 @@ const SiteDimensionsAccordion = ({
                   <span className="font-medium text-gray-700 text-sm bg-white px-2 py-1 rounded">
                     Area {index + 1}
                   </span>
-                  <span className="text-xs text-gray-500">
+                  {/* <span className="text-xs text-gray-500">
                     {form.watch(`site_dimensions.${index}.room`) || ""}
-                  </span>
+                  </span> */}
                 </div>
                 <Button
                   type="button"
@@ -97,9 +97,9 @@ const SiteDimensionsAccordion = ({
                     name={`site_dimensions.${index}.floor`}
                     render={({ field: floorField }) => (
                       <FormItem>
-                        <FormLabel className="text-gray-700 text-xs font-medium">
+                        {/* <FormLabel className="text-gray-700 text-xs font-medium">
                           Line 1
-                        </FormLabel>
+                        </FormLabel> */}
                         <FormControl>
                           <Input
                             placeholder="Line 1"
@@ -122,9 +122,9 @@ const SiteDimensionsAccordion = ({
                     name={`site_dimensions.${index}.room`}
                     render={({ field: roomField }) => (
                       <FormItem>
-                        <FormLabel className="text-gray-700 text-xs font-medium">
+                        {/* <FormLabel className="text-gray-700 text-xs font-medium">
                           Line 2
-                        </FormLabel>
+                        </FormLabel> */}
                         <FormControl>
                           <Input
                             placeholder="Line 2"
@@ -151,13 +151,13 @@ const SiteDimensionsAccordion = ({
                     name={`site_dimensions.${index}.area_name`}
                     render={({ field: areaNameField }) => (
                       <FormItem>
-                        <FormLabel className="text-gray-700 text-xs font-medium">
+                        {/* <FormLabel className="text-gray-700 text-xs font-medium">
                           Item Name{" "}
                           <span className="text-red-500">*</span>
-                        </FormLabel>
+                        </FormLabel> */}
                         <FormControl>
                           <Input
-                            placeholder="Right side"
+                            placeholder="Item Name *"
                             disabled={isReadOnly}
                             className="bg-white border-gray-300 h-8 text-sm"
                             {...areaNameField}
@@ -177,13 +177,13 @@ const SiteDimensionsAccordion = ({
                     name={`site_dimensions.${index}.dimensionsunits`}
                     render={({ field: dimensionsField }) => (
                       <FormItem>
-                        <FormLabel className="text-gray-700 text-xs font-medium">
+                        {/* <FormLabel className="text-gray-700 text-xs font-medium">
                           Dimensions/Units{" "}
                           <span className="text-red-500">*</span>
-                        </FormLabel>
+                        </FormLabel> */}
                         <FormControl>
                           <textarea
-                            placeholder="e.g., 10x12 ft"
+                            placeholder="Dimensions/Units E.g., 10x12 ft *"
                             disabled={isReadOnly}
                             className="w-full bg-white border border-gray-300 rounded-md p-2 text-sm min-h-[80px] focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                             rows={3}
@@ -210,6 +210,7 @@ const SiteDimensionsAccordion = ({
                       <FormItem>
                         <FormLabel className="text-gray-700 text-xs font-medium">
                           📷 Photos/Videos
+                          <span className="text-red-500">*</span>
                         </FormLabel>
                         <MediaUpload
                           label=""
@@ -257,12 +258,12 @@ const SiteDimensionsAccordion = ({
                     name={`site_dimensions.${index}.notes`}
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-gray-700 text-xs font-medium">
+                        {/* <FormLabel className="text-gray-700 text-xs font-medium">
                           📝 Notes
-                        </FormLabel>
+                        </FormLabel> */}
                         <textarea
                           className="flex h-20 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                          placeholder="Enter any notes"
+                          placeholder="Enter any Notes"
                           {...field}
                           disabled={isReadOnly}
                           onChange={(e) => {

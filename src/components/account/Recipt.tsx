@@ -871,9 +871,9 @@ const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 
           {/* Purpose of Payment (full width) */}
           <div>
-            <label className="block text-sm md:text-base font-medium text-gray-700 mb-2">
+            {/* <label className="block text-sm md:text-base font-medium text-gray-700 mb-2">
               Purpose of Receipt
-            </label>
+            </label> */}
             <textarea
               rows={3}
               value={custom_purpose_of_payment}
@@ -881,7 +881,7 @@ const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
                 handleInputChange("custom_purpose_of_payment", e.target.value)
               }
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none"
-              placeholder="Enter Purpose of Receipt"
+              placeholder="Enter Purpose of Receipt *"
             />
           </div>
 
@@ -926,23 +926,23 @@ const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
               </div>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {/* <label className="block text-sm font-medium text-gray-700 mb-1">
                     Customer Name <span className="text-red-500">*</span>
-                  </label>
+                  </label> */}
                   <input
                     type="text"
                     name="customer_name"
                     value={newCustomerData.customer_name}
                     onChange={handleNewCustomerInputChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                    placeholder="Enter customer name"
+                    placeholder="Enter customer name *"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {/* <label className="block text-sm font-medium text-gray-700 mb-1">
                     Mobile Number
-                  </label>
+                  </label> */}
                   <input
                     type="text"
                     name="mobile_no"
@@ -970,16 +970,16 @@ const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
                   />
                 </div> */}
                 <div>
-                            <label htmlFor="email_id" className="block text-sm font-medium text-gray-700 mb-1">
+                            {/* <label htmlFor="email_id" className="block text-sm font-medium text-gray-700 mb-1">
                               Email
-                            </label>
+                            </label> */}
                             <input
                               type="email"
                               name="email_id"
                               value={newCustomerData.email_id || ""}
                               onChange={handleNewCustomerInputChange}
                               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                    placeholder="Enter email address"
+                    placeholder="Enter customer Email "
                             />
                             {/* Error message */}
                             {newCustomerData.email_id && (
@@ -1005,7 +1005,7 @@ const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
                   type="button"
                   onClick={handleCreateCustomer}
                   disabled={creatingCustomer}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                  className="px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
                 >
                   {creatingCustomer ? (
                     <span className="flex items-center justify-center">

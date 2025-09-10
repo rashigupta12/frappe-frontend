@@ -7,7 +7,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "../../ui/accordion";
-import { FormField, FormItem, FormLabel, FormMessage } from "../../ui/form";
+import { FormField, FormItem, FormMessage } from "../../ui/form";
 import MediaUpload from "../components/MediaUpload/MediaUpload";
 import { formSchema, type MediaItem } from "../components/utils/fileUpload";
 
@@ -57,9 +57,9 @@ const CustomImagesAccordion = ({ form, isReadOnly }: CustomImagesAccordionProps)
           name="custom_site_images_notes"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-gray-700 text-xs font-medium">
+              {/* <FormLabel className="text-gray-700 text-xs font-medium">
                 📝 Notes
-              </FormLabel>
+              </FormLabel> */}
               <textarea
                 className="flex h-20 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 placeholder="Enter any notes"

@@ -30,21 +30,20 @@ import type {
   PriorityLevel,
 } from "../../../types/inquiryFormdata";
 import { Button } from "../../ui/button";
-import { Label } from "../../ui/label";
 import { Textarea } from "../../ui/textarea";
 
-import { timeToMinutes } from "../../../lib/timeUtils";
 import { showToast } from "../../../helpers/comman";
+import { timeToMinutes } from "../../../lib/timeUtils";
 import { ConfirmationModal } from "../ConfirmationModal";
 
+import { frappeAPI } from "../../../api/frappeClient";
+import { CustomerModal } from "./CustomerModal";
 import { CustomerSearchSection } from "./CustomerSearchSection";
 import { FormSectionHeader } from "./FormSectionHeader";
-import { PropertyDetailsSection } from "./PropertyDetailsSection";
 import { InspectorAssignmentSection } from "./InspectorAssignmentSection";
-import { CustomerModal } from "./CustomerModal";
-import { TimeWarningModal } from "./TimeWarningModal";
 import { JobDetailsSection } from "./JobDetailsSection";
-import { frappeAPI } from "../../../api/frappeClient";
+import { PropertyDetailsSection } from "./PropertyDetailsSection";
+import { TimeWarningModal } from "./TimeWarningModal";
 
 interface InquiryFormProps {
   isOpen: boolean;
@@ -1545,12 +1544,12 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
 
           {/* Special Requirements Textarea */}
           <div className="p-4 rounded-lg bg-gray-50 border border-gray-200">
-            <Label
+            {/* <Label
               htmlFor="custom_special_requirements"
               className="text-sm mb-1 font-medium text-gray-700 block"
             >
               Special Requirements
-            </Label>
+            </Label> */}
             <Textarea
               id="custom_special_requirements"
               name="custom_special_requirements"
