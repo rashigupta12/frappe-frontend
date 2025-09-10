@@ -10,7 +10,7 @@ interface Props {
 
 const EmptyState: React.FC<Props> = ({ isDefaultFilter, onClearFilters, onOpenForm }) => {
   return (
-    <div className="text-center py-8 bg-white rounded-lg border border-gray-200">
+    <div className="text-center py-8 bg-white rounded-lg border border-gray-200 mt-2">
       <Search className="h-8 w-8 text-gray-400 mx-auto mb-2" />
       <h3 className="text-base font-medium text-gray-900 mb-1">
         No job cards found

@@ -79,10 +79,14 @@ const InspectionTable = ({ todos, loading, onEdit }: InspectionTableProps) => {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {todos.map((todo) => (
+            {todos.map((todo ,index) => (
               <tr
-                key={todo.name}
-                className="hover:bg-gray-50 transition-colors duration-200"
+                key={todo.name ||index}
+               className={`
+ ${index % 2 === 0 ? "bg-white" : "bg-gray-100"}
+ 
+ `}
+
               >
                 {/* Priority */}
                 {/* <td className="py-3 px-4 align-center">

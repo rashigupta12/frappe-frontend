@@ -86,7 +86,7 @@ const JobCardOtherFilters: React.FC<Props> = ({
   );
 
   return (
-    <div className="bg-white mb-4">
+    <div className="bg-white mb-4 px-2">
       <div className="flex gap-2">
         <div className="flex-1 relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -113,7 +113,7 @@ const JobCardOtherFilters: React.FC<Props> = ({
       </div>
 
       {/* Quick Filter Buttons */}
-      <div className="flex gap-2 mt-2">
+      <div className="flex gap-2 mt-2 p-1">
         <Button
           variant={filters.statusFilter === "submitted" ? "default" : "outline"}
           size="sm"

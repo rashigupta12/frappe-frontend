@@ -66,8 +66,11 @@ export const InspectionTable = ({
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {inspections.map((inspection) => (
-              <tr key={inspection.name} className="hover:bg-gray-50 transition-colors duration-200">
+            {inspections.map((inspection,index) => (
+              <tr key={inspection.name||index } className={`
+ ${index % 2 === 0 ? "bg-white" : "bg-gray-100"}
+ 
+ `}>
                 <td className="py-3 px-4 align-top">
                   <div className="text-gray-700">
                     <div className="font-medium">
@@ -113,14 +116,14 @@ export const InspectionTable = ({
                   <div className="text-gray-700 max-w-xs truncate">
                     {inspection.inspection_notes?.replace(/<[^>]*>/g, "") || "-"}
                   </div>
-                  <div className="text-xs text-gray-500 mt-1">
+                  {/* <div className="text-xs text-gray-500 mt-1">
                     Modified: {new Date(inspection.modified).toLocaleDateString("en-GB")}
                     {inspection.follow_up_required === 1 && (
                       <span className="ml-2 px-1.5 py-0.5 bg-yellow-100 text-yellow-800 rounded-full">
                         Follow-up
                       </span>
                     )}
-                  </div>
+                  </div> */}
                 </td>
 
                 <td className="py-3 align-top">

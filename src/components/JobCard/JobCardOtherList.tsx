@@ -52,7 +52,8 @@ const JobCardOtherList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
   return (
     <div className="pb-10 max-w-7xl mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between mb-3">
+      <div className="bg-white p-2">
+      <div className="flex items-center justify-between ">
         <h2 className="text-xl font-bold text-cyan-800 flex items-center gap-2">
           Job Cards
           <span className="bg-gray-100 text-gray-700 text-sm font-medium px-2 py-0.5 rounded-full border border-gray-200">
@@ -72,6 +73,7 @@ const JobCardOtherList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
           <Plus className="h-4 w-4 mr-1" />
           Add
         </Button>
+      </div>
       </div>
 
       {/* Filters */}

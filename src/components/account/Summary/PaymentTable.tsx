@@ -56,12 +56,16 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
-            {payments.map((payment) => {
+            {payments.map((payment , index) => {
               const readOnly = payment.docstatus === 1;
               return (
                 <tr
-                  key={payment.name}
-                  className="hover:bg-gray-50 cursor-pointer transition-colors"
+                  key={payment.name || index}
+                  // className="hover:bg-gray-50 cursor-pointer transition-colors"
+                  className={`hover:bg-gray-50 cursor-pointer transition-colors
+ ${index % 2 === 0 ? "bg-white" : "bg-gray-100"}
+ 
+ `}
                   onClick={() => onRowClick(payment)}
                 >
                   <td className="px-4 py-3 text-sm text-gray-600">

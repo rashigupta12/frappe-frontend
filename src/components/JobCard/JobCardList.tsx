@@ -50,9 +50,11 @@ const JobCardList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
   }
 
   return (
-    <div className="pb-10 max-w-7xl mx-auto">
+    <div className="pb-10 max-w-7xl  ">
+
+      <div className="bg-white p-2  ">
       {/* Header */}
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between mb-3 ">
         <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
           Job Cards
           <span className="bg-slate-100 text-slate-700 text-sm font-medium px-2 py-0.5 rounded-full border border-slate-300">
@@ -81,6 +83,8 @@ const JobCardList: React.FC<Props> = ({ onEdit, onOpenForm }) => {
         clearFilters={clearFilters}
         isDefaultFilter={isDefaultFilter}
       />
+
+      </div>
 
       {/* Content */}
       {filteredJobCards.length === 0 ? (

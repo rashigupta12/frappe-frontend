@@ -55,12 +55,15 @@ const ReceiptTable: React.FC<ReceiptTableProps> = ({
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
-            {receipts.map((receipt) => {
+            {receipts.map((receipt ,index) => {
               const readOnly = receipt.docstatus === 1;
               return (
                 <tr
-                  key={receipt.name}
-                  className="hover:bg-gray-50 cursor-pointer transition-colors"
+                  key={receipt.name ||index}
+                   className={`hover:bg-gray-50 cursor-pointer transition-colors
+ ${index % 2 === 0 ? "bg-white" : "bg-gray-100"}
+ 
+ `}
                   onClick={() => onRowClick(receipt)}
                 >
                   <td className="px-4 py-3 text-sm text-gray-600">

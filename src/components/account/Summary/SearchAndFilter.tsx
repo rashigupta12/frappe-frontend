@@ -102,29 +102,55 @@ const SearchAndFilter: React.FC<SearchAndFilterProps> = ({
               <label className="text-xs font-medium text-gray-600 mb-1 block">
                 From Date
               </label>
-              <div className="relative">
-                <input
-                  type="date"
-                  value={fromDate}
-                  onChange={(e) => onFromDateChange(e.target.value)}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 pr-10 text-sm text-black shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                />
-                <div className="absolute inset-y-0 right-3 flex items-center text-gray-400 cursor-pointer">
-                  <svg
-                    className="h-5 w-5"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
+               <div className="relative">
+                  <input
+                    type="date"
+                    value={fromDate}
+                    onChange={(e) => onFromDateChange(e.target.value)}
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 pr-10 text-sm text-black shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    style={
+                      {
+                        // Hide browser default icons
+                        WebkitAppearance: "none",
+                        MozAppearance: "textfield",
+                      } as React.CSSProperties
+                    }
+                  />
+                  {/* Custom Calendar Icon - Clickable */}
+                  <div
+                    className="absolute inset-y-0 right-3 flex items-center text-gray-400 cursor-pointer"
+                    onClick={() => {
+                      // Focus and click the input to trigger date picker
+                      const inputs = document.querySelectorAll(
+                        'input[type="date"]'
+                      ) as NodeListOf<HTMLInputElement>;
+                      const fromInput = inputs[0]; // First date input (From Date)
+                      if (fromInput) {
+                        fromInput.focus();
+                        if (
+                          "showPicker" in fromInput &&
+                          typeof fromInput.showPicker === "function"
+                        ) {
+                          fromInput.showPicker();
+                        }
+                      }
+                    }}
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                    />
-                  </svg>
-                </div>
+                    <svg
+                      className="h-5 w-5"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                      />
+                    </svg>
+                  </div>
               </div>
             </div>
 
@@ -133,29 +159,55 @@ const SearchAndFilter: React.FC<SearchAndFilterProps> = ({
                 To Date
               </label>
               <div className="relative">
-                <input
-                  type="date"
-                  value={toDate}
-                  onChange={(e) => onToDateChange(e.target.value)}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 pr-10 text-sm text-black shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                />
-                <div className="absolute inset-y-0 right-3 flex items-center text-gray-400 cursor-pointer">
-                  <svg
-                    className="h-5 w-5"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
+                  <input
+                    type="date"
+                    value={toDate}
+                    onChange={(e) => onToDateChange(e.target.value)}
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 pr-10 text-sm text-black shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    style={
+                      {
+                        // Hide browser default icons
+                        WebkitAppearance: "none",
+                        MozAppearance: "textfield",
+                      } as React.CSSProperties
+                    }
+                  />
+                  {/* Custom Calendar Icon - Clickable */}
+                  <div
+                    className="absolute inset-y-0 right-3 flex items-center text-gray-400 cursor-pointer"
+                    onClick={() => {
+                      // Focus and click the input to trigger date picker
+                      const inputs = document.querySelectorAll(
+                        'input[type="date"]'
+                      ) as NodeListOf<HTMLInputElement>;
+                      const toInput = inputs[1]; // Second date input (To Date)
+                      if (toInput) {
+                        toInput.focus();
+                        if (
+                          "showPicker" in toInput &&
+                          typeof toInput.showPicker === "function"
+                        ) {
+                          toInput.showPicker();
+                        }
+                      }
+                    }}
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2 2v12a2 2 0 002 2z"
-                    />
-                  </svg>
+                    <svg
+                      className="h-5 w-5"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                      />
+                    </svg>
+                  </div>
                 </div>
-              </div>
             </div>
           </div>
 
